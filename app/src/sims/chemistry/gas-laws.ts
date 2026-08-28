@@ -100,8 +100,8 @@ function seed(params: ParamValues, rng: Rng): State {
   // Maxwell-Boltzmann: each velocity component is normal with variance k_B T/m.
   const sigma = Math.sqrt(tModel);
   for (let i = 0; i < n; i++) {
-    x[i] = rng.range(R_DRAW, width - R_DRAW);
-    y[i] = rng.range(R_DRAW, BOX_H - R_DRAW);
+    x[i] = rng.range(0, width);
+    y[i] = rng.range(0, BOX_H);
     vx[i] = rng.normal(0, sigma);
     vy[i] = rng.normal(0, sigma);
   }
@@ -184,13 +184,17 @@ const model: SimModel<State> = {
     for (let i = 0; i < n; i++) {
       x[i] += vx[i] * h;
       y[i] += vy[i] * h;
-      if (x[i] < R_DRAW) { x[i] = R_DRAW; impulse += 2 * Math.abs(vx[i]); vx[i] = Math.abs(vx[i]); }
-      else if (x[i] > width - R_DRAW) {
-        x[i] = width - R_DRAW; impulse += 2 * Math.abs(vx[i]); vx[i] = -Math.abs(vx[i]);
+      // Walls are hit by molecule CENTRES, so the gas fills exactly the volume
+      // the gauge reports. Bouncing at the drawn radius instead would confine
+      // the gas to a smaller box than the readout claims and push PV/nT a few
+      // percent above R. Molecules are only inset when they are drawn.
+      if (x[i] < 0) { x[i] = 0; impulse += 2 * Math.abs(vx[i]); vx[i] = Math.abs(vx[i]); }
+      else if (x[i] > width) {
+        x[i] = width; impulse += 2 * Math.abs(vx[i]); vx[i] = -Math.abs(vx[i]);
       }
-      if (y[i] < R_DRAW) { y[i] = R_DRAW; impulse += 2 * Math.abs(vy[i]); vy[i] = Math.abs(vy[i]); }
-      else if (y[i] > BOX_H - R_DRAW) {
-        y[i] = BOX_H - R_DRAW; impulse += 2 * Math.abs(vy[i]); vy[i] = -Math.abs(vy[i]);
+      if (y[i] < 0) { y[i] = 0; impulse += 2 * Math.abs(vy[i]); vy[i] = Math.abs(vy[i]); }
+      else if (y[i] > BOX_H) {
+        y[i] = BOX_H; impulse += 2 * Math.abs(vy[i]); vy[i] = -Math.abs(vy[i]);
       }
     }
 
@@ -332,7 +336,10 @@ function render(rc: RenderContext<State>) {
   for (let i = 0; i < state.n; i++) {
     const speed = Math.hypot(state.vx[i], state.vy[i]);
     const b = clamp(Math.round((speed / vRef) * (BUCKETS - 1)), 0, BUCKETS - 1);
-    disc(ctx, px(CHAMBER_X + state.x[i]), py(CHAMBER_Y + state.y[i]), r, ramp[b]);
+    // Centres reach the walls; the disc is nudged inside so it never spills over.
+    const dx = clamp(state.x[i], R_DRAW, Math.max(R_DRAW, state.width - R_DRAW));
+    const dy = clamp(state.y[i], R_DRAW, BOX_H - R_DRAW);
+    disc(ctx, px(CHAMBER_X + dx), py(CHAMBER_Y + dy), r, ramp[b]);
   }
 
   /* ---- piston ---- */

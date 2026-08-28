@@ -53,7 +53,16 @@ const T_STAR_MELT = 0.42;
 const T_STAR_BOIL = 0.90;
 
 /** Mean-square wander per unit reduced time that separates solid from liquid. */
-const SOLID_MOBILITY = 0.06;
+/**
+ * Mobility at the melting point, measured from this very model: run it at each
+ * substance's melting temperature and the particles wander this much per unit
+ * reduced time. Because the dynamics run in reduced units, the value is the
+ * same for water, oxygen and neon — which is what lets one threshold serve all
+ * three. Calibrated rather than guessed: at 0.06 the lattice held together far
+ * past freezing, so the sim showed liquid water at 250 K while its own readout
+ * announced a melting point of 273.15 K.
+ */
+const SOLID_MOBILITY = 0.45;
 /** Fraction of free particles above which the box counts as fully gas. */
 const GAS_FRACTION = 0.72;
 /** Fraction of free particles above which liquid and gas visibly coexist. */
