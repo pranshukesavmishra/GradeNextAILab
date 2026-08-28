@@ -12,7 +12,7 @@
 | **[docs/SIMULATION_CATALOG.md](docs/SIMULATION_CATALOG.md)** | The content backbone: US Grade 1-12 curriculum matrix (NGSS + Common Core) and all ~164 planned simulations with grade reach, modes, and build tiers |
 | **[docs/TECHNICAL_SPEC.md](docs/TECHNICAL_SPEC.md)** | Implementable engineering spec: engine API, sim manifest schema, Guided Lab DSL, backend services, analytics events, testing, security & privacy |
 | **[docs/PEDAGOGY_AND_CONTENT.md](docs/PEDAGOGY_AND_CONTENT.md)** | Learning design principles, grade-band adaptation rules, misconception catalog, assessment & rubrics, AI tutor pedagogy, content production pipeline |
-| **[docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)** | LabKit: color and semantic science palette, typography, layouts, component specs, instrument icons, accessibility, sound, microcopy |
+| **[docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)** | **LabKit** — principles, color + semantic science palette, typography, layouts, component APIs, instrument icons, grade-band adaptation, accessibility, sound, voice, and the anti-pattern gallery |
 | **[docs/ADVANCED_FEATURES.md](docs/ADVANCED_FEATURES.md)** | The extraordinary tier beyond MVP: multi-sim workbench, device sensors, AI that drives the sim, live class mode, collaborative labs, sonification, AR |
 
 ## The pitch in four lines
