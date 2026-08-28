@@ -280,18 +280,23 @@ export function Readouts({ readouts, band }: { readouts: Readout[]; band: GradeB
   if (!visible.length) return null;
   const sig = BAND_SIG_FIGS[band];
 
+  // An instrument panel, not a row of pills. The value leads and the label
+  // sits underneath, because a student scanning during an experiment is
+  // looking for the number that just changed, not for its name.
   return (
-    <div className="readouts">
+    <div className="readouts" role="group" aria-label="Measurements">
       {visible.map((r) => (
         <div key={r.key} className="readout">
           <span
-            className="readout-dot"
+            className="readout-tick"
             style={r.semantic ? { background: `var(--sci-${r.semantic})` } : undefined}
             aria-hidden="true"
           />
-          <span className="readout-label">{r.label}</span>
-          <span className="readout-value mono">
-            {format(r.quantity, { unitId: r.unit, sigFigs: sig, showUncertainty: band === "9-12" })}
+          <span className="readout-body">
+            <span className="readout-value mono">
+              {format(r.quantity, { unitId: r.unit, sigFigs: sig, showUncertainty: band === "9-12" })}
+            </span>
+            <span className="readout-label">{r.label}</span>
           </span>
         </div>
       ))}
