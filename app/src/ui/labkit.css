@@ -1,0 +1,216 @@
+/* ==========================================================================
+   LabKit — the GradeNext Smart Lab design system
+   Two colour worlds: interface chrome is achromatic plus one accent; colour
+   inside the simulation stage always denotes a physical quantity.
+   ========================================================================== */
+
+:root {
+  /* --- chrome: light --- */
+  --bg: #f2f6f9;
+  --panel: #ffffff;
+  --panel-alt: #e9eff4;
+  --inset: #dde6ed;
+  --ink: #14202b;
+  --ink2: #40546a;
+  --muted: #6a7c8d;
+  --line: #d4dee6;
+  --line2: #bccbd7;
+  --accent: #0d7c86;
+  --accent-ink: #095e66;
+  --accent-soft: #d6ecee;
+  --focus: #0d7c86;
+  --good: #2f7d4f;
+  --warn: #9a6414;
+  --warn-soft: #f7ecd8;
+  --danger: #b23c3c;
+  --stage: #fbfdfe;
+  --grid: #e2eaf1;
+  --shadow-1: 0 1px 2px rgba(20, 32, 43, 0.06);
+  --shadow-2: 0 2px 6px rgba(20, 32, 43, 0.07), 0 8px 24px rgba(20, 32, 43, 0.06);
+
+  /* --- the semantic science palette (never used decoratively) --- */
+  --sci-velocity: #2f6fc4;
+  --sci-acceleration: #d2761f;
+  --sci-force: #c9403f;
+  --sci-momentum: #7a4fc0;
+  --sci-energy-kinetic: #2f8f57;
+  --sci-energy-potential: #2f6fc4;
+  --sci-energy-thermal: #c25a1f;
+  --sci-energy-total: #4a5b6b;
+  --sci-charge-pos: #c9403f;
+  --sci-charge-neg: #2f6fc4;
+  --sci-field: #7a4fc0;
+  --sci-current: #b8860b;
+  --sci-cold: #3b7fc9;
+  --sci-hot: #cf4b25;
+  --sci-mass: #55657a;
+  --sci-distance: #0d7c86;
+  --sci-time: #6a7c8d;
+  --sci-acid: #cc3f5c;
+  --sci-neutral: #4b9b58;
+  --sci-base: #4257c0;
+  --sci-solid: #4a6fa5;
+  --sci-liquid: #2f8f9b;
+  --sci-gas: #c07b2a;
+  --sci-producer: #3f8f4a;
+  --sci-primary-consumer: #b8912b;
+  --sci-secondary-consumer: #c26a2a;
+  --sci-decomposer: #7a5c3f;
+  --sci-light: #d9a017;
+  --sci-wave: #2f6fc4;
+
+  /* --- geometry & motion --- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+  --dur-fast: 110ms;
+  --dur-mid: 200ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* --- type --- */
+  --font-display: "Bricolage Grotesque", "Source Sans 3", system-ui, sans-serif;
+  --font-ui: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+
+  /* --- grade-band scale, overridden by [data-band] --- */
+  --ctrl-h: 34px;
+  --ctrl-font: 14px;
+  --label-font: 13px;
+  --touch: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d141b;
+    --panel: #161f29;
+    --panel-alt: #1b2632;
+    --inset: #111a23;
+    --ink: #dde8f1;
+    --ink2: #a6b8c9;
+    --muted: #7b8d9e;
+    --line: #263442;
+    --line2: #334554;
+    --accent: #3fb9c5;
+    --accent-ink: #6ed0d9;
+    --accent-soft: #103a40;
+    --focus: #4fc9d5;
+    --good: #4faa73;
+    --warn: #d3a557;
+    --warn-soft: #33290f;
+    --danger: #dd6b6b;
+    --stage: #0f1922;
+    --grid: #1d2a35;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.3);
+
+    --sci-velocity: #5b95e0;
+    --sci-acceleration: #e8933f;
+    --sci-force: #e56060;
+    --sci-momentum: #a077e0;
+    --sci-energy-kinetic: #4fb47a;
+    --sci-energy-potential: #5b95e0;
+    --sci-energy-thermal: #e07b3f;
+    --sci-energy-total: #9aa9b8;
+    --sci-charge-pos: #e56060;
+    --sci-charge-neg: #5b95e0;
+    --sci-field: #a077e0;
+    --sci-current: #ddb03c;
+    --sci-cold: #5ea4e8;
+    --sci-hot: #ef7048;
+    --sci-mass: #8b9cb0;
+    --sci-distance: #3fb9c5;
+    --sci-time: #94a6b7;
+    --sci-acid: #e8657f;
+    --sci-neutral: #63bd72;
+    --sci-base: #6d7fe0;
+    --sci-solid: #6f95cc;
+    --sci-liquid: #45b3c0;
+    --sci-gas: #e0a04f;
+    --sci-producer: #57b365;
+    --sci-primary-consumer: #d6ae45;
+    --sci-secondary-consumer: #e08c4a;
+    --sci-decomposer: #a3815e;
+    --sci-light: #edbb3c;
+    --sci-wave: #5b95e0;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0d141b; --panel: #161f29; --panel-alt: #1b2632; --inset: #111a23;
+  --ink: #dde8f1; --ink2: #a6b8c9; --muted: #7b8d9e; --line: #263442; --line2: #334554;
+  --accent: #3fb9c5; --accent-ink: #6ed0d9; --accent-soft: #103a40; --focus: #4fc9d5;
+  --good: #4faa73; --warn: #d3a557; --warn-soft: #33290f; --danger: #dd6b6b;
+  --stage: #0f1922; --grid: #1d2a35;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --sci-velocity: #5b95e0; --sci-acceleration: #e8933f; --sci-force: #e56060;
+  --sci-momentum: #a077e0; --sci-energy-kinetic: #4fb47a; --sci-energy-potential: #5b95e0;
+  --sci-energy-thermal: #e07b3f; --sci-energy-total: #9aa9b8; --sci-charge-pos: #e56060;
+  --sci-charge-neg: #5b95e0; --sci-field: #a077e0; --sci-current: #ddb03c;
+  --sci-cold: #5ea4e8; --sci-hot: #ef7048; --sci-mass: #8b9cb0; --sci-distance: #3fb9c5;
+  --sci-time: #94a6b7; --sci-acid: #e8657f; --sci-neutral: #63bd72; --sci-base: #6d7fe0;
+  --sci-solid: #6f95cc; --sci-liquid: #45b3c0; --sci-gas: #e0a04f;
+  --sci-producer: #57b365; --sci-primary-consumer: #d6ae45;
+  --sci-secondary-consumer: #e08c4a; --sci-decomposer: #a3815e;
+  --sci-light: #edbb3c; --sci-wave: #5b95e0;
+}
+
+/* Grade-band density: one simulation, four depths. */
+[data-band="K-2"] { --ctrl-h: 52px; --ctrl-font: 19px; --label-font: 18px; --touch: 60px; }
+[data-band="3-5"] { --ctrl-h: 44px; --ctrl-font: 16px; --label-font: 15px; --touch: 52px; }
+[data-band="6-8"] { --ctrl-h: 38px; --ctrl-font: 15px; --label-font: 14px; --touch: 46px; }
+[data-band="9-12"] { --ctrl-h: 34px; --ctrl-font: 14px; --label-font: 13px; --touch: 44px; }
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+
+button { font-family: inherit; font-size: inherit; color: inherit; }
+
+a { color: var(--accent-ink); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+::selection { background: var(--accent-soft); }
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scrollbars that do not shout. */
+* { scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--line2); border-radius: var(--r-pill); border: 3px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-track { background: transparent; }
