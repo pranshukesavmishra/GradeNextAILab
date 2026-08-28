@@ -1,5 +1,27 @@
 import type { AnySim, GradeBand, Subject } from "@engine/types";
+import { circuitsSim } from "./physics/circuits";
+import { energySkateSim } from "./physics/energy-skate";
+import { forcesSim } from "./physics/forces";
+import { opticsSim } from "./physics/optics";
+import { pendulumSim } from "./physics/pendulum";
 import { projectileSim } from "./physics/projectile";
+import { wavesSim } from "./physics/waves";
+import { fractionsSim } from "./math/fractions";
+import { functionGrapherSim } from "./math/function-grapher";
+import { probabilitySim } from "./math/probability";
+import { unitCircleSim } from "./math/unit-circle";
+import { derivativesSim } from "./math/derivatives";
+import { statesOfMatterSim } from "./chemistry/states-of-matter";
+import { phLabSim } from "./chemistry/ph-lab";
+import { reactionsSim } from "./chemistry/reactions";
+import { buildAtomSim } from "./chemistry/build-atom";
+import { gasLawsSim } from "./chemistry/gas-laws";
+import { ecosystemSim } from "./biology/ecosystem";
+import { naturalSelectionSim } from "./biology/natural-selection";
+import { photosynthesisSim } from "./biology/photosynthesis";
+import { moonPhasesSim } from "./earth/moon-phases";
+import { seasonsSim } from "./earth/seasons";
+import { plateTectonicsSim } from "./earth/plate-tectonics";
 
 /**
  * The simulation registry.
@@ -10,6 +32,28 @@ import { projectileSim } from "./physics/projectile";
  */
 export const SIMS: AnySim[] = [
   projectileSim,
+  forcesSim,
+  pendulumSim,
+  energySkateSim,
+  circuitsSim,
+  wavesSim,
+  opticsSim,
+  fractionsSim,
+  functionGrapherSim,
+  probabilitySim,
+  unitCircleSim,
+  derivativesSim,
+  statesOfMatterSim,
+  phLabSim,
+  reactionsSim,
+  buildAtomSim,
+  gasLawsSim,
+  ecosystemSim,
+  naturalSelectionSim,
+  photosynthesisSim,
+  moonPhasesSim,
+  seasonsSim,
+  plateTectonicsSim,
 ];
 
 export function getSim(id: string): AnySim | undefined {
