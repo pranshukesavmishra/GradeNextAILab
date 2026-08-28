@@ -18,7 +18,67 @@ interface GraphProps {
   frame: number;
 }
 
-const PAD = { left: 52, right: 14, top: 14, bottom: 30 };
+const PAD = { left: 56, right: 14, top: 14, bottom: 30 };
+
+/**
+ * Axis ticks a student can actually read: steps of 1, 2, or 5 times a power of
+ * ten, so labels land on round numbers instead of arbitrary slices of the data
+ * range.
+ */
+function niceTicks(min: number, max: number, target = 5): { values: number[]; decimals: number } {
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+    return { values: [min], decimals: 0 };
+  }
+  const rawStep = (max - min) / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const norm = rawStep / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  const first = Math.ceil(min / step) * step;
+  const values: number[] = [];
+  for (let v = first; v <= max + step * 1e-6; v += step) {
+    // Kill floating-point dust like 0.30000000000000004.
+    values.push(Number(v.toPrecision(12)));
+  }
+  // Label precision follows the step, so a step of 5 prints "10", not "10.00".
+  const decimals = Math.max(0, Math.min(6, -Math.floor(Math.log10(step))));
+  return { values: values.length ? values : [min, max], decimals };
+}
+
+/**
+ * Series colour: the quantity's semantic colour when it is unambiguous, and a
+ * distinct fallback when two plotted series share one (height and distance are
+ * both lengths, but a reader still has to tell the two lines apart).
+ */
+function seriesColors(
+  keys: string[],
+  meta: { key: string; semantic?: string }[],
+  theme: { sci: Record<string, string>; accent: string; ink: string },
+): Record<string, string> {
+  const fallback = [
+    theme.sci["velocity"], theme.sci["acceleration"], theme.sci["energy-kinetic"],
+    theme.sci["field"], theme.sci["acid"], theme.sci["current"],
+  ];
+  const used = new Set<string>();
+  const out: Record<string, string> = {};
+  let fi = 0;
+  for (const key of keys) {
+    const semantic = meta.find((m) => m.key === key)?.semantic;
+    const preferred = semantic ? theme.sci[semantic] : undefined;
+    if (preferred && !used.has(preferred)) {
+      out[key] = preferred;
+      used.add(preferred);
+    } else {
+      let candidate = fallback[fi++ % fallback.length];
+      let guard = 0;
+      while (used.has(candidate) && guard++ < fallback.length) {
+        candidate = fallback[fi++ % fallback.length];
+      }
+      out[key] = candidate ?? theme.accent;
+      used.add(out[key]);
+    }
+  }
+  return out;
+}
 
 /**
  * Live experiment graphing.
@@ -120,29 +180,29 @@ export function Graph(props: GraphProps) {
     ctx.lineWidth = 1;
     ctx.font = "11px ui-monospace, monospace";
     ctx.fillStyle = theme.inkSoft;
-    const sig = BAND_SIG_FIGS[band];
-    const ticks = 4;
+    const yTicks = niceTicks(yMin, yMax, 5);
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
-    for (let i = 0; i <= ticks; i++) {
-      const val = yMin + ((yMax - yMin) * i) / ticks;
+    for (const val of yTicks.values) {
       const y = Math.round(py(val)) + 0.5;
+      if (y < PAD.top - 1 || y > PAD.top + plotH + 1) continue;
       ctx.beginPath();
       ctx.moveTo(PAD.left, y);
       ctx.lineTo(PAD.left + plotW, y);
       ctx.stroke();
-      ctx.fillText(formatValue(val, sig), PAD.left - 8, y);
+      ctx.fillText(val.toFixed(yTicks.decimals), PAD.left - 8, y);
     }
+    const xTicks = niceTicks(xMin, xMax, 5);
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    for (let i = 0; i <= ticks; i++) {
-      const val = xMin + ((xMax - xMin) * i) / ticks;
+    for (const val of xTicks.values) {
       const x = Math.round(px(val)) + 0.5;
+      if (x < PAD.left - 1 || x > PAD.left + plotW + 1) continue;
       ctx.beginPath();
       ctx.moveTo(x, PAD.top);
       ctx.lineTo(x, PAD.top + plotH);
       ctx.stroke();
-      ctx.fillText(formatValue(val, sig), x, PAD.top + plotH + 7);
+      ctx.fillText(val.toFixed(xTicks.decimals), x, PAD.top + plotH + 7);
     }
 
     // Axis frame.
@@ -153,9 +213,9 @@ export function Graph(props: GraphProps) {
     ctx.lineWidth = 2;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
+    const colors = seriesColors(active, graphable, theme);
     for (const key of active) {
-      const meta = graphable.find((g) => g.key === key);
-      ctx.strokeStyle = meta?.semantic ? theme.sci[meta.semantic] ?? theme.accent : theme.accent;
+      ctx.strokeStyle = colors[key] ?? theme.accent;
       ctx.beginPath();
       let started = false;
       for (const row of series) {
@@ -205,6 +265,10 @@ export function Graph(props: GraphProps) {
   };
 
   const sig = BAND_SIG_FIGS[band];
+  const legendColors = useMemo(
+    () => seriesColors(plotted, graphable, readTheme(themeKey)),
+    [plotted, graphable, themeKey],
+  );
 
   return (
     <div className="graph">
@@ -244,7 +308,7 @@ export function Graph(props: GraphProps) {
           >
             <span
               className="chip-dot"
-              style={r.semantic ? { background: `var(--sci-${r.semantic})` } : undefined}
+              style={{ background: legendColors[r.key] ?? (r.semantic ? `var(--sci-${r.semantic})` : "var(--muted)") }}
               aria-hidden="true"
             />
             {r.label}
