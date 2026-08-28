@@ -31,13 +31,13 @@ Seven principles. Each is stated as a rule a designer can apply or violate, not 
 
 ### P1 — Implicit scaffolding: guide through the interface, never through a wall of instructions
 
-**What it means.** Guidance is delivered by *affordances, constraints, cueing, and feedback* built into the sim itself, so students are "guided without feeling guided" ([Podolefsky, Moore & Perkins](https://arxiv.org/pdf/1306.6544); [AIP proceedings](https://pubs.aip.org/aip/acp/article/1513/1/302/877085/Guiding-without-feeling-guided-Implicit)). The productive path should be the *easiest* path. A well-scaffolded sim reproduces the effect of a guided-inquiry worksheet without the worksheet ([Chemistry Education Research and Practice](https://pubs.rsc.org/rp/article/14/3/257/416444/Interactive-simulations-as-implicit-support-for)).
+**What it means.** Guidance comes from *affordances, constraints, cueing, and feedback* built into the sim, so students are "guided without feeling guided" ([Podolefsky, Moore & Perkins](https://arxiv.org/pdf/1306.6544); [AIP 1513](https://pubs.aip.org/aip/acp/article/1513/1/302/877085/Guiding-without-feeling-guided-Implicit)). The productive path must be the *easiest* path — the effect of a guided-inquiry worksheet, without the worksheet ([Chem. Educ. Res. Pract.](https://pubs.rsc.org/rp/article/14/3/257/416444/Interactive-simulations-as-implicit-support-for)).
 
 **Rules.**
-- Default state MUST be productive: on load, the sim shows the phenomenon in its most interpretable configuration, not an empty canvas.
-- Objects that are meant to be dragged MUST look draggable (shadow, grab cursor, slight overhang) and MUST animate on hover/first idle if untouched for 8 s.
-- Constrain the parameter space to the pedagogically meaningful range. If a spring constant above 200 N/m makes the animation unreadable, the slider stops at 200.
-- Cue the next representation by *proximity and motion*, not by text: when a student drags a mass, the force arrow grows in the same visual field.
+- Default state MUST be productive: on load the sim shows the phenomenon in its most interpretable configuration, never an empty canvas.
+- Draggable things MUST look draggable, and MUST self-animate after 8 s untouched.
+- Constrain sliders to the pedagogically meaningful range (if k > 200 N/m makes the animation unreadable, the slider stops at 200).
+- Cue the next representation by proximity and motion, not text: drag the mass, the force arrow grows in the same visual field.
 
 **Forbids.** Modal "How to use this simulation" dialogs. Instruction paragraphs above the canvas. Tooltips as the primary teaching channel. Any control whose meaning can only be learned by reading.
 
@@ -45,12 +45,12 @@ Seven principles. Each is stated as a rule a designer can apply or violate, not 
 
 ### P2 — Minimal text: exploration must begin within 10 seconds
 
-**What it means.** Reading is a tax on working memory that competes with the thing we want them to think about ([Sweller, Cognitive Architecture and Instructional Design: 20 Years Later](https://link.springer.com/article/10.1007/s10648-019-09465-5)).
+**What it means.** Reading taxes the same working memory we need for the concept ([Sweller](https://link.springer.com/article/10.1007/s10648-019-09465-5)).
 
 **Rules.**
-- Explore mode MUST be usable with **zero** words read. Control labels are icons + a single noun where a noun is unavoidable.
-- Any on-screen instructional string is capped: K-2 ≤ 6 words, 3-5 ≤ 12 words, 6-8 ≤ 20 words, 9-12 ≤ 35 words.
-- Prose longer than the cap goes into the Lab Notebook or an expandable "Why?" panel — never in the interaction path.
+- Explore mode MUST be usable with **zero** words read; labels are icons plus at most one noun.
+- On-screen instructional strings capped at K-2 ≤ 6 words, 3-5 ≤ 12, 6-8 ≤ 20, 9-12 ≤ 35.
+- Longer prose goes to the Lab Notebook or a collapsed "Why?" panel — never the interaction path.
 
 **Forbids.** Pre-sim lectures. Multi-paragraph lab briefs. "Read this before you begin."
 
@@ -58,13 +58,13 @@ Seven principles. Each is stated as a rule a designer can apply or violate, not 
 
 ### P3 — Linked multiple representations that move together
 
-**What it means.** Concrete → abstract transfer happens when the abstraction is seen *changing in lockstep* with the concrete thing. Splitting related information across space or time forces the learner to integrate it mentally, which costs working memory (the split-attention effect — [Ayres & Sweller](https://www.davidlewisphd.com/courses/EDD8121/readings/2006-AyersSweller.pdf)).
+**What it means.** Abstractions become meaningful when seen changing in lockstep with the concrete thing; separating them in space or time forces costly mental integration (split-attention effect — [Ayres & Sweller](https://www.davidlewisphd.com/courses/EDD8121/readings/2006-AyersSweller.pdf)).
 
 **Rules.**
-- Every quantitative sim MUST render ≥ 2 synchronized representations at 6-8 and ≥ 3 at 9-12 (e.g., animation + vector overlay + live graph + numeric readout).
-- Representations MUST update in the same animation frame. A graph that lags the animation teaches a false causal story.
-- Hover/select on one representation MUST highlight the corresponding element in all others (shared selection state).
-- Place the numeric readout *on or adjacent to* the object it describes, not in a distant side panel.
+- ≥ 2 synchronized representations at 6-8, ≥ 3 at 9-12 (animation, vectors, live graph, readout).
+- All representations update in the same animation frame — a lagging graph teaches a false causal story.
+- Selecting in one representation highlights the counterpart in all others.
+- Numeric readouts sit on or beside the object they describe, not in a distant panel.
 
 **Forbids.** "Show graph" as a separate screen. Data tables that only populate after a run ends when a live trace is possible. Colour-coding that differs between the animation and the graph.
 
@@ -72,13 +72,12 @@ Seven principles. Each is stated as a rule a designer can apply or violate, not 
 
 ### P4 — Immediate, interpretable feedback
 
-**What it means.** Feedback must arrive fast enough to be attributed to the action that caused it, and must be *diagnostic* rather than evaluative.
+**What it means.** Feedback must arrive fast enough to be attributed to the action that caused it, and must be diagnostic rather than evaluative.
 
 **Rules.**
-- Physical response to a control change: < 100 ms.
-- Checkpoint verification verdict: < 500 ms, and MUST name the evidence ("Your three trials all used the same mass — the variable you were testing didn't change").
-- Wrong answers MUST NOT be met with a bare ✗. Every incorrect verdict returns *what the sim observed*.
-- Never gate on a single right answer where a range is defensible; verify with tolerances (§2.4).
+- Physical response to a control change < 100 ms; checkpoint verdict < 500 ms.
+- Every verdict names the evidence ("your three trials all used the same mass — the variable you were testing didn't change"). A bare ✗ is banned.
+- Never gate on one right answer where a range is defensible; verify with tolerances (§2.4).
 
 **Forbids.** Score-only feedback. Delayed batch grading inside a lab. "Try again" with no information.
 
@@ -86,13 +85,13 @@ Seven principles. Each is stated as a rule a designer can apply or violate, not 
 
 ### P5 — Productive failure before formalisation
 
-**What it means.** Letting students generate and fail at their own solutions *before* instruction produces better conceptual understanding and transfer than instruction-first sequencing (meta-analytic *d* ≈ 0.36 for conceptual understanding and transfer, with no procedural cost — [Sinha & Kapur, *Review of Educational Research*](https://journals.sagepub.com/doi/10.3102/00346543211019105); [Kapur & Roll](https://boldscience.org/wp-content/uploads/2025/04/Productive-Failure.pdf)).
+**What it means.** Generating and failing at your own solution *before* instruction beats instruction-first on conceptual understanding and transfer (meta-analytic *d* ≈ 0.36, no procedural cost — [Sinha & Kapur, *RER*](https://journals.sagepub.com/doi/10.3102/00346543211019105); [Kapur & Roll](https://boldscience.org/wp-content/uploads/2025/04/Productive-Failure.pdf)).
 
 **Rules.**
-- Every Guided Lab MUST require a **hypothesis before data** (Phase 2) and MUST NOT reveal whether the hypothesis is right until the student has run trials.
-- Formal vocabulary and equations are introduced *after* the student's own pattern is on screen. The equation appears as a *name for what they found*, not as a premise.
-- A wrong hypothesis is never penalised. The Conclusion phase asks students to compare prediction to evidence; changing your mind with evidence scores full marks.
-- Challenges MAY be attempted before the corresponding lab. Failure there is data, not a gate.
+- Hypothesis before data, always; correctness is not revealed until trials are run.
+- Formal vocabulary and equations arrive *after* the student's own pattern is on screen — the equation names what they found, it is not a premise.
+- Wrong hypotheses are never penalised; changing your mind with evidence scores full marks.
+- Challenges may be attempted before the lab. Failure there is data, not a gate.
 
 **Forbids.** Showing the formula before the first run. Blocking Run until the hypothesis is "correct". Scoring hypothesis accuracy.
 
@@ -100,14 +99,14 @@ Seven principles. Each is stated as a rule a designer can apply or violate, not 
 
 ### P6 — Cognitive load management
 
-**What it means.** Intrinsic load belongs to the concept; extraneous load belongs to our bad design and must be engineered out ([Sweller](https://link.springer.com/article/10.1007/s10648-019-09465-5)). Duplicating the same information in two channels *hurts* — the redundancy principle ([Cambridge Handbook of Multimedia Learning](https://www.cambridge.org/core/books/abs/cambridge-handbook-of-multimedia-learning/redundancy-principle-in-multimedia-learning/448A5532008EB4B4BA17DBEB5A421920)).
+**What it means.** Intrinsic load belongs to the concept; extraneous load belongs to our bad design and must be engineered out ([Sweller](https://link.springer.com/article/10.1007/s10648-019-09465-5)). Duplicating identical information across two channels *hurts* — the redundancy principle ([Cambridge Handbook of Multimedia Learning](https://www.cambridge.org/core/books/abs/cambridge-handbook-of-multimedia-learning/redundancy-principle-in-multimedia-learning/448A5532008EB4B4BA17DBEB5A421920)).
 
 **Rules.**
-- **Control budget** per band: K-2 ≤ 3 controls, 3-5 ≤ 5, 6-8 ≤ 8, 9-12 ≤ 14 simultaneously visible. Extra controls live in a collapsed "Advanced" tray.
-- Introduce one new representation at a time. A lab MUST NOT debut a new graph type and a new instrument in the same phase.
-- **Never** narrate on-screen text verbatim at 6-12 (redundancy). At K-2 narration *replaces* text; it does not accompany it.
-- Working memory offload is mandatory: the Lab Notebook auto-captures each trial so students never hold numbers in their heads.
-- Colour is never the sole carrier of meaning (also an accessibility requirement, §9).
+- **Control budget:** K-2 ≤ 3 visible controls, 3-5 ≤ 5, 6-8 ≤ 8, 9-12 ≤ 14; the rest live in a collapsed Advanced tray.
+- One new representation at a time — never a new graph type and a new instrument in the same phase.
+- Never narrate on-screen text verbatim at 6-12. At K-2 narration *replaces* text, it does not accompany it.
+- The Lab Notebook auto-captures every trial, so students never hold numbers in their heads.
+- Colour is never the sole carrier of meaning (also §9).
 
 **Forbids.** Simultaneous audio narration + identical caption for readers. Ten sliders visible to a Grade 4. Asking a student to remember trial 1's value while running trial 2.
 
@@ -115,12 +114,12 @@ Seven principles. Each is stated as a rule a designer can apply or violate, not 
 
 ### P7 — Prior-knowledge activation and a real anchoring phenomenon
 
-**What it means.** Every lab begins in the Engage phase of the 5E model with a phenomenon the student can already talk about ([Bybee, *The BSCS 5E Instructional Model*](https://pimser.org/wp-content/uploads/2022/01/BSCS_5E_Instructional_Model_Bybee-article.pdf); [STEM Teaching Tools on instructional models that fit NGSS](https://stemteachingtools.org/sp/limfn)).
+**What it means.** Every lab opens in the 5E Engage phase with a phenomenon the student can already talk about ([Bybee](https://pimser.org/wp-content/uploads/2022/01/BSCS_5E_Instructional_Model_Bybee-article.pdf); [STEM Teaching Tools](https://stemteachingtools.org/sp/limfn)).
 
 **Rules.**
-- Each Guided Lab MUST open with a 1-screen anchoring phenomenon: a short looping animation or an in-sim event, plus one question in student language.
-- The anchor MUST be answerable (wrongly) with everyday knowledge. Its job is to surface prior ideas, including the targeted misconception (§4).
-- Prior-idea capture is stored: the student's initial answer is shown back to them in the Conclusion phase for self-comparison.
+- One screen: a looping phenomenon or in-sim event plus one question in student language.
+- The anchor MUST be answerable *wrongly* from everyday knowledge — its job is to surface prior ideas, including the targeted misconception (§4).
+- The initial answer is stored and shown back in the Conclusion phase for self-comparison.
 
 **Forbids.** Opening with a definition. Anchors that require the vocabulary the lab teaches.
 
@@ -147,12 +146,12 @@ One Guided Lab MUST fit a single class period with setup and discussion: **targe
 
 ### 2.2 What each phase demands
 
-- **Question** must produce *ownership*. Offering three candidate questions — one of which is not investigable in the sim ("Which colour of pendulum is prettiest?") — forces a real discrimination.
-- **Hypothesis** must include a mechanism ("because"). A prediction without a reason is not accepted at 6-12; at 3-5 the "because" is a picklist; at K-2 it is a two-icon choice.
-- **Setup** is where control-of-variables is taught. The checkpoint inspects the configuration diff across planned trials and flags multi-variable changes *before* the student wastes the period.
-- **Run & Measure** demands instrument operation, not button-watching. The student positions the ruler, starts and stops the timer, reads the meter. Auto-measurement is available only as an accommodation or at K-2.
-- **Data** demands a *choice*: which variable on which axis, which graph type. Wrong-but-reasonable choices are allowed and get a nudge, not a block.
-- **Conclusion** demands Claim-Evidence-Reasoning citing *their own* trial numbers, which the notebook makes available for one-click insertion.
+- **Question** produces *ownership*: three candidate questions, one deliberately not investigable ("which colour of pendulum is prettiest?"), forcing a real discrimination.
+- **Hypothesis** must carry a mechanism. No "because", no acceptance at 6-12; picklist reasons at 3-5; two-icon choice at K-2.
+- **Setup** teaches control-of-variables: the checkpoint diffs the planned trials and flags multi-variable changes *before* the period is wasted.
+- **Run & Measure** demands instrument operation — position the ruler, start and stop the timer, read the meter. Auto-measurement is an accommodation, or K-2 only.
+- **Data** demands a *choice* of axes and graph type. Wrong-but-reasonable choices get a nudge, not a block.
+- **Conclusion** demands CER citing *their own* trial numbers, one-click insertable from the notebook.
 
 ### 2.3 How checkpoints avoid becoming click-through rails
 
@@ -255,10 +254,10 @@ This is the section that determines whether a sim changes minds. A simulation th
 
 ### 4.1 The four-step confrontation protocol (mandatory for every targeted misconception)
 
-1. **Elicit** — the anchor question forces a commitment; the wrong idea is a *legitimate, non-shamed* choice. The commitment is stored.
-2. **Confront** — the sim produces an outcome incompatible with the prior idea, in a setup the student controls (so they cannot dismiss it as a trick). The discrepant event MUST be reproducible by the student at will.
-3. **Resolve** — the student manipulates the sim to find the rule that explains *both* the new result and why their old idea seemed to work. We must explain the *appeal* of the misconception, not just its wrongness.
-4. **Consolidate** — a transfer item in a different context (different objects, different numbers) within the same session, and again in the spaced review 5-15 days later.
+1. **Elicit** — the anchor forces a commitment; the wrong idea is a legitimate, non-shamed choice, and is stored.
+2. **Confront** — the sim produces an outcome incompatible with the prior idea, in a setup *the student controls* and can reproduce at will, so it cannot be dismissed as a trick.
+3. **Resolve** — the student finds the rule that explains both the new result *and why their old idea seemed to work*. We explain the misconception's appeal, not just its wrongness.
+4. **Consolidate** — a transfer item in a different context the same session, and again in spaced review 5-15 days later.
 
 Distractors in our assessment items are drawn from these misconceptions, in the tradition of the [AAAS Project 2061 assessment bank](http://www.project2061.org/research/assessment.htm), whose items encode known misconceptions as answer choices so results are diagnostic ([example misconception record](http://assessment.aaas.org/misconceptions/1/SCM060/100)).
 
