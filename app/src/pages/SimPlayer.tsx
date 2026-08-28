@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSim } from "@engine/useSim";
-import { BAND_LABEL, GRADE_BANDS, paramsForBand } from "@engine/types";
+import { BAND_LABEL, GRADE_BANDS, defaultParams, paramsForBand } from "@engine/types";
 import type { AnySim, GradeBand, LabValues, ParamValues, SimMode } from "@engine/types";
 import { Stage } from "@ui/Stage";
 import { Graph } from "@ui/Graph";
@@ -9,17 +9,31 @@ import { LabPanel, useLab } from "@ui/LabRunner";
 import { BAND_SIG_FIGS } from "@engine/types";
 import { formatValue } from "@engine/units";
 import { addNotebookEntry } from "@ui/notebook";
+import { InstrumentLayer, ToolRail, useInstruments } from "@ui/Instruments";
+import { decodeShare, encodeShare } from "@ui/share";
 
 interface SimPlayerProps {
   manifest: AnySim;
   band: GradeBand;
   onBand: (b: GradeBand) => void;
   themeKey: string;
+  /** Parameter values carried in a shared link, applied on first load. */
+  shareQuery?: string;
   onExit: () => void;
 }
 
-export function SimPlayer({ manifest, band, onBand, themeKey, onExit }: SimPlayerProps) {
-  const sim = useSim({ manifest, band });
+export function SimPlayer({ manifest, band, onBand, themeKey, shareQuery, onExit }: SimPlayerProps) {
+  const sharedParams = useMemo(
+    () => (shareQuery ? decodeShare(shareQuery, manifest.params) : null),
+    [shareQuery, manifest.params],
+  );
+  const sim = useSim({
+    manifest,
+    band,
+    initialParams: sharedParams && Object.keys(sharedParams).length
+      ? { ...defaultParams(manifest.params), ...sharedParams }
+      : undefined,
+  });
   const [mode, setMode] = useState<SimMode>("explore");
   const [activeLabId, setActiveLabId] = useState<string | null>(null);
   const [activeChallengeId, setActiveChallengeId] = useState<string | null>(null);
@@ -28,6 +42,7 @@ export function SimPlayer({ manifest, band, onBand, themeKey, onExit }: SimPlaye
   const [drawer, setDrawer] = useState<"graph" | "data" | null>(null);
   const [dockOpen, setDockOpen] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const instruments = useInstruments();
 
   const availableLabs = useMemo(
     () => (manifest.labs ?? []).filter((l) => l.bands.includes(band)),
@@ -130,6 +145,14 @@ export function SimPlayer({ manifest, band, onBand, themeKey, onExit }: SimPlaye
     showToast("Saved to your Lab Notebook");
   }, [manifest, activeLab, band, sim.params, sim.data, lab_.progress.writings, showToast]);
 
+  const shareSetup = useCallback(() => {
+    const url = encodeShare(manifest.id, band, sim.params);
+    navigator.clipboard?.writeText(url).then(
+      () => showToast("Link copied — it opens this exact setup"),
+      () => showToast("Copy the link from the address bar"),
+    );
+  }, [manifest.id, band, sim.params, showToast]);
+
   const exportCsv = useCallback(() => {
     if (!sim.data.length) { showToast("Record some data points first"); return; }
     const keys = Object.keys(sim.data[0].values);
@@ -215,6 +238,8 @@ export function SimPlayer({ manifest, band, onBand, themeKey, onExit }: SimPlaye
             ariaDescription={describeSim(manifest.title, sim.readouts, sig)}
           />
 
+          <InstrumentLayer instruments={instruments} simTime={sim.runner.time} band={band} />
+
           {canLaunch && (
             <button
               type="button"
@@ -238,6 +263,7 @@ export function SimPlayer({ manifest, band, onBand, themeKey, onExit }: SimPlaye
             />
             <div className="stage-tools">
               <button type="button" className="btn btn-sm" onClick={sim.recordPoint}>Record data</button>
+              <button type="button" className="btn btn-sm" onClick={shareSetup}>Share setup</button>
               <button
                 type="button"
                 className={`btn btn-sm${drawer === "graph" ? " is-on" : ""}`}
@@ -256,6 +282,13 @@ export function SimPlayer({ manifest, band, onBand, themeKey, onExit }: SimPlaye
               </button>
             </div>
           </div>
+
+          <ToolRail
+            band={band}
+            onAdd={instruments.add}
+            hasAny={instruments.items.length > 0}
+            onClear={instruments.clear}
+          />
 
           <Readouts readouts={sim.readouts} band={band} />
 

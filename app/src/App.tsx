@@ -8,7 +8,7 @@ import { applyThemeMode, effectiveTheme, loadThemeMode, type ThemeMode } from "@
 
 type View =
   | { name: "catalog" }
-  | { name: "sim"; id: string; band: GradeBand }
+  | { name: "sim"; id: string; band: GradeBand; query?: string }
   | { name: "notebook" };
 
 /** Read the view out of the URL hash so every screen is linkable and shareable. */
@@ -19,8 +19,11 @@ function parseHash(): View {
   if (route === "notebook") return { name: "notebook" };
   if (route === "sim" && rest[0]) {
     const id = decodeURIComponent(rest[0]);
-    const band = (decodeURIComponent(rest[1] ?? "6-8") as GradeBand);
-    return { name: "sim", id, band };
+    const tail = rest[1] ?? "6-8";
+    const qIndex = tail.indexOf("?");
+    const band = decodeURIComponent(qIndex >= 0 ? tail.slice(0, qIndex) : tail) as GradeBand;
+    const query = qIndex >= 0 ? tail.slice(qIndex + 1) : "";
+    return { name: "sim", id, band, query };
   }
   return { name: "catalog" };
 }
@@ -28,7 +31,8 @@ function parseHash(): View {
 function viewToHash(view: View): string {
   if (view.name === "catalog") return "#/";
   if (view.name === "notebook") return "#/notebook";
-  return `#/sim/${encodeURIComponent(view.id)}/${encodeURIComponent(view.band)}`;
+  const q = view.query ? `?${view.query}` : "";
+  return `#/sim/${encodeURIComponent(view.id)}/${encodeURIComponent(view.band)}${q}`;
 }
 
 export default function App() {
@@ -91,10 +95,11 @@ export default function App() {
 
       {view.name === "sim" && sim && (
         <SimPlayer
-          key={sim.id}
+          key={`${sim.id}:${view.query ?? ""}`}
           manifest={sim}
           band={view.band}
-          onBand={(b) => navigate({ name: "sim", id: sim.id, band: b })}
+          shareQuery={view.query}
+          onBand={(b) => navigate({ name: "sim", id: sim.id, band: b, query: view.query })}
           themeKey={themeKey}
           onExit={() => navigate({ name: "catalog" })}
         />

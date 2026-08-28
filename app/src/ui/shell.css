@@ -488,3 +488,44 @@
   .notebook { max-width: none; padding: 0; }
   .nb-entry { break-inside: avoid; border-color: #ccc; box-shadow: none; }
 }
+
+/* ---------------- measurement instruments ---------------- */
+
+.stage-wrap { position: relative; }
+.inst-layer { position: absolute; inset: 0; pointer-events: none; }
+
+.inst {
+  position: absolute; pointer-events: auto; cursor: grab;
+  transform-origin: center center; touch-action: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.14));
+}
+.inst:active { cursor: grabbing; }
+.inst:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: var(--r-sm); }
+.inst-svg { display: block; }
+
+.inst-close {
+  position: absolute; top: -9px; right: -9px; z-index: 2;
+  width: 20px; height: 20px; border-radius: 50%; padding: 0;
+  border: 1px solid var(--line2); background: var(--panel); color: var(--muted);
+  font-size: 13px; line-height: 1; cursor: pointer; opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.inst:hover .inst-close, .inst:focus-within .inst-close { opacity: 1; }
+.inst-close:hover { color: var(--danger); border-color: var(--danger); }
+
+.stopwatch {
+  background: var(--panel); border: 1px solid var(--line2); border-radius: var(--r-md);
+  padding: 9px 11px; min-width: 122px; text-align: center;
+}
+.stopwatch-face { font-size: 20px; font-weight: 700; display: block; margin-bottom: 6px; }
+.stopwatch-btns { display: flex; gap: 5px; justify-content: center; }
+
+.tool-rail { display: flex; flex-wrap: wrap; gap: 6px; flex: none; }
+.tool-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px;
+  border-radius: var(--r-pill); border: 1px dashed var(--line2); background: transparent;
+  color: var(--ink2); font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.tool-chip:hover { border-style: solid; border-color: var(--accent); color: var(--accent-ink); background: var(--panel); }
+.tool-chip.is-clear { border-color: var(--line); color: var(--muted); }
+.tool-icon { font-size: 14px; }
