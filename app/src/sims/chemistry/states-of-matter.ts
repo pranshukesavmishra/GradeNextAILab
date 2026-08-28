@@ -1,7 +1,10 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import type { Rng } from "@engine/rng";
 import { CONSTANTS, q } from "@engine/units";
-import { camera, disc, label, mixHex, roundRect } from "@ui/draw";
+import { camera, roundRect } from "@ui/draw";
+import {
+  badge, caption, contactShadow, groundPlane, hexA, isDarkTheme, material, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * States of Matter: Particle View — Grades 1-12.
@@ -401,16 +404,31 @@ function phaseName(state: State): string {
   return state.phase === 2 ? "Gas" : state.phase === 1 ? "Liquid" : "Solid";
 }
 
+/** Mix two theme colours into a hex, so the result can feed the scene kit. */
+function blend(a: string, b: string, t: number): string {
+  const k = Math.max(0, Math.min(1, t));
+  const ca = a.replace("#", "");
+  const cb = b.replace("#", "");
+  let out = "#";
+  for (let i = 0; i < 3; i++) {
+    const va = parseInt(ca.slice(i * 2, i * 2 + 2), 16) || 0;
+    const vb = parseInt(cb.slice(i * 2, i * 2 + 2), 16) || 0;
+    out += Math.round(va + (vb - va) * k).toString(16).padStart(2, "0");
+  }
+  return out;
+}
+
 function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, overlays, band } = rc;
   const s = substanceOf(params);
   const setT = params.temperature as number;
   const tStar = toReduced(setT, s);
+  const dark = isDarkTheme(theme);
 
   // The thermometer lives in world units to the left of the box, so one camera
   // covers the whole stage and everything scales together.
   const cam = camera({
-    x0: -8.4, y0: -1.6, x1: BOX_W + 1.0, y1: BOX_H + 2.6,
+    x0: -7.4, y0: -2.3, x1: BOX_W + 0.5, y1: BOX_H + 2.5,
     width, height,
   });
   const px = (x: number) => cam.toScreenX(x);
@@ -418,23 +436,39 @@ function render(rc: RenderContext<State>) {
   const scale = cam.scale;
 
   const accent = phaseColor(state, theme);
+  const cold = theme.sci["cold"];
+  const hot = theme.sci["hot"];
+  const glass = theme.sci["solid"];
 
-  /* ---- container ---- */
+  /* ---- the lab the sealed box is standing in ---- */
+  sky(ctx, width, height, theme, "indoor");
+  const benchY = py(-0.85);
+  groundPlane(ctx, benchY, 0, width, height, theme, "lab");
+
+  const boxL = px(0), boxR = px(BOX_W);
+  const boxT = py(BOX_H), boxB = py(0);
+  const wall = Math.max(3, scale * 0.24);
+
+  contactShadow(ctx, (boxL + boxR) / 2, benchY + 1, (boxR - boxL) * 0.3, 0);
+
+  /* ---- the sealed box, as glass with something in it ---- */
+  // Interior: a faint column of the phase colour, densest where the matter is.
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, px(0), py(BOX_H), BOX_W * scale, BOX_H * scale, 6);
+  const inner = ctx.createLinearGradient(0, boxT, 0, boxB);
+  inner.addColorStop(0, hexA(accent, dark ? 0.10 : 0.05));
+  inner.addColorStop(1, hexA(accent, dark ? 0.26 : 0.16));
+  ctx.fillStyle = inner;
+  roundRect(ctx, boxL, boxT, boxR - boxL, boxB - boxT, 6);
   ctx.fill();
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
   ctx.restore();
 
   /* ---- bonds between touching particles: the thing that holds a solid together ---- */
   if (overlays.bonds && band !== "K-2" && state.phase !== 2) {
     ctx.save();
     ctx.strokeStyle = accent;
-    ctx.globalAlpha = 0.28;
-    ctx.lineWidth = Math.max(1, scale * 0.09);
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = Math.max(1, scale * 0.1);
+    ctx.lineCap = "round";
     ctx.beginPath();
     for (let i = 0; i < state.n - 1; i++) {
       const xi = state.x[i], yi = state.y[i];
@@ -450,41 +484,73 @@ function render(rc: RenderContext<State>) {
     ctx.restore();
   }
 
-  /* ---- particles, coloured by how much energy they carry ---- */
-  const cold = theme.sci["cold"];
-  const hot = theme.sci["hot"];
-  const r = Math.max(2.5, scale * 0.46);
+  /* ---- particles: lit spheres, so they read as atoms with volume ---- */
+  const r = Math.max(3, scale * 0.48);
   // One colour per speed bucket, so the ramp costs eight string builds a frame.
   const BUCKETS = 8;
   const ramp: string[] = new Array(BUCKETS);
-  for (let b = 0; b < BUCKETS; b++) ramp[b] = mixHex(cold, hot, b / (BUCKETS - 1));
+  for (let b = 0; b < BUCKETS; b++) ramp[b] = blend(cold, hot, b / (BUCKETS - 1));
   const vScale = 1 / (2 * Math.sqrt(2 * Math.max(tStar, 0.08)));
 
   for (let i = 0; i < state.n; i++) {
     const speed = Math.hypot(state.vx[i], state.vy[i]);
     const b = Math.min(BUCKETS - 1, Math.max(0, Math.round(speed * vScale * (BUCKETS - 1))));
-    disc(ctx, px(state.x[i]), py(state.y[i]), r, ramp[b], { stroke: theme.surface, lineWidth: 1 });
+    // The fastest particles carry a faint halo: energy you can see at a glance.
+    const heat = b / (BUCKETS - 1);
+    sphere(ctx, px(state.x[i]), py(state.y[i]), r, ramp[b], {
+      glow: heat > 0.55 ? (heat - 0.55) * 1.4 : 0,
+    });
   }
 
-  /* ---- thermometer ---- */
-  const tubeX = px(-6.2);
-  const tubeW = Math.max(10, scale * 0.9);
+  /* ---- the glass itself, drawn over the contents so it reads as in front ---- */
+  ctx.save();
+  ctx.beginPath();
+  roundRect(ctx, boxL, boxT, boxR - boxL, boxB - boxT, 6);
+  ctx.strokeStyle = hexA(glass, 0.5);
+  ctx.lineWidth = wall;
+  ctx.stroke();
+  ctx.strokeStyle = hexA(accent, 0.85);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // A specular streak down the left pane: the single cue that says "glass".
+  const sheen = ctx.createLinearGradient(boxL, boxT, boxL + (boxR - boxL) * 0.4, boxB);
+  sheen.addColorStop(0, "rgba(255,255,255,0.16)");
+  sheen.addColorStop(0.45, "rgba(255,255,255,0.03)");
+  sheen.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = sheen;
+  ctx.beginPath();
+  ctx.moveTo(boxL + wall, boxT + wall);
+  ctx.lineTo(boxL + (boxR - boxL) * 0.26, boxT + wall);
+  ctx.lineTo(boxL + wall, boxB - wall);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  /* ---- thermometer: a real bulb, a glass tube, a rising column ---- */
+  const tubeW = Math.max(11, scale * 0.95);
+  const tubeX = px(-5.4) - tubeW / 2;
   const tubeTop = py(BOX_H);
-  const tubeBot = py(0.6);
+  const bulbY = py(0.55);
+  const bulbR = tubeW * 0.95;
+  const tubeBot = bulbY - bulbR * 0.35;
   const tubeH = tubeBot - tubeTop;
   const tMax = 700;
   const frac = clamp(setT / tMax, 0, 1);
+  const mercury = blend(cold, hot, frac);
 
+  material(ctx, tubeX, tubeTop, tubeW, tubeH + bulbR, theme.line, tubeW / 2);
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, tubeX, tubeTop, tubeW, tubeH, tubeW / 2);
+  ctx.fillStyle = mercury;
+  roundRect(ctx, tubeX + 2.5, tubeBot - tubeH * frac, tubeW - 5, tubeH * frac + 4, (tubeW - 5) / 2);
   ctx.fill();
-  ctx.strokeStyle = theme.line;
+  ctx.restore();
+  sphere(ctx, tubeX + tubeW / 2, bulbY, bulbR, mercury, { glow: frac > 0.6 ? 0.4 : 0 });
+  ctx.save();
+  ctx.strokeStyle = hexA(glass, 0.55);
   ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(tubeX + tubeW / 2, bulbY, bulbR, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.fillStyle = mixHex(cold, hot, frac);
-  roundRect(ctx, tubeX + 2, tubeBot - tubeH * frac, tubeW - 4, tubeH * frac, (tubeW - 4) / 2);
-  ctx.fill();
   ctx.restore();
 
   if (overlays.points) {
@@ -498,27 +564,31 @@ function render(rc: RenderContext<State>) {
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 3]);
       ctx.beginPath();
-      ctx.moveTo(tubeX - 6, yy);
-      ctx.lineTo(tubeX + tubeW + 6, yy);
+      ctx.moveTo(tubeX - 7, yy);
+      ctx.lineTo(tubeX + tubeW + 7, yy);
       ctx.stroke();
       ctx.restore();
       if (band !== "K-2") {
-        label(ctx, `${text} ${value.toFixed(0)} K`, tubeX + tubeW + 9, yy, theme, { size: 10, color: colour });
+        caption(ctx, tubeX + tubeW + 10, yy, `${text} ${value.toFixed(0)} K`, theme, {
+          size: 11, color: colour,
+        });
       }
     }
   }
 
-  label(ctx, `${setT.toFixed(1)} K`, tubeX + tubeW / 2, tubeTop - 14, theme, { align: "center", size: 12 });
+  badge(ctx, tubeX + tubeW / 2, tubeTop - 16, `${setT.toFixed(1)} K`, theme, {
+    align: "center", color: mercury,
+  });
 
   /* ---- captions ---- */
-  const titleY = py(BOX_H + 1.1);
-  label(ctx, `${s.label}  ${s.formula}`, px(0), titleY, theme, { size: band === "K-2" ? 17 : 14 });
-  label(ctx, phaseName(state), px(BOX_W), titleY, theme, {
-    align: "right", size: band === "K-2" ? 20 : 16, color: accent,
+  const titleY = py(BOX_H + 1.2);
+  caption(ctx, px(0), titleY, `${s.label}  ${s.formula}`, theme, { size: band === "K-2" ? 18 : 15 });
+  caption(ctx, px(BOX_W), titleY, phaseName(state), theme, {
+    align: "right", size: band === "K-2" ? 22 : 17, color: accent, weight: 800,
   });
 
   if (band !== "K-2") {
-    const footY = py(-0.7);
+    const footY = py(-1.55);
     const parts = state.phase === 0
       ? "Locked in place — but still vibrating."
       : state.coexist
@@ -526,8 +596,10 @@ function render(rc: RenderContext<State>) {
         : state.phase === 1
           ? "Still touching, but free to slide past each other."
           : "Far apart, filling the whole container.";
-    label(ctx, parts, px(0), footY, theme, { size: 12, color: theme.inkSoft });
+    caption(ctx, px(0), footY, parts, theme, { size: 12, color: theme.inkSoft, weight: 500 });
   }
+
+  vignette(ctx, width, height, 0.16);
 }
 
 /* ------------------------------------------------------------------ *
