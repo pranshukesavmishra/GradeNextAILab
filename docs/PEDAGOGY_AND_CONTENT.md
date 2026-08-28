@@ -270,12 +270,12 @@ Drawn largely from the Force Concept Inventory taxonomy of commonsense beliefs (
 
 | # | Misconception | Gr | Sim | Intervention — what must be seen/done |
 |---|---|---|---|---|
-| P1 | "Motion requires a continuous force; remove the force and it stops" | 6-8 | Forces & Newton's Laws Lab | Student sets friction to zero themselves, gives one push, and watches the cart travel forever. Then they *reintroduce* friction and see the stopping return — so the old rule is re-explained as "friction was always there," not "you were wrong." |
-| P2 | "Heavier objects fall faster" | 3-5 | Free Fall / Gravity Lab | Simultaneous release of 1 kg and 10 kg spheres with air off; then air on, so the feather-vs-hammer case explains why their playground evidence looked different. Vacuum toggle is student-controlled. |
+| P1 | "Motion requires a continuous force; remove the force and it stops" | 6-8 | Forces & Newton's Laws Lab | Student zeroes friction themselves, gives one push, watches the cart travel forever — then reintroduces friction and sees stopping return. The old rule is re-explained ("friction was always there"), not overruled. |
+| P2 | "Heavier objects fall faster" | 3-5 | Free Fall / Gravity Lab | Simultaneous release of 1 kg and 10 kg spheres, air off; then air on, explaining why their playground evidence looked different. Vacuum toggle is student-controlled. |
 | P3 | "Zero velocity means zero net force / zero acceleration" | 9-12 | Projectile Launcher, Springs | Freeze-frame at the top of a trajectory with the acceleration vector still drawn at full length while the velocity vector vanishes. Student steps frame-by-frame through the apex. |
-| P4 | "In a collision, the bigger object exerts more force" (3rd law) | 9-12 | Momentum & Collisions | Truck-vs-car collision with force sensors on *both* bodies; the two force-time traces overlay exactly and mirror. Student varies the mass ratio to 20:1 and the traces still mirror. |
+| P4 | "In a collision, the bigger object exerts more force" (3rd law) | 9-12 | Momentum & Collisions | Force sensors on *both* bodies in a truck-vs-car collision: the force-time traces mirror exactly, and still mirror at a 20:1 mass ratio the student sets. |
 | P5 | "The last force to act determines the direction of motion" | 6-8 | Motion Grapher / Forces Lab | Student applies a rightward impulse to a leftward-moving cart and predicts the next second; the sim traces the actual curved velocity change. |
-| P6 | "Velocity and acceleration are the same thing" / graph-shape = path-shape | 6-8 | Motion Grapher | Walk-the-graph task: student's avatar must reproduce a *v-t* graph; the position graph draws simultaneously, forcing separation. Distractor: a *v-t* graph that looks like a hill but is a straight-line path. |
+| P6 | "Velocity and acceleration are the same thing" / graph-shape = path-shape | 6-8 | Motion Grapher | Walk-the-graph: the avatar must reproduce a *v-t* trace while the position graph draws simultaneously. Key case — a *v-t* graph shaped like a hill produced by straight-line motion. |
 | P7 | "Heavier pendulums swing faster / amplitude changes the period" | 3-5 | Pendulum Lab | Side-by-side release of different masses, staying in phase for 20+ swings (§3.3). |
 | P8 | "Centrifugal force pushes you outward" | 9-12 | Circular Motion | Cut-the-string button: the mass departs on a *tangent*, not radially. Student predicts the path first by drawing it. |
 | P9 | "Energy gets used up / disappears" | 4-8 | Energy Skate Park+ | Thermal-energy bar made visible from the first run, so total-height bar never shrinks. Turning friction off and on grows/shrinks the thermal bar in real time. |
@@ -284,10 +284,10 @@ Drawn largely from the Force Concept Inventory taxonomy of commonsense beliefs (
 
 | # | Misconception | Gr | Sim | Intervention |
 |---|---|---|---|---|
-| P10 | "Sound is a substance that travels; it can go through a vacuum" | 4-8 | Sound Lab | Bell-in-vacuum: student pumps air out with a slider; the waveform display flattens as the particle density drops, while the bell is still visibly ringing. |
+| P10 | "Sound is a substance that travels; it can go through a vacuum" | 4-8 | Sound Lab | Bell-in-vacuum: the student pumps air out and the waveform flattens as particle density drops, while the bell is still visibly ringing. |
 | P11 | "Louder = higher pitch" | 3-5 | Sound Lab | Amplitude and frequency on separate sliders with a live oscilloscope; a "same pitch, different loudness" preset pair the student must match by ear and by trace. |
-| P12 | "We see objects because light hits our eyes from the object *automatically*" — no source→object→eye chain | 4-5 | Light & Shadows / Optics Bench | Ray-trace toggle: turning off the lamp makes the object unseeable; student must complete a three-segment ray path (source → object → eye) to make the eye icon "see". |
-| P13 | "Current is used up as it goes around a circuit" / "the battery supplies constant current" | 6-8 | Circuit Builder | Ammeters placed on *both* sides of a bulb read identically; then adding a second bulb in series drops both readings together. Electron-flow animation with a particle counter at each point. |
+| P12 | "We see objects because light hits our eyes from the object *automatically*" — no source→object→eye chain | 4-5 | Light & Shadows / Optics Bench | Ray-trace toggle: with the lamp off the object is unseeable. The student must complete a source → object → eye ray path before the eye icon "sees". |
+| P13 | "Current is used up as it goes around a circuit" / "the battery supplies constant current" | 6-8 | Circuit Builder | Ammeters on *both* sides of a bulb read identically; a second bulb in series drops both together. Particle counters at each point back it up. |
 | P14 | "A battery is a source of constant current" and "more bulbs in parallel dims each bulb" | 9-12 | Circuit Builder (advanced) | Internal-resistance toggle: with ideal battery, parallel bulbs stay bright; with 1 Ω internal resistance they dim, explaining the classroom observation without abandoning the model. |
 | P15 | "Charge is created by rubbing" | 3-8 | Static Electricity Lab | Charge counter on both objects: the totals always sum to zero. Student rubs and watches −7/+7 appear. |
 
@@ -296,12 +296,12 @@ Grounded in the particulate-nature-of-matter literature ([diagnostic study, *CER
 
 | # | Misconception | Gr | Sim | Intervention |
 |---|---|---|---|---|
-| C1 | "Atoms/molecules themselves expand, melt, or change size when heated" | 6-8 | States of Matter | Particle view with a fixed on-screen ruler measuring one particle's diameter across all temperatures; only *spacing* and speed change. A histogram of particle speeds accompanies it. |
+| C1 | "Atoms/molecules themselves expand, melt, or change size when heated" | 6-8 | States of Matter | A fixed on-screen ruler measures one particle's diameter at every temperature — unchanged. Only spacing and speed change, with a speed histogram alongside. |
 | C2 | "Matter is destroyed when it dissolves or evaporates" | 5-7 | Dissolving & Solutions | Sealed-vessel balance: mass readout unchanged while the solid visibly disappears; particle view shows solute particles dispersing between solvent particles. |
-| C3 | "Mass changes in a chemical reaction" (e.g., burning loses mass, rusting gains it from nowhere) | 7-10 | Chemical Reactions Lab | Closed vs. open system toggle on a balance. Burn in open air: mass drops. Burn in a sealed flask: mass constant — and the atom counter shows the gas atoms that escaped. |
+| C3 | "Mass changes in a chemical reaction" (e.g., burning loses mass, rusting gains it from nowhere) | 7-10 | Chemical Reactions Lab | Closed/open system toggle on a balance: burning in open air loses mass, burning sealed does not — and the atom counter shows exactly which atoms left. |
 | C4 | "There is air between the particles of a solid/liquid" | 6-8 | States of Matter | Zoom-in with an explicit "what's in the gap?" probe returning "nothing" and a vacuum indicator; contrast with a gas where labelled N₂/O₂ particles are drawn. |
 | C5 | "Gas has no mass / gases are weightless" | 5-8 | Gas Laws Lab | Evacuate a rigid flask on a balance; the reading falls. Re-admit gas; it returns. |
-| C6 | "Chemical equations are balanced by changing subscripts" | 9-10 | Equation Balancer | Subscript edits visibly transform the molecule into a *different substance* (H₂O → H₂O₂ renders as a new molecule with new properties card), while coefficient edits duplicate whole molecules. |
+| C6 | "Chemical equations are balanced by changing subscripts" | 9-10 | Equation Balancer | Editing a subscript visibly builds a *different substance* (H₂O → H₂O₂, with a new properties card); editing a coefficient duplicates whole molecules. |
 | C7 | "Bonds *release* energy when broken" | 10-12 | Thermochemistry Lab | Energy-vs-reaction-coordinate diagram the student drags a marker along; breaking always climbs, forming always descends; the net is the difference. |
 | C8 | "pH 7 is 'neutral' therefore all midpoints are safe / pH is linear" | 9-10 | Acids & Bases Lab | Log-scale particle counter: student adds acid drop by drop and watches H⁺ count ×10 per pH unit while the number line moves one tick. |
 | C9 | "Phase change is a chemical change" | 5-8 | States of Matter | Molecular formula label persists (H₂O) across all three phases; a "chemical identity" panel stays green while the phase panel changes. |
@@ -313,10 +313,10 @@ Grounded in the natural-selection misconception literature ([Gregory, *Evolution
 
 | # | Misconception | Gr | Sim | Intervention |
 |---|---|---|---|---|
-| B1 | "Individuals evolve / organisms change in response to need" (Lamarckian) | 8-10 | Natural Selection Lab | Individual-tracking mode: the student can follow one labelled rabbit for its whole life and see its fur colour never change, while the *population* histogram shifts across generations. |
+| B1 | "Individuals evolve / organisms change in response to need" (Lamarckian) | 8-10 | Natural Selection Lab | Individual-tracking mode: one labelled rabbit followed for its whole life never changes colour, while the *population* histogram shifts across generations. |
 | B2 | "Evolution is goal-directed toward better/more complex" (teleological) | 9-12 | Natural Selection Lab | Environment-flip experiment: student reverses the selection pressure mid-run and watches the population reverse direction. Randomised mutation feed is visible. |
 | B3 | "Mutations are always harmful" | 9-10 | Genetics / Mutation Lab | Mutation ledger with fitness outcomes: neutral (majority), harmful, beneficial — categorised over 500 events the student generates. |
-| B4 | "Plants get their food/mass from the soil" | 5-9 | Photosynthesis Lab | Mass-balance experiment: seal a plant, weigh soil separately before/after; soil mass is essentially unchanged while plant mass rises. Labelled ¹⁴CO₂ tracer at 9-12 shows carbon entering from air. |
+| B4 | "Plants get their food/mass from the soil" | 5-9 | Photosynthesis Lab | Seal a plant and weigh the soil separately before and after: soil mass barely moves while plant mass rises. A labelled ¹⁴CO₂ tracer at 9-12 shows carbon arriving from the air. |
 | B5 | "Plants respire only at night / plants don't respire" | 7-10 | Photosynthesis Lab | Simultaneous dual meters (O₂ produced, CO₂ consumed *and* produced) across a light/dark cycle; respiration line never touches zero. |
 | B6 | "Photosynthesis is how plants breathe" | 6-8 | Photosynthesis Lab | Side-by-side reaction cards with the atom counters; the student must construct each equation from parts. |
 | B7 | "Traits are blended in offspring" | 9-10 | Punnett / Genetics Lab | F1 uniformity then F2 3:1 reappearance of the "lost" trait across 200 auto-bred offspring the student counts. |
@@ -332,11 +332,11 @@ Grounded in the astronomy-misconception literature made famous by [*A Private Un
 
 | # | Misconception | Gr | Sim | Intervention |
 |---|---|---|---|---|
-| E1 | "Seasons are caused by Earth's distance from the Sun" | 6-8 | Seasons & Sunlight | Orbit view with a live distance readout *and* a hemisphere thermometer: the student sees Earth is nearest the Sun during northern winter. Then a light-beam spread tool shows the same beam covering more ground at high tilt. |
-| E2 | "Moon phases are caused by Earth's shadow" | 5-8 | Moon Phases Lab | Free-camera: the student flies to a top-down view and sees Earth's shadow pointing away from the Moon in every phase except an actual eclipse — which they can then deliberately produce. |
+| E1 | "Seasons are caused by Earth's distance from the Sun" | 6-8 | Seasons & Sunlight | Orbit view with a live Sun-distance readout *and* a hemisphere thermometer: Earth is nearest the Sun in northern winter. A beam-spread tool then shows the same light covering more ground at high tilt. |
+| E2 | "Moon phases are caused by Earth's shadow" | 5-8 | Moon Phases Lab | Free-camera flight to a top-down view: Earth's shadow points away from the Moon in every phase except a real eclipse, which the student then deliberately produces. |
 | E3 | "The Moon doesn't rotate" | 6-8 | Moon Phases Lab | A flag on the Moon's far side with a rotation counter through one orbit. |
 | E4 | "The Sun is directly overhead at noon everywhere" | 3-5 | Sun Path / Shadows | Latitude slider with a live shadow-length readout at solar noon. |
-| E5 | "Earth's interior is hollow / uniformly molten" | 6-8 | Earth's Interior / Seismic Waves | S-waves visibly stop at the outer core in the student's own seismograph array, P-waves refract — the shadow zone appears in their data. |
+| E5 | "Earth's interior is hollow / uniformly molten" | 6-8 | Earth's Interior / Seismic Waves | In the student's own seismograph array, S-waves stop at the outer core and P-waves refract — the shadow zone appears in their data. |
 | E6 | "Continents float on liquid magma" | 7-8 | Plate Tectonics | Rheology view: rigid lithosphere over *solid but ductile* asthenosphere with a strain-rate control; student pushes fast (brittle) and slow (flowing) on the same material. |
 | E7 | "Weather and climate are the same; a cold winter disproves warming" | 6-9 | Climate Modeling | Dual-panel: daily weather noise vs. 30-year running mean, with a shuffle button that regenerates weather while the trend line holds. |
 | E8 | "The greenhouse effect is a hole in the ozone layer" | 8-10 | Greenhouse Effect | Photon-level view: IR photons absorbed and re-emitted by CO₂ molecules the student adds; a separate UV/ozone layer panel shows it is a different mechanism and wavelength. |
@@ -348,9 +348,9 @@ Whole-number bias, the operator view of `=`, and the "multiplication makes bigge
 
 | # | Misconception | Gr | Sim | Intervention |
 |---|---|---|---|---|
-| M1 | "A bigger denominator means a bigger fraction" (whole-number bias) | 3-5 | Fraction Number Line | Same-length bar partitioned live as the denominator slider moves; each piece visibly shrinks while the count grows, with the fraction's point on a shared number line. |
+| M1 | "A bigger denominator means a bigger fraction" (whole-number bias) | 3-5 | Fraction Number Line | A fixed-length bar repartitions live as the denominator slider moves: pieces shrink while the count grows, with the value plotted on a shared number line. |
 | M2 | "Multiplication always makes bigger; division always makes smaller" | 5-7 | Fraction Operations / Area Model | Area model where ×½ visibly halves the rectangle; a scale-factor slider crossing 1.0 flips the direction, and the student must predict before crossing. |
-| M3 | "`=` means 'here comes the answer'" (operator view) | 3-8 | Balance Equations | Physical pan balance: the student must keep it level; `8 + 4 = □ + 5` is unsolvable by "compute the left" and only solvable by balancing. |
+| M3 | "`=` means 'here comes the answer'" (operator view) | 3-8 | Balance Equations | A pan balance the student must keep level: `8 + 4 = □ + 5` cannot be solved by "compute the left", only by balancing. |
 | M4 | "You can't have a number less than zero" / negative operations by rote | 6-7 | Integer Number Line | Directed-vector walk on a number line: subtracting a negative is modelled as reversing a reversal, animated. |
 | M5 | "Slope is 'how steep it looks'" (scale-blind) | 8-9 | Function Grapher | Axis-scale sliders: the student watches the *same* line look steep or shallow while the computed slope readout stays fixed. |
 | M6 | "Longer decimals are bigger (0.125 > 0.5)" | 4-6 | Decimal Number Line | Place-value zoom on a shared number line; both numbers plotted, then zoom in ×10 repeatedly. |
@@ -359,7 +359,7 @@ Whole-number bias, the operator view of `=`, and the "multiplication makes bigge
 | M9 | "Probability has memory — a coin is 'due'" | 7-10 | Probability Lab | 10,000-trial runner with a running-proportion chart converging to 0.5 while streaks of 8 remain visible in the raw log. |
 | M10 | "A function must be a formula / a straight line" | 8-10 | Function Machine | Student builds functions as tables, graphs, machines, and rules, and the sim shows the four views as one object. |
 
-**Coverage:** 43 catalogued misconceptions across five domains. This catalog is the *seed*; the content pipeline (§8) requires every new sim to add its own entries and every entry to be traceable to at least one assessment item.
+**Coverage:** 59 catalogued misconceptions across five domains (physics 15, chemistry 11, biology 13, earth & space 10, mathematics 10). This catalog is the *seed*; the content pipeline (§8) requires every new sim to add its own entries and every entry to be traceable to at least one assessment item.
 
 ---
 
@@ -879,33 +879,14 @@ These are also our **construct-validity check**: telemetry-derived inquiry quali
 
 ## 11. Sources
 
-**Simulation design & implicit scaffolding**
-- [PhET Interactive Simulations — Research](https://phet.colorado.edu/en/research)
-- [Podolefsky, Moore & Perkins, *Implicit scaffolding in interactive simulations: Design strategies to support multiple educational goals*](https://arxiv.org/pdf/1306.6544)
-- [*Guiding without feeling guided: Implicit scaffolding through interactive simulation design*, AIP Conf. Proc. 1513](https://pubs.aip.org/aip/acp/article/1513/1/302/877085/Guiding-without-feeling-guided-Implicit)
-- [Moore, Herzog & Perkins, *Interactive simulations as implicit support for guided-inquiry*, Chem. Educ. Res. Pract.](https://pubs.rsc.org/rp/article/14/3/257/416444/Interactive-simulations-as-implicit-support-for)
+All sources are linked inline at the point of use. Consolidated:
 
-**Cognitive load, worked examples, retrieval, productive failure**
-- [Sweller, van Merriënboer & Paas, *Cognitive Architecture and Instructional Design: 20 Years Later*](https://link.springer.com/article/10.1007/s10648-019-09465-5)
-- [Ayres & Sweller, *The Split-Attention Principle in Multimedia Learning*](https://www.davidlewisphd.com/courses/EDD8121/readings/2006-AyersSweller.pdf)
-- [Sweller, *The Redundancy Principle in Multimedia Learning*](https://www.cambridge.org/core/books/abs/cambridge-handbook-of-multimedia-learning/redundancy-principle-in-multimedia-learning/448A5532008EB4B4BA17DBEB5A421920)
-- [Renkl & Atkinson, *The Guidance Fading Effect*](https://link.springer.com/chapter/10.1007/978-1-4419-8126-4_13) · [The expertise reversal effect](https://my.chartered.college/impact_article/expertise-reversal-effect-and-its-instructional-implications/)
-- [Sinha & Kapur, *When Problem Solving Followed by Instruction Works: Evidence for Productive Failure*, Review of Educational Research](https://journals.sagepub.com/doi/10.3102/00346543211019105) · [Kapur & Roll, *Productive Failure*](https://boldscience.org/wp-content/uploads/2025/04/Productive-Failure.pdf)
-- [Roediger & Karpicke, *The Power of Testing Memory*](http://psychnet.wustl.edu/memory/wp-content/uploads/2018/04/Roediger-Karpicke-2006_PPS.pdf) · [Karpicke, *Retrieval-Based Learning: A Decade of Progress*](https://files.eric.ed.gov/fulltext/ED599273.pdf)
+**Simulation design & implicit scaffolding** — [PhET Research](https://phet.colorado.edu/en/research) · [Podolefsky, Moore & Perkins (2013)](https://arxiv.org/pdf/1306.6544) · [*Guiding without feeling guided*, AIP 1513](https://pubs.aip.org/aip/acp/article/1513/1/302/877085/Guiding-without-feeling-guided-Implicit) · [Moore et al., *Chem. Educ. Res. Pract.* 14(3)](https://pubs.rsc.org/rp/article/14/3/257/416444/Interactive-simulations-as-implicit-support-for)
 
-**Instructional models & standards**
-- [Bybee, *The BSCS 5E Instructional Model*](https://pimser.org/wp-content/uploads/2022/01/BSCS_5E_Instructional_Model_Bybee-article.pdf) · [BSCS 5E executive summary](https://www.bates.edu/research/files/2018/07/BSCS_5E_Executive_Summary.pdf)
-- [STEM Teaching Tools — Leading instructional models that fit with NGSS](https://stemteachingtools.org/sp/limfn)
+**Cognitive load, worked examples, retrieval, productive failure** — [Sweller et al. (2019)](https://link.springer.com/article/10.1007/s10648-019-09465-5) · [Ayres & Sweller, split attention](https://www.davidlewisphd.com/courses/EDD8121/readings/2006-AyersSweller.pdf) · [redundancy principle](https://www.cambridge.org/core/books/abs/cambridge-handbook-of-multimedia-learning/redundancy-principle-in-multimedia-learning/448A5532008EB4B4BA17DBEB5A421920) · [Renkl & Atkinson, guidance fading](https://link.springer.com/chapter/10.1007/978-1-4419-8126-4_13) · [expertise reversal](https://my.chartered.college/impact_article/expertise-reversal-effect-and-its-instructional-implications/) · [Sinha & Kapur, *RER* (2021)](https://journals.sagepub.com/doi/10.3102/00346543211019105) · [Kapur & Roll](https://boldscience.org/wp-content/uploads/2025/04/Productive-Failure.pdf) · [Roediger & Karpicke (2006)](http://psychnet.wustl.edu/memory/wp-content/uploads/2018/04/Roediger-Karpicke-2006_PPS.pdf) · [Karpicke, decade of progress](https://files.eric.ed.gov/fulltext/ED599273.pdf)
 
-**Misconceptions & assessment**
-- [AAAS Project 2061 — Assessment research](http://www.project2061.org/research/assessment.htm) · [misconception record example](http://assessment.aaas.org/misconceptions/1/SCM060/100)
-- [PhysPort — Force Concept Inventory](https://www.physport.org/assessments/FCI) · [FCI overview](https://en.wikipedia.org/wiki/Force_Concept_Inventory)
-- [Diagnostic assessment of misconceptions about the particulate nature of matter, Chem. Educ. Res. Pract.](https://pubs.rsc.org/en/content/articlehtml/2015/rp/c5rp00096c) · [Sanger, *Misconceptions about the Particulate Nature of Matter*, J. Chem. Educ.](https://pubs.acs.org/doi/10.1021/ed083p954)
-- [Gregory, *Understanding Natural Selection: Essential Concepts and Common Misconceptions*](https://evolution-outreach.biomedcentral.com/articles/10.1007/s12052-009-0128-1) · [Influences of Teleological and Lamarckian Thinking on Student Understanding of Natural Selection](https://files.eric.ed.gov/fulltext/EJ849534.pdf) · [*Nothing in Evolution Makes Sense Except in the Light of DNA*, CBE-LSE](https://www.lifescied.org/doi/10.1187/cbe.09-12-0088)
-- [*A Private Universe* — online resources](https://scienceinschool.org/article/2010/privateuniverse/) · [Common Misconceptions in Astronomy (CSUN)](https://www.csun.edu/science/geoscience/astronomy/misconceptions/index.html)
-- [Common fractions misconceptions and how to address them](https://mathsnoproblem.com/blog/teaching-tips/how-to-address-4-common-fractions-misconceptions)
+**Instructional models** — [Bybee, BSCS 5E](https://pimser.org/wp-content/uploads/2022/01/BSCS_5E_Instructional_Model_Bybee-article.pdf) · [BSCS 5E executive summary](https://www.bates.edu/research/files/2018/07/BSCS_5E_Executive_Summary.pdf) · [STEM Teaching Tools: models that fit NGSS](https://stemteachingtools.org/sp/limfn)
 
-**Reading level, inclusion & accessibility**
-- [Lexile measures and grade levels (MetaMetrics)](https://lexile.com/wp-content/uploads/2017/08/T1.4.FAQ_LM-and-Grade-Levels.pdf) · [Hiebert, *The Common Core State Standards and text complexity*](https://www.casciac.org/pdfs/HiebertBookChapteronTextComplexity.pdf)
-- [CAST — Universal Design for Learning Guidelines](https://udlguidelines.cast.org/)
-- [PhET Accessibility Research](https://phet.colorado.edu/en/accessibility/research) · [Perkins & Moore, *Accessible PhET Simulations*](https://www.per-central.org/perc/2017/posters/2017_07_PhET_Accessibility_Perkins_Moore1.pdf) · [Smith, Moore & Lewis, *Exploring the Relationship Between Implicit Scaffolding and Inclusive Design*](https://link.springer.com/chapter/10.1007/978-3-319-40238-3_12)
+**Misconceptions & assessment** — [AAAS Project 2061 assessment](http://www.project2061.org/research/assessment.htm) · [misconception record example](http://assessment.aaas.org/misconceptions/1/SCM060/100) · [PhysPort FCI](https://www.physport.org/assessments/FCI) · [FCI overview](https://en.wikipedia.org/wiki/Force_Concept_Inventory) · [particulate-matter diagnostic, *CERP*](https://pubs.rsc.org/en/content/articlehtml/2015/rp/c5rp00096c) · [Sanger, *J. Chem. Educ.*](https://pubs.acs.org/doi/10.1021/ed083p954) · [Gregory, natural selection](https://evolution-outreach.biomedcentral.com/articles/10.1007/s12052-009-0128-1) · [teleological & Lamarckian thinking](https://files.eric.ed.gov/fulltext/EJ849534.pdf) · [*CBE-LSE*](https://www.lifescied.org/doi/10.1187/cbe.09-12-0088) · [*A Private Universe*](https://scienceinschool.org/article/2010/privateuniverse/) · [CSUN astronomy misconceptions](https://www.csun.edu/science/geoscience/astronomy/misconceptions/index.html) · [fractions misconceptions](https://mathsnoproblem.com/blog/teaching-tips/how-to-address-4-common-fractions-misconceptions)
+
+**Reading level, inclusion & accessibility** — [Lexile grade levels](https://lexile.com/wp-content/uploads/2017/08/T1.4.FAQ_LM-and-Grade-Levels.pdf) · [Hiebert on CCSS text complexity](https://www.casciac.org/pdfs/HiebertBookChapteronTextComplexity.pdf) · [CAST UDL Guidelines](https://udlguidelines.cast.org/) · [PhET Accessibility Research](https://phet.colorado.edu/en/accessibility/research) · [Perkins & Moore](https://www.per-central.org/perc/2017/posters/2017_07_PhET_Accessibility_Perkins_Moore1.pdf) · [Smith, Moore & Lewis](https://link.springer.com/chapter/10.1007/978-3-319-40238-3_12)
