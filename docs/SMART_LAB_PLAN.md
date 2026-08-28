@@ -4,6 +4,17 @@
 
 **Status:** Proposal for review · **Version:** 1.0 · **Date:** 2026-08-28
 
+### The document set
+
+| Document | What it covers |
+|---|---|
+| **SMART_LAB_PLAN.md** *(this file)* | The master plan — vision, market, product, features, UX direction, architecture, roadmap, risks |
+| **[SIMULATION_CATALOG.md](./SIMULATION_CATALOG.md)** | Grade 1-12 curriculum matrix and all ~164 simulations with grade reach, modes, tiers |
+| **[TECHNICAL_SPEC.md](./TECHNICAL_SPEC.md)** | Implementable engineering spec — engine API, manifest schema, Guided Lab DSL, services, analytics, testing, security |
+| **[PEDAGOGY_AND_CONTENT.md](./PEDAGOGY_AND_CONTENT.md)** | Learning design, grade-band adaptation rules, misconception catalog, assessment, AI tutor pedagogy, content pipeline |
+| **[DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)** | LabKit — tokens, semantic science palette, components, layouts, accessibility, sound, microcopy |
+| **[ADVANCED_FEATURES.md](./ADVANCED_FEATURES.md)** | The "extraordinary tier" beyond MVP — multi-sim workbench, sensors, AI-driven sims, live class mode, sonification, AR |
+
 ---
 
 ## Table of Contents
