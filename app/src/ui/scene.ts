@@ -1138,3 +1138,175 @@ export function gridPaper(
   }
   ctx.restore();
 }
+
+/* ------------------------------------------------------------------ *
+ * Labelling
+ * ------------------------------------------------------------------ */
+
+/** The plate a {@link labelLeader} drew, so callers can stack labels without collisions. */
+export interface LabelPlate { x: number; y: number; w: number; h: number }
+
+/**
+ * A leader line from a point on a diagram out to a text plate: a dot on the
+ * part, a diagonal run, a short horizontal elbow, then the words.
+ *
+ * This is the primitive that makes an anatomical or structural diagram look
+ * like it came from a textbook rather than a whiteboard. Text laid directly on
+ * a part fights the artwork and collides with its neighbours; a leader lets the
+ * labels live in the calm margin while still pointing at exactly one pixel.
+ *
+ * The returned rectangle is the plate that was drawn — keep the ones you have
+ * placed and nudge `toY` until a new plate clears them, and a dense diagram
+ * labels itself without overlap.
+ */
+export function labelLeader(
+  ctx: CanvasRenderingContext2D,
+  fromX: number, fromY: number,
+  toX: number, toY: number,
+  text: string,
+  theme: ThemeColors,
+  opts: {
+    color?: string; size?: number; sub?: string;
+    plate?: boolean; dot?: boolean; tail?: number;
+    align?: "auto" | "left" | "right"; alpha?: number;
+  } = {},
+): LabelPlate {
+  const dark = isDarkTheme(theme);
+  const color = opts.color ?? theme.accent;
+  const size = opts.size ?? 12;
+  const tail = opts.tail ?? 14;
+  const alpha = opts.alpha ?? 1;
+  // Which way the plate opens: away from the thing it points at, unless told.
+  const side = opts.align === "left" ? -1 : opts.align === "right" ? 1 : toX >= fromX ? 1 : -1;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const titleFont = `600 ${size}px "Bricolage Grotesque", system-ui, sans-serif`;
+  const subFont = `500 ${Math.max(9, size - 2)}px "Bricolage Grotesque", system-ui, sans-serif`;
+  ctx.font = titleFont;
+  const tw = ctx.measureText(text).width;
+  let sw = 0;
+  if (opts.sub) {
+    ctx.font = subFont;
+    sw = ctx.measureText(opts.sub).width;
+  }
+  const padX = 9, padY = 6;
+  const pw = Math.max(tw, sw) + padX * 2 + 3;
+  const ph = (opts.sub ? size + Math.max(9, size - 2) + 4 : size + 2) + padY * 2;
+  const px = side === 1 ? toX : toX - pw;
+  const py = toY - ph / 2;
+  const kneeX = toX - side * tail;
+
+  // Halo first, then the line: keeps the leader readable over a busy scene.
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  for (const pass of [0, 1]) {
+    ctx.strokeStyle = pass === 0
+      ? (dark ? "rgba(8,12,18,0.7)" : "rgba(255,255,255,0.8)")
+      : hexA(color, 0.8);
+    ctx.lineWidth = pass === 0 ? 3.2 : 1.2;
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(kneeX, toY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+  }
+
+  if (opts.dot !== false) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(fromX, fromY, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = dark ? "rgba(8,12,18,0.8)" : "rgba(255,255,255,0.9)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  if (opts.plate !== false) {
+    softShadow(ctx, () => {
+      ctx.fillStyle = dark ? "rgba(16,22,30,0.88)" : "rgba(255,255,255,0.92)";
+      path(ctx, px, py, pw, ph, 6);
+      ctx.fill();
+    }, { blur: 8, dy: 2, alpha: dark ? 0.4 : 0.16 });
+    ctx.strokeStyle = hexA(color, 0.35);
+    ctx.lineWidth = 1;
+    path(ctx, px + 0.5, py + 0.5, pw - 1, ph - 1, 5.5);
+    ctx.stroke();
+    // An accent spine on the edge facing the part, tying plate to leader.
+    ctx.save();
+    path(ctx, px, py, pw, ph, 6);
+    ctx.clip();
+    ctx.fillStyle = color;
+    ctx.fillRect(side === 1 ? px : px + pw - 2.5, py, 2.5, ph);
+    ctx.restore();
+  }
+
+  const tx = side === 1 ? px + padX + 3 : px + padX;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = theme.ink;
+  ctx.font = titleFont;
+  ctx.fillText(text, tx, opts.sub ? py + padY + size * 0.5 : py + ph / 2);
+  if (opts.sub) {
+    ctx.font = subFont;
+    ctx.fillStyle = theme.inkSoft;
+    ctx.fillText(opts.sub, tx, py + ph - padY - Math.max(9, size - 2) * 0.5);
+  }
+  ctx.restore();
+  return { x: px, y: py, w: pw, h: ph };
+}
+
+/* ------------------------------------------------------------------ *
+ * Motion
+ *
+ * Linear motion is the tell of a simulation that was wired up rather than
+ * animated. Real things start slowly, overshoot, settle. These are the three
+ * curves that cover almost every transition in the platform.
+ * ------------------------------------------------------------------ */
+
+/** Clamp to 0–1. The guard in front of every easing curve. */
+export function clamp01(t: number): number {
+  return t < 0 ? 0 : t > 1 ? 1 : t;
+}
+
+/** Linear blend from `a` to `b`. Pair with an easing curve, not used bare. */
+export function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+/**
+ * Ease in and out of a 0→1 transition.
+ *
+ * The default for anything that moves between two states — a panel sliding, a
+ * value counting up, a camera nudging across. Accelerating out of rest and
+ * braking into the target is what makes motion look intentional.
+ */
+export function easeInOut(t: number): number {
+  const x = clamp01(t);
+  return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+}
+
+/**
+ * A 0→1→0 sine breath at `hz` cycles per second, from a time in seconds.
+ *
+ * For anything alive or waiting: a beating heart, a blinking indicator, the
+ * halo on a control the student has not touched yet, the shimmer on a hot
+ * body. Multiply it into an alpha or a radius rather than a position.
+ */
+export function pulse(time: number, hz = 1): number {
+  return (Math.sin(time * hz * Math.PI * 2) + 1) / 2;
+}
+
+/**
+ * A damped spring settling on 1, overshooting slightly on the way.
+ *
+ * Use it when something *arrives*: a reading snapping to a new value, a needle
+ * landing, an object dropping into place. The small overshoot is the whole
+ * point — it is what tells the eye the thing has mass.
+ */
+export function spring(t: number): number {
+  const x = clamp01(t);
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  return 1 - Math.exp(-7.5 * x) * Math.cos(9 * x);
+}
