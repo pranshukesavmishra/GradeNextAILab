@@ -1,3 +1,5 @@
+import { Icon } from "./Icon";
+import type { IconName } from "./Icon";
 import { useId, useMemo } from "react";
 import type { GradeBand, ParamSpec, ParamValues, Readout } from "@engine/types";
 import { BAND_SIG_FIGS } from "@engine/types";
@@ -128,7 +130,7 @@ export function Toggle({ label, checked, onChange, help, disabled }: {
 export function Segmented<T extends string>({ label, value, options, onChange, compact }: {
   label?: string;
   value: T;
-  options: { value: T; label: string; icon?: string }[];
+  options: { value: T; label: string; icon?: IconName }[];
   onChange: (v: T) => void;
   compact?: boolean;
 }) {
@@ -143,7 +145,7 @@ export function Segmented<T extends string>({ label, value, options, onChange, c
           onClick={() => onChange(o.value)}
           title={o.label}
         >
-          {o.icon && <span className="seg-icon" aria-hidden="true">{o.icon}</span>}
+          {o.icon && <Icon name={o.icon} size={16} className="seg-icon" />}
           <span className={compact && o.icon ? "visually-hidden" : ""}>{o.label}</span>
         </button>
       ))}

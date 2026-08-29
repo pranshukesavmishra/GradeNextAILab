@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { GradeBand } from "@engine/types";
+import { Icon } from "@ui/Icon";
 import { SUBJECT_LABEL } from "@engine/types";
 import { getSim } from "@sims/registry";
 import {
@@ -40,7 +41,7 @@ export function Library({ onOpen, onBack, initialGrade }: LibraryProps) {
     <div className="library">
       <header className="lib-head">
         <button type="button" className="btn btn-ghost lib-back" onClick={onBack}>
-          ← All simulations
+          <Icon name="arrow-left" size={16} /> All simulations
         </button>
         <div className="lib-title">
           <p className="lib-eyebrow">California Integrated Science</p>
@@ -109,7 +110,7 @@ function UnitBlock(
           </span>
         </span>
         <span className="lib-unit-cov">{Math.round((100 * cov.covered) / cov.total)}%</span>
-        <span className="lib-chev" aria-hidden="true">›</span>
+        <Icon name="chevron-right" size={18} className="lib-chev" />
       </button>
 
       {open && (
@@ -176,8 +177,12 @@ function TopicRow(
               >
                 <span className="lib-simbtn-title">{sim.title}</span>
                 <span className="lib-simbtn-modes">
-                  {sim.labs?.length ? `🧪 ${sim.labs.length}` : ""}
-                  {sim.challenges?.length ? ` 🎯 ${sim.challenges.length}` : ""}
+                  {sim.labs?.length ? (
+                    <><Icon name="lab" size={13} />{sim.labs.length}</>
+                  ) : null}
+                  {sim.challenges?.length ? (
+                    <><Icon name="challenge" size={13} />{sim.challenges.length}</>
+                  ) : null}
                 </span>
               </button>
             );

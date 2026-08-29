@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { AnySim, GradeBand, Subject } from "@engine/types";
+import { Icon } from "@ui/Icon";
 import { SUBJECT_LABEL } from "@engine/types";
 import { SIMS, bandForGrade, filterSims } from "@sims/registry";
 import { CURRICULA, countTopics } from "../curriculum";
@@ -69,10 +70,10 @@ export function Catalog({ onOpen, onOpenNotebook, onOpenLibrary }: CatalogProps)
 
           <div className="cat-actions">
             <button type="button" className="btn btn-quiet" onClick={() => onOpenLibrary()}>
-              📚 Course Library
+              <Icon name="library" size={16} /> Course Library
             </button>
             <button type="button" className="btn btn-quiet" onClick={onOpenNotebook}>
-              📓 My Lab Notebook
+              <Icon name="notebook" size={16} /> My Lab Notebook
             </button>
           </div>
         </div>
@@ -148,9 +149,9 @@ export function Catalog({ onOpen, onOpenNotebook, onOpenLibrary }: CatalogProps)
                         Grades {Math.min(...sim.grades)}–{Math.max(...sim.grades)}
                       </span>
                       <span className="sim-modes" aria-label="Available modes">
-                        <span title="Explore">🧭</span>
-                        {sim.labs?.length ? <span title={`${sim.labs.length} guided labs`}>🧪</span> : null}
-                        {sim.challenges?.length ? <span title={`${sim.challenges.length} challenges`}>🎯</span> : null}
+                        <span title="Explore"><Icon name="explore" size={15} /></span>
+                        {sim.labs?.length ? <span title={`${sim.labs.length} guided labs`}><Icon name="lab" size={15} /></span> : null}
+                        {sim.challenges?.length ? <span title={`${sim.challenges.length} challenges`}><Icon name="challenge" size={15} /></span> : null}
                       </span>
                     </div>
                     {sim.standards.ngss?.length ? (

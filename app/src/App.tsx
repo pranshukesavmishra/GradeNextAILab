@@ -5,6 +5,7 @@ import { Catalog } from "./pages/Catalog";
 import { SimPlayer } from "./pages/SimPlayer";
 import { Notebook } from "./pages/Notebook";
 import { Library } from "./pages/Library";
+import { Icon } from "@ui/Icon";
 import { applyThemeMode, effectiveTheme, loadThemeMode, type ThemeMode } from "@ui/theme";
 
 type View =
@@ -88,7 +89,7 @@ export default function App() {
         aria-label={`Theme: ${themeMode}. Click to change.`}
         title={`Theme: ${themeMode}`}
       >
-        {themeMode === "system" ? "◐" : themeMode === "light" ? "☀" : "☾"}
+        <Icon name={themeMode === "system" ? "theme-system" : themeMode === "light" ? "theme-light" : "theme-dark"} size={17} />
       </button>
 
       {view.name === "catalog" && (

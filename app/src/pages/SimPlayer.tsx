@@ -4,6 +4,7 @@ import { BAND_LABEL, GRADE_BANDS, defaultParams, paramsForBand } from "@engine/t
 import type { AnySim, GradeBand, LabValues, ParamValues, SimMode } from "@engine/types";
 import { Stage } from "@ui/Stage";
 import { Graph } from "@ui/Graph";
+import { Icon } from "@ui/Icon";
 import { ParamControl, Presets, Readouts, Segmented, TimeControls } from "@ui/controls";
 import { LabPanel, useLab } from "@ui/LabRunner";
 import { BAND_SIG_FIGS } from "@engine/types";
@@ -200,9 +201,9 @@ export function SimPlayer({ manifest, band, onBand, themeKey, shareQuery, onExit
           value={mode}
           compact
           options={[
-            { value: "explore" as SimMode, label: "Explore", icon: "🧭" },
-            ...(availableLabs.length ? [{ value: "lab" as SimMode, label: "Guided Lab", icon: "🧪" }] : []),
-            ...(availableChallenges.length ? [{ value: "challenge" as SimMode, label: "Challenge", icon: "🎯" }] : []),
+            { value: "explore" as SimMode, label: "Explore", icon: "explore" as const },
+            ...(availableLabs.length ? [{ value: "lab" as SimMode, label: "Guided Lab", icon: "lab" as const }] : []),
+            ...(availableChallenges.length ? [{ value: "challenge" as SimMode, label: "Challenge", icon: "challenge" as const }] : []),
           ]}
           onChange={(m) => {
             setMode(m);
@@ -320,7 +321,7 @@ export function SimPlayer({ manifest, band, onBand, themeKey, shareQuery, onExit
             onClick={() => setDockOpen((v) => !v)}
             aria-expanded={dockOpen}
           >
-            {dockOpen ? "›" : "‹"}
+            <Icon name={dockOpen ? "chevron-right" : "chevron-left"} size={16} />
           </button>
 
           <div className="dock-inner">

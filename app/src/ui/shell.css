@@ -687,3 +687,18 @@
   .lib-subs { grid-template-columns: 1fr; }
   .lib-std { margin-left: 0; }
 }
+
+/* ------------------------------------------------------------------ *
+ * Icons — inline SVG, inherits colour and aligns to the text baseline
+ * ------------------------------------------------------------------ */
+svg { flex: none; }
+.btn svg, .lib-back svg, .cat-actions svg { vertical-align: -0.18em; }
+.btn, .lib-back { display: inline-flex; align-items: center; gap: 7px; }
+.seg-icon { display: block; }
+.tool-btn { display: inline-flex; align-items: center; gap: 7px; }
+.lib-chev { color: var(--muted); transition: transform .15s ease; }
+.lib-unit.is-open .lib-chev { transform: rotate(90deg); }
+.lib-simbtn-modes { display: inline-flex; align-items: center; gap: 4px; }
+.lib-simbtn-modes svg { vertical-align: -0.15em; }
+.card-modes { display: inline-flex; align-items: center; gap: 6px; }
+.card-modes svg { display: block; }
