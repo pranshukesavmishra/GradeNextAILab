@@ -1,59 +1,135 @@
 import type { AnySim, GradeBand, Subject } from "@engine/types";
 import { circuitsSim } from "./physics/circuits";
+import { collisionsSim } from "./physics/collisions";
+import { electricForceSim } from "./physics/electric-force";
+import { emSpectrumSim } from "./physics/em-spectrum";
 import { energySkateSim } from "./physics/energy-skate";
+import { fieldsSim } from "./physics/fields";
 import { forcesSim } from "./physics/forces";
+import { gravitySim } from "./physics/gravity";
+import { heatTransferSim } from "./physics/heat-transfer";
+import { kineticEnergySim } from "./physics/kinetic-energy";
+import { magnetismSim } from "./physics/magnetism";
+import { motionGraphsSim } from "./physics/motion-graphs";
 import { opticsSim } from "./physics/optics";
 import { pendulumSim } from "./physics/pendulum";
 import { projectileSim } from "./physics/projectile";
+import { soundSim } from "./physics/sound";
 import { wavesSim } from "./physics/waves";
+import { buildAtomSim } from "./chemistry/build-atom";
+import { conservationSim } from "./chemistry/conservation";
+import { gasLawsSim } from "./chemistry/gas-laws";
+import { heatingCurveSim } from "./chemistry/heating-curve";
+import { moleculesSim } from "./chemistry/molecules";
+import { periodicTableSim } from "./chemistry/periodic-table";
+import { phLabSim } from "./chemistry/ph-lab";
+import { reactionsSim } from "./chemistry/reactions";
+import { statesOfMatterSim } from "./chemistry/states-of-matter";
+import { artificialSelectionSim } from "./biology/artificial-selection";
+import { bodySystemsSim } from "./biology/body-systems";
+import { carbonCycleSim } from "./biology/carbon-cycle";
+import { cellSim } from "./biology/cell";
+import { ecosystemSim } from "./biology/ecosystem";
+import { foodWebSim } from "./biology/food-web";
+import { fossilRecordSim } from "./biology/fossil-record";
+import { hereditySim } from "./biology/heredity";
+import { homologySim } from "./biology/homology";
+import { humanImpactSim } from "./biology/human-impact";
+import { mutationsSim } from "./biology/mutations";
+import { naturalSelectionSim } from "./biology/natural-selection";
+import { neuronSim } from "./biology/neuron";
+import { photosynthesisSim } from "./biology/photosynthesis";
+import { pollinationSim } from "./biology/pollination";
+import { symbiosisSim } from "./biology/symbiosis";
+import { atmosphereSim } from "./earth/atmosphere";
+import { circulationSim } from "./earth/circulation";
+import { erosionSim } from "./earth/erosion";
+import { frontsSim } from "./earth/fronts";
+import { moonPhasesSim } from "./earth/moon-phases";
+import { plateTectonicsSim } from "./earth/plate-tectonics";
+import { radiometricSim } from "./earth/radiometric";
+import { rockCycleSim } from "./earth/rock-cycle";
+import { seasonsSim } from "./earth/seasons";
+import { spheresSim } from "./earth/spheres";
+import { strataSim } from "./earth/strata";
+import { unequalHeatingSim } from "./earth/unequal-heating";
+import { waterCycleSim } from "./earth/water-cycle";
+import { weatherSim } from "./earth/weather";
+import { derivativesSim } from "./math/derivatives";
 import { fractionsSim } from "./math/fractions";
 import { functionGrapherSim } from "./math/function-grapher";
 import { probabilitySim } from "./math/probability";
 import { unitCircleSim } from "./math/unit-circle";
-import { derivativesSim } from "./math/derivatives";
-import { statesOfMatterSim } from "./chemistry/states-of-matter";
-import { phLabSim } from "./chemistry/ph-lab";
-import { reactionsSim } from "./chemistry/reactions";
-import { buildAtomSim } from "./chemistry/build-atom";
-import { gasLawsSim } from "./chemistry/gas-laws";
-import { ecosystemSim } from "./biology/ecosystem";
-import { naturalSelectionSim } from "./biology/natural-selection";
-import { photosynthesisSim } from "./biology/photosynthesis";
-import { moonPhasesSim } from "./earth/moon-phases";
-import { seasonsSim } from "./earth/seasons";
-import { plateTectonicsSim } from "./earth/plate-tectonics";
 
 /**
  * The simulation registry.
  *
  * Every sim is a self-contained manifest. Adding one to this array is the only
- * wiring required: the catalog, search, standards filtering, labs, and
- * challenges all read from the manifest.
+ * wiring required: the catalog, the course library, search, standards
+ * filtering, labs, and challenges all read from the manifest.
  */
 export const SIMS: AnySim[] = [
-  projectileSim,
-  forcesSim,
-  pendulumSim,
-  energySkateSim,
   circuitsSim,
-  wavesSim,
+  collisionsSim,
+  electricForceSim,
+  emSpectrumSim,
+  energySkateSim,
+  fieldsSim,
+  forcesSim,
+  gravitySim,
+  heatTransferSim,
+  kineticEnergySim,
+  magnetismSim,
+  motionGraphsSim,
   opticsSim,
+  pendulumSim,
+  projectileSim,
+  soundSim,
+  wavesSim,
+  buildAtomSim,
+  conservationSim,
+  gasLawsSim,
+  heatingCurveSim,
+  moleculesSim,
+  periodicTableSim,
+  phLabSim,
+  reactionsSim,
+  statesOfMatterSim,
+  artificialSelectionSim,
+  bodySystemsSim,
+  carbonCycleSim,
+  cellSim,
+  ecosystemSim,
+  foodWebSim,
+  fossilRecordSim,
+  hereditySim,
+  homologySim,
+  humanImpactSim,
+  mutationsSim,
+  naturalSelectionSim,
+  neuronSim,
+  photosynthesisSim,
+  pollinationSim,
+  symbiosisSim,
+  atmosphereSim,
+  circulationSim,
+  erosionSim,
+  frontsSim,
+  moonPhasesSim,
+  plateTectonicsSim,
+  radiometricSim,
+  rockCycleSim,
+  seasonsSim,
+  spheresSim,
+  strataSim,
+  unequalHeatingSim,
+  waterCycleSim,
+  weatherSim,
+  derivativesSim,
   fractionsSim,
   functionGrapherSim,
   probabilitySim,
   unitCircleSim,
-  derivativesSim,
-  statesOfMatterSim,
-  phLabSim,
-  reactionsSim,
-  buildAtomSim,
-  gasLawsSim,
-  ecosystemSim,
-  naturalSelectionSim,
-  photosynthesisSim,
-  moonPhasesSim,
-  seasonsSim,
-  plateTectonicsSim,
 ];
 
 export function getSim(id: string): AnySim | undefined {
