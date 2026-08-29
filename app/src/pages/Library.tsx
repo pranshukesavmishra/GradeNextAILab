@@ -10,7 +10,6 @@ import {
 
 interface LibraryProps {
   onOpen: (id: string, band: GradeBand) => void;
-  onBack: () => void;
   /** Grade to open on; falls back to the first curriculum. */
   initialGrade?: number;
 }
@@ -24,7 +23,7 @@ interface LibraryProps {
  * Units run in the order they are taught, topics in the order they are taught,
  * and each subtopic carries the simulations that teach it.
  */
-export function Library({ onOpen, onBack, initialGrade }: LibraryProps) {
+export function Library({ onOpen, initialGrade }: LibraryProps) {
   const [grade, setGrade] = useState<number>(initialGrade ?? CURRICULA[0].grade);
   const curriculum = CURRICULA.find((c) => c.grade === grade) ?? CURRICULA[0];
   const [openUnit, setOpenUnit] = useState<string>(curriculum.units[0].code);
@@ -39,11 +38,7 @@ export function Library({ onOpen, onBack, initialGrade }: LibraryProps) {
 
   return (
     <div className="library">
-      <header className="lib-head">
-        <button type="button" className="btn btn-ghost lib-back" onClick={onBack}>
-          <Icon name="arrow-left" size={16} /> All simulations
-        </button>
-        <div className="lib-title">
+      <header className="lib-head">        <div className="lib-title">
           <p className="lib-eyebrow">California Integrated Science</p>
           <h1>Course Library</h1>
           <p className="lib-sub">{curriculum.summary}</p>

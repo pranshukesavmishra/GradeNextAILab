@@ -383,3 +383,758 @@ export function lifted(
   draw();
   ctx.restore();
 }
+
+/* ------------------------------------------------------------------ *
+ * Gradients
+ *
+ * A flat fill is the single loudest signal that something was diagrammed
+ * rather than designed. Almost every surface in the real world has a
+ * gradient across it, because almost every surface is lit from somewhere.
+ * ------------------------------------------------------------------ */
+
+/** A gradient stop: a bare colour (spaced evenly), or one pinned to a position. */
+export type Stop = string | { at: number; color: string };
+
+/**
+ * Build a linear gradient across a box at any angle, in degrees measured
+ * clockwise from the +x axis: `0` runs left→right, `90` top→bottom, `135`
+ * down-and-right like a light source over your left shoulder.
+ *
+ * Use this when you need the gradient *object* — to stroke with it, to fill a
+ * non-rectangular path with it, to reuse it across several shapes. When you
+ * just want the box filled, call {@link gradientFill}.
+ */
+export function gradient(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  stops: readonly Stop[],
+  angle = 90,
+): CanvasGradient {
+  const rad = (angle * Math.PI) / 180;
+  const dx = Math.cos(rad), dy = Math.sin(rad);
+  const cx = x + w / 2, cy = y + h / 2;
+  // Project the box onto the gradient direction so the ramp always spans it.
+  const half = (Math.abs(dx) * w + Math.abs(dy) * h) / 2;
+  const g = ctx.createLinearGradient(cx - dx * half, cy - dy * half, cx + dx * half, cy + dy * half);
+  const n = stops.length;
+  if (n === 0) return g;
+  if (n === 1) {
+    const only = typeof stops[0] === "string" ? stops[0] : stops[0].color;
+    g.addColorStop(0, only);
+    g.addColorStop(1, only);
+    return g;
+  }
+  for (let i = 0; i < n; i++) {
+    const s = stops[i];
+    if (typeof s === "string") g.addColorStop(i / (n - 1), s);
+    else g.addColorStop(Math.max(0, Math.min(1, s.at)), s.color);
+  }
+  return g;
+}
+
+/**
+ * Fill a rectangle with a multi-stop gradient at any angle.
+ *
+ * The workhorse of a designed scene: sky bands, tabletops, panel backings,
+ * the wash behind a title. Reach for it instead of `fillRect` with a flat
+ * colour anywhere the area is larger than an icon.
+ */
+export function gradientFill(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  stops: readonly Stop[],
+  angle = 90,
+) {
+  if (w <= 0 || h <= 0 || stops.length === 0) return;
+  ctx.save();
+  ctx.fillStyle = gradient(ctx, x, y, w, h, stops, angle);
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+}
+
+/* ------------------------------------------------------------------ *
+ * Materials
+ * ------------------------------------------------------------------ */
+
+/**
+ * A frosted translucent panel with a lit edge and a top sheen — glass.
+ *
+ * This is what a beaker, a test tube wall, a tank, a bell jar or a HUD card
+ * is made of. Draw the *contents* first and the glass over them: the panel is
+ * translucent, so whatever is behind shows through slightly milkier, which is
+ * exactly the cue that says "there is a surface between you and that".
+ */
+export function glass(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  r: number,
+  theme: ThemeColors,
+  opts: { tint?: string; alpha?: number; sheen?: boolean; edge?: string } = {},
+) {
+  if (w <= 0 || h <= 0) return;
+  const dark = isDarkTheme(theme);
+  const tint = opts.tint ?? (dark ? "#9ec8e8" : "#ffffff");
+  const a = opts.alpha ?? (dark ? 0.14 : 0.4);
+  const edge = opts.edge ?? (dark ? "#cfe6f7" : "#ffffff");
+  ctx.save();
+  path(ctx, x, y, w, h, r);
+  ctx.fillStyle = gradient(ctx, x, y, w, h, [
+    { at: 0, color: hexA(tint, a * 1.5) },
+    { at: 0.42, color: hexA(tint, a * 0.45) },
+    { at: 1, color: hexA(tint, a * 0.95) },
+  ], 90);
+  ctx.fill();
+
+  if (opts.sheen !== false) {
+    // A narrow vertical highlight down the left shoulder: the giveaway that a
+    // surface is curved and specular rather than a printed rectangle.
+    ctx.save();
+    ctx.clip();
+    const sw = Math.max(2, w * 0.1);
+    ctx.fillStyle = gradient(ctx, x + w * 0.08, y, sw, h, [
+      hexA(edge, 0.34), hexA(edge, 0.06), hexA(edge, 0),
+    ], 0);
+    ctx.fillRect(x + w * 0.08, y, sw, h);
+    ctx.fillStyle = gradient(ctx, x, y, w, h * 0.34, [hexA(edge, 0.22), hexA(edge, 0)], 90);
+    ctx.fillRect(x, y, w, h * 0.34);
+    ctx.restore();
+  }
+
+  // Two edges: a bright one where the light lands, a dim one everywhere else.
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = hexA(edge, dark ? 0.45 : 0.85);
+  path(ctx, x + 0.5, y + 0.5, w - 1, h - 1, Math.max(0, r - 0.5));
+  ctx.stroke();
+  ctx.strokeStyle = dark ? "rgba(0,0,0,0.35)" : "rgba(30,50,70,0.22)";
+  path(ctx, x, y, w, h, r);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * Brushed metal: a stack of specular bands rather than one smooth ramp.
+ *
+ * Metal is not "grey with a gradient" — it is bright, dark, bright again in
+ * quick succession, because it mirrors a room. Use it for apparatus: stands,
+ * rails, clamps, casings, weights, anything that should feel machined and
+ * heavy next to a plastic or painted part.
+ */
+export function metal(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  color: string,
+  opts: { radius?: number; angle?: number; polish?: number } = {},
+) {
+  if (w <= 0 || h <= 0) return;
+  const r = opts.radius ?? 3;
+  const angle = opts.angle ?? 90;
+  const p = Math.max(0, Math.min(1, opts.polish ?? 1));
+  ctx.save();
+  path(ctx, x, y, w, h, r);
+  ctx.fillStyle = gradient(ctx, x, y, w, h, [
+    { at: 0, color: mixHex(color, "#ffffff", 0.55 * p) },
+    { at: 0.14, color: mixHex(color, "#ffffff", 0.2 * p) },
+    { at: 0.34, color: color },
+    { at: 0.52, color: mixHex(color, "#000000", 0.3 * p) },
+    { at: 0.68, color: mixHex(color, "#ffffff", 0.34 * p) },
+    { at: 0.86, color: mixHex(color, "#000000", 0.2 * p) },
+    { at: 1, color: mixHex(color, "#ffffff", 0.12 * p) },
+  ], angle);
+  ctx.fill();
+  ctx.strokeStyle = mixHex(color, "#000000", 0.5);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * Moulded plastic: one soft body ramp plus a glossy cap on the upper half.
+ *
+ * The counterpart to {@link metal}. Use it for cases, knobs, toy-like parts,
+ * coloured blocks, syringe bodies — anything that should read as light,
+ * manufactured and friendly rather than machined.
+ */
+export function plastic(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  color: string,
+  opts: { radius?: number; gloss?: number; matte?: boolean } = {},
+) {
+  if (w <= 0 || h <= 0) return;
+  const r = opts.radius ?? Math.min(w, h) * 0.22;
+  const gloss = Math.max(0, Math.min(1, opts.gloss ?? (opts.matte ? 0.18 : 0.6)));
+  ctx.save();
+  path(ctx, x, y, w, h, r);
+  ctx.fillStyle = gradient(ctx, x, y, w, h, [
+    { at: 0, color: mixHex(color, "#ffffff", 0.26) },
+    { at: 0.45, color: color },
+    { at: 0.82, color: mixHex(color, "#000000", 0.24) },
+    { at: 1, color: mixHex(color, "#000000", 0.1) },
+  ], 90);
+  ctx.fill();
+
+  ctx.save();
+  ctx.clip();
+  const gh = h * 0.46;
+  ctx.fillStyle = gradient(ctx, x, y, w, gh, [hexA("#ffffff", 0.55 * gloss), hexA("#ffffff", 0)], 90);
+  path(ctx, x + w * 0.06, y + h * 0.05, w * 0.88, gh, r);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = mixHex(color, "#000000", 0.42);
+  path(ctx, x, y, w, h, r);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ------------------------------------------------------------------ *
+ * Light and depth
+ * ------------------------------------------------------------------ */
+
+/** Anything that builds a path on the context. Passed to the edge-light helpers. */
+export type ScenePath = (ctx: CanvasRenderingContext2D) => void;
+
+/**
+ * Draw something with a soft drop shadow underneath it, then clean up.
+ *
+ * The options-object sibling of {@link lifted}, and the one to reach for in
+ * new code: it takes a colour, so a shadow on a dark scene can be a deeper
+ * blue-black rather than a grey smudge. One shadow separates a card from its
+ * backdrop; three shadows at three depths make a scene.
+ */
+export function softShadow(
+  ctx: CanvasRenderingContext2D,
+  drawFn: () => void,
+  opts: { blur?: number; dy?: number; dx?: number; alpha?: number; color?: string } = {},
+) {
+  const a = opts.alpha ?? 0.25;
+  ctx.save();
+  ctx.shadowColor = opts.color ? hexA(opts.color, a) : `rgba(0,0,0,${a})`;
+  ctx.shadowBlur = opts.blur ?? 12;
+  ctx.shadowOffsetX = opts.dx ?? 0;
+  ctx.shadowOffsetY = opts.dy ?? 4;
+  drawFn();
+  ctx.restore();
+}
+
+/**
+ * Glow inward from the inside of a shape's edge.
+ *
+ * Use it to make a container feel like it has depth — the lit interior of a
+ * tube, the hot inner wall of a reaction vessel, the accent that says a panel
+ * is selected. Costs a handful of clipped strokes, no per-pixel work.
+ */
+export function innerGlow(
+  ctx: CanvasRenderingContext2D,
+  shape: ScenePath,
+  color: string,
+  opts: { inset?: number; alpha?: number; steps?: number } = {},
+) {
+  const inset = Math.max(1, opts.inset ?? 10);
+  const alpha = opts.alpha ?? 0.4;
+  const steps = Math.max(1, Math.min(6, Math.round(opts.steps ?? 3)));
+  ctx.save();
+  shape(ctx);
+  ctx.clip();
+  ctx.lineJoin = "round";
+  // Each pass is wider and faint; clipped, they stack up densest at the edge.
+  const per = 1 - Math.pow(1 - alpha, 1 / steps);
+  for (let i = 0; i < steps; i++) {
+    ctx.lineWidth = (inset * 2 * (i + 1)) / steps;
+    ctx.strokeStyle = hexA(color, per);
+    shape(ctx);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * A bright line along the edge of a shape, brightest where the light hits.
+ *
+ * Rim light is the cheapest trick in the kit for making an object *sit* in a
+ * scene instead of floating on top of it: it ties the object's silhouette to
+ * the scene's light direction. Pass `bounds` to get a real falloff around the
+ * shape; without it the rim is an even hairline.
+ */
+export function rimLight(
+  ctx: CanvasRenderingContext2D,
+  shape: ScenePath,
+  color: string,
+  opts: {
+    width?: number; alpha?: number; angle?: number;
+    bounds?: { x: number; y: number; w: number; h: number };
+  } = {},
+) {
+  const a = opts.alpha ?? 0.85;
+  ctx.save();
+  ctx.lineWidth = opts.width ?? 1.5;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  const b = opts.bounds;
+  ctx.strokeStyle = b
+    ? gradient(ctx, b.x, b.y, b.w, b.h, [
+        { at: 0, color: hexA(color, a) },
+        { at: 0.5, color: hexA(color, a * 0.3) },
+        { at: 1, color: hexA(color, 0) },
+      ], opts.angle ?? 115)
+    : hexA(color, a);
+  shape(ctx);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * A soft elliptical blob of shade under a sprite.
+ *
+ * Use it where {@link contactShadow}'s height-driven falloff is more than you
+ * need: a stationary object, a label plate, a cell on a slide. Nothing looks
+ * more pasted-on than an object with no shadow at all.
+ */
+export function spriteShadowEllipse(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, rx: number, ry: number,
+  opts: { alpha?: number; color?: string } = {},
+) {
+  if (rx <= 0 || ry <= 0) return;
+  const alpha = opts.alpha ?? 0.28;
+  const c = opts.color ?? "#000000";
+  const g = ctx.createRadialGradient(x, y, 0, x, y, rx);
+  g.addColorStop(0, hexA(c, alpha));
+  g.addColorStop(0.6, hexA(c, alpha * 0.45));
+  g.addColorStop(1, hexA(c, 0));
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * A rounded rectangle with a machined bevel: lit along the top-left inner
+ * edge, shaded along the bottom-right.
+ *
+ * Use it for anything with a physical face — instrument housings, buttons,
+ * tiles, the frame of a readout. Two hairlines are all it takes to turn a
+ * flat rectangle into a raised (or, with `depth` negative, recessed) surface.
+ */
+export function bevelRect(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number,
+  color: string,
+  opts: { depth?: number; fill?: boolean } = {},
+) {
+  if (w <= 0 || h <= 0) return;
+  const depth = opts.depth ?? 1;
+  const up = depth >= 0;
+  const d = Math.min(3, Math.abs(depth) * 1.5) || 1;
+  ctx.save();
+  if (opts.fill !== false) {
+    path(ctx, x, y, w, h, r);
+    ctx.fillStyle = gradient(ctx, x, y, w, h, [
+      mixHex(color, up ? "#ffffff" : "#000000", 0.12),
+      color,
+      mixHex(color, up ? "#000000" : "#ffffff", 0.14),
+    ], 90);
+    ctx.fill();
+  }
+  ctx.lineWidth = d;
+  // Top-left highlight, drawn inside the shape so corners stay crisp.
+  ctx.save();
+  path(ctx, x, y, w, h, r);
+  ctx.clip();
+  ctx.strokeStyle = hexA(up ? "#ffffff" : "#000000", 0.42);
+  ctx.beginPath();
+  ctx.moveTo(x + d / 2, y + h - r);
+  ctx.lineTo(x + d / 2, y + r);
+  ctx.arcTo(x + d / 2, y + d / 2, x + r, y + d / 2, r);
+  ctx.lineTo(x + w - r, y + d / 2);
+  ctx.stroke();
+  ctx.strokeStyle = hexA(up ? "#000000" : "#ffffff", 0.3);
+  ctx.beginPath();
+  ctx.moveTo(x + w - d / 2, y + r);
+  ctx.lineTo(x + w - d / 2, y + h - r);
+  ctx.arcTo(x + w - d / 2, y + h - d / 2, x + w - r, y + h - d / 2, r);
+  ctx.lineTo(x + r, y + h - d / 2);
+  ctx.stroke();
+  ctx.restore();
+  ctx.restore();
+}
+
+/**
+ * Diagonal hatching inside a rectangle.
+ *
+ * The standard drawing convention for "this is cut through", "this region is
+ * excluded" or "this band is out of range" — and far better than a flat wash,
+ * because hatching lets the thing underneath stay readable.
+ */
+export function hatchFill(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  color: string,
+  opts: { gap?: number; angle?: number; width?: number; alpha?: number } = {},
+) {
+  if (w <= 0 || h <= 0) return;
+  const gap = Math.max(2, opts.gap ?? 7);
+  const span = Math.abs(w) + Math.abs(h);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.translate(x + w / 2, y + h / 2);
+  ctx.rotate(((opts.angle ?? 45) * Math.PI) / 180);
+  ctx.strokeStyle = hexA(color, opts.alpha ?? 0.35);
+  ctx.lineWidth = opts.width ?? 1;
+  ctx.beginPath();
+  for (let i = -span / 2; i <= span / 2; i += gap) {
+    ctx.moveTo(i, -span / 2);
+    ctx.lineTo(i, span / 2);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * A sparse deterministic speckle over a region — grain, dust, film noise.
+ *
+ * Perfectly clean fills read as vector art; a whisper of grain reads as a
+ * photograph of something. Deliberately drawn as a few hundred dots rather
+ * than a per-pixel loop, so it costs nothing on a school Chromebook, and
+ * seeded so it never crawls between frames.
+ */
+export function noiseWash(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  opts: { alpha?: number; seed?: number; count?: number; color?: string; size?: number } = {},
+) {
+  if (w <= 0 || h <= 0) return;
+  const count = Math.max(0, Math.min(600, Math.round(opts.count ?? (w * h) / 900)));
+  if (count === 0) return;
+  let s = (opts.seed ?? 7) >>> 0 || 1;
+  const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const size = opts.size ?? 1.2;
+  ctx.save();
+  ctx.globalAlpha = opts.alpha ?? 0.05;
+  ctx.fillStyle = opts.color ?? "#ffffff";
+  ctx.beginPath();
+  for (let i = 0; i < count; i++) {
+    const px = x + rnd() * w, py = y + rnd() * h;
+    const r = size * (0.5 + rnd());
+    ctx.moveTo(px + r, py);
+    ctx.arc(px, py, r, 0, Math.PI * 2);
+  }
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ------------------------------------------------------------------ *
+ * Fields, flows and instruments
+ * ------------------------------------------------------------------ */
+
+/** One particle. `r` and `a` override the field defaults for that dot alone. */
+export interface Particle {
+  x: number;
+  y: number;
+  /** Radius in px. Falls back to `opts.size`. */
+  r?: number;
+  /** Opacity 0–1. Falls back to `opts.alpha`. */
+  a?: number;
+}
+
+/**
+ * A cloud of particles drawn in a handful of batched passes.
+ *
+ * Gas molecules, dust, pollen, plankton, sparks, ions, rain. Points are
+ * bucketed by opacity so the whole field costs a few `fill()` calls instead of
+ * one per particle, which is the difference between 3000 molecules at 60fps
+ * and a slideshow. Nothing is allocated per frame — pass the same array you
+ * mutate in your step function.
+ */
+export function particleField(
+  ctx: CanvasRenderingContext2D,
+  pts: readonly Particle[],
+  color: string,
+  opts: { size?: number; alpha?: number; buckets?: number; glow?: number } = {},
+) {
+  const n = pts.length;
+  if (n === 0) return;
+  const size = opts.size ?? 1.6;
+  const base = opts.alpha ?? 0.8;
+  const buckets = Math.max(1, Math.min(6, Math.round(opts.buckets ?? 4)));
+  ctx.save();
+  ctx.fillStyle = color;
+  if (opts.glow) {
+    ctx.shadowColor = hexA(color, 0.85);
+    ctx.shadowBlur = opts.glow;
+  }
+  for (let b = 0; b < buckets; b++) {
+    const lo = b / buckets, hi = (b + 1) / buckets;
+    ctx.globalAlpha = base * (buckets === 1 ? 1 : (lo + hi) / 2);
+    ctx.beginPath();
+    let any = false;
+    for (let i = 0; i < n; i++) {
+      const p = pts[i];
+      const pa = p.a ?? 1;
+      // Uniform fields land wholly in the top bucket, so this stays one pass.
+      if (buckets > 1 && !(pa > lo && (pa <= hi || (b === buckets - 1 && pa > hi)))) continue;
+      const r = p.r ?? size;
+      if (r <= 0) continue;
+      ctx.moveTo(p.x + r, p.y);
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      any = true;
+    }
+    if (any) ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
+ * A smooth tapered ribbon along a polyline, shaded from one colour to another.
+ *
+ * The right shape for anything that *flows*: blood through a vessel, energy
+ * down a chain, current along a wire, a jet stream, a signal down an axon. A
+ * plain stroked line says "here is a path"; a ribbon that swells in the middle
+ * and thins at both ends says "something is moving through here".
+ */
+export function ribbon(
+  ctx: CanvasRenderingContext2D,
+  points: readonly { x: number; y: number }[],
+  width: number,
+  colorA: string,
+  colorB: string,
+  opts: { taper?: number; alpha?: number; core?: boolean } = {},
+) {
+  const n = points.length;
+  if (n < 2 || width <= 0) return;
+  const taper = Math.max(0, Math.min(1, opts.taper ?? 1));
+  const half = width / 2;
+
+  const halfAt = (i: number) => {
+    const t = i / (n - 1);
+    const edge = Math.min(1, Math.min(t, 1 - t) * 5);
+    return half * (1 - taper + taper * edge);
+  };
+  // Normal of the segment either side of a vertex — a cheap stand-in for the
+  // true miter, and visually identical at these widths.
+  const nx = (i: number) => {
+    const a = points[Math.max(0, i - 1)], b = points[Math.min(n - 1, i + 1)];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return -dy / len;
+  };
+  const ny = (i: number) => {
+    const a = points[Math.max(0, i - 1)], b = points[Math.min(n - 1, i + 1)];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return dx / len;
+  };
+
+  ctx.save();
+  ctx.globalAlpha = opts.alpha ?? 1;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const hw = halfAt(i);
+    const px = points[i].x + nx(i) * hw, py = points[i].y + ny(i) * hw;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  for (let i = n - 1; i >= 0; i--) {
+    const hw = halfAt(i);
+    ctx.lineTo(points[i].x - nx(i) * hw, points[i].y - ny(i) * hw);
+  }
+  ctx.closePath();
+  const g = ctx.createLinearGradient(points[0].x, points[0].y, points[n - 1].x, points[n - 1].y);
+  g.addColorStop(0, colorA);
+  g.addColorStop(1, colorB);
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  if (opts.core) {
+    // A bright thread down the middle: reads as the fast core of the flow.
+    ctx.globalAlpha = (opts.alpha ?? 1) * 0.5;
+    ctx.strokeStyle = mixHex(colorA, "#ffffff", 0.5);
+    ctx.lineWidth = Math.max(0.7, width * 0.18);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < n; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Reused so the animated dash pattern never allocates inside a render loop. */
+const _dashPattern: [number, number] = [6, 8];
+const _noDash: number[] = [];
+
+/**
+ * Marching dashes along a path — direction of flow, made obvious.
+ *
+ * Advance `phase` a little every frame (positive moves along the point order)
+ * and the dashes crawl. This is how a student *sees* which way current, air,
+ * water, heat or a signal is travelling, without a single arrowhead cluttering
+ * the diagram. Pair it with {@link ribbon} — the ribbon is the vessel, the
+ * dashes are the contents moving inside it.
+ */
+export function dashFlow(
+  ctx: CanvasRenderingContext2D,
+  points: readonly { x: number; y: number }[],
+  color: string,
+  phase: number,
+  opts: { width?: number; dash?: number; gap?: number; alpha?: number; glow?: number } = {},
+) {
+  const n = points.length;
+  if (n < 2) return;
+  _dashPattern[0] = opts.dash ?? 6;
+  _dashPattern[1] = opts.gap ?? 8;
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < n; i++) ctx.lineTo(points[i].x, points[i].y);
+  ctx.setLineDash(_dashPattern);
+  ctx.lineDashOffset = -phase;
+  if (opts.glow) {
+    ctx.strokeStyle = hexA(color, (opts.alpha ?? 0.9) * 0.3);
+    ctx.lineWidth = (opts.width ?? 2.4) + opts.glow;
+    ctx.stroke();
+  }
+  ctx.strokeStyle = hexA(color, opts.alpha ?? 0.9);
+  ctx.lineWidth = opts.width ?? 2.4;
+  ctx.stroke();
+  ctx.setLineDash(_noDash);
+  ctx.restore();
+}
+
+/**
+ * A circular gauge: a track, a filled arc, a tick ring and a value in the eye.
+ *
+ * Use it for any bounded quantity a student is steering — charge left, pH,
+ * pressure, load, concentration, progress to completion. A gauge beats a bar
+ * when the value is *out of a maximum*, because the empty arc shows the
+ * headroom as plainly as the filled one shows the value.
+ */
+export function arcGauge(
+  ctx: CanvasRenderingContext2D,
+  cx: number, cy: number, r: number,
+  frac: number,
+  color: string,
+  theme: ThemeColors,
+  label?: string,
+  opts: { sub?: string; width?: number; start?: number; sweep?: number; ticks?: number } = {},
+) {
+  if (r <= 2) return;
+  const dark = isDarkTheme(theme);
+  const f = Math.max(0, Math.min(1, frac));
+  const lw = opts.width ?? Math.max(4, r * 0.18);
+  const start = ((opts.start ?? 135) * Math.PI) / 180;
+  const sweep = ((opts.sweep ?? 270) * Math.PI) / 180;
+  const rr = r - lw / 2;
+  ctx.save();
+  ctx.lineCap = "round";
+
+  ctx.strokeStyle = hexA(theme.grid, dark ? 0.5 : 0.7);
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rr, start, start + sweep);
+  ctx.stroke();
+
+  const ticks = opts.ticks ?? 0;
+  if (ticks > 1) {
+    ctx.strokeStyle = hexA(theme.inkSoft, 0.5);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < ticks; i++) {
+      const a = start + (sweep * i) / (ticks - 1);
+      const ca = Math.cos(a), sa = Math.sin(a);
+      ctx.moveTo(cx + ca * (r + 2), cy + sa * (r + 2));
+      ctx.lineTo(cx + ca * (r + 6), cy + sa * (r + 6));
+    }
+    ctx.stroke();
+  }
+
+  if (f > 0.001) {
+    ctx.save();
+    ctx.shadowColor = hexA(color, 0.5);
+    ctx.shadowBlur = lw * 0.9;
+    ctx.strokeStyle = gradient(ctx, cx - r, cy - r, r * 2, r * 2,
+      [mixHex(color, "#ffffff", 0.4), color, mixHex(color, "#000000", 0.12)], 120);
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rr, start, start + sweep * f);
+    ctx.stroke();
+    ctx.restore();
+    // A bright cap at the head of the arc, so the eye lands on the value.
+    const ea = start + sweep * f;
+    ctx.fillStyle = mixHex(color, "#ffffff", 0.55);
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(ea) * rr, cy + Math.sin(ea) * rr, lw * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (label) {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = theme.ink;
+    ctx.font = `700 ${Math.max(11, Math.round(r * 0.42))}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillText(label, cx, cy - (opts.sub ? r * 0.1 : 0));
+    if (opts.sub) {
+      ctx.fillStyle = theme.inkSoft;
+      ctx.font = `500 ${Math.max(9, Math.round(r * 0.2))}px "Bricolage Grotesque", system-ui, sans-serif`;
+      ctx.fillText(opts.sub, cx, cy + r * 0.28);
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * An engineering grid: quiet minor squares with a stronger line every few.
+ *
+ * The corrective for a hairline mesh at one uniform weight, which fights the
+ * content for attention and makes every scene look like graph paper from a
+ * maths exercise. Two weights give the eye a scale to measure against while
+ * staying firmly in the background. Draw it straight after the backdrop —
+ * `fade` washes the edges back into the surface colour, which only looks right
+ * with nothing else on the canvas yet.
+ */
+export function gridPaper(
+  ctx: CanvasRenderingContext2D,
+  w: number, h: number,
+  theme: ThemeColors,
+  opts: { step?: number; major?: number; alpha?: number; originX?: number; originY?: number; fade?: number } = {},
+) {
+  const step = Math.max(4, opts.step ?? 24);
+  const major = Math.max(1, Math.round(opts.major ?? 4));
+  const alpha = opts.alpha ?? (isDarkTheme(theme) ? 0.5 : 0.65);
+  const ox = opts.originX ?? 0, oy = opts.originY ?? 0;
+  ctx.save();
+  ctx.lineWidth = 1;
+
+  for (const pass of [0, 1]) {
+    ctx.strokeStyle = hexA(theme.grid, alpha * (pass === 0 ? 0.35 : 1));
+    ctx.beginPath();
+    let i = Math.floor((0 - ox) / step);
+    for (let x = ox + i * step; x <= w; x += step, i++) {
+      if ((Math.abs(i) % major === 0) !== (pass === 1)) continue;
+      ctx.moveTo(Math.round(x) + 0.5, 0);
+      ctx.lineTo(Math.round(x) + 0.5, h);
+    }
+    let j = Math.floor((0 - oy) / step);
+    for (let y = oy + j * step; y <= h; y += step, j++) {
+      if ((Math.abs(j) % major === 0) !== (pass === 1)) continue;
+      ctx.moveTo(0, Math.round(y) + 0.5);
+      ctx.lineTo(w, Math.round(y) + 0.5);
+    }
+    ctx.stroke();
+  }
+
+  if (opts.fade) {
+    const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2, w / 2, h / 2, Math.max(w, h) * 0.62);
+    g.addColorStop(0, hexA(theme.surface, 0));
+    g.addColorStop(1, hexA(theme.surface, Math.max(0, Math.min(1, opts.fade))));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  }
+  ctx.restore();
+}
