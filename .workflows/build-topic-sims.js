@@ -50,6 +50,11 @@ Subtopics you must cover: ${t.subtopics ? t.subtopics.map(s => s.code).join(', '
 **First, open \`src/curriculum/grade${t.grade}.ts\` and find Unit ${t.unit} topic ${t.topic}. Its \`subtopics\` array is the definitive list you must cover — read every title there before you design anything.**
 
 ## What to build
+**WRITE INCREMENTALLY.** Create the file with sim 1 complete and compiling, then
+add sim 2 and re-check, and so on. Never hold four finished sims in your head and
+write them all at the end — if you are interrupted, everything is lost. After each
+sim compiles, that is a safe checkpoint.
+
 Create **4 to 5 SEPARATE simulations**, each dedicated to this topic. Together they must cover EVERY subtopic above. Each sim covers one or two adjacent subtopics — do NOT build one giant sim.
 
 These must be genuinely DIFFERENT KINDS of interactive experience, not the same thing reskinned. Draw from: a manipulable model, a build-it/assemble-it sandbox, a measurement investigation with data collection, a process animation the student drives and can step through, a sorting/classification challenge, a trace-the-path explorer, a comparison rig running two conditions side by side, a design-and-test loop.
