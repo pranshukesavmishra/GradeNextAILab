@@ -729,9 +729,10 @@ export function bevelRect(
   const depth = opts.depth ?? 1;
   const up = depth >= 0;
   const d = Math.min(3, Math.abs(depth) * 1.5) || 1;
+  const rr = Math.min(r, w / 2, h / 2);
   ctx.save();
   if (opts.fill !== false) {
-    path(ctx, x, y, w, h, r);
+    path(ctx, x, y, w, h, rr);
     ctx.fillStyle = gradient(ctx, x, y, w, h, [
       mixHex(color, up ? "#ffffff" : "#000000", 0.12),
       color,
@@ -742,21 +743,21 @@ export function bevelRect(
   ctx.lineWidth = d;
   // Top-left highlight, drawn inside the shape so corners stay crisp.
   ctx.save();
-  path(ctx, x, y, w, h, r);
+  path(ctx, x, y, w, h, rr);
   ctx.clip();
   ctx.strokeStyle = hexA(up ? "#ffffff" : "#000000", 0.42);
   ctx.beginPath();
-  ctx.moveTo(x + d / 2, y + h - r);
-  ctx.lineTo(x + d / 2, y + r);
-  ctx.arcTo(x + d / 2, y + d / 2, x + r, y + d / 2, r);
-  ctx.lineTo(x + w - r, y + d / 2);
+  ctx.moveTo(x + d / 2, y + h - rr);
+  ctx.lineTo(x + d / 2, y + rr);
+  ctx.arcTo(x + d / 2, y + d / 2, x + rr, y + d / 2, rr);
+  ctx.lineTo(x + w - rr, y + d / 2);
   ctx.stroke();
   ctx.strokeStyle = hexA(up ? "#000000" : "#ffffff", 0.3);
   ctx.beginPath();
-  ctx.moveTo(x + w - d / 2, y + r);
-  ctx.lineTo(x + w - d / 2, y + h - r);
-  ctx.arcTo(x + w - d / 2, y + h - d / 2, x + w - r, y + h - d / 2, r);
-  ctx.lineTo(x + r, y + h - d / 2);
+  ctx.moveTo(x + w - d / 2, y + rr);
+  ctx.lineTo(x + w - d / 2, y + h - rr);
+  ctx.arcTo(x + w - d / 2, y + h - d / 2, x + w - rr, y + h - d / 2, rr);
+  ctx.lineTo(x + rr, y + h - d / 2);
   ctx.stroke();
   ctx.restore();
   ctx.restore();
