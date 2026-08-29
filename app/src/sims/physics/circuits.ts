@@ -1,6 +1,9 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import { q } from "@engine/units";
-import { camera, disc, label, roundRect } from "@ui/draw";
+import { camera, mixHex } from "@ui/draw";
+import {
+  badge, caption, glow, hexA, lifted, material, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * Circuit Builder — Grades 2-12.
@@ -310,37 +313,72 @@ function render(rc: RenderContext<State>) {
   const sol = solveCircuit(params);
   const topology = params.topology as string;
   const lay = layoutFor(sol, topology);
-  const cam = camera({ x0: 0, y0: 0, x1: W, y1: H, width, height, square: true });
+  // Cropped close to the components — just enough margin for glow and labels —
+  // so the circuit fills the bench instead of sitting in an empty page.
+  const MX = W * 0.04, MY = H * 0.017;
+  const cam = camera({ x0: MX, y0: MY, x1: W - MX, y1: H - MY, width, height, square: true });
   const s = cam.scale;
   const X = (x: number) => cam.toScreenX(x);
   const Y = (y: number) => cam.toScreenY(y);
 
-  // ---- Wires -------------------------------------------------------
+  // ---- The bench ----------------------------------------------------
+  sky(ctx, width, height, theme, "indoor");
+  const boardL = X(W * 0.05), boardR = X(W * 0.95);
+  const boardT = Y(H * 0.948), boardB = Y(H * 0.052);
+  lifted(ctx, 26, 9, () => {
+    material(ctx, boardL, boardT, boardR - boardL, boardB - boardT, theme.surfaceAlt, 12);
+  }, 0.3);
   ctx.save();
-  ctx.strokeStyle = theme.inkSoft;
-  ctx.lineWidth = Math.max(2, s * 0.5);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  for (const w of lay.wires) {
-    ctx.beginPath();
-    ctx.moveTo(X(w.pts[0].x), Y(w.pts[0].y));
-    for (let i = 1; i < w.pts.length; i++) ctx.lineTo(X(w.pts[i].x), Y(w.pts[i].y));
-    ctx.stroke();
-  }
+  ctx.strokeStyle = hexA(theme.ink, 0.1);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(boardL + 7, boardT + 7, boardR - boardL - 14, boardB - boardT - 14);
   ctx.restore();
+  for (const [cx, cy] of [
+    [boardL + 14, boardT + 14], [boardR - 14, boardT + 14],
+    [boardL + 14, boardB - 14], [boardR - 14, boardB - 14],
+  ] as [number, number][]) {
+    sphere(ctx, cx, cy, 4, theme.inkSoft);
+  }
+
+  // ---- Wires -------------------------------------------------------
+  // Three passes turn a hairline into a conductor: a dark casing, a lit core,
+  // and a thin specular spine along the top of the metal.
+  const wirePasses: [number, string][] = [
+    [Math.max(4, s * 0.92), hexA(theme.ink, 0.3)],
+    [Math.max(2.5, s * 0.6), theme.inkSoft],
+    [Math.max(1, s * 0.16), hexA(theme.surface, 0.5)],
+  ];
+  for (const [lw, color] of wirePasses) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (const w of lay.wires) {
+      ctx.beginPath();
+      ctx.moveTo(X(w.pts[0].x), Y(w.pts[0].y));
+      for (let i = 1; i < w.pts.length; i++) ctx.lineTo(X(w.pts[i].x), Y(w.pts[i].y));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   // ---- Charge flow --------------------------------------------------
-  // Dots are spaced evenly and move at a speed proportional to the current in
-  // the wire they are on, so a parallel branch visibly runs at half rate.
+  // Carriers are spaced evenly and move at a speed proportional to the current
+  // in the wire they are on, so a parallel branch visibly runs at half rate.
+  // Each one carries its own light, and the whole stream brightens with I.
   if (overlays.charges && sol.closed && sol.current > 1e-4) {
-    const dotR = Math.max(2, s * 0.32);
+    const dotR = Math.max(2.2, s * 0.34);
+    const heat = Math.max(0, Math.min(1, sol.current / 3));
     for (const w of lay.wires) {
       if (w.frac <= 1e-6) continue;
       const L = polylineLength(w.pts);
       const offset = ((state.charge * w.frac * UNITS_PER_COULOMB) % DOT_SPACING + DOT_SPACING) % DOT_SPACING;
       for (let d = offset; d < L; d += DOT_SPACING) {
         const p = pointAt(w.pts, d);
-        disc(ctx, X(p.x), Y(p.y), dotR, theme.sci["current"]);
+        const cx = X(p.x), cy = Y(p.y);
+        glow(ctx, cx, cy, dotR * (2.4 + heat * 2.6), theme.sci["current"], 0.16 + heat * 0.24);
+        sphere(ctx, cx, cy, dotR, theme.sci["current"], { rim: false });
       }
     }
   }
@@ -348,24 +386,35 @@ function render(rc: RenderContext<State>) {
   // ---- Battery ------------------------------------------------------
   {
     const bx = X(lay.battery.x);
+    const topY = Y(BAT_TOP), botY = Y(BAT_BOTTOM);
+    // A cell with a case and a terminal, not two plates floating on a wire.
+    material(ctx, bx - s * 5.6, topY - s * 1.4, s * 11.2, botY - topY + s * 2.8,
+      theme.surfaceAlt, s * 1.2);
+    material(ctx, bx - s * 1.7, topY - s * 3.2, s * 3.4, s * 2, theme.sci["charge-pos"], s * 0.5);
     ctx.save();
     ctx.lineCap = "butt";
     // Long plate = positive terminal; short plate = negative. Standard symbol.
     ctx.strokeStyle = theme.sci["charge-pos"];
     ctx.lineWidth = Math.max(3, s * 0.5);
     ctx.beginPath();
-    ctx.moveTo(bx - s * 5, Y(BAT_TOP));
-    ctx.lineTo(bx + s * 5, Y(BAT_TOP));
+    ctx.moveTo(bx - s * 5, topY);
+    ctx.lineTo(bx + s * 5, topY);
     ctx.stroke();
     ctx.strokeStyle = theme.sci["charge-neg"];
     ctx.beginPath();
-    ctx.moveTo(bx - s * 2.6, Y(BAT_BOTTOM));
-    ctx.lineTo(bx + s * 2.6, Y(BAT_BOTTOM));
+    ctx.moveTo(bx - s * 2.6, botY);
+    ctx.lineTo(bx + s * 2.6, botY);
     ctx.stroke();
     ctx.restore();
     if (band !== "K-2") {
-      label(ctx, `${sol.emf.toFixed(1)} V`, bx - s * 7, Y((BAT_TOP + BAT_BOTTOM) / 2), theme, {
-        align: "right", color: theme.sci["charge-pos"],
+      caption(ctx, bx + s * 6.4, topY + s * 1.4, "+", theme, {
+        color: theme.sci["charge-pos"], size: Math.max(12, s * 1.9), weight: 800,
+      });
+      caption(ctx, bx + s * 6.4, botY - s * 1.4, "−", theme, {
+        color: theme.sci["charge-neg"], size: Math.max(12, s * 1.9), weight: 800,
+      });
+      badge(ctx, bx, botY + s * 4.6, `${sol.emf.toFixed(1)} V`, theme, {
+        align: "center", color: theme.sci["charge-pos"],
       });
     }
   }
@@ -375,25 +424,36 @@ function render(rc: RenderContext<State>) {
     const sx = X(lay.switchAt.x);
     const sy = Y(lay.switchAt.y);
     const armLen = s * 7;
+    // A mounting block hides the wire under the gap, so an open switch really
+    // does break the circuit rather than merely covering it up.
+    material(ctx, sx - armLen * 0.9, sy - s * 1.7, armLen * 1.8, s * 3.4,
+      theme.surfaceAlt, s * 0.6);
+    const x0 = sx - armLen * 0.6, y0 = sy;
+    const x1 = sol.closed ? sx + armLen * 0.6 : sx + armLen * 0.3;
+    const y1 = sol.closed ? sy : sy - armLen * 0.7;
     ctx.save();
-    // Erase the wire under the gap so an open switch really looks open.
-    ctx.strokeStyle = theme.surface;
-    ctx.lineWidth = Math.max(3, s * 0.8);
-    ctx.beginPath();
-    ctx.moveTo(sx - armLen * 0.6, sy);
-    ctx.lineTo(sx + armLen * 0.6, sy);
-    ctx.stroke();
-    ctx.strokeStyle = theme.ink;
-    ctx.lineWidth = Math.max(2, s * 0.4);
     ctx.lineCap = "round";
+    ctx.strokeStyle = hexA(theme.ink, 0.35);
+    ctx.lineWidth = Math.max(3.5, s * 0.62);
     ctx.beginPath();
-    ctx.moveTo(sx - armLen * 0.6, sy);
-    if (sol.closed) ctx.lineTo(sx + armLen * 0.6, sy);
-    else ctx.lineTo(sx + armLen * 0.3, sy - armLen * 0.7);
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.strokeStyle = theme.inkSoft;
+    ctx.lineWidth = Math.max(2, s * 0.4);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.strokeStyle = hexA(theme.surface, 0.6);
+    ctx.lineWidth = Math.max(0.8, s * 0.12);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
     ctx.stroke();
     ctx.restore();
-    disc(ctx, sx - armLen * 0.6, sy, Math.max(2, s * 0.35), theme.ink);
-    disc(ctx, sx + armLen * 0.6, sy, Math.max(2, s * 0.35), theme.ink);
+    sphere(ctx, x0, y0, Math.max(2.5, s * 0.42), theme.ink);
+    sphere(ctx, sx + armLen * 0.6, sy, Math.max(2.5, s * 0.42), theme.ink);
   }
 
   // ---- Extra resistor ------------------------------------------------
@@ -401,45 +461,76 @@ function render(rc: RenderContext<State>) {
     const rx = X(lay.resistorAt.x);
     const ry = Y(lay.resistorAt.y);
     const vertical = topology !== "parallel";
-    const w = s * 4, h = s * 9;
+    const bw = s * 4.6, bh = s * 10;
     ctx.save();
-    ctx.fillStyle = theme.surface;
-    ctx.strokeStyle = theme.sci["field"];
-    ctx.lineWidth = 2;
-    if (vertical) roundRect(ctx, rx - w / 2, ry - h / 2, w, h, 3);
-    else roundRect(ctx, rx - h / 2, ry - w / 2, h, w, 3);
-    ctx.fill();
-    ctx.stroke();
+    ctx.translate(rx, ry);
+    if (!vertical) ctx.rotate(Math.PI / 2);
+    material(ctx, -bw / 2, -bh / 2, bw, bh, theme.sci["decomposer"], s * 0.9);
+    // Colour bands, the way a real resistor announces its value.
+    const bands = [theme.sci["field"], theme.sci["charge-pos"], theme.sci["charge-neg"]];
+    for (let i = 0; i < bands.length; i++) {
+      material(ctx, -bw / 2, -bh * 0.3 + i * bh * 0.22, bw, bh * 0.1, bands[i], 0);
+    }
     ctx.restore();
     if (band === "9-12") {
-      label(ctx, `${sol.extraR.toFixed(1)} Ω`, rx + (vertical ? -s * 5 : 0), ry + (vertical ? 0 : -s * 5), theme, {
+      badge(ctx, rx + (vertical ? -s * 5.5 : 0), ry + (vertical ? 0 : -s * 6), `${sol.extraR.toFixed(1)} Ω`, theme, {
         align: vertical ? "right" : "center", color: theme.sci["field"],
       });
     }
   }
 
   // ---- Bulbs ---------------------------------------------------------
-  const glowColor = theme.sci["light"];
+  const lightColor = theme.sci["light"];
   for (let i = 0; i < lay.bulbs.length; i++) {
     const b = lay.bulbs[i];
     const bx = X(b.x), by = Y(b.y);
-    const g = Math.max(0, Math.min(2, state.glow[i] ?? 0));
-    const r = s * 3.4;
+    const gv = Math.max(0, Math.min(2, state.glow[i] ?? 0));
+    const gn = Math.min(1, gv);
+    const r = s * 3.6;
 
-    // Halo: concentric translucent discs. Cheap, and reads as light.
-    if (g > 0.02) {
-      for (let k = 5; k >= 1; k--) {
-        disc(ctx, bx, by, r * (1 + k * 0.55), glowColor, { alpha: Math.min(0.5, g * 0.09) });
-      }
+    // Screw base, drawn first so the envelope seats into it.
+    material(ctx, bx - r * 0.5, by + r * 0.52, r, r * 0.9, theme.inkSoft, r * 0.16);
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.ink, 0.3);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let k = 1; k <= 3; k++) {
+      const ty = by + r * 0.52 + (r * 0.9 * k) / 4;
+      ctx.moveTo(bx - r * 0.5, ty);
+      ctx.lineTo(bx + r * 0.5, ty);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // The light it actually throws: both the radius and the strength ride the
+    // current, so a dim bulb and a bright one are different at a glance.
+    if (gv > 0.02) {
+      glow(ctx, bx, by, r * (1.8 + 3 * gn), lightColor, Math.min(0.7, 0.1 + 0.55 * gn));
     }
 
-    // Envelope
-    disc(ctx, bx, by, r, theme.surface, { stroke: theme.inkSoft, lineWidth: 2 });
-    if (g > 0.02) disc(ctx, bx, by, r * 0.92, glowColor, { alpha: Math.min(0.9, g * 0.75) });
+    // Glass envelope, warming from cold glass to white hot.
+    ctx.save();
+    const env = ctx.createRadialGradient(bx - r * 0.32, by - r * 0.36, r * 0.1, bx, by, r);
+    env.addColorStop(0, hexA(lightColor, 0.2 + 0.8 * gn));
+    env.addColorStop(0.6, hexA(lightColor, 0.1 + 0.72 * gn));
+    env.addColorStop(1, hexA(theme.surface, 0.5));
+    ctx.fillStyle = env;
+    ctx.beginPath();
+    ctx.arc(bx, by, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexA(theme.inkSoft, 0.8);
+    ctx.lineWidth = Math.max(1.2, s * 0.2);
+    ctx.stroke();
+    ctx.strokeStyle = hexA(theme.surface, 0.75);
+    ctx.lineWidth = Math.max(1, s * 0.16);
+    ctx.beginPath();
+    ctx.arc(bx, by, r * 0.72, Math.PI * 1.06, Math.PI * 1.44);
+    ctx.stroke();
+    ctx.restore();
 
     // Filament
     ctx.save();
-    ctx.strokeStyle = g > 0.35 ? theme.surface : theme.inkSoft;
+    ctx.strokeStyle = mixHex(theme.inkSoft, lightColor, gn);
     ctx.lineWidth = Math.max(1.5, s * 0.22);
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -450,44 +541,59 @@ function render(rc: RenderContext<State>) {
     }
     ctx.lineTo(bx + fw, by + fh);
     ctx.stroke();
-    ctx.restore();
-
-    // Base contacts
-    ctx.save();
-    ctx.strokeStyle = theme.inkSoft;
-    ctx.lineWidth = Math.max(2, s * 0.3);
-    ctx.beginPath();
-    ctx.moveTo(bx - r * 0.7, by + r * 0.72);
-    ctx.lineTo(bx + r * 0.7, by + r * 0.72);
-    ctx.stroke();
+    if (gn > 0.15) {
+      // White-hot core once it is really carrying current.
+      ctx.strokeStyle = hexA(theme.surface, Math.min(0.9, gn));
+      ctx.lineWidth = Math.max(0.8, s * 0.1);
+      ctx.stroke();
+    }
     ctx.restore();
 
     if (band === "6-8" || band === "9-12") {
-      label(ctx, `${sol.bulbPower.toFixed(1)} W`, bx, by + r * 2.6, theme, {
-        align: "center", color: theme.sci["energy-thermal"], size: 11,
+      badge(ctx, bx, by + r * 2.9, `${sol.bulbPower.toFixed(1)} W`, theme, {
+        align: "center", color: theme.sci["energy-thermal"],
       });
     }
   }
 
   // ---- Meters --------------------------------------------------------
   if (overlays.meters && band !== "K-2") {
-    const lines: string[] = [];
-    lines.push(`I = ${sol.current.toFixed(2)} A`);
-    if (band !== "3-5") lines.push(`R = ${sol.totalR.toFixed(1)} Ω`);
-    if (band !== "3-5") lines.push(`P = ${sol.power.toFixed(1)} W`);
-    if (band === "9-12") lines.push(`V = I × R = ${(sol.current * sol.totalR).toFixed(2)} V`);
-    let ly = Y(H - 3);
-    for (const line of lines) {
-      label(ctx, line, X(3), ly, theme, { align: "left", color: theme.ink, size: 12 });
-      ly += 18;
+    const meterX = X(W * 0.07);
+    badge(ctx, meterX, Y(H * 0.914), `I = ${sol.current.toFixed(2)} A`, theme, {
+      color: theme.sci["current"],
+    });
+    let ly = Y(H * 0.914) + 26;
+    if (band !== "3-5") {
+      caption(ctx, meterX, ly, `R = ${sol.totalR.toFixed(1)} Ω`, theme, {
+        size: 12, color: theme.sci["field"],
+      });
+      ly += 19;
+      caption(ctx, meterX, ly, `P = ${sol.power.toFixed(1)} W`, theme, {
+        size: 12, color: theme.sci["energy-total"],
+      });
+      ly += 19;
+    }
+    if (band === "9-12") {
+      caption(ctx, meterX, ly, `V = I × R = ${(sol.current * sol.totalR).toFixed(2)} V`, theme, {
+        size: 12, color: theme.inkSoft,
+      });
     }
   }
 
-  if (!sol.closed) {
-    label(ctx, "Switch open — no current", X(W / 2), Y(H - 3), theme, {
-      align: "center", color: theme.inkSoft,
+  if (band !== "K-2") {
+    const name = topology === "parallel" ? "parallel" : topology === "series" ? "series" : "single loop";
+    caption(ctx, X(W / 2), Y(H * 0.914), name, theme, {
+      align: "center", size: 13, color: theme.inkSoft,
     });
   }
+
+  if (!sol.closed) {
+    caption(ctx, X(W / 2), Y(H * 0.103), "Switch open — no current", theme, {
+      align: "center", color: theme.inkSoft, size: 14,
+    });
+  }
+
+  vignette(ctx, width, height, 0.16);
 }
 
 /* ------------------------------------------------------------------ *

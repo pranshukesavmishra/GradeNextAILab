@@ -1,6 +1,9 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import { q } from "@engine/units";
-import { camera, disc, label, mixHex, roundRect } from "@ui/draw";
+import { camera, roundRect } from "@ui/draw";
+import {
+  caption, contactShadow, groundPlane, hexA, isDarkTheme, lifted, material, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * pH & Acid-Base Lab — Grades 5-12.
@@ -297,13 +300,27 @@ const model: SimModel<State> = {
  * View
  * ------------------------------------------------------------------ */
 
+/** Mix two theme colours into a hex, so the result can feed the scene kit. */
+function blend(a: string, b: string, t: number): string {
+  const k = Math.max(0, Math.min(1, t));
+  const ca = a.replace("#", "");
+  const cb = b.replace("#", "");
+  let out = "#";
+  for (let i = 0; i < 3; i++) {
+    const va = parseInt(ca.slice(i * 2, i * 2 + 2), 16) || 0;
+    const vb = parseInt(cb.slice(i * 2, i * 2 + 2), 16) || 0;
+    out += Math.round(va + (vb - va) * k).toString(16).padStart(2, "0");
+  }
+  return out;
+}
+
 /** The universal-indicator ramp: acid → neutral → base, nothing decorative. */
 function indicatorColor(ph: number, theme: RenderContext<State>["theme"]): string {
   const a = theme.sci["acid"];
   const n = theme.sci["neutral"];
   const b = theme.sci["base"];
-  if (ph <= 7) return mixHex(a, n, clamp(ph / 7, 0, 1));
-  return mixHex(n, b, clamp((ph - 7) / 7, 0, 1));
+  if (ph <= 7) return blend(a, n, clamp(ph / 7, 0, 1));
+  return blend(n, b, clamp((ph - 7) / 7, 0, 1));
 }
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -316,134 +333,233 @@ function jitter(i: number, salt: number): number {
   return s - Math.floor(s);
 }
 
-// World is 24 wide by 15 tall: flask on the left, titration curve on the right.
+// World is 24 wide by 15 tall: the glassware on the left, the curve on the right.
 const W = 24;
 const H = 15;
 
+/** Bench height, in world units. Everything glass stands on this line. */
+const BENCH_Y = 2.9;
+
 function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, overlays, band } = rc;
-  const cam = camera({ x0: -0.6, y0: -1.4, x1: W + 0.6, y1: H + 0.6, width, height });
+  const cam = camera({ x0: -0.4, y0: -1.3, x1: W + 0.4, y1: H + 0.4, width, height });
   const px = (x: number) => cam.toScreenX(x);
   const py = (y: number) => cam.toScreenY(y);
   const scale = cam.scale;
+  const dark = isDarkTheme(theme);
   const tint = indicatorColor(state.ph, theme);
+  const glass = theme.sci["solid"];
+
+  /* ---- the room and the bench everything is standing on ---- */
+  sky(ctx, width, height, theme, "indoor");
+  const benchY = py(BENCH_Y);
+  groundPlane(ctx, benchY, 0, width, height, theme, "lab");
 
   /* ---- burette ---- */
-  const buretteX = 4.2;
-  const tubeW = 0.9;
-  ctx.save();
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 2;
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, px(buretteX - tubeW / 2), py(H - 0.2), tubeW * scale, 4.6 * scale, 4);
-  ctx.fill();
-  ctx.stroke();
+  const buretteX = 4.3;
+  const tubeW = 0.92;
+  const barrelTop = py(H - 0.1);
+  const barrelBot = py(10.6);
+  const bxL = px(buretteX - tubeW / 2);
+  const bWpx = tubeW * scale;
+
   // The titrant left in the burette drains as the student adds more.
   const drained = clamp(state.added / CURVE_MAX, 0, 1);
-  const fillH = 4.2 * (1 - drained);
   const titrantColour = params.titrant === "acid" ? theme.sci["acid"] : theme.sci["base"];
-  ctx.fillStyle = titrantColour;
-  ctx.globalAlpha = 0.75;
-  roundRect(ctx, px(buretteX - tubeW / 2) + 2, py(H - 0.4) + (4.2 - fillH) * scale, tubeW * scale - 4, fillH * scale, 3);
+  const colH = (barrelBot - barrelTop - 6) * (1 - drained);
+
+  ctx.save();
+  const bore = ctx.createLinearGradient(bxL, 0, bxL + bWpx, 0);
+  bore.addColorStop(0, hexA(glass, dark ? 0.34 : 0.2));
+  bore.addColorStop(0.35, hexA(theme.surface, 0.55));
+  bore.addColorStop(1, hexA(glass, dark ? 0.4 : 0.26));
+  ctx.fillStyle = bore;
+  roundRect(ctx, bxL, barrelTop, bWpx, barrelBot - barrelTop, 4);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  const col = ctx.createLinearGradient(bxL, 0, bxL + bWpx, 0);
+  col.addColorStop(0, hexA(titrantColour, 0.5));
+  col.addColorStop(0.35, hexA(titrantColour, 0.9));
+  col.addColorStop(1, hexA(titrantColour, 0.55));
+  ctx.fillStyle = col;
+  roundRect(ctx, bxL + 2, barrelBot - 3 - colH, bWpx - 4, colH, 3);
+  ctx.fill();
+  ctx.restore();
+
+  // Graduations, so the burette reads as an instrument rather than a bar.
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.ink, 0.4);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i <= 10; i++) {
+    const ty = barrelTop + 4 + (i / 10) * (barrelBot - barrelTop - 8);
+    const long = i % 2 === 0;
+    ctx.moveTo(bxL + 1.5, ty);
+    ctx.lineTo(bxL + (long ? bWpx * 0.55 : bWpx * 0.34), ty);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = hexA(glass, 0.75);
+  ctx.lineWidth = 1.6;
+  roundRect(ctx, bxL, barrelTop, bWpx, barrelBot - barrelTop, 4);
+  ctx.stroke();
+  ctx.restore();
+
+  // Stopcock and tapering tip.
+  material(ctx, bxL - bWpx * 0.42, barrelBot, bWpx * 1.84, Math.max(5, scale * 0.42), theme.inkSoft, 3);
+  const tipTop = barrelBot + Math.max(5, scale * 0.42);
+  const tipBot = py(9.95);
+  ctx.save();
+  ctx.fillStyle = hexA(glass, 0.7);
+  ctx.beginPath();
+  ctx.moveTo(bxL + bWpx * 0.3, tipTop);
+  ctx.lineTo(bxL + bWpx * 0.7, tipTop);
+  ctx.lineTo(px(buretteX) + 2, tipBot);
+  ctx.lineTo(px(buretteX) - 2, tipBot);
+  ctx.closePath();
   ctx.fill();
   ctx.restore();
 
   if (band !== "K-2") {
-    label(ctx, params.titrant === "acid" ? "Acid (HCl)" : "Base (NaOH)", px(buretteX + 0.8), py(H - 1.2), theme, {
-      size: 11, color: titrantColour,
-    });
-  }
-
-  /* ---- falling drop ---- */
-  if (state.added > 0) {
-    const dropY = 10.2 - state.dropPhase * 2.4;
-    disc(ctx, px(buretteX), py(dropY), Math.max(2, scale * 0.16), titrantColour, { alpha: 0.9 });
+    caption(ctx, bxL + bWpx + 10, py(13.2), params.titrant === "acid" ? "Acid (HCl)" : "Base (NaOH)",
+      theme, { size: 11, color: titrantColour });
   }
 
   /* ---- beaker ---- */
-  const bx = 1.4, bw = 5.6, byBottom = 0.8, bhMax = 7.0;
+  const bx = 1.2, bw = 6.3, bhMax = 6.1;
   const level = clamp(state.totalVolume / (CURVE_MAX + 5e-5), 0.1, 1) * bhMax;
+  const gl = px(bx), gr = px(bx + bw);
+  const gTop = py(BENCH_Y + bhMax);
+  const gBot = benchY;
+  const liqTop = py(BENCH_Y + level);
+  const wallW = Math.max(2.5, scale * 0.11);
 
+  contactShadow(ctx, (gl + gr) / 2, benchY + 1, (gr - gl) * 0.32, 0);
+
+  // The liquid: a body of colour with a real surface line, not a flat block.
   ctx.save();
-  ctx.fillStyle = tint;
-  ctx.globalAlpha = 0.85;
-  roundRect(ctx, px(bx), py(byBottom + level), bw * scale, level * scale, 4);
-  ctx.fill();
+  ctx.beginPath();
+  ctx.rect(gl, liqTop, gr - gl, gBot - liqTop);
+  ctx.clip();
+  const body = ctx.createLinearGradient(0, liqTop, 0, gBot);
+  body.addColorStop(0, hexA(tint, 0.62));
+  body.addColorStop(1, hexA(tint, 0.94));
+  ctx.fillStyle = body;
+  ctx.fillRect(gl, liqTop, gr - gl, gBot - liqTop);
   ctx.restore();
 
   /* ---- ions, drawn on a log scale ---- */
   if (overlays.ions && band !== "K-2") {
     const nH = Math.round(clamp(((14 - state.ph) / 14) * 26, 0, 26));
     const nOH = Math.round(clamp((state.ph / 14) * 26, 0, 26));
-    const rIon = Math.max(2, scale * 0.13);
+    const rIon = Math.max(2.5, scale * 0.15);
     for (let i = 0; i < nH; i++) {
-      const ix = bx + 0.4 + jitter(i, 1) * (bw - 0.8);
-      const iy = byBottom + 0.3 + ((jitter(i, 2) + state.swirl) % 1) * (level - 0.6);
-      disc(ctx, px(ix), py(iy), rIon, theme.sci["acid"]);
+      const ix = bx + 0.45 + jitter(i, 1) * (bw - 0.9);
+      const iy = BENCH_Y + 0.35 + ((jitter(i, 2) + state.swirl) % 1) * Math.max(0.2, level - 0.7);
+      sphere(ctx, px(ix), py(iy), rIon, theme.sci["acid"]);
     }
     for (let i = 0; i < nOH; i++) {
-      const ix = bx + 0.4 + jitter(i, 3) * (bw - 0.8);
-      const iy = byBottom + 0.3 + ((jitter(i, 4) + state.swirl * 0.8) % 1) * (level - 0.6);
-      disc(ctx, px(ix), py(iy), rIon, theme.sci["base"]);
+      const ix = bx + 0.45 + jitter(i, 3) * (bw - 0.9);
+      const iy = BENCH_Y + 0.35 + ((jitter(i, 4) + state.swirl * 0.8) % 1) * Math.max(0.2, level - 0.7);
+      sphere(ctx, px(ix), py(iy), rIon, theme.sci["base"]);
     }
   }
 
+  // Surface: a lit meniscus ellipse, which is what says "looking into a beaker".
   ctx.save();
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 2.5;
+  ctx.fillStyle = hexA(tint, 0.5);
   ctx.beginPath();
-  ctx.moveTo(px(bx), py(byBottom + bhMax));
-  ctx.lineTo(px(bx), py(byBottom));
-  ctx.lineTo(px(bx + bw), py(byBottom));
-  ctx.lineTo(px(bx + bw), py(byBottom + bhMax));
+  ctx.ellipse((gl + gr) / 2, liqTop, (gr - gl) / 2, Math.max(3, scale * 0.24), 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.5)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.ellipse((gl + gr) / 2, liqTop, (gr - gl) / 2 - 1, Math.max(3, scale * 0.24), 0, Math.PI, 0);
   ctx.stroke();
+  ctx.restore();
+
+  /* ---- falling drop, on its way in ---- */
+  if (state.added > 0) {
+    const dropY = 9.7 - state.dropPhase * (9.7 - (BENCH_Y + level + 0.2));
+    sphere(ctx, px(buretteX), py(dropY), Math.max(2.5, scale * 0.19), titrantColour, { glow: 0.5 });
+  }
+
+  /* ---- the glass, drawn over the contents ---- */
+  ctx.save();
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(gl, gTop);
+  ctx.lineTo(gl, gBot - 2);
+  ctx.quadraticCurveTo(gl, gBot, gl + 6, gBot);
+  ctx.lineTo(gr - 6, gBot);
+  ctx.quadraticCurveTo(gr, gBot, gr, gBot - 2);
+  ctx.lineTo(gr, gTop);
+  ctx.strokeStyle = hexA(glass, 0.65);
+  ctx.lineWidth = wallW;
+  ctx.stroke();
+  // Rim and pouring spout.
+  ctx.strokeStyle = hexA(glass, 0.95);
+  ctx.lineWidth = Math.max(2, wallW * 0.7);
+  ctx.beginPath();
+  ctx.moveTo(gl - 3, gTop);
+  ctx.lineTo(gr - (gr - gl) * 0.22, gTop);
+  ctx.quadraticCurveTo(gr + 4, gTop - 3, gr + 7, gTop + 3);
+  ctx.stroke();
+  // Graduation marks and a specular streak.
+  ctx.strokeStyle = hexA(theme.ink, 0.28);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 1; i <= 4; i++) {
+    const ty = gBot - (i / 5) * (gBot - gTop);
+    ctx.moveTo(gl + wallW, ty);
+    ctx.lineTo(gl + wallW + (gr - gl) * 0.12, ty);
+  }
+  ctx.stroke();
+  const sheen = ctx.createLinearGradient(gl, 0, gl + (gr - gl) * 0.4, 0);
+  sheen.addColorStop(0, "rgba(255,255,255,0.28)");
+  sheen.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = sheen;
+  ctx.fillRect(gl + wallW, gTop + 4, (gr - gl) * 0.16, gBot - gTop - 6);
   ctx.restore();
 
   const flask = FLASK[params.substance as string] ?? FLASK.water;
-  label(ctx, flask.label, px(bx + bw / 2), py(byBottom + bhMax + 0.7), theme, { align: "center", size: 13 });
-  if (band === "9-12") {
-    label(ctx, flask.note, px(bx + bw / 2), py(byBottom - 0.7), theme, {
-      align: "center", size: 10, color: theme.inkSoft,
-    });
-  }
+  caption(ctx, (gl + gr) / 2, gTop - 16, flask.label, theme, { align: "center", size: 14 });
 
-  /* ---- the big pH number ---- */
+  /* ---- the bench meter: the big pH number, on the front of the bench ---- */
+  const meterX = px(0.9), meterW = px(8.0) - px(0.9);
+  const meterY = py(2.35), meterH = py(0.25) - py(2.35);
+  material(ctx, meterX, meterY, meterW, meterH, theme.surfaceAlt, 8);
   ctx.save();
-  ctx.font = `700 ${Math.max(22, scale * 1.5)}px system-ui, sans-serif`;
+  ctx.font = `700 ${Math.max(22, scale * 1.45)}px system-ui, sans-serif`;
   ctx.fillStyle = tint;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(`pH ${state.ph.toFixed(band === "9-12" ? 2 : 1)}`, px(bx + bw / 2), py(byBottom + bhMax + 2.1));
+  ctx.shadowColor = hexA(tint, 0.55);
+  ctx.shadowBlur = 14;
+  ctx.fillText(
+    `pH ${state.ph.toFixed(band === "9-12" ? 2 : 1)}`,
+    meterX + meterW / 2, meterY + meterH * (band === "9-12" ? 0.38 : 0.5),
+  );
   ctx.restore();
-
-  /* ---- pH ramp ---- */
-  const rampX = 0.9, rampW = 6.6, rampY = 12.3, rampH = 0.75;
-  for (let i = 0; i < 28; i++) {
-    const p = (i / 27) * 14;
-    ctx.fillStyle = indicatorColor(p, theme);
-    ctx.fillRect(px(rampX + (i / 28) * rampW), py(rampY + rampH), (rampW / 28) * scale + 1, rampH * scale);
-  }
-  const markX = rampX + (clamp(state.ph, 0, 14) / 14) * rampW;
-  ctx.save();
-  ctx.strokeStyle = theme.ink;
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.moveTo(px(markX), py(rampY + rampH + 0.35));
-  ctx.lineTo(px(markX), py(rampY - 0.15));
-  ctx.stroke();
-  ctx.restore();
-  if (band !== "K-2") {
-    label(ctx, "0 acid", px(rampX), py(rampY - 0.6), theme, { size: 10, color: theme.sci["acid"] });
-    label(ctx, "7", px(rampX + rampW / 2), py(rampY - 0.6), theme, { size: 10, align: "center", color: theme.sci["neutral"] });
-    label(ctx, "14 base", px(rampX + rampW), py(rampY - 0.6), theme, { size: 10, align: "right", color: theme.sci["base"] });
+  if (band === "9-12") {
+    caption(ctx, meterX + meterW / 2, meterY + meterH * 0.78, flask.note, theme, {
+      align: "center", size: 10, color: theme.inkSoft, weight: 500,
+    });
   }
 
   /* ---- titration curve ---- */
-  const gx = 9.6, gy = 2.2, gw = W - gx - 0.8, gh = 10.6;
+  const gx = 9.9, gy = 3.6, gw = W - gx - 0.7, gh = 10.1;
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.fillStyle = hexA(theme.surface, dark ? 0.42 : 0.62);
+  roundRect(ctx, px(gx), py(gy + gh), gw * scale, gh * scale, 7);
+  ctx.fill();
+  ctx.strokeStyle = hexA(theme.line, 0.9);
   ctx.lineWidth = 1.5;
-  ctx.strokeRect(px(gx), py(gy + gh), gw * scale, gh * scale);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
   ctx.strokeStyle = theme.grid;
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -472,19 +588,22 @@ function render(rc: RenderContext<State>) {
   // Only the part actually titrated is drawn — the rest is still unknown.
   const lastIdx = Math.min(CURVE_N - 1, Math.round((state.maxAdded / CURVE_MAX) * (CURVE_N - 1)));
   if (lastIdx > 0) {
-    ctx.save();
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 2.5;
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    for (let i = 0; i <= lastIdx; i++) {
-      const v = (i / (CURVE_N - 1)) * CURVE_MAX;
-      const sx = px(curveX(v));
-      const sy = py(curveY(state.curve[i]));
-      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
-    }
-    ctx.stroke();
-    ctx.restore();
+    lifted(ctx, 8, 2, () => {
+      ctx.save();
+      ctx.strokeStyle = theme.accent;
+      ctx.lineWidth = 3;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      for (let i = 0; i <= lastIdx; i++) {
+        const v = (i / (CURVE_N - 1)) * CURVE_MAX;
+        const sx = px(curveX(v));
+        const sy = py(curveY(state.curve[i]));
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }, 0.3);
   }
 
   if (overlays.equivalence && state.equivalence > 0 && state.equivalence <= CURVE_MAX) {
@@ -498,23 +617,57 @@ function render(rc: RenderContext<State>) {
     ctx.lineTo(ex, py(gy + gh));
     ctx.stroke();
     ctx.restore();
-    label(ctx, "equivalence", ex, py(gy + gh + 0.4), theme, {
+    caption(ctx, ex, py(gy) + 14, "equivalence", theme, {
       align: "center", size: 10, color: theme.sci["neutral"],
     });
   }
 
-  disc(ctx, px(curveX(state.added)), py(curveY(state.ph)), Math.max(3.5, scale * 0.22), tint, {
-    stroke: theme.surface, lineWidth: 2,
+  sphere(ctx, px(curveX(state.added)), py(curveY(state.ph)), Math.max(4.5, scale * 0.26), tint,
+    { glow: 0.6 });
+
+  caption(ctx, px(gx) - 6, py(gy + gh), "14", theme, { align: "right", size: 10, color: theme.inkSoft });
+  caption(ctx, px(gx) - 6, py(gy), "0", theme, { align: "right", size: 10, color: theme.inkSoft });
+  caption(ctx, px(gx) - 6, py(gy + gh / 2), "pH", theme, {
+    align: "right", size: 11, color: theme.inkSoft,
+  });
+  caption(ctx, px(gx), py(gy + gh) - 14, "Titration curve", theme, { size: 13 });
+  caption(ctx, px(gx + gw), py(gy) + 15, `${(state.added * 1e6).toFixed(1)} mL added`, theme, {
+    align: "right", size: 11, color: theme.inkSoft,
   });
 
-  label(ctx, "pH", px(gx - 0.15), py(gy + gh), theme, { align: "right", size: 11, color: theme.inkSoft });
-  label(ctx, "0", px(gx - 0.15), py(gy), theme, { align: "right", size: 10, color: theme.inkSoft });
-  label(ctx, "14", px(gx - 0.15), py(gy + gh), theme, { align: "right", size: 10, color: theme.inkSoft });
-  label(
-    ctx, `${(state.added * 1e6).toFixed(1)} mL added`,
-    px(gx + gw), py(gy - 0.8), theme, { align: "right", size: 11, color: theme.inkSoft },
-  );
-  label(ctx, "Titration curve", px(gx), py(gy + gh + 1.1), theme, { size: 12 });
+  /* ---- the universal-indicator chart, under the curve it explains ---- */
+  const rampX = gx, rampW = gw, rampTop = py(2.3), rampBot = py(1.45);
+  for (let i = 0; i < 28; i++) {
+    const p = (i / 27) * 14;
+    ctx.fillStyle = indicatorColor(p, theme);
+    ctx.fillRect(px(rampX + (i / 28) * rampW), rampTop, (rampW / 28) * scale + 1, rampBot - rampTop);
+  }
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.ink, 0.35);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(px(rampX), rampTop, rampW * scale, rampBot - rampTop);
+  ctx.restore();
+  const markX = px(rampX + (clamp(state.ph, 0, 14) / 14) * rampW);
+  ctx.save();
+  ctx.fillStyle = theme.ink;
+  ctx.beginPath();
+  ctx.moveTo(markX, rampTop - 1);
+  ctx.lineTo(markX - 5, rampTop - 9);
+  ctx.lineTo(markX + 5, rampTop - 9);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  if (band !== "K-2") {
+    caption(ctx, px(rampX), rampBot + 12, "0 acid", theme, { size: 10, color: theme.sci["acid"] });
+    caption(ctx, px(rampX + rampW / 2), rampBot + 12, "7", theme, {
+      size: 10, align: "center", color: theme.sci["neutral"],
+    });
+    caption(ctx, px(rampX + rampW), rampBot + 12, "14 base", theme, {
+      size: 10, align: "right", color: theme.sci["base"],
+    });
+  }
+
+  vignette(ctx, width, height, 0.14);
 }
 
 /* ------------------------------------------------------------------ *

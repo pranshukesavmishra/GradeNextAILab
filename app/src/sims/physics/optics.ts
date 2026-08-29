@@ -1,6 +1,9 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import { q } from "@engine/units";
-import { arrow, camera, disc, label } from "@ui/draw";
+import { arrow, camera, label } from "@ui/draw";
+import {
+  caption, glow, groundPlane, hexA, isDarkTheme, material, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * Optics Bench — Grades 6-12.
@@ -174,21 +177,42 @@ function render(rc: RenderContext<State>) {
   const diShown = Math.max(-6, Math.min(6, sol.dImage));
 
   // ---- Framing --------------------------------------------------------
-  const halfX = Math.max(sol.dObject, Math.abs(diShown), 2.2 * fMag) * 1.18 + 0.25;
+  // Cropped close, with a strip of extra room underneath for the bench the
+  // whole arrangement is bolted to.
+  const halfX = Math.max(sol.dObject, Math.abs(diShown), 2.2 * fMag) * 1.06 + 0.12;
   const aperture = Math.max(ho * 1.5, fMag * 0.55, 0.3);
-  const halfY = Math.max(aperture, ho, Math.min(Math.abs(sol.imageHeight), 3 * ho)) * 1.35;
+  const halfY = Math.max(aperture, ho, Math.min(Math.abs(sol.imageHeight), 3 * ho)) * 1.2;
   // Independent x and y scaling: an affine squash keeps every ray straight and
   // every crossing point exactly where it belongs, while making the diagram
   // fill the stage.
-  const cam = camera({ x0: -halfX, y0: -halfY, x1: halfX, y1: halfY, width, height, square: false });
+  const cam = camera({
+    x0: -halfX, y0: -halfY * 1.3, x1: halfX, y1: halfY, width, height, square: false,
+  });
   const X = (x: number) => cam.toScreenX(x);
   const Y = (y: number) => cam.toScreenY(y);
   const axisY = Y(0);
+  const benchY = Y(-halfY * 1.1);
+
+  // ---- A darkened room, so light can look like light --------------------
+  sky(ctx, width, height, theme, "space", benchY);
+  groundPlane(ctx, benchY, 0, width, height, theme, "lab");
+  // On a dark stage every line has to be pale, in either theme.
+  const chalk = isDarkTheme(theme) ? theme.ink : theme.surface;
+  const chalkSoft = isDarkTheme(theme) ? theme.inkSoft : theme.surfaceAlt;
+  // The optical rail everything is clamped to.
+  material(ctx, -4, benchY + 5, width + 8, 11, theme.inkSoft, 2);
+
+  /** A post from the bench up to a component, so nothing floats in the dark. */
+  const mount = (x: number, topY: number) => {
+    material(ctx, x - 4, topY, 8, Math.max(4, benchY + 5 - topY), theme.inkSoft, 2);
+    material(ctx, x - 13, benchY - 1, 26, 9, theme.inkSoft, 2);
+  };
 
   // ---- Optical axis and focal points -----------------------------------
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.strokeStyle = hexA(chalkSoft, 0.4);
   ctx.lineWidth = 1.5;
+  ctx.setLineDash([7, 5]);
   ctx.beginPath();
   ctx.moveTo(X(-halfX), axisY);
   ctx.lineTo(X(halfX), axisY);
@@ -198,9 +222,9 @@ function render(rc: RenderContext<State>) {
   if (overlays.focalPoints && band !== "K-2") {
     for (const [x, name] of [[fMag, "F"], [-fMag, "F"], [2 * fMag, "2F"], [-2 * fMag, "2F"]] as [number, string][]) {
       if (Math.abs(x) > halfX) continue;
-      disc(ctx, X(x), axisY, 3.5, theme.inkSoft);
-      label(ctx, name, X(x), axisY + 18, theme, {
-        align: "center", color: theme.inkSoft, size: 11, plate: false,
+      sphere(ctx, X(x), axisY, 4, chalkSoft);
+      caption(ctx, X(x), axisY + 20, name, theme, {
+        align: "center", color: chalkSoft, size: 11,
       });
     }
   }
@@ -208,45 +232,66 @@ function render(rc: RenderContext<State>) {
   // ---- The element ------------------------------------------------------
   const apTop = Y(aperture), apBot = Y(-aperture);
   const cx = X(0);
+  mount(cx, apBot);
   ctx.save();
-  ctx.strokeStyle = theme.ink;
-  ctx.fillStyle = theme.surfaceAlt;
-  ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
   if (sol.mirror) {
-    // A curved mirror, drawn bowing the way it actually curves.
+    // A curved mirror, drawn bowing the way it actually curves, with a bright
+    // silvered face and a matte back.
     const bulge = (sol.f > 0 ? -1 : 1) * 16;
     ctx.beginPath();
     ctx.moveTo(cx, apTop);
     ctx.quadraticCurveTo(cx + bulge * 2, axisY, cx, apBot);
+    ctx.strokeStyle = hexA(theme.ink, 0.5);
+    ctx.lineWidth = 7;
     ctx.stroke();
-    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = hexA(chalk, 0.9);
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = chalkSoft;
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let yy = apTop; yy < apBot; yy += 9) {
-      const t = (yy - apTop) / (apBot - apTop);
+      const t = (yy - apTop) / (apBot - apTop || 1);
       const off = bulge * 4 * t * (1 - t);
       ctx.moveTo(cx + off, yy);
       ctx.lineTo(cx + off - bulge * 0.55, yy + 7);
     }
     ctx.stroke();
-  } else if (sol.f > 0) {
-    // Biconvex.
-    ctx.beginPath();
-    ctx.moveTo(cx, apTop);
-    ctx.quadraticCurveTo(cx + 15, axisY, cx, apBot);
-    ctx.quadraticCurveTo(cx - 15, axisY, cx, apTop);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
   } else {
-    // Biconcave.
+    // Glass: a cool translucent body, a bright lit edge and a specular streak.
+    const glass = ctx.createLinearGradient(cx - 18, 0, cx + 18, 0);
+    glass.addColorStop(0, hexA(chalk, 0.1));
+    glass.addColorStop(0.42, hexA(theme.sci["light"], 0.16));
+    glass.addColorStop(1, hexA(chalk, 0.28));
     ctx.beginPath();
-    ctx.moveTo(cx - 9, apTop);
-    ctx.quadraticCurveTo(cx + 2, axisY, cx - 9, apBot);
-    ctx.lineTo(cx + 9, apBot);
-    ctx.quadraticCurveTo(cx - 2, axisY, cx + 9, apTop);
+    if (sol.f > 0) {
+      // Biconvex.
+      ctx.moveTo(cx, apTop);
+      ctx.quadraticCurveTo(cx + 15, axisY, cx, apBot);
+      ctx.quadraticCurveTo(cx - 15, axisY, cx, apTop);
+    } else {
+      // Biconcave.
+      ctx.moveTo(cx - 9, apTop);
+      ctx.quadraticCurveTo(cx + 2, axisY, cx - 9, apBot);
+      ctx.lineTo(cx + 9, apBot);
+      ctx.quadraticCurveTo(cx - 2, axisY, cx + 9, apTop);
+    }
     ctx.closePath();
+    ctx.fillStyle = glass;
     ctx.fill();
+    ctx.strokeStyle = hexA(chalk, 0.85);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // The highlight that makes it read as glass rather than as a hole.
+    ctx.strokeStyle = hexA(chalk, 0.55);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const hy0 = apTop + (apBot - apTop) * 0.18;
+    const hy1 = apTop + (apBot - apTop) * 0.44;
+    ctx.moveTo(cx - 4, hy0);
+    ctx.lineTo(cx - 6, hy1);
     ctx.stroke();
   }
   ctx.restore();
@@ -285,23 +330,43 @@ function render(rc: RenderContext<State>) {
     return [tip, { x: 0, y: yLens }, out[1]];
   });
 
+  const strokePaths = (list: P[][]) => {
+    for (const path of list) {
+      ctx.beginPath();
+      ctx.moveTo(X(path[0].x), Y(path[0].y));
+      for (let i = 1; i < path.length; i++) ctx.lineTo(X(path[i].x), Y(path[i].y));
+      ctx.stroke();
+    }
+  };
+
+  // Bloom first, additively, then the beam, then a hot core: three passes are
+  // what separates "a yellow line" from "light travelling".
+  const rayColor = theme.sci["light"];
   ctx.save();
-  ctx.strokeStyle = theme.sci["light"];
-  ctx.lineWidth = 2;
+  ctx.globalCompositeOperation = "lighter";
   ctx.lineJoin = "round";
-  for (const path of paths) {
-    ctx.beginPath();
-    ctx.moveTo(X(path[0].x), Y(path[0].y));
-    for (let i = 1; i < path.length; i++) ctx.lineTo(X(path[i].x), Y(path[i].y));
-    ctx.stroke();
+  ctx.lineCap = "round";
+  for (const [lw, a] of [[11, 0.09], [5.5, 0.18]] as [number, number][]) {
+    ctx.strokeStyle = hexA(rayColor, a);
+    ctx.lineWidth = lw;
+    strokePaths(paths);
   }
+  ctx.restore();
+  ctx.save();
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = rayColor;
+  ctx.lineWidth = 2.2;
+  strokePaths(paths);
+  ctx.strokeStyle = hexA(chalk, 0.6);
+  ctx.lineWidth = 0.9;
+  strokePaths(paths);
   ctx.restore();
 
   // Backward extensions: where a virtual image actually comes from.
   if (!sol.real && !sol.atFocus && Math.abs(imgX) <= halfX * 1.02) {
     ctx.save();
-    ctx.strokeStyle = theme.sci["light"];
-    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = hexA(rayColor, 0.5);
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 5]);
     for (const path of paths) {
@@ -324,24 +389,35 @@ function render(rc: RenderContext<State>) {
       }
       for (let k = 0; k < 3; k++) {
         const p = pulseAt(path, ((phase + k / 3) % 1) * total);
-        if (p) disc(ctx, X(p.x), Y(p.y), 3.5, theme.sci["light"]);
+        if (!p) continue;
+        glow(ctx, X(p.x), Y(p.y), 16, rayColor, 0.45);
+        sphere(ctx, X(p.x), Y(p.y), 3.6, rayColor, { rim: false });
       }
     }
   }
 
   // ---- Object and image -------------------------------------------------------
-  arrow(ctx, X(-sol.dObject), axisY, X(-sol.dObject), Y(ho), theme.accent, {
-    width: 3.5, label: band === "K-2" ? undefined : "object",
-  });
+  const objX = X(-sol.dObject);
+  mount(objX, axisY);
+  glow(ctx, objX, Y(ho), 26, theme.accent, 0.35);
+  arrow(ctx, objX, axisY, objX, Y(ho), theme.accent, { width: 3.5 });
+  if (band !== "K-2") {
+    caption(ctx, objX, Y(ho) - 18, "object", theme, {
+      align: "center", color: theme.accent, size: 12,
+    });
+  }
 
   if (!sol.atFocus && Math.abs(imgX) <= halfX * 1.02) {
-    ctx.save();
-    if (!sol.real) ctx.setLineDash([6, 4]);
-    arrow(ctx, X(imgX), axisY, X(imgX), Y(hi), theme.sci["light"], {
-      width: 3.5, dashed: !sol.real,
-      label: band === "K-2" ? undefined : sol.real ? "real image" : "virtual image",
-    });
-    ctx.restore();
+    const ix = X(imgX);
+    if (sol.real) mount(ix, axisY);
+    glow(ctx, ix, Y(hi), 24, rayColor, sol.real ? 0.4 : 0.2);
+    arrow(ctx, ix, axisY, ix, Y(hi), rayColor, { width: 3.5, dashed: !sol.real });
+    if (band !== "K-2") {
+      const capY = hi >= 0 ? Y(hi) - 18 : Math.min(Y(hi) + 18, benchY - 10);
+      caption(ctx, ix, capY, sol.real ? "real image" : "virtual image", theme, {
+        align: "center", color: rayColor, size: 12,
+      });
+    }
   }
 
   // ---- Numbers ------------------------------------------------------------------
@@ -361,9 +437,11 @@ function render(rc: RenderContext<State>) {
     let ly = 22;
     for (const line of lines) {
       label(ctx, line, 14, ly, theme, { color: theme.ink, size: 12 });
-      ly += 20;
+      ly += 22;
     }
   }
+
+  vignette(ctx, width, height, 0.2);
 }
 
 /* ------------------------------------------------------------------ *

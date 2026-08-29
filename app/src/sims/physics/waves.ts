@@ -1,6 +1,9 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import { q } from "@engine/units";
-import { arrow, camera, disc, label } from "@ui/draw";
+import { arrow, camera } from "@ui/draw";
+import {
+  badge, caption, groundPlane, hexA, material, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * Wave Machine — Grades 1-12.
@@ -224,22 +227,39 @@ function render(rc: RenderContext<State>) {
   const boundary = params.boundary as string;
   const twoSources = params.twoSources as boolean;
 
-  // Frame tall enough for whatever the string is actually doing, so a
-  // resonance that grows far past the driver amplitude still fits on screen.
+  // Frame tall enough for whatever the string is actually doing, but no taller:
+  // a shake this big should look this big, not sit in a wide empty band.
   let envPeak = 0;
   for (let i = 0; i < N; i++) envPeak = Math.max(envPeak, state.env[i]);
-  const yMax = Math.max(0.35, amp * 2.6, envPeak * 1.25);
+  const yMax = Math.max(0.22, amp * 1.9, envPeak * 1.3);
   const cam = camera({
-    x0: -0.5, y0: -yMax, x1: LENGTH + 0.5, y1: yMax,
+    x0: -0.9, y0: -yMax, x1: LENGTH + 0.9, y1: yMax,
     width, height, square: false,
   });
   const X = (x: number) => cam.toScreenX(x);
   const Y = (y: number) => cam.toScreenY(y);
   const axisY = Y(0);
+  const benchY = height * 0.93;
+
+  // ---- The room and the bench the apparatus stands on -------------------
+  sky(ctx, width, height, theme, "indoor");
+  groundPlane(ctx, benchY, 0, width, height, theme, "lab");
+
+  // The apparatus lives in the margin outside the string. On a narrow stage
+  // that margin is only a few dozen pixels, so everything bolted to the bench
+  // is scaled to fit inside it rather than hanging off the edge.
+  const margin = X(0);
+  const k = Math.max(0.5, Math.min(1, margin / 38));
+  const standTop = axisY + Math.min(70, height * 0.16);
+  const standH = Math.max(6, benchY - standTop);
+  material(ctx, X(0) - 21 * k, standTop, 14 * k, standH, theme.inkSoft, 2);
+  material(ctx, X(0) - 34 * k, benchY - 5, 40 * k, 8, theme.inkSoft, 2);
+  material(ctx, X(LENGTH) + 6 * k, standTop, 14 * k, standH, theme.inkSoft, 2);
+  material(ctx, X(LENGTH) - 6 * k, benchY - 5, 40 * k, 8, theme.inkSoft, 2);
 
   // ---- Rest axis ------------------------------------------------------
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.strokeStyle = hexA(theme.inkSoft, 0.4);
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 6]);
   ctx.beginPath();
@@ -251,8 +271,18 @@ function render(rc: RenderContext<State>) {
   // ---- Envelope --------------------------------------------------------
   if (overlays.envelope && band !== "K-2") {
     ctx.save();
-    ctx.strokeStyle = theme.sci["wave"];
-    ctx.globalAlpha = 0.35;
+    // Filled, so the region the string sweeps reads as a volume of air rather
+    // than two stray dotted lines.
+    ctx.fillStyle = hexA(theme.sci["wave"], 0.1);
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const sx = X(i * DX), sy = Y(state.env[i]);
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    }
+    for (let i = N - 1; i >= 0; i--) ctx.lineTo(X(i * DX), Y(-state.env[i]));
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = hexA(theme.sci["wave"], 0.45);
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
     for (const sign of [1, -1]) {
@@ -267,25 +297,47 @@ function render(rc: RenderContext<State>) {
   }
 
   // ---- The string -------------------------------------------------------
-  ctx.save();
-  ctx.strokeStyle = theme.sci["wave"];
-  ctx.lineWidth = band === "K-2" ? 4 : 3;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  for (let i = 0; i < N; i++) {
-    const sx = X(i * DX), sy = Y(state.y[i]);
-    if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+  // Three passes give the rope a shadow, a body and a lit upper edge, so it
+  // has thickness instead of being a one-pixel abstraction.
+  const ropeW = band === "K-2" ? 9 : 7;
+  const ropePasses: [number, string, number][] = [
+    [ropeW + 2.5, hexA(theme.ink, 0.2), 3.5],
+    [ropeW, theme.sci["wave"], 0],
+    [ropeW * 0.3, hexA(theme.surface, 0.6), -ropeW * 0.27],
+  ];
+  for (const [lw, color, dy] of ropePasses) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const sx = X(i * DX), sy = Y(state.y[i]) + dy;
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
-  ctx.stroke();
-  ctx.restore();
 
   // ---- Marker beads ------------------------------------------------------
-  // Every tenth node, so it is obvious the string only moves up and down while
-  // the wave moves sideways.
+  // Every twentieth node, each on its own vertical rail, so it is obvious the
+  // string only moves up and down while the wave moves sideways.
   if (overlays.beads) {
+    const beadR = band === "K-2" ? 6 : 4.5;
     for (let i = 10; i < N - 1; i += 20) {
-      disc(ctx, X(i * DX), Y(state.y[i]), band === "K-2" ? 5 : 3.5, theme.sci["momentum"]);
+      const bx = X(i * DX);
+      const e = Math.max(state.env[i], 0.02);
+      ctx.save();
+      ctx.strokeStyle = hexA(theme.sci["momentum"], 0.28);
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath();
+      ctx.moveTo(bx, Y(e));
+      ctx.lineTo(bx, Y(-e));
+      ctx.stroke();
+      ctx.restore();
+      sphere(ctx, bx, Y(state.y[i]), beadR, theme.sci["momentum"]);
     }
   }
 
@@ -297,7 +349,15 @@ function render(rc: RenderContext<State>) {
       for (let i = 2; i < N - 2; i++) {
         const isMin = state.env[i] <= state.env[i - 1] && state.env[i] < state.env[i + 1];
         if (isMin && state.env[i] < 0.2 * peak) {
-          disc(ctx, X(i * DX), axisY, 4, theme.surface, { stroke: theme.sci["wave"], lineWidth: 2 });
+          ctx.save();
+          ctx.fillStyle = hexA(theme.surface, 0.92);
+          ctx.strokeStyle = theme.sci["wave"];
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(X(i * DX), axisY, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
         }
       }
     }
@@ -307,64 +367,77 @@ function render(rc: RenderContext<State>) {
   {
     const dx = X(0);
     const dy = Y(state.y[0]);
+    // A shaker with a shaft, so the string is visibly being driven by something.
     ctx.save();
-    ctx.fillStyle = theme.sci["force"];
-    ctx.fillRect(dx - 12, dy - 9, 12, 18);
+    ctx.strokeStyle = theme.inkSoft;
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(dx - 14 * k, axisY);
+    ctx.lineTo(dx - 14 * k, dy);
+    ctx.stroke();
     ctx.restore();
+    material(ctx, dx - 20 * k, dy - 10 * k, 21 * k, 20 * k, theme.sci["force"], 3);
+    sphere(ctx, dx, dy, ropeW * 0.62, theme.sci["force"]);
     if (band !== "K-2") {
-      arrow(ctx, dx - 22, Y(amp), dx - 22, Y(-amp), theme.inkSoft, { width: 1.2, head: 5 });
+      arrow(ctx, dx - 30 * k, Y(amp), dx - 30 * k, Y(-amp), theme.inkSoft, { width: 1.2, head: 5 });
     }
   }
 
   // ---- Far end -----------------------------------------------------------
   {
     const ex = X(LENGTH);
-    ctx.save();
+    const clampH = Math.min(56, height * 0.13);
     if (twoSources) {
-      ctx.fillStyle = theme.sci["force"];
-      ctx.fillRect(ex, Y(state.y[N - 1]) - 9, 12, 18);
+      material(ctx, ex - 1, Y(state.y[N - 1]) - 10 * k, 21 * k, 20 * k, theme.sci["force"], 3);
+      sphere(ctx, ex, Y(state.y[N - 1]), ropeW * 0.62, theme.sci["force"]);
     } else if (boundary === "fixed") {
-      ctx.strokeStyle = theme.inkSoft;
-      ctx.lineWidth = 3;
+      // A solid wall the string is tied to: it cannot move, so the wave flips.
+      material(ctx, ex, axisY - clampH, 12 * k, clampH * 2, theme.inkSoft, 2);
+      ctx.save();
+      ctx.strokeStyle = hexA(theme.ink, 0.35);
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(ex, axisY - 46);
-      ctx.lineTo(ex, axisY + 46);
-      ctx.stroke();
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = 0.5;
-      ctx.beginPath();
-      for (let yy = -44; yy <= 44; yy += 8) {
-        ctx.moveTo(ex, axisY + yy);
-        ctx.lineTo(ex + 9, axisY + yy - 8);
+      for (let yy = -clampH; yy <= clampH; yy += 8) {
+        ctx.moveTo(ex + 12 * k, axisY + yy);
+        ctx.lineTo(ex + 21 * k, axisY + yy - 8);
       }
       ctx.stroke();
+      ctx.restore();
+      sphere(ctx, ex, axisY, ropeW * 0.6, theme.inkSoft);
     } else if (boundary === "free") {
       // A ring on a frictionless pole: the end is free to move.
+      material(ctx, ex - 3, axisY - clampH, 6, clampH * 2, theme.inkSoft, 2);
+      ctx.save();
       ctx.strokeStyle = theme.inkSoft;
-      ctx.lineWidth = 2;
+      ctx.fillStyle = hexA(theme.surface, 0.85);
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(ex, axisY - 46);
-      ctx.lineTo(ex, axisY + 46);
+      ctx.arc(ex, Y(state.y[N - 1]), ropeW * 0.95, 0, Math.PI * 2);
+      ctx.fill();
       ctx.stroke();
       ctx.restore();
-      disc(ctx, ex, Y(state.y[N - 1]), 7, theme.surface, { stroke: theme.inkSoft, lineWidth: 2.5 });
-      ctx.save();
     } else {
-      ctx.strokeStyle = theme.inkSoft;
-      ctx.globalAlpha = 0.4;
+      ctx.save();
+      ctx.strokeStyle = hexA(theme.inkSoft, 0.4);
       ctx.lineWidth = 2;
       ctx.setLineDash([3, 5]);
       ctx.beginPath();
-      ctx.moveTo(ex, axisY - 30);
-      ctx.lineTo(ex, axisY + 30);
+      ctx.moveTo(ex, axisY - clampH * 0.7);
+      ctx.lineTo(ex, axisY + clampH * 0.7);
       ctx.stroke();
+      ctx.restore();
     }
-    ctx.restore();
+    if (band !== "K-2" && !twoSources) {
+      caption(ctx, width - 6, axisY + clampH + 16,
+        boundary === "fixed" ? "tied down" : boundary === "free" ? "free to slide" : "wave escapes",
+        theme, { align: "right", size: 11, color: theme.inkSoft });
+    }
   }
 
   // ---- Wavelength ruler ---------------------------------------------------
   if (overlays.ruler && band !== "K-2" && state.lambda > 0.2 && state.lambda < LENGTH * 1.2) {
-    const rulerY = Y(yMax * 0.78);
+    const rulerY = Y(yMax * 0.8);
     const x0 = 0.4;
     const x1 = Math.min(LENGTH, x0 + state.lambda);
     ctx.save();
@@ -381,8 +454,8 @@ function render(rc: RenderContext<State>) {
     ctx.lineTo(X(x1), rulerY);
     ctx.stroke();
     ctx.restore();
-    label(ctx, `λ = ${state.lambda.toFixed(2)} m`, X((x0 + x1) / 2), rulerY, theme, {
-      align: "center", color: theme.sci["distance"], size: 11,
+    badge(ctx, X((x0 + x1) / 2), rulerY, `λ = ${state.lambda.toFixed(2)} m`, theme, {
+      align: "center", color: theme.sci["distance"],
     });
   }
 
@@ -390,14 +463,16 @@ function render(rc: RenderContext<State>) {
   if (band === "6-8" || band === "9-12") {
     const c = waveSpeed(params);
     const f = params.frequency as number;
-    label(ctx, `v = ${c.toFixed(2)} m/s`, 14, 22, theme, { color: theme.sci["velocity"] });
-    label(ctx, `f = ${f.toFixed(2)} Hz`, 14, 44, theme, { color: theme.sci["wave"] });
+    badge(ctx, 14, 26, `v = ${c.toFixed(2)} m/s`, theme, { color: theme.sci["velocity"] });
+    caption(ctx, 14, 52, `f = ${f.toFixed(2)} Hz`, theme, { color: theme.sci["wave"], size: 12 });
     if (band === "9-12") {
-      label(ctx, `f × λ = ${(f * state.lambda).toFixed(2)} m/s`, 14, 66, theme, {
+      caption(ctx, 14, 70, `f × λ = ${(f * state.lambda).toFixed(2)} m/s`, theme, {
         color: theme.inkSoft, size: 11,
       });
     }
   }
+
+  vignette(ctx, width, height, 0.14);
 }
 
 /* ------------------------------------------------------------------ *
