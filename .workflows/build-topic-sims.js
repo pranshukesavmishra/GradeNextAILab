@@ -45,11 +45,12 @@ const buildBrief = (t) => `You are building the dedicated simulations for ONE cu
 Grade ${t.grade} · Unit ${t.unit} (${t.unitTitle}) · Topic ${t.topic}: ${t.topicTitle}
 Subject: ${t.subject}${t.standards.length ? ' · NGSS: ' + t.standards.join(', ') : ''}
 
-Subtopics you must cover:
-${t.subtopics.map(s => `  ${s.code}  ${s.title}`).join('\n')}
+Subtopics you must cover: ${t.subtopics ? t.subtopics.map(s => s.code).join(', ') : 'read them from the curriculum file'}
+
+**First, open \`src/curriculum/grade${t.grade}.ts\` and find Unit ${t.unit} topic ${t.topic}. Its \`subtopics\` array is the definitive list you must cover — read every title there before you design anything.**
 
 ## What to build
-Create **${Math.max(4, Math.min(5, t.subtopics.length))} SEPARATE simulations**, each dedicated to this topic. Together they must cover EVERY subtopic above. Each sim covers one or two adjacent subtopics — do NOT build one giant sim.
+Create **4 to 5 SEPARATE simulations**, each dedicated to this topic. Together they must cover EVERY subtopic above. Each sim covers one or two adjacent subtopics — do NOT build one giant sim.
 
 These must be genuinely DIFFERENT KINDS of interactive experience, not the same thing reskinned. Draw from: a manipulable model, a build-it/assemble-it sandbox, a measurement investigation with data collection, a process animation the student drives and can step through, a sorting/classification challenge, a trace-the-path explorer, a comparison rig running two conditions side by side, a design-and-test loop.
 
@@ -148,7 +149,7 @@ const results = await pipeline(
 File: \`${built.file}\`
 Topic: Grade ${t.grade} · ${t.topic} ${t.topicTitle}
 Sims built: ${built.sims.map(s => s.id + ' (' + s.subtopics.join(',') + ')').join('; ')}
-Subtopics that MUST all be covered: ${t.subtopics.map(s => s.code).join(', ')}
+Subtopics that MUST all be covered: read them from \`src/curriculum/grade${t.grade}.ts\`, Unit ${t.unit} topic ${t.topic}.
 
 Be adversarial. Check and FIX in that file:
 1. **Coverage** — is every subtopic above genuinely covered by some sim? Not just tagged: actually taught.
