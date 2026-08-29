@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.json", "include": ["src/sims/g6/_a1chk7f3q.ts", "src/engine", "src/ui", "vite.config.ts"] }
