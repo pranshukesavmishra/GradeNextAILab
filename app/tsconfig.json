@@ -24,5 +24,9 @@
       "@labs/*": ["src/labs/*"]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts"],
+  // Files prefixed with an underscore are an agent's working scratch during a
+  // build and are never shipped; excluding them keeps a half-written draft
+  // from breaking the typecheck for everyone else.
+  "exclude": ["src/**/_*.ts", "src/**/_*.tsx"]
 }

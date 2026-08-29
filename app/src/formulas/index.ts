@@ -1742,7 +1742,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "v = 128 m ÷ 3200 years",
           answer: "0.04 m per year, about 4 cm each year",
         },
-        sims: ["earth.plate-tectonics", "earth.erosion"],
+        sims: ["earth.plate-tectonics"],
         note:
           "Plates move about as fast as fingernails grow — slow, but over millions of " +
           "years it moves continents. The motion is not smooth: the fault sticks for " +
