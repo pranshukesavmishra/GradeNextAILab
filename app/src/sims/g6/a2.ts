@@ -1,6 +1,6 @@
 import type { RenderContext, SimManifest, SimModel } from "@engine/types";
 import { q } from "@engine/units";
-import { arrow, mixHex, roundRect } from "@ui/draw";
+import { arrow, roundRect } from "@ui/draw";
 import {
   arcGauge, badge, bevelRect, caption, clamp01, comet, dashFlow, easeInOut, glass,
   glow, gradient, gradientFill, groundPlane, hatchFill, hexA, innerGlow, isDarkTheme, labelLeader,
@@ -45,8 +45,30 @@ function fx(v: number, dp = 1): string {
  */
 const LIGHT = "#ffffff";
 const SHADE = "#000000";
-const lighten = (c: string, k: number) => mixHex(c, LIGHT, k);
-const darken = (c: string, k: number) => mixHex(c, SHADE, k);
+
+function rgbOf(hex: string): [number, number, number] {
+  let h = hex.trim().replace("#", "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  return [parseInt(h.slice(0, 2), 16) || 0, parseInt(h.slice(2, 4), 16) || 0, parseInt(h.slice(4, 6), 16) || 0];
+}
+
+/**
+ * Blend two colours and hand back a hex string.
+ *
+ * `mixHex` in the draw kit returns `rgb(...)`, which is fine to paint with but
+ * cannot be blended, tinted or given an alpha a second time. Every colour on
+ * these stages is derived two or three steps from the theme, so the mixer has
+ * to be closed over its own output.
+ */
+function mix(a: string, b: string, t: number): string {
+  const pa = rgbOf(a), pb = rgbOf(b);
+  const k = clamp01(t);
+  const hx = (v: number) => Math.round(v).toString(16).padStart(2, "0");
+  return `#${hx(pa[0] + (pb[0] - pa[0]) * k)}${hx(pa[1] + (pb[1] - pa[1]) * k)}${hx(pa[2] + (pb[2] - pa[2]) * k)}`;
+}
+
+const lighten = (c: string, k: number) => mix(c, LIGHT, k);
+const darken = (c: string, k: number) => mix(c, SHADE, k);
 /** A plate that reads as paper in a light theme and slate in a dark one. */
 const plate = (theme: RenderContext<unknown>["theme"], a = 0.93) => hexA(theme.surface, a);
 
@@ -378,7 +400,7 @@ function g1Render(rc: RenderContext<G1State>) {
   // A hedge along the far boundary of the garden, so the lawn has a back wall.
   ctx.save();
   ctx.fillStyle = gradient(ctx, 0, horizon - L(46), width, L(46),
-    [mixHex(theme.sci["producer"], SHADE, 0.42), mixHex(theme.sci["producer"], SHADE, 0.62)], 90);
+    [mix(theme.sci["producer"], SHADE, 0.42), mix(theme.sci["producer"], SHADE, 0.62)], 90);
   ctx.beginPath();
   for (let x = -20; x < width + 20; x += L(34)) {
     ctx.moveTo(x, horizon);
@@ -398,7 +420,7 @@ function g1Render(rc: RenderContext<G1State>) {
   ctx.save();
   ctx.globalAlpha = 0.55 + 0.4 * cloudy;
   for (const o of [[-38, 4, 26], [0, -8, 34], [34, 6, 24], [-12, 12, 22]]) {
-    sphere(ctx, cX + L(o[0]), cY + L(o[1]), L(o[2]), mixHex(theme.surface, theme.ink, 0.18 + 0.22 * cloudy));
+    sphere(ctx, cX + L(o[0]), cY + L(o[1]), L(o[2]), mix(theme.surface, theme.ink, 0.18 + 0.22 * cloudy));
   }
   ctx.restore();
   if (params.rain as boolean) {
@@ -481,7 +503,7 @@ function g1Render(rc: RenderContext<G1State>) {
   const potX = X(G_NODES.pot.x);
   ctx.save();
   ctx.fillStyle = gradient(ctx, potX - L(48), Y(438), L(96), L(68),
-    [mixHex(theme.sci["hot"], LIGHT, 0.15), mixHex(theme.sci["hot"], SHADE, 0.45)], 90);
+    [mix(theme.sci["hot"], LIGHT, 0.15), mix(theme.sci["hot"], SHADE, 0.45)], 90);
   ctx.beginPath();
   ctx.moveTo(potX - L(48), Y(438));
   ctx.lineTo(potX + L(48), Y(438));
@@ -490,11 +512,11 @@ function g1Render(rc: RenderContext<G1State>) {
   ctx.closePath();
   ctx.fill();
   ctx.restore();
-  material(ctx, potX - L(50), Y(432), L(100), L(12), mixHex(theme.sci["hot"], SHADE, 0.2), L(3));
+  material(ctx, potX - L(50), Y(432), L(100), L(12), mix(theme.sci["hot"], SHADE, 0.2), L(3));
 
   // Plant: a stem with paired leaves that sway
   ctx.save();
-  ctx.strokeStyle = mixHex(theme.sci["producer"], SHADE, 0.3);
+  ctx.strokeStyle = mix(theme.sci["producer"], SHADE, 0.3);
   ctx.lineWidth = Math.max(2, L(6));
   ctx.lineCap = "round";
   ctx.beginPath();
@@ -508,7 +530,7 @@ function g1Render(rc: RenderContext<G1State>) {
     const sway = Math.sin(state.t * 0.8 + i * 1.3) * 3;
     ctx.save();
     ctx.fillStyle = gradient(ctx, potX, Y(ly - 14), L(58) * side, L(28),
-      [mixHex(theme.sci["producer"], LIGHT, 0.25), mixHex(theme.sci["producer"], SHADE, 0.28)], 100);
+      [mix(theme.sci["producer"], LIGHT, 0.25), mix(theme.sci["producer"], SHADE, 0.28)], 100);
     ctx.beginPath();
     ctx.moveTo(potX, Y(ly));
     ctx.quadraticCurveTo(potX + L((26 + sway) * side), Y(ly - 20), potX + L((54 + sway) * side), Y(ly - 2));
@@ -1136,8 +1158,8 @@ function g2Render(rc: RenderContext<G2State>) {
   /* ---- the room ---- */
   sky(ctx, width, height, theme, "indoor", benchY);
   gradientFill(ctx, 0, 0, width, benchY, [
-    mixHex(theme.surfaceAlt, theme.ink, dark ? 0.1 : 0.06),
-    mixHex(theme.surfaceAlt, theme.ink, dark ? 0.24 : 0.16),
+    mix(theme.surfaceAlt, theme.ink, dark ? 0.1 : 0.06),
+    mix(theme.surfaceAlt, theme.ink, dark ? 0.24 : 0.16),
   ], 90);
   // Wall tiling, quiet enough to stay behind everything.
   ctx.save();
@@ -1153,7 +1175,7 @@ function g2Render(rc: RenderContext<G2State>) {
   /* ---- the wall-mounted data logger ---- */
   const px0 = X(56), py0 = Y(18), pw = L(888), ph = L(178);
   softShadow(ctx, () => {
-    bevelRect(ctx, px0, py0, pw, ph, L(10), mixHex(theme.surfaceAlt, theme.ink, dark ? 0.3 : 0.24), { depth: 1.4 });
+    bevelRect(ctx, px0, py0, pw, ph, L(10), mix(theme.surfaceAlt, theme.ink, dark ? 0.3 : 0.24), { depth: 1.4 });
   }, { blur: L(18), dy: L(7), alpha: 0.3 });
   const sx0 = px0 + L(10), sy0 = py0 + L(10), sw = pw - L(20), sh = ph - L(20);
   ctx.save();
@@ -1256,7 +1278,7 @@ function g2Render(rc: RenderContext<G2State>) {
   for (const col of G2_COLS) {
     const v = vess[col.key];
     const cx = X(col.cx);
-    const tint = mixHex(theme.sci["cold"], theme.sci["hot"], clamp01((v.T - 18) / 78));
+    const tint = mix(theme.sci["cold"], theme.sci["hot"], clamp01((v.T - 18) / 78));
     const fill = clamp01(v.m / Math.max(1, state.m0));
 
     if (col.key === "open") {
@@ -1266,7 +1288,7 @@ function g2Render(rc: RenderContext<G2State>) {
       const wh = (h - L(12)) * fill;
       ctx.save();
       ctx.fillStyle = gradient(ctx, bx, benchY - wh, w, wh,
-        [mixHex(tint, LIGHT, 0.3), tint, mixHex(tint, SHADE, 0.28)], 90);
+        [mix(tint, LIGHT, 0.3), tint, mix(tint, SHADE, 0.28)], 90);
       roundRect(ctx, bx + L(3), benchY - wh, w - L(6), wh, L(4));
       ctx.fill();
       ctx.restore();
@@ -1300,7 +1322,7 @@ function g2Render(rc: RenderContext<G2State>) {
       shape(ctx);
       ctx.clip();
       ctx.fillStyle = gradient(ctx, cx - halfBase, benchY - wh, halfBase * 2, wh,
-        [mixHex(tint, LIGHT, 0.3), tint, mixHex(tint, SHADE, 0.28)], 90);
+        [mix(tint, LIGHT, 0.3), tint, mix(tint, SHADE, 0.28)], 90);
       ctx.fillRect(cx - halfBase, benchY - wh, halfBase * 2, wh);
       ctx.restore();
       ctx.save();
@@ -1326,7 +1348,7 @@ function g2Render(rc: RenderContext<G2State>) {
       const wh = (h - L(24)) * fill;
       ctx.save();
       ctx.fillStyle = gradient(ctx, ix, benchY - L(10) - wh, iw, wh,
-        [mixHex(tint, LIGHT, 0.28), tint, mixHex(tint, SHADE, 0.3)], 90);
+        [mix(tint, LIGHT, 0.28), tint, mix(tint, SHADE, 0.3)], 90);
       roundRect(ctx, ix, benchY - L(10) - wh, iw, wh, L(3));
       ctx.fill();
       ctx.restore();
@@ -1887,15 +1909,15 @@ function g3Render(rc: RenderContext<G3State>) {
 
   sky(ctx, width, height, theme, "indoor", floorY);
   gradientFill(ctx, 0, 0, width, floorY, [
-    mixHex(theme.surfaceAlt, theme.ink, dark ? 0.16 : 0.1),
-    mixHex(theme.surfaceAlt, theme.ink, dark ? 0.34 : 0.24),
+    mix(theme.surfaceAlt, theme.ink, dark ? 0.16 : 0.1),
+    mix(theme.surfaceAlt, theme.ink, dark ? 0.34 : 0.24),
   ], 90);
   groundPlane(ctx, floorY, 0, width, height, theme, "lab");
 
   // Pegboard on the back wall
   ctx.save();
   ctx.globalAlpha = 0.5;
-  bevelRect(ctx, X(52), Y(46), L(230), L(158), L(6), mixHex(theme.surfaceAlt, theme.ink, 0.22), { depth: -1 });
+  bevelRect(ctx, X(52), Y(46), L(230), L(158), L(6), mix(theme.surfaceAlt, theme.ink, 0.22), { depth: -1 });
   ctx.fillStyle = hexA(theme.ink, 0.28);
   for (let r = 0; r < 6; r++) {
     for (let c = 0; c < 9; c++) {
@@ -1942,11 +1964,11 @@ function g3Render(rc: RenderContext<G3State>) {
   spriteShadowEllipse(ctx, X(500), floorY + L(12), L(232), L(34), { alpha: 0.36 });
   ctx.save();
   ctx.fillStyle = gradient(ctx, X(290), floorY - L(6), L(420), L(52),
-    [mixHex(theme.inkSoft, LIGHT, 0.3), mixHex(theme.inkSoft, SHADE, 0.42)], 90);
+    [mix(theme.inkSoft, LIGHT, 0.3), mix(theme.inkSoft, SHADE, 0.42)], 90);
   ctx.beginPath();
   ctx.ellipse(X(500), floorY + L(18), L(212), L(40), 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = mixHex(theme.inkSoft, SHADE, 0.5);
+  ctx.fillStyle = mix(theme.inkSoft, SHADE, 0.5);
   ctx.fillRect(X(288), floorY + L(18), L(424), L(22));
   ctx.beginPath();
   ctx.ellipse(X(500), floorY + L(40), L(212), L(40), 0, 0, Math.PI);
@@ -1968,7 +1990,7 @@ function g3Render(rc: RenderContext<G3State>) {
     const domeR = L(122);
     ctx.save();
     ctx.fillStyle = gradient(ctx, cx - domeR, base - domeR, domeR * 2, domeR,
-      [mixHex(theme.sci["hot"], LIGHT, 0.14), mixHex(theme.sci["hot"], SHADE, 0.52)], 100);
+      [mix(theme.sci["hot"], LIGHT, 0.14), mix(theme.sci["hot"], SHADE, 0.52)], 100);
     ctx.beginPath();
     ctx.ellipse(cx, base, domeR, domeR * 0.94, 0, Math.PI, 0);
     ctx.fill();
@@ -2004,7 +2026,7 @@ function g3Render(rc: RenderContext<G3State>) {
     }
     particleField(ctx, flames, theme.sci["hot"], { alpha: 0.85, buckets: 3, glow: L(9) });
     // Chimney and smoke
-    material(ctx, cx + L(66), base - L(178), L(38), L(78), mixHex(theme.sci["hot"], SHADE, 0.4), L(4));
+    material(ctx, cx + L(66), base - L(178), L(38), L(78), mix(theme.sci["hot"], SHADE, 0.4), L(4));
     const smoke: { x: number; y: number; r: number; a: number }[] = [];
     for (let i = 0; i < 16; i++) {
       const rise = (state.t * 30 + i * 17) % 118;
@@ -2026,7 +2048,7 @@ function g3Render(rc: RenderContext<G3State>) {
     // Water, gravel, fish, bubbles — then the glass over the lot
     ctx.save();
     ctx.fillStyle = gradient(ctx, bx, by + L(14), w, h - L(14),
-      [mixHex(theme.sci["liquid"], LIGHT, 0.22), mixHex(theme.sci["liquid"], SHADE, 0.35)], 90);
+      [mix(theme.sci["liquid"], LIGHT, 0.22), mix(theme.sci["liquid"], SHADE, 0.35)], 90);
     ctx.fillRect(bx + L(4), by + L(14), w - L(8), h - L(18));
     ctx.restore();
     ctx.save();
@@ -2079,7 +2101,7 @@ function g3Render(rc: RenderContext<G3State>) {
     const rear = cx - L(96), front = cx + L(96), axle = base - wheelR;
     for (const wx of [rear, front]) {
       ctx.save();
-      ctx.strokeStyle = mixHex(theme.inkSoft, SHADE, 0.25);
+      ctx.strokeStyle = mix(theme.inkSoft, SHADE, 0.25);
       ctx.lineWidth = Math.max(2, L(6));
       ctx.beginPath(); ctx.arc(wx, axle, wheelR, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = hexA(theme.inkSoft, 0.7);
@@ -2095,7 +2117,7 @@ function g3Render(rc: RenderContext<G3State>) {
     }
     const crank = cx - L(6);
     ctx.save();
-    ctx.strokeStyle = mixHex(theme.accent, SHADE, 0.1);
+    ctx.strokeStyle = mix(theme.accent, SHADE, 0.1);
     ctx.lineWidth = Math.max(2, L(7));
     ctx.lineCap = "round";
     ctx.beginPath();
@@ -2202,7 +2224,7 @@ function g3Render(rc: RenderContext<G3State>) {
     const col = answerColor[b.key];
     const lift = isPick ? 1 - easeInOut(flashAge) : 0;
     softShadow(ctx, () => {
-      bevelRect(ctx, b.x, b.y, b.w, b.h, 10, mixHex(col, theme.surface, 0.74), { depth: 1.6 });
+      bevelRect(ctx, b.x, b.y, b.w, b.h, 10, mix(col, theme.surface, 0.74), { depth: 1.6 });
     }, { blur: 10 + 8 * lift, dy: 4, alpha: 0.26, color: col });
     ctx.save();
     ctx.strokeStyle = hexA(col, isTruth ? 1 : 0.5);
@@ -2623,14 +2645,14 @@ function g4Maize(ctx: CanvasRenderingContext2D, x: number, y: number, h: number,
   const green = theme.sci["producer"];
   const sway = Math.sin(t * 0.9 + seed) * h * 0.05;
   ctx.save();
-  ctx.strokeStyle = mixHex(green, SHADE, 0.28);
+  ctx.strokeStyle = mix(green, SHADE, 0.28);
   ctx.lineWidth = Math.max(1, h * 0.07);
   ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(x, y);
   ctx.quadraticCurveTo(x + sway * 0.4, y - h * 0.6, x + sway, y - h);
   ctx.stroke();
-  ctx.fillStyle = mixHex(green, LIGHT, 0.12);
+  ctx.fillStyle = mix(green, LIGHT, 0.12);
   for (let i = 0; i < 3; i++) {
     const ly = y - h * (0.35 + i * 0.22);
     const dir = i % 2 === 0 ? 1 : -1;
@@ -2665,7 +2687,7 @@ function g4Render(rc: RenderContext<G4State>) {
   // Two ridges behind the farm
   for (const [amp, off, shade] of [[52, 34, 0.55], [34, 10, 0.72]]) {
     ctx.save();
-    ctx.fillStyle = mixHex(theme.sci["producer"], SHADE, shade);
+    ctx.fillStyle = mix(theme.sci["producer"], SHADE, shade);
     ctx.beginPath();
     ctx.moveTo(0, horizon + L(4));
     for (let px = 0; px <= width; px += L(24)) {
@@ -2688,7 +2710,7 @@ function g4Render(rc: RenderContext<G4State>) {
   ctx.save();
   ctx.globalAlpha = 0.72;
   for (const o of [[-40, 6, 24], [0, -6, 32], [34, 8, 22]]) {
-    sphere(ctx, X(330 + o[0]), Y(84 + o[1]), L(o[2]), mixHex(theme.surface, theme.ink, 0.16));
+    sphere(ctx, X(330 + o[0]), Y(84 + o[1]), L(o[2]), mix(theme.surface, theme.ink, 0.16));
   }
   ctx.restore();
 
@@ -2718,7 +2740,7 @@ function g4Render(rc: RenderContext<G4State>) {
   // Dairy shed
   const shedX = X(878), shedY = Y(300);
   ctx.save();
-  ctx.fillStyle = mixHex(theme.sci["hot"], SHADE, 0.4);
+  ctx.fillStyle = mix(theme.sci["hot"], SHADE, 0.4);
   ctx.beginPath();
   ctx.moveTo(shedX - L(78), shedY);
   ctx.lineTo(shedX, shedY - L(52));
@@ -2726,7 +2748,7 @@ function g4Render(rc: RenderContext<G4State>) {
   ctx.closePath();
   ctx.fill();
   ctx.restore();
-  material(ctx, shedX - L(66), shedY, L(132), L(72), mixHex(theme.inkSoft, LIGHT, 0.2), L(3));
+  material(ctx, shedX - L(66), shedY, L(132), L(72), mix(theme.inkSoft, LIGHT, 0.2), L(3));
   ctx.save();
   ctx.fillStyle = darken(theme.inkSoft, 0.72);
   roundRect(ctx, shedX - L(18), shedY + L(24), L(36), L(48), L(3));
@@ -2738,7 +2760,7 @@ function g4Render(rc: RenderContext<G4State>) {
   spriteShadowEllipse(ctx, cowX, cowY + L(28), L(52), L(9), { alpha: 0.3 });
   ctx.save();
   const chew = Math.sin(state.t * 1.4) * L(2);
-  ctx.fillStyle = mixHex(theme.surface, theme.ink, dark ? 0.18 : 0.05);
+  ctx.fillStyle = mix(theme.surface, theme.ink, dark ? 0.18 : 0.05);
   ctx.beginPath();
   ctx.ellipse(cowX, cowY, L(50), L(26), 0, 0, Math.PI * 2);
   ctx.fill();
@@ -2753,7 +2775,7 @@ function g4Render(rc: RenderContext<G4State>) {
   ctx.beginPath();
   for (const dx of [-30, -12, 14, 32]) { ctx.moveTo(cowX + L(dx), cowY + L(20)); ctx.lineTo(cowX + L(dx), cowY + L(28)); }
   ctx.stroke();
-  ctx.fillStyle = mixHex(theme.surface, theme.ink, dark ? 0.18 : 0.05);
+  ctx.fillStyle = mix(theme.surface, theme.ink, dark ? 0.18 : 0.05);
   ctx.beginPath();
   ctx.ellipse(cowX - L(52), cowY - L(12) + chew, L(17), L(13), -0.35, 0, Math.PI * 2);
   ctx.fill();
@@ -2922,7 +2944,7 @@ function g4Render(rc: RenderContext<G4State>) {
     const col = active ? theme.accent : reached ? theme.inkSoft : theme.line;
     softShadow(ctx, () => {
       bevelRect(ctx, tx, stripY + (active ? -3 : 0), tileW, 92, 9,
-        mixHex(theme.surfaceAlt, active ? theme.accent : theme.ink, active ? 0.16 : 0.04),
+        mix(theme.surfaceAlt, active ? theme.accent : theme.ink, active ? 0.16 : 0.04),
         { depth: active ? 1.6 : 0.6 });
     }, { blur: active ? 14 : 6, dy: 3, alpha: active ? 0.3 : 0.14, color: active ? theme.accent : undefined });
     const ty = stripY + (active ? -3 : 0);
@@ -3319,7 +3341,7 @@ function g5Car(
   spriteShadowEllipse(ctx, cx, cy + wheelR * 0.95, len * 0.52, wheelR * 0.5, { alpha: 0.4 });
   ctx.save();
   ctx.fillStyle = gradient(ctx, cx - len / 2, cy - h, len, h,
-    [mixHex(color, LIGHT, 0.34), color, mixHex(color, SHADE, 0.4)], 100);
+    [mix(color, LIGHT, 0.34), color, mix(color, SHADE, 0.4)], 100);
   ctx.beginPath();
   ctx.moveTo(cx - len * 0.5, cy);
   ctx.quadraticCurveTo(cx - len * 0.5, cy - h * 0.5, cx - len * 0.36, cy - h * 0.52);
@@ -3418,7 +3440,7 @@ function g5Render(rc: RenderContext<G5State>) {
   } else {
     const towerX = X(768);
     ctx.save();
-    ctx.fillStyle = mixHex(theme.inkSoft, SHADE, 0.4);
+    ctx.fillStyle = mix(theme.inkSoft, SHADE, 0.4);
     ctx.beginPath();
     ctx.moveTo(towerX - L(34), horizon);
     ctx.quadraticCurveTo(towerX - L(16), Y(288), towerX - L(22), Y(252));
@@ -3437,18 +3459,18 @@ function g5Render(rc: RenderContext<G5State>) {
         a: 0.55 * (1 - rise / 150),
       });
     }
-    particleField(ctx, plume, mixHex(theme.surface, theme.ink, 0.25 + 0.6 * dirty), { alpha: 0.4 + 0.35 * dirty, buckets: 3 });
+    particleField(ctx, plume, mix(theme.surface, theme.ink, 0.25 + 0.6 * dirty), { alpha: 0.4 + 0.35 * dirty, buckets: 3 });
   }
   // Refinery with its flare
   const refX = X(896);
   for (const [dx, hgt] of [[-26, 54], [0, 76], [24, 44]]) {
-    material(ctx, refX + L(dx) - L(7), horizon - L(hgt), L(14), L(hgt), mixHex(theme.inkSoft, SHADE, 0.45), L(2));
+    material(ctx, refX + L(dx) - L(7), horizon - L(hgt), L(14), L(hgt), mix(theme.inkSoft, SHADE, 0.45), L(2));
   }
   glow(ctx, refX, horizon - L(84), L(20 + 6 * pulse(state.t, 2.4)), theme.sci["hot"], 0.8);
   // Car factory, sawtooth roof
   const facX = X(980);
   ctx.save();
-  ctx.fillStyle = mixHex(theme.inkSoft, SHADE, 0.5);
+  ctx.fillStyle = mix(theme.inkSoft, SHADE, 0.5);
   ctx.beginPath();
   ctx.moveTo(facX - L(56), horizon);
   ctx.lineTo(facX - L(56), Y(206));
@@ -3516,7 +3538,7 @@ function g5Render(rc: RenderContext<G5State>) {
         a: 0.65 * (1 - d / 96),
       });
     }
-    particleField(ctx, puffs, mixHex(theme.inkSoft, theme.ink, 0.4), { alpha: 0.5, buckets: 3 });
+    particleField(ctx, puffs, mix(theme.inkSoft, theme.ink, 0.4), { alpha: 0.5, buckets: 3 });
   }
 
   /* ---- the audit boundary ---- */
@@ -3542,7 +3564,7 @@ function g5Render(rc: RenderContext<G5State>) {
   const bx = X(26), by = Y(56), bw2 = L(318), bh2 = L(276);
   metal(ctx, X(178) - L(9), by + bh2, L(18), Y(470) - (by + bh2), theme.inkSoft, { radius: 2, polish: 0.6 });
   softShadow(ctx, () => {
-    bevelRect(ctx, bx, by, bw2, bh2, L(12), mixHex(theme.surfaceAlt, theme.ink, dark ? 0.34 : 0.26), { depth: 1.6 });
+    bevelRect(ctx, bx, by, bw2, bh2, L(12), mix(theme.surfaceAlt, theme.ink, dark ? 0.34 : 0.26), { depth: 1.6 });
   }, { blur: L(20), dy: L(8), alpha: 0.4 });
   const ix = bx + L(12), iy = by + L(12), iw = bw2 - L(24), ih = bh2 - L(24);
   ctx.save();
@@ -3581,7 +3603,7 @@ function g5Render(rc: RenderContext<G5State>) {
       if (hSeg < 0.4) continue;
       ctx.save();
       ctx.fillStyle = gradient(ctx, cxb - wBar / 2, yCur - hSeg, wBar, hSeg,
-        [mixHex(base, LIGHT, lighten + 0.22), mixHex(base, LIGHT, lighten)], 0);
+        [mix(base, LIGHT, lighten + 0.22), mix(base, LIGHT, lighten)], 0);
       roundRect(ctx, cxb - wBar / 2, yCur - hSeg, wBar, hSeg, L(2));
       ctx.fill();
       ctx.strokeStyle = hexA(SHADE, 0.35);

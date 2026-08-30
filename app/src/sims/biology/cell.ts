@@ -1318,18 +1318,25 @@ function chromatin(
 
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  for (let i = 0; i < 10; i++) {
+  // Twelve strands, each with its own centre, sweep and wobble, so the DNA
+  // reads as a tangle rather than a rosette of identical petals.
+  for (let i = 0; i < 12; i++) {
     const seed = i * 2.399 + 0.4;
     const dark = i % 2 === 0;
-    ctx.strokeStyle = hexA(dark ? darken(tint, 0.5) : lighten(tint, 0.55), dark ? 0.52 : 0.24);
-    ctx.lineWidth = Math.max(0.9, r * (dark ? 0.05 : 0.028));
+    const ox = x + Math.cos(seed * 2.3) * r * 0.2;
+    const oy = y + Math.sin(seed * 1.7) * r * 0.18;
+    const sweep = 1.7 + ((i * 5) % 7) * 0.42;
+    const freq = 7 + ((i * 3) % 5) * 3.4;
+    const base = 0.16 + 0.1 * ((i * 7) % 4) / 3;
+    ctx.strokeStyle = hexA(dark ? darken(tint, 0.5) : lighten(tint, 0.55), dark ? 0.5 : 0.22);
+    ctx.lineWidth = Math.max(0.9, r * (dark ? 0.048 : 0.026));
     ctx.beginPath();
-    for (let k = 0; k <= 30; k++) {
-      const u = k / 30;
-      const a = seed + u * 3.1 + Math.sin(time * 0.16 + i) * 0.05;
-      const rad = r * (0.2 + 0.55 * (0.5 + 0.5 * Math.sin(seed * 3.1 + u * 16.5)));
-      const qx = x + Math.cos(a) * rad * 0.88;
-      const qy = y + Math.sin(a) * rad * 0.82;
+    for (let k = 0; k <= 32; k++) {
+      const u = k / 32;
+      const a = seed * 1.9 + u * sweep + Math.sin(time * 0.16 + i) * 0.05;
+      const rad = r * (base + 0.42 * (0.5 + 0.5 * Math.sin(seed * 3.1 + u * freq)));
+      const qx = ox + Math.cos(a) * rad * 0.94;
+      const qy = oy + Math.sin(a) * rad * 0.88;
       if (k === 0) ctx.moveTo(qx, qy); else ctx.lineTo(qx, qy);
     }
     ctx.stroke();

@@ -913,7 +913,8 @@ function renderSort(rc: RenderContext<SortState>) {
     { at: 1, color: hexA(theme.surfaceAlt, 0) },
   ], 90);
   // Pegboard with a few hung tools, far enough left to stay out of the way.
-  const pegX = Math.round(W * 0.06), pegY = Math.round(H * 0.14), pegW = Math.min(170, W * 0.2), pegH = 118;
+  const pegX = 26, pegY = 122, pegW = Math.min(180, W * 0.21);
+  const pegH = Math.max(70, Math.min(122, beltY - pegY - 40));
   material(ctx, pegX, pegY, pegW, pegH, mixHex(wood, "#000000", 0.25), 4);
   ctx.save();
   ctx.fillStyle = hexA(theme.ink, 0.18);
@@ -1158,7 +1159,9 @@ function renderSort(rc: RenderContext<SortState>) {
     if (params.feedback as boolean) {
       const truth = spec.isSystem ? "It is a system." : "It is just a collection.";
       caption(ctx, inspectX, beltY - 154, truth, theme, { align: "center", size: 12, color: theme.ink, weight: 700 });
-      wrapCaption(ctx, spec.reveal, inspectX, H - 66, Math.min(W - 60, 560), theme, 11.5);
+      // Kept in the clear strip left of the bins so no text lands on the artwork.
+      wrapCaption(ctx, spec.reveal, (26 + binSysX - 34) / 2, H - 44,
+        Math.max(240, binSysX - 90), theme, 11.5);
     }
   } else if (s.phase === "inspect") {
     ctx.save();
@@ -2099,11 +2102,11 @@ function renderBuild(rc: RenderContext<BuildState>) {
       arrow(ctx, bikeX + 8, roadY - 54, bikeX + 2, roadY - 20, theme.sci["current"], { width: 1.8 });
     }
     if (overlays.labels !== false) {
-      labelLeader(ctx, lightX - 16, lightY - 34, W - 300, 120, "traffic signal", theme,
+      labelLeader(ctx, lightX - 16, lightY - 34, W - 40, 140, "traffic signal", theme,
         { color: theme.sci["field"], size: 11, sub: "tells riders when to go", align: "left" });
-      labelLeader(ctx, bikeX, roadY - 30, 210, 190, "the bicycle", theme,
+      labelLeader(ctx, bikeX, roadY - 30, 252, 250, "the bicycle", theme,
         { color: theme.accent, size: 11, sub: "one part of the street", align: "left" });
-      labelLeader(ctx, bikeX + 4, roadY + 22, 190, 260, "the road", theme,
+      labelLeader(ctx, bikeX + 4, roadY + 22, 252, 302, "the road", theme,
         { color: theme.sci["force"], size: 11, sub: "pushes back on the tyres", align: "left" });
     }
     caption(ctx, W * 0.5, 44, "Zoom out and the whole machine is only a part", theme, {
@@ -2152,14 +2155,14 @@ function renderBuild(rc: RenderContext<BuildState>) {
     }
 
     if (s.rides) {
-      caption(ctx, cx, cy - 234 * k, `rolling at ${num(5.5 * s.ride, 1)} m/s`, theme, {
+      caption(ctx, cx, Math.max(54, cy - 182 * k), `rolling at ${num(5.5 * s.ride, 1)} m/s`, theme, {
         align: "center", size: 14, color: theme.sci["velocity"], weight: 800,
       });
       for (let i = 0; i < 5; i++) {
         const f = ((t * 1.4 + i * 0.2) % 1);
         ctx.save();
         ctx.globalAlpha = 0.5 * (1 - f);
-        arrow(ctx, cx - 150 * k - f * 60, cy - 40 * k + i * 12, cx - 200 * k - f * 60, cy - 40 * k + i * 12,
+        arrow(ctx, cx - 148 * k - f * 30, cy - 40 * k + i * 12, cx - 182 * k - f * 30, cy - 40 * k + i * 12,
           theme.sci["velocity"], { width: 2 });
         ctx.restore();
       }
@@ -2168,7 +2171,7 @@ function renderBuild(rc: RenderContext<BuildState>) {
     /* ---- one subsystem, laid out on the bench ---- */
     const color = theme.sci[sub.colorKey];
     const n = sub.parts.length;
-    const trayW = Math.min(126, (W - 320) / n);
+    const trayW = Math.max(62, Math.min(126, (W - 330) / n));
     const startX = cx - ((n - 1) * (trayW + 16)) / 2;
     const trayY = cy + 10;
     material(ctx, 30, trayY + 62, W - 60, 16, mixHex(theme.sci["decomposer"], "#000000", 0.3), 4);
@@ -2254,15 +2257,15 @@ function renderBuild(rc: RenderContext<BuildState>) {
       ctx.restore();
       if (overlays.labels !== false) {
         const toRight = px >= cx;
-        labelLeader(ctx, px, py, toRight ? Math.min(W - 150, px + 62) : Math.max(120, px - 62), py,
-          pieces[i].name, theme, { color, size: 11, align: toRight ? "left" : "right" });
+        labelLeader(ctx, px, py, toRight ? Math.min(W - 260, px + 54) : Math.max(268, px - 54), py,
+          pieces[i].name, theme, { color, size: 11, align: toRight ? "right" : "left" });
       }
     }
     ctx.save();
     ctx.translate(cx, cy - 20);
     partIcon(ctx, sub.parts.find((p) => p.name === det.name)?.icon ?? "block", 34, color, theme, t, true);
     ctx.restore();
-    wrapCaption(ctx, det.note, cx, H - 52, Math.min(W - 120, 520), theme, 11.5);
+    wrapCaption(ctx, det.note, cx, H - 46, Math.max(220, Math.min(W - 560, 470)), theme, 11.5);
     systemTestCard(ctx, W - 236, 150, 218, theme, pieces.length, pieces.length - 1,
       `holds the ${sub.name.toLowerCase()} together`, t);
   }
@@ -2805,8 +2808,8 @@ function renderTank(rc: RenderContext<TankState>) {
   const consoleW = Math.min(268, W * 0.3);
   const tankX = 26;
   const tankW = Math.max(220, W - consoleW - 66);
-  const tankY = Math.round(H * 0.17);
-  const tankH = Math.round(H * 0.56);
+  const tankY = Math.round(H * 0.15);
+  const tankH = Math.round(H * 0.5);
   const standY = tankY + tankH + 14;
 
   sky(ctx, W, H, theme, "indoor");
@@ -3128,14 +3131,21 @@ function renderTank(rc: RenderContext<TankState>) {
     caption(ctx, cx0 + 36, 292, "watch what else changes", theme, { size: 10, color: theme.inkSoft });
   }
 
-  /* ---- labels on the hardware ---- */
-  if (overlays.labels !== false && band !== "3-5") {
-    labelLeader(ctx, heatX, waterTop + 40, Math.min(cx0 - 24, tankX + tankW + 6), tankY + 26,
-      "heater 300 W", theme, { color: hot, size: 10.5, align: "left", sub: "25 C setpoint" });
-    labelLeader(ctx, tankX + 74, gravelY - 50, tankX + 12, tankY + tankH + 44, "plants", theme,
-      { color: leaf, size: 10.5, align: "left", sub: "oxygen in light" });
-    labelLeader(ctx, filtX + 4, filtY + 60, tankX + tankW * 0.5, tankY + tankH + 44, "filter", theme,
-      { color: cold, size: 10.5, align: "left", sub: "flow and bacteria" });
+  /* ---- the equipment rail on the cabinet front, where the labels live ---- */
+  if (overlays.labels !== false && band !== "3-5" && H - standY > 74) {
+    const railY = standY + 22;
+    bevelRect(ctx, tankX - 8, railY - 20, tankW + 16, 46, 8,
+      mixHex(wood, "#000000", 0.42), { depth: -1 });
+    const stops: [number, number, string, string, string][] = [
+      [tankX + 74, gravelY - 50, leaf, "plants", "oxygen in light"],
+      [filtX + 4, filtY + 60, cold, "filter", "flow and bacteria"],
+      [heatX, waterTop + 44, hot, "heater 300 W", "25 C setpoint"],
+    ];
+    for (let i = 0; i < stops.length; i++) {
+      const [fx, fy, col, name, sub2] = stops[i];
+      labelLeader(ctx, fx, fy, tankX + 8 + i * (tankW - 24) / 3, railY, name, theme,
+        { color: col, size: 10.5, align: "right", sub: sub2 });
+    }
   }
 
   badge(ctx, tankX + 12, tankY + tankH - 12, `${TANK_VOLUME} L`, theme, { align: "left", color: water });
@@ -3840,7 +3850,7 @@ function renderFlock(rc: RenderContext<FlockState>) {
 
   /* ---- two cages ---- */
   const gutter = 16;
-  const cageY = 92;
+  const cageY = 124;
   const cageH = Math.max(140, horizon - cageY - 92);
   const cageW = (W - gutter * 3) / 2;
   const cages: { x: number; birds: Bird[]; rules: boolean; order: number; title: string; sub: string }[] = [
@@ -3954,10 +3964,10 @@ function renderFlock(rc: RenderContext<FlockState>) {
 
   /* ---- the comparison, spelled out ---- */
   const strip = H - 54;
-  caption(ctx, W / 2, 30, "Same birds. Same speed. One rule book.", theme, {
+  caption(ctx, W / 2, 22, "Same birds. Same speed. One rule book.", theme, {
     align: "center", size: 16, color: theme.ink, weight: 800,
   });
-  caption(ctx, W / 2, 52, "The flock is a property of the group, not of any bird in it.", theme, {
+  caption(ctx, W / 2, 40, "The flock is a property of the group, not of any bird in it.", theme, {
     align: "center", size: 11.5, color: theme.inkSoft,
   });
   const barW = Math.min(W - 120, 520);
