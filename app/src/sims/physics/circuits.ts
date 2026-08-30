@@ -1,8 +1,12 @@
-import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
+import type {
+  ParamValues, RenderContext, SimManifest, SimModel, ThemeColors,
+} from "@engine/types";
 import { q } from "@engine/units";
-import { camera, mixHex } from "@ui/draw";
+import { battery, bulb } from "@ui/labware";
+import { bokeh, callout, depthWash } from "@ui/organic";
 import {
-  badge, caption, glow, hexA, lifted, material, sky, sphere, vignette,
+  arcGauge, badge, caption, dashFlow, glow, hexA, isDarkTheme, material,
+  metal, plastic, pulse, softShadow, sphere, vignette,
 } from "@ui/scene";
 
 /**
@@ -104,8 +108,6 @@ interface Layout {
 
 // World box the circuit is drawn in. Fixed, so the schematic never jumps
 // around as the student changes the topology.
-const W = 100;
-const H = 58;
 const LEFT = 14, RIGHT = 86, TOP = 44, BOTTOM = 12;
 const BAT_TOP = 34, BAT_BOTTOM = 24;
 
@@ -280,7 +282,6 @@ const model: SimModel<State> = {
 /* ------------------------------------------------------------------ *
  * Render
  * ------------------------------------------------------------------ */
-
 function polylineLength(pts: Pt[]): number {
   let L = 0;
   for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
@@ -307,293 +308,489 @@ function pointAt(pts: Pt[], d: number): Pt {
 const DOT_SPACING = 6;
 /** World units travelled per coulomb — sets the visual speed of current. */
 const UNITS_PER_COULOMB = 14;
+/** Bulb envelope radius, world units. */
+const R_BULB = 3.3;
+
+/**
+ * A panel meter: machined bezel, a dial face under glass, a tick ring and a
+ * swinging needle. A needle that sweeps is read at a glance from across a
+ * room; a number has to be focused on.
+ */
+function analogMeter(
+  ctx: CanvasRenderingContext2D,
+  cx: number, cy: number, r: number,
+  frac: number, value: string, name: string,
+  color: string, theme: ThemeColors, wobble: number,
+) {
+  const f = Math.max(0, Math.min(1, frac));
+  ctx.save();
+
+  // Bezel
+  softShadow(ctx, () => {
+    metal(ctx, cx - r, cy - r, r * 2, r * 2, theme.sci["mass"], { radius: r, angle: 125 });
+  }, { blur: r * 0.5, dy: r * 0.16, alpha: 0.38 });
+
+  // Dial face
+  const face = ctx.createRadialGradient(cx - r * 0.34, cy - r * 0.4, r * 0.06, cx, cy, r * 0.9);
+  face.addColorStop(0, hexA(theme.surface, 1));
+  face.addColorStop(0.72, hexA(theme.surface, 0.94));
+  face.addColorStop(1, hexA(theme.surfaceAlt, 1));
+  ctx.fillStyle = face;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.87, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = hexA(theme.ink, 0.22);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  arcGauge(ctx, cx, cy, r * 0.78, f, color, theme, undefined, {
+    width: r * 0.1, start: 152, sweep: 236, ticks: 11,
+  });
+
+  // Needle — a tapered blade with a counterweight tail, wobbling a little
+  // while current is flowing, the way a real moving-coil movement does.
+  const a = ((152 + 236 * f) * Math.PI) / 180 + wobble;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(a);
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.2, -r * 0.055);
+  ctx.lineTo(r * 0.66, 0);
+  ctx.lineTo(-r * 0.2, r * 0.055);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = hexA(theme.ink, 0.35);
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+  ctx.restore();
+  sphere(ctx, cx, cy, r * 0.13, theme.sci["mass"]);
+
+  // Glass over the face: one bright sweep across the upper left.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.87, 0, Math.PI * 2);
+  ctx.clip();
+  const sheen = ctx.createLinearGradient(cx - r, cy - r, cx + r * 0.2, cy + r * 0.5);
+  sheen.addColorStop(0, hexA(theme.surface, 0.75));
+  sheen.addColorStop(0.5, hexA(theme.surface, 0.05));
+  sheen.addColorStop(1, hexA(theme.surface, 0));
+  ctx.fillStyle = sheen;
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  ctx.restore();
+
+  caption(ctx, cx, cy - r * 0.44, name, theme, {
+    align: "center", size: Math.max(9, r * 0.2), color: theme.inkSoft, weight: 700,
+  });
+  caption(ctx, cx, cy + r * 0.55, value, theme, {
+    align: "center", size: Math.max(11, r * 0.27), color: theme.ink, weight: 800,
+  });
+  ctx.restore();
+}
+
+/**
+ * A lamp module: an opaque mounting plate with two terminal screws, and a
+ * filament bulb screwed into it. The plate is what lets a bulb sit in the
+ * middle of a wire run without the wire appearing to pass through the glass.
+ */
+function lampModule(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, r: number, brightness: number,
+  vertical: boolean, theme: ThemeColors,
+) {
+  const pw = vertical ? r * 2.5 : r * 2.9;
+  const ph = vertical ? r * 3.1 : r * 2.7;
+  softShadow(ctx, () => {
+    plastic(ctx, x - pw / 2, y - ph / 2, pw, ph, theme.surfaceAlt, {
+      radius: r * 0.3, gloss: 0.4,
+    });
+  }, { blur: r * 0.5, dy: r * 0.18, alpha: 0.34 });
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.ink, 0.16);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - pw / 2 + 4, y - ph / 2 + 4, pw - 8, ph - 8);
+  ctx.restore();
+
+  // Terminal screws where the wire meets the plate.
+  const tx = vertical ? 0 : pw / 2 - r * 0.22;
+  const ty = vertical ? ph / 2 - r * 0.22 : 0;
+  for (const sgn of [-1, 1]) {
+    const sx = x + tx * sgn, sy = y + ty * sgn;
+    sphere(ctx, sx, sy, r * 0.2, theme.sci["mass"]);
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.ink, 0.5);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(sx - r * 0.12, sy);
+    ctx.lineTo(sx + r * 0.12, sy);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  const b = Math.max(0, Math.min(1, brightness));
+  // The module's own glow is deliberately under-driven and a tighter halo is
+  // laid over it: a lamp that throws light without washing out the bench.
+  bulb(ctx, x, y - r * 0.16, r, b * 0.5, theme);
+  if (b > 0.02) {
+    glow(ctx, x, y - r * 0.16, r * 2.4, theme.sci["light"], 0.3 * b);
+    glow(ctx, x, y - r * 0.16, r * 0.95, theme.sci["light"], 0.5 * b);
+  }
+}
 
 function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, overlays, band } = rc;
   const sol = solveCircuit(params);
   const topology = params.topology as string;
+  const parallel = topology === "parallel";
   const lay = layoutFor(sol, topology);
-  // Cropped close to the components — just enough margin for glow and labels —
-  // so the circuit fills the bench instead of sitting in an empty page.
-  const MX = W * 0.04, MY = H * 0.017;
-  const cam = camera({ x0: MX, y0: MY, x1: W - MX, y1: H - MY, width, height, square: true });
-  const s = cam.scale;
-  const X = (x: number) => cam.toScreenX(x);
-  const Y = (y: number) => cam.toScreenY(y);
+  const dark = isDarkTheme(theme);
+  const t = rc.time;
 
-  // ---- The bench ----------------------------------------------------
-  sky(ctx, width, height, theme, "indoor");
-  const boardL = X(W * 0.05), boardR = X(W * 0.95);
-  const boardT = Y(H * 0.948), boardB = Y(H * 0.052);
-  lifted(ctx, 26, 9, () => {
-    material(ctx, boardL, boardT, boardR - boardL, boardB - boardT, theme.surfaceAlt, 12);
-  }, 0.3);
+  /* ---- Stage: the whole canvas is one instrument panel --------------- */
+  // The loop sits on the upper board; the lower band is an instrument shelf,
+  // which is where the meters live on a real bench.
+  const padL = width * 0.068;
+  const padR = width * 0.055;
+  const padT = height * 0.16;
+  const padB = Math.max(120, Math.min(height * 0.29, 176));
+  const availW = Math.max(40, width - padL - padR);
+  const availH = Math.max(40, height - padT - padB);
+  const s = Math.min(availW / (RIGHT - LEFT), availH / (TOP - BOTTOM));
+  const midX = padL + availW / 2;
+  const midY = padT + availH / 2;
+  const X = (x: number) => midX + (x - (LEFT + RIGHT) / 2) * s;
+  const Y = (y: number) => midY - (y - (TOP + BOTTOM) / 2) * s;
+
+  depthWash(ctx, width, height, theme);
+  bokeh(ctx, width, height, theme.accent, 15, 41);
+
+  // The mounting board: a big laminated panel with a perforation grid, screwed
+  // down at the corners. It is the bench, and it fills the stage.
+  const bIn = Math.max(8, width * 0.016);
+  const bx0 = bIn, by0 = bIn;
+  const bw = width - bIn * 2, bh = height - bIn * 2;
+  softShadow(ctx, () => {
+    plastic(ctx, bx0, by0, bw, bh, theme.surfaceAlt, { radius: 16, gloss: 0.3 });
+  }, { blur: 40, dy: 16, alpha: 0.4 });
   ctx.save();
-  ctx.strokeStyle = hexA(theme.ink, 0.1);
-  ctx.lineWidth = 1;
-  ctx.strokeRect(boardL + 7, boardT + 7, boardR - boardL - 14, boardB - boardT - 14);
-  ctx.restore();
-  for (const [cx, cy] of [
-    [boardL + 14, boardT + 14], [boardR - 14, boardT + 14],
-    [boardL + 14, boardB - 14], [boardR - 14, boardB - 14],
-  ] as [number, number][]) {
-    sphere(ctx, cx, cy, 4, theme.inkSoft);
-  }
-
-  // ---- Wires -------------------------------------------------------
-  // Three passes turn a hairline into a conductor: a dark casing, a lit core,
-  // and a thin specular spine along the top of the metal.
-  const wirePasses: [number, string][] = [
-    [Math.max(4, s * 0.92), hexA(theme.ink, 0.3)],
-    [Math.max(2.5, s * 0.6), theme.inkSoft],
-    [Math.max(1, s * 0.16), hexA(theme.surface, 0.5)],
-  ];
-  for (const [lw, color] of wirePasses) {
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lw;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    for (const w of lay.wires) {
-      ctx.beginPath();
-      ctx.moveTo(X(w.pts[0].x), Y(w.pts[0].y));
-      for (let i = 1; i < w.pts.length; i++) ctx.lineTo(X(w.pts[i].x), Y(w.pts[i].y));
-      ctx.stroke();
+  ctx.beginPath();
+  const step = Math.max(16, s * 2.1);
+  for (let px = bx0 + step; px < bx0 + bw - step * 0.4; px += step) {
+    for (let py = by0 + step; py < by0 + bh - step * 0.4; py += step) {
+      ctx.moveTo(px + 1.5, py);
+      ctx.arc(px, py, 1.5, 0, Math.PI * 2);
     }
+  }
+  ctx.fillStyle = hexA(theme.ink, dark ? 0.2 : 0.07);
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.ink, 0.12);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx0 + 10, by0 + 10, bw - 20, bh - 20);
+  ctx.restore();
+  for (const [sx, sy] of [
+    [bx0 + 22, by0 + 22], [bx0 + bw - 22, by0 + 22],
+    [bx0 + 22, by0 + bh - 22], [bx0 + bw - 22, by0 + bh - 22],
+  ] as [number, number][]) {
+    sphere(ctx, sx, sy, 6, theme.sci["mass"]);
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.ink, 0.55);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(sx - 3.4, sy - 3.4);
+    ctx.lineTo(sx + 3.4, sy + 3.4);
+    ctx.stroke();
     ctx.restore();
   }
 
-  // ---- Charge flow --------------------------------------------------
+  /* ---- Wires -------------------------------------------------------- */
+  // Screen-space copies, built once and reused by the wire passes, the solder
+  // joints and the charge animation.
+  const runs = lay.wires.map((w) => ({
+    frac: w.frac,
+    pts: w.pts.map((p) => ({ x: X(p.x), y: Y(p.y) })),
+  }));
+  const strokeRun = (pts: { x: number; y: number }[]) => {
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+  };
+  // Four passes turn a hairline into a cable: a soft shadow on the bench, a
+  // dark sheath, the coloured insulation, and a specular spine along the top.
+  const passes: [number, string][] = [
+    [Math.max(8, s * 1.15), hexA(theme.ink, 0.14)],
+    [Math.max(6.4, s * 0.92), hexA(theme.ink, dark ? 0.85 : 0.7)],
+    [Math.max(4.4, s * 0.64), theme.sci["mass"]],
+    [Math.max(1.2, s * 0.14), hexA(theme.surface, dark ? 0.5 : 0.85)],
+  ];
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (let p = 0; p < passes.length; p++) {
+    const [lw, color] = passes[p];
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    if (p === 3) ctx.translate(0, -Math.max(1, s * 0.16));
+    for (const r of runs) strokeRun(r.pts);
+  }
+  ctx.restore();
+
+  // Solder joints at every corner, so the run reads as jointed metal.
+  const seen = new Set<string>();
+  for (const r of runs) {
+    for (const p of r.pts) {
+      const key = `${Math.round(p.x)},${Math.round(p.y)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      sphere(ctx, p.x, p.y, Math.max(3.2, s * 0.42), theme.sci["mass"]);
+      glow(ctx, p.x - s * 0.12, p.y - s * 0.14, Math.max(2, s * 0.2), theme.surface, 0.45);
+    }
+  }
+
+  /* ---- Charge flow --------------------------------------------------- */
   // Carriers are spaced evenly and move at a speed proportional to the current
   // in the wire they are on, so a parallel branch visibly runs at half rate.
-  // Each one carries its own light, and the whole stream brightens with I.
   if (overlays.charges && sol.closed && sol.current > 1e-4) {
-    const dotR = Math.max(2.2, s * 0.34);
     const heat = Math.max(0, Math.min(1, sol.current / 3));
-    for (const w of lay.wires) {
-      if (w.frac <= 1e-6) continue;
-      const L = polylineLength(w.pts);
-      const offset = ((state.charge * w.frac * UNITS_PER_COULOMB) % DOT_SPACING + DOT_SPACING) % DOT_SPACING;
-      for (let d = offset; d < L; d += DOT_SPACING) {
-        const p = pointAt(w.pts, d);
-        const cx = X(p.x), cy = Y(p.y);
-        glow(ctx, cx, cy, dotR * (2.4 + heat * 2.6), theme.sci["current"], 0.16 + heat * 0.24);
-        sphere(ctx, cx, cy, dotR, theme.sci["current"], { rim: false });
+    const dotR = Math.max(2.6, s * 0.28);
+    for (let i = 0; i < runs.length; i++) {
+      const r = runs[i];
+      if (r.frac <= 1e-6) continue;
+      dashFlow(ctx, r.pts, theme.sci["current"],
+        state.charge * r.frac * UNITS_PER_COULOMB * s, {
+          width: Math.max(2, s * 0.26), dash: s * 0.9, gap: s * 1.5,
+          alpha: 0.35 + heat * 0.3, glow: s * 0.5,
+        });
+      const L = polylineLength(lay.wires[i].pts);
+      const off = ((state.charge * r.frac * UNITS_PER_COULOMB) % DOT_SPACING + DOT_SPACING) % DOT_SPACING;
+      for (let d = off; d < L; d += DOT_SPACING) {
+        const p = pointAt(lay.wires[i].pts, d);
+        const px = X(p.x), py = Y(p.y);
+        glow(ctx, px, py, dotR * (2.6 + heat * 2.4), theme.sci["current"], 0.2 + heat * 0.3);
+        sphere(ctx, px, py, dotR, theme.sci["current"], { rim: false });
       }
     }
   }
 
-  // ---- Battery ------------------------------------------------------
+  /* ---- Battery ------------------------------------------------------- */
   {
     const bx = X(lay.battery.x);
-    const topY = Y(BAT_TOP), botY = Y(BAT_BOTTOM);
-    // A cell with a case and a terminal, not two plates floating on a wire.
-    material(ctx, bx - s * 5.6, topY - s * 1.4, s * 11.2, botY - topY + s * 2.8,
-      theme.surfaceAlt, s * 1.2);
-    material(ctx, bx - s * 1.7, topY - s * 3.2, s * 3.4, s * 2, theme.sci["charge-pos"], s * 0.5);
+    const byMid = Y((BAT_TOP + BAT_BOTTOM) / 2);
+    const cellL = (BAT_TOP - BAT_BOTTOM) * s;
+    const cellW = s * 5.4;
+    // A cradle the cell sits in, then the cell itself standing on end so its
+    // + terminal meets the top rail exactly where the schematic says it does.
+    softShadow(ctx, () => {
+      plastic(ctx, bx - cellW * 0.86, byMid - cellL * 0.6, cellW * 1.72, cellL * 1.2,
+        theme.surfaceAlt, { radius: s * 0.5, gloss: 0.35 });
+    }, { blur: s * 1.6, dy: s * 0.4, alpha: 0.35 });
+    for (const sgn of [-1, 1]) {
+      metal(ctx, bx - cellW * 0.78, byMid + sgn * cellL * 0.33 - s * 0.35,
+        cellW * 1.56, s * 0.7, theme.sci["mass"], { radius: s * 0.2 });
+    }
     ctx.save();
-    ctx.lineCap = "butt";
-    // Long plate = positive terminal; short plate = negative. Standard symbol.
-    ctx.strokeStyle = theme.sci["charge-pos"];
-    ctx.lineWidth = Math.max(3, s * 0.5);
-    ctx.beginPath();
-    ctx.moveTo(bx - s * 5, topY);
-    ctx.lineTo(bx + s * 5, topY);
-    ctx.stroke();
-    ctx.strokeStyle = theme.sci["charge-neg"];
-    ctx.beginPath();
-    ctx.moveTo(bx - s * 2.6, botY);
-    ctx.lineTo(bx + s * 2.6, botY);
-    ctx.stroke();
+    ctx.translate(bx, byMid);
+    ctx.rotate(-Math.PI / 2);
+    battery(ctx, -cellL / 2, -cellW / 2, cellL, cellW, theme);
     ctx.restore();
-    if (band !== "K-2") {
-      caption(ctx, bx + s * 6.4, topY + s * 1.4, "+", theme, {
-        color: theme.sci["charge-pos"], size: Math.max(12, s * 1.9), weight: 800,
-      });
-      caption(ctx, bx + s * 6.4, botY - s * 1.4, "−", theme, {
-        color: theme.sci["charge-neg"], size: Math.max(12, s * 1.9), weight: 800,
-      });
-      badge(ctx, bx, botY + s * 4.6, `${sol.emf.toFixed(1)} V`, theme, {
-        align: "center", color: theme.sci["charge-pos"],
-      });
+    // Terminal caps that bridge cell to rail.
+    for (const [ty, col] of [
+      [Y(BAT_TOP), theme.sci["charge-pos"]], [Y(BAT_BOTTOM), theme.sci["charge-neg"]],
+    ] as [number, string][]) {
+      sphere(ctx, bx, ty, Math.max(4, s * 0.5), col);
     }
   }
 
-  // ---- Switch -------------------------------------------------------
+  /* ---- Switch -------------------------------------------------------- */
   {
     const sx = X(lay.switchAt.x);
     const sy = Y(lay.switchAt.y);
-    const armLen = s * 7;
-    // A mounting block hides the wire under the gap, so an open switch really
-    // does break the circuit rather than merely covering it up.
-    material(ctx, sx - armLen * 0.9, sy - s * 1.7, armLen * 1.8, s * 3.4,
-      theme.surfaceAlt, s * 0.6);
-    const x0 = sx - armLen * 0.6, y0 = sy;
-    const x1 = sol.closed ? sx + armLen * 0.6 : sx + armLen * 0.3;
-    const y1 = sol.closed ? sy : sy - armLen * 0.7;
+    const arm = s * 7.2;
+    softShadow(ctx, () => {
+      plastic(ctx, sx - arm * 1.02, sy - s * 2.4, arm * 2.04, s * 4.4,
+        theme.surfaceAlt, { radius: s * 0.5, gloss: 0.35 });
+    }, { blur: s * 1.4, dy: s * 0.4, alpha: 0.32 });
+    const x0 = sx - arm * 0.62, x1 = sx + arm * 0.62;
+    // Brass posts
+    for (const px of [x0, x1]) {
+      metal(ctx, px - s * 0.6, sy - s * 1.5, s * 1.2, s * 2.4, theme.sci["current"],
+        { radius: s * 0.3 });
+      sphere(ctx, px, sy - s * 1.5, s * 0.6, theme.sci["current"]);
+    }
+    // The blade pivots on the left post. Open, it stands up and the gap is
+    // unmistakable; closed, it lies across both posts.
+    const ang = sol.closed ? 0 : -0.72;
     ctx.save();
-    ctx.lineCap = "round";
-    ctx.strokeStyle = hexA(theme.ink, 0.35);
-    ctx.lineWidth = Math.max(3.5, s * 0.62);
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
-    ctx.strokeStyle = theme.inkSoft;
-    ctx.lineWidth = Math.max(2, s * 0.4);
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
-    ctx.strokeStyle = hexA(theme.surface, 0.6);
-    ctx.lineWidth = Math.max(0.8, s * 0.12);
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
+    ctx.translate(x0, sy - s * 1.5);
+    ctx.rotate(ang);
+    const bladeL = arm * 1.24;
+    metal(ctx, -s * 0.5, -s * 0.55, bladeL + s * 0.5, s * 1.1, theme.sci["mass"],
+      { radius: s * 0.3, angle: 100 });
+    ctx.fillStyle = hexA(theme.surface, 0.6);
+    ctx.fillRect(0, -s * 0.34, bladeL, s * 0.18);
     ctx.restore();
-    sphere(ctx, x0, y0, Math.max(2.5, s * 0.42), theme.ink);
-    sphere(ctx, sx + armLen * 0.6, sy, Math.max(2.5, s * 0.42), theme.ink);
+    // Insulated handle on the free end of the blade.
+    const hx = x0 + Math.cos(ang) * arm * 1.24;
+    const hy = sy - s * 1.5 + Math.sin(ang) * arm * 1.24;
+    sphere(ctx, hx, hy, s * 1.05, theme.sci["charge-pos"]);
+    sphere(ctx, x0, sy - s * 1.5, s * 0.44, theme.surfaceAlt);
+    // A contact spark when a heavy current is being carried.
+    if (sol.closed && sol.current > 2.5) {
+      const f = pulse(t, 7) * pulse(t, 2.3);
+      glow(ctx, x1, sy - s * 1.5, s * (1.2 + f * 1.6), theme.sci["current"], 0.25 + f * 0.4);
+    }
   }
 
-  // ---- Extra resistor ------------------------------------------------
+  /* ---- Series resistor ----------------------------------------------- */
   if (sol.extraR > 0) {
     const rx = X(lay.resistorAt.x);
     const ry = Y(lay.resistorAt.y);
-    const vertical = topology !== "parallel";
-    const bw = s * 4.6, bh = s * 10;
+    const vertical = !parallel;
+    const bwid = s * 3.4, bhgt = s * 9.4;
     ctx.save();
     ctx.translate(rx, ry);
     if (!vertical) ctx.rotate(Math.PI / 2);
-    material(ctx, -bw / 2, -bh / 2, bw, bh, theme.sci["decomposer"], s * 0.9);
-    // Colour bands, the way a real resistor announces its value.
-    const bands = [theme.sci["field"], theme.sci["charge-pos"], theme.sci["charge-neg"]];
+    // Axial leads out of both ends
+    metal(ctx, -s * 0.28, -bhgt * 0.78, s * 0.56, bhgt * 1.56, theme.sci["mass"],
+      { radius: s * 0.2 });
+    softShadow(ctx, () => {
+      plastic(ctx, -bwid / 2, -bhgt / 2, bwid, bhgt, theme.sci["decomposer"],
+        { radius: bwid * 0.42, gloss: 0.5 });
+    }, { blur: s * 1.2, dy: s * 0.3, alpha: 0.35 });
+    const bands = [theme.sci["field"], theme.sci["charge-pos"], theme.sci["charge-neg"], theme.sci["current"]];
     for (let i = 0; i < bands.length; i++) {
-      material(ctx, -bw / 2, -bh * 0.3 + i * bh * 0.22, bw, bh * 0.1, bands[i], 0);
+      material(ctx, -bwid / 2, -bhgt * 0.32 + i * bhgt * 0.17, bwid, bhgt * 0.09, bands[i], 0);
     }
     ctx.restore();
-    if (band === "9-12") {
-      badge(ctx, rx + (vertical ? -s * 5.5 : 0), ry + (vertical ? 0 : -s * 6), `${sol.extraR.toFixed(1)} Ω`, theme, {
-        align: vertical ? "right" : "center", color: theme.sci["field"],
-      });
-    }
   }
 
-  // ---- Bulbs ---------------------------------------------------------
-  const lightColor = theme.sci["light"];
+  /* ---- Lamps ---------------------------------------------------------- */
+  const rBulb = R_BULB * s;
   for (let i = 0; i < lay.bulbs.length; i++) {
     const b = lay.bulbs[i];
     const bx = X(b.x), by = Y(b.y);
-    const gv = Math.max(0, Math.min(2, state.glow[i] ?? 0));
-    const gn = Math.min(1, gv);
-    const r = s * 3.6;
-
-    // Screw base, drawn first so the envelope seats into it.
-    material(ctx, bx - r * 0.5, by + r * 0.52, r, r * 0.9, theme.inkSoft, r * 0.16);
-    ctx.save();
-    ctx.strokeStyle = hexA(theme.ink, 0.3);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let k = 1; k <= 3; k++) {
-      const ty = by + r * 0.52 + (r * 0.9 * k) / 4;
-      ctx.moveTo(bx - r * 0.5, ty);
-      ctx.lineTo(bx + r * 0.5, ty);
-    }
-    ctx.stroke();
-    ctx.restore();
-
-    // The light it actually throws: both the radius and the strength ride the
-    // current, so a dim bulb and a bright one are different at a glance.
-    if (gv > 0.02) {
-      glow(ctx, bx, by, r * (1.8 + 3 * gn), lightColor, Math.min(0.7, 0.1 + 0.55 * gn));
-    }
-
-    // Glass envelope, warming from cold glass to white hot.
-    ctx.save();
-    const env = ctx.createRadialGradient(bx - r * 0.32, by - r * 0.36, r * 0.1, bx, by, r);
-    env.addColorStop(0, hexA(lightColor, 0.2 + 0.8 * gn));
-    env.addColorStop(0.6, hexA(lightColor, 0.1 + 0.72 * gn));
-    env.addColorStop(1, hexA(theme.surface, 0.5));
-    ctx.fillStyle = env;
-    ctx.beginPath();
-    ctx.arc(bx, by, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = hexA(theme.inkSoft, 0.8);
-    ctx.lineWidth = Math.max(1.2, s * 0.2);
-    ctx.stroke();
-    ctx.strokeStyle = hexA(theme.surface, 0.75);
-    ctx.lineWidth = Math.max(1, s * 0.16);
-    ctx.beginPath();
-    ctx.arc(bx, by, r * 0.72, Math.PI * 1.06, Math.PI * 1.44);
-    ctx.stroke();
-    ctx.restore();
-
-    // Filament
-    ctx.save();
-    ctx.strokeStyle = mixHex(theme.inkSoft, lightColor, gn);
-    ctx.lineWidth = Math.max(1.5, s * 0.22);
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    const fw = r * 0.55, fh = r * 0.5;
-    ctx.moveTo(bx - fw, by + fh);
-    for (let k = 0; k < 4; k++) {
-      ctx.lineTo(bx - fw + (fw * 2 * (k + 0.5)) / 4, by + (k % 2 === 0 ? -fh : fh));
-    }
-    ctx.lineTo(bx + fw, by + fh);
-    ctx.stroke();
-    if (gn > 0.15) {
-      // White-hot core once it is really carrying current.
-      ctx.strokeStyle = hexA(theme.surface, Math.min(0.9, gn));
-      ctx.lineWidth = Math.max(0.8, s * 0.1);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    if (band === "6-8" || band === "9-12") {
-      badge(ctx, bx, by + r * 2.9, `${sol.bulbPower.toFixed(1)} W`, theme, {
-        align: "center", color: theme.sci["energy-thermal"],
-      });
-    }
+    // Before the clock has run there is no smoothed value yet, so show the
+    // steady state rather than a dead filament.
+    const raw = state.energy > 0 ? (state.glow[i] ?? 0) : sol.brightness;
+    const gv = Math.max(0, Math.min(1.4, raw));
+    lampModule(ctx, bx, by, rBulb, gv, parallel, theme);
   }
 
-  // ---- Meters --------------------------------------------------------
-  if (overlays.meters && band !== "K-2") {
-    const meterX = X(W * 0.07);
-    badge(ctx, meterX, Y(H * 0.914), `I = ${sol.current.toFixed(2)} A`, theme, {
-      color: theme.sci["current"],
-    });
-    let ly = Y(H * 0.914) + 26;
-    if (band !== "3-5") {
-      caption(ctx, meterX, ly, `R = ${sol.totalR.toFixed(1)} Ω`, theme, {
-        size: 12, color: theme.sci["field"],
-      });
-      ly += 19;
-      caption(ctx, meterX, ly, `P = ${sol.power.toFixed(1)} W`, theme, {
-        size: 12, color: theme.sci["energy-total"],
-      });
-      ly += 19;
-    }
-    if (band === "9-12") {
-      caption(ctx, meterX, ly, `V = I × R = ${(sol.current * sol.totalR).toFixed(2)} V`, theme, {
-        size: 12, color: theme.inkSoft,
-      });
-    }
-  }
-
+  /* ---- Callouts ------------------------------------------------------- */
+  // Names live on leader lines in the calm middle of the loop, never on a part.
   if (band !== "K-2") {
-    const name = topology === "parallel" ? "parallel" : topology === "series" ? "series" : "single loop";
-    caption(ctx, X(W / 2), Y(H * 0.914), name, theme, {
-      align: "center", size: 13, color: theme.inkSoft,
-    });
+    const firstBulb = lay.bulbs[0];
+    const slots: { x: number; y: number }[] = parallel
+      ? [{ x: LEFT + 5, y: 33 }, { x: LEFT + 5, y: 24 }, { x: LEFT + 5, y: 16 }]
+      : [{ x: 20, y: 25 }, { x: 42, y: 34 }, { x: 60, y: 18 }];
+    callout(ctx, X(lay.battery.x) + s * 2.4, Y((BAT_TOP + BAT_BOTTOM) / 2),
+      X(slots[0].x), Y(slots[0].y), "Cell", theme,
+      { sub: `${sol.emf.toFixed(1)} V supply`, side: "right", accent: theme.sci["charge-pos"] });
+    callout(ctx,
+      X(firstBulb.x) - (parallel ? rBulb * 1.35 : 0), Y(firstBulb.y) + (parallel ? 0 : rBulb * 1.45),
+      X(slots[1].x), Y(slots[1].y), "Lamp", theme,
+      { sub: `${sol.bulbPower.toFixed(1)} W each`, side: "right", accent: theme.sci["energy-thermal"] });
+    if (band !== "3-5") {
+      callout(ctx, X(lay.switchAt.x), Y(lay.switchAt.y) - s * 2.6,
+        X(slots[2].x), Y(slots[2].y), sol.closed ? "Switch closed" : "Switch open", theme, {
+          sub: sol.closed
+            ? `${sol.n} lamp${sol.n > 1 ? "s" : ""} · ${parallel ? "parallel" : sol.n > 1 ? "series" : "one loop"}`
+            : "circuit broken",
+          side: "right",
+          accent: sol.closed ? theme.sci["field"] : theme.inkSoft,
+        });
+    }
   }
 
-  if (!sol.closed) {
-    caption(ctx, X(W / 2), Y(H * 0.103), "Switch open — no current", theme, {
-      align: "center", color: theme.inkSoft, size: 14,
-    });
+  /* ---- Instrument shelf ------------------------------------------------ */
+  {
+    const shelfTop = height - padB + height * 0.012;
+    const shelfH = height - bIn - 18 - shelfTop;
+    const shelfL = bx0 + 20, shelfW = bw - 40;
+    softShadow(ctx, () => {
+      metal(ctx, shelfL, shelfTop, shelfW, shelfH, theme.sci["mass"],
+        { radius: 12, angle: 90, polish: 0.55 });
+    }, { blur: 22, dy: 8, alpha: 0.36 });
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.surface, 0.28);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(shelfL + 6, shelfTop + 6, shelfW - 12, shelfH - 12);
+    ctx.restore();
+
+    const cym = shelfTop + shelfH / 2;
+    const r = Math.max(28, Math.min(shelfH * 0.4, 62));
+    if (overlays.meters && band !== "K-2") {
+      const iMax = Math.max(0.5, sol.emf / Math.max(0.5, sol.bulbR * 0.34));
+      const gauges: [number, string, string, string][] = [
+        [sol.current / iMax, `${sol.current.toFixed(2)} A`, "CURRENT", theme.sci["current"]],
+        [sol.emf / 12, `${sol.emf.toFixed(1)} V`, "VOLTAGE", theme.sci["charge-pos"]],
+      ];
+      if (band === "6-8" || band === "9-12") {
+        gauges.push([sol.power / 30, `${sol.power.toFixed(1)} W`, "POWER", theme.sci["energy-total"]]);
+      }
+      for (let i = 0; i < gauges.length; i++) {
+        const gx = shelfL + r * 1.5 + i * r * 2.5;
+        const wob = i === 0 && sol.current > 0.01
+          ? Math.sin(t * 9.1) * 0.011 + Math.sin(t * 3.7) * 0.007
+          : 0;
+        analogMeter(ctx, gx, cym, r, gauges[i][0], gauges[i][1], gauges[i][2],
+          gauges[i][3], theme, wob);
+      }
+    }
+
+    // Engraved nameplate on the right of the shelf.
+    const plateL = shelfL + r * (band === "6-8" || band === "9-12" ? 7.1 : 4.6);
+    const plateW = shelfW - (plateL - shelfL) - 22;
+    if (plateW > 150) {
+      plastic(ctx, plateL, cym - shelfH * 0.32, plateW, shelfH * 0.64,
+        theme.surfaceAlt, { radius: 8, gloss: 0.3 });
+      const lx = plateL + 20;
+      caption(ctx, lx, cym - shelfH * 0.14,
+        parallel ? "PARALLEL NETWORK" : sol.n > 1 ? "SERIES CHAIN" : "SINGLE LOOP", theme,
+        { size: 13, color: theme.inkSoft, weight: 800 });
+      const chips: [string, string][] = [
+        [`R = ${sol.totalR.toFixed(1)} Ω`, theme.sci["field"]],
+        [`P = ${sol.power.toFixed(1)} W`, theme.sci["energy-total"]],
+      ];
+      if (band === "9-12") chips.push([`E = ${state.energy.toFixed(0)} J`, theme.sci["energy-thermal"]]);
+      let cxp = lx;
+      for (const [txt, col] of chips) {
+        badge(ctx, cxp, cym + shelfH * 0.14, txt, theme, { color: col });
+        ctx.font = "600 12px ui-monospace, SFMono-Regular, Menlo, monospace";
+        cxp += ctx.measureText(txt).width + 28;
+      }
+      // A brightness bar on the right of the plate: the quantity the student
+      // is actually watching, read straight off the lamp.
+      const barW = Math.min(plateW * 0.42, 210);
+      const barX = plateL + plateW - barW - 20;
+      if (barW > 90) {
+        caption(ctx, barX, cym - shelfH * 0.16,
+          sol.closed ? "LAMP BRIGHTNESS" : "NO CURRENT", theme,
+          { size: 12, weight: 800, color: sol.closed ? theme.inkSoft : theme.sci["charge-pos"] });
+        const bY = cym + shelfH * 0.06, bH = Math.max(10, shelfH * 0.16);
+        material(ctx, barX, bY, barW, bH, theme.grid, bH / 2);
+        const f = Math.max(0, Math.min(1, sol.brightness));
+        if (f > 0.01) {
+          material(ctx, barX, bY, Math.max(bH, barW * f), bH, theme.sci["light"], bH / 2);
+          glow(ctx, barX + barW * f, bY + bH / 2, bH * 1.6, theme.sci["light"], 0.4);
+        }
+        for (let i = 1; i < 4; i++) {
+          ctx.save();
+          ctx.strokeStyle = hexA(theme.ink, 0.25);
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(barX + (barW * i) / 4, bY);
+          ctx.lineTo(barX + (barW * i) / 4, bY + bH);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
   }
 
-  vignette(ctx, width, height, 0.16);
+  vignette(ctx, width, height, 0.2);
 }
 
 /* ------------------------------------------------------------------ *

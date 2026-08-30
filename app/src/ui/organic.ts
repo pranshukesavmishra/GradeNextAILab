@@ -481,7 +481,7 @@ export function specimenJar(
   draw: (cx: number, cy: number, cw: number, ch: number) => void,
 ) {
   const dark = isDarkTheme(theme);
-  const collar = h * 0.075;
+  const collar = h * 0.085;
   const glassTop = y + collar;
   const glassH = h - collar * 2;
 
@@ -543,7 +543,7 @@ export function specimenJar(
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#ffffff";
-    ctx.fillText(label, x + w / 2, y + collar * 0.42);
+    ctx.fillText(label, x + w / 2, y + collar * 0.5);
   }
   ctx.restore();
 }

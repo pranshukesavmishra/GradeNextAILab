@@ -1,9 +1,13 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import { q } from "@engine/units";
-import { label, mixHex, roundRect } from "@ui/draw";
+import { label, roundRect } from "@ui/draw";
 import {
-  badge, caption, glow, hexA, isDarkTheme, sky, sphere, vignette,
+  badge, caption, glow, hexA, isDarkTheme, lerp, pulse, rimLight, softShadow, vignette,
 } from "@ui/scene";
+import {
+  bokeh, callout, chloroplast, depthWash, golgi, membrane, mitochondrion, nucleus,
+  organelleDot, reticulum,
+} from "@ui/organic";
 
 /**
  * Inside a Cell — Grades 5-10.
@@ -548,28 +552,100 @@ function clampUnit(v: number): number {
 
 /* ------------------------------------------------------------------ *
  * View
+ *
+ * Everything below here draws; nothing below here decides. The cell is built
+ * out of the organic kit — a translucent membrane with light scattering
+ * through it, a nucleus with real chromatin and a dense nucleolus,
+ * mitochondria whose cristae are actually folded — because a student shown
+ * coloured blobs learns coloured blobs, and the folding *is* the biology.
+ *
+ * Every colour on the stage is a theme token. Where a lighter or darker
+ * version is wanted it is derived arithmetically from that token, so the whole
+ * scene still turns over with the theme instead of pinning a hex in place.
  * ------------------------------------------------------------------ */
 
 const SPARK_KIND = ["ATP", "O₂", "glucose", "mRNA"];
 
-function organelleColor(id: string, theme: RenderContext<State>["theme"]): string {
+/** Move a theme colour toward white (`target` 255) or black (`target` 0). */
+function shift(c: string, t: number, target: number): string {
+  let h = c.replace("#", "");
+  if (h.length === 3) h = h.split("").map((ch) => ch + ch).join("");
+  const k = Math.max(0, Math.min(1, t));
+  const part = (i: number) => {
+    const raw = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+    const v = Number.isFinite(raw) ? raw : 128;
+    const n = Math.round(v + (target - v) * k);
+    return Math.max(0, Math.min(255, n)).toString(16).padStart(2, "0");
+  };
+  return `#${part(0)}${part(1)}${part(2)}`;
+}
+
+const lighten = (c: string, t: number) => shift(c, t, 255);
+const darken = (c: string, t: number) => shift(c, t, 0);
+
+type Theme = RenderContext<State>["theme"];
+
+function organelleColor(id: string, theme: Theme): string {
   switch (id) {
+    // A mitochondrion is the cell's furnace, so it takes the hot token —
+    // lifted toward salmon, which is how one looks under a stain.
+    case "mitochondria": return lighten(theme.sci["hot"], 0.24);
     case "chloroplast": return theme.sci["producer"];
-    case "mitochondria": return theme.sci["energy-kinetic"];
     case "vacuole": return theme.sci["liquid"];
-    case "nucleus": return theme.accent;
+    case "nucleus": return theme.sci["field"];
     case "wall": return theme.sci["solid"];
-    case "membrane": return theme.inkSoft;
-    case "ribosome": return theme.sci["mass"];
+    case "membrane": return theme.accent;
+    case "cytoplasm": return theme.accent;
+    case "er": return lighten(theme.accent, 0.3);
+    case "golgi": return theme.sci["gas"];
+    case "ribosome": return theme.sci["velocity"];
+    // Lysosomes really are acid bags, so the acid token is the honest one.
+    case "lysosome": return theme.sci["acid"];
+    case "centriole": return theme.inkSoft;
     default: return theme.inkSoft;
   }
 }
 
-function sparkColor(kind: number, theme: RenderContext<State>["theme"]): string {
+function sparkColor(kind: number, theme: Theme): string {
   if (kind === 0) return theme.sci["energy-kinetic"];
   if (kind === 1) return theme.sci["gas"];
   if (kind === 2) return theme.sci["energy-potential"];
   return theme.accent;
+}
+
+/**
+ * Render-only geometry.
+ *
+ * The roster above carries the science — real sizes, real presence. This table
+ * carries only how big a part is *drawn* and, for the vacuole, where it is
+ * drawn, so composition can be tuned without touching a single fact.
+ */
+const LOOK: Record<string, { scale: number; at?: [number, number] }> = {
+  nucleus: { scale: 1.12 },
+  mitochondria: { scale: 1.16 },
+  chloroplast: { scale: 1.06 },
+  vacuole: { scale: 1.32, at: [0.3, -0.06] },
+  er: { scale: 1.22 },
+  golgi: { scale: 1.24 },
+  ribosome: { scale: 1.35 },
+  lysosome: { scale: 1.25 },
+  centriole: { scale: 1.3 },
+};
+
+/** How much of the cell radius the contents are allowed to occupy. */
+const INSET = 0.84;
+
+/** Where a part is drawn, including its slow drift through the cytoplasm. */
+function placeCopy(
+  spec: OrganelleSpec, i: number, time: number,
+): [number, number] {
+  const look = LOOK[spec.id];
+  const [bx, by] = look?.at ?? copyOffset(spec, i);
+  const drift = spec.id === "nucleus" || spec.id === "vacuole" ? 0.008 : 0.022;
+  return [
+    bx + Math.sin(time * 0.23 + i * 1.7 + bx * 4) * drift,
+    by + Math.cos(time * 0.19 + i * 2.3 + by * 4) * drift,
+  ];
 }
 
 /** The scale bar. Nothing else in the sim makes "small" mean a number. */
@@ -597,133 +673,244 @@ function drawScaleBar(rc: RenderContext<State>, span: number, pxPerM: number) {
   });
 }
 
+/* ------------------------------------------------------------------ *
+ * Callouts — names live in pills off to the side, never on the artwork
+ * ------------------------------------------------------------------ */
+
+interface Tag {
+  id: string;
+  name: string;
+  sub?: string;
+  /** Anchor point on the artwork, in stage pixels. */
+  x: number;
+  y: number;
+  /** Lower sorts first when a column has to drop one. */
+  rank: number;
+}
+
+const TAG_RANK: Record<string, number> = {
+  membrane: 0, wall: 1, nucleus: 2, mitochondria: 3, chloroplast: 4,
+  vacuole: 5, er: 6, golgi: 7, ribosome: 8, lysosome: 9, centriole: 10,
+};
+
+/**
+ * Lay the names out in two columns clear of the cell and run leader lines back
+ * to the thing each one names. Columns are balanced and sorted by height so
+ * the leaders never cross each other.
+ */
+function drawCallouts(
+  rc: RenderContext<State>, tags: Tag[], cx: number, cellR: number, focus: string,
+) {
+  const { ctx, theme, width, height } = rc;
+  if (tags.length === 0) return;
+  const withSub = height >= 400;
+  const rowH = withSub ? 48 : 34;
+  const top = 78;
+  const bottom = height - 56;
+  const cap = Math.max(2, Math.floor((bottom - top) / rowH) + 1);
+  const pill = isDarkTheme(theme) ? darken(theme.accent, 0.5) : theme.accent;
+  const lit = lighten(theme.sci["light"], isDarkTheme(theme) ? 0 : 0.05);
+
+  const left: Tag[] = [];
+  const right: Tag[] = [];
+  for (const t of [...tags].sort((a, b) => a.rank - b.rank)) {
+    const wantLeft = t.x < cx;
+    const first = wantLeft ? left : right;
+    const other = wantLeft ? right : left;
+    if (first.length < cap) first.push(t);
+    else if (other.length < cap) other.push(t);
+  }
+
+  const column = (list: Tag[], side: "left" | "right") => {
+    if (list.length === 0) return;
+    list.sort((a, b) => a.y - b.y);
+    const step = list.length > 1 ? (bottom - top) / (list.length - 1) : 0;
+    const start = list.length > 1 ? top : (top + bottom) / 2;
+    const edge = side === "left"
+      ? Math.max(12, cx - cellR - 30)
+      : Math.min(width - 12, cx + cellR + 30);
+    list.forEach((t, i) => {
+      callout(ctx, t.x, t.y, edge, start + step * i, t.name, theme, {
+        side,
+        accent: focus === t.id ? lit : pill,
+        ...(withSub && t.sub ? { sub: t.sub } : {}),
+      });
+    });
+  };
+  column(left, "left");
+  column(right, "right");
+}
+
+/* ------------------------------------------------------------------ *
+ * Scenes
+ * ------------------------------------------------------------------ */
+
 /** Zoomed out: the organism, with a box round the piece we are about to enter. */
 function drawFarView(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
-  const { ctx, theme, width, height, params } = rc;
+  const { ctx, theme, width, height, params, time } = rc;
   const cx = width / 2;
-  const cy = height * 0.5;
+  const cy = height * 0.52;
   const plant = params.cellType === "plant";
   const bodyPx = Math.max(10, org.bodyM * pxPerM);
+  const tint = plant ? theme.sci["producer"] : theme.accent;
 
   if (org.cells === 1) {
-    // A single-celled organism: several individuals adrift in one drop.
+    // A single-celled organism: several individuals adrift in one drop, each
+    // one a whole membrane-bound cell rather than a dot.
+    const r0 = Math.max(14, Math.min(bodyPx * 0.5, Math.min(width, height) * 0.16));
     for (let i = 0; i < 7; i++) {
       const a = i * 2.39996;
-      const rr = (0.12 + 0.34 * ((i * 5) % 7) / 7) * Math.min(width, height);
-      const px = cx + Math.cos(a) * rr;
-      const py = cy + Math.sin(a) * rr * 0.7;
-      sphere(ctx, px, py, Math.max(3, bodyPx * 0.5), plant ? theme.sci["producer"] : theme.accent, {
-        glow: 0.3,
-      });
+      const rr = (0.14 + 0.32 * ((i * 5) % 7) / 7) * Math.min(width, height);
+      const px = cx + Math.cos(a + time * 0.05) * rr;
+      const py = cy + Math.sin(a + time * 0.04) * rr * 0.62;
+      const r = r0 * (0.62 + 0.38 * ((i * 3) % 5) / 4);
+      membrane(ctx, px, py, r, tint, { scatter: 0.8, wobble: 0.05, t: time + i });
+      nucleus(ctx, px - r * 0.16, py + r * 0.1, r * 0.3, theme.sci["field"], time);
+      if (plant) {
+        chloroplast(ctx, px + r * 0.34, py - r * 0.24, r * 0.62, r * 0.34,
+          0.5 + i, theme.sci["producer"]);
+      }
     }
-    caption(ctx, cx, height * 0.14, `${org.name} — a drop of pond water`, theme, {
-      align: "center", size: 14,
+    caption(ctx, cx, 26, `${org.name} — a drop of pond water`, theme, {
+      align: "center", size: 15,
     });
-    caption(ctx, cx, height * 0.14 + 20, "every one of these is a whole organism", theme, {
+    caption(ctx, cx, 46, "every one of these is a whole organism", theme, {
       align: "center", size: 11, color: theme.inkSoft,
     });
     return;
   }
 
   ctx.save();
-  ctx.fillStyle = plant ? theme.sci["producer"] : mixHex(theme.accent, theme.surface, 0.35);
-  if (plant) {
-    // A leaf: a blade with a midrib.
-    const w = Math.min(width * 0.4, bodyPx);
-    const h = w * 1.7;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, w * 0.42, h * 0.42, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = mixHex(theme.sci["producer"], "#000000", 0.35);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - h * 0.4);
-    ctx.lineTo(cx, cy + h * 0.42);
-    for (let i = 1; i <= 5; i++) {
-      const yy = cy - h * 0.3 + (i / 6) * h * 0.7;
-      ctx.moveTo(cx, yy);
-      ctx.lineTo(cx - w * 0.32, yy + h * 0.07);
-      ctx.moveTo(cx, yy);
-      ctx.lineTo(cx + w * 0.32, yy + h * 0.07);
+  const body = plant ? theme.sci["producer"] : lighten(theme.accent, 0.24);
+  softShadow(ctx, () => {
+    ctx.fillStyle = body;
+    if (plant) {
+      // A leaf: a blade with a midrib.
+      const w = Math.min(width * 0.4, bodyPx);
+      const h = w * 1.7;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, w * 0.42, h * 0.42, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = darken(body, 0.4);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - h * 0.4);
+      ctx.lineTo(cx, cy + h * 0.42);
+      for (let i = 1; i <= 5; i++) {
+        const yy = cy - h * 0.3 + (i / 6) * h * 0.7;
+        ctx.moveTo(cx, yy);
+        ctx.lineTo(cx - w * 0.32, yy + h * 0.07);
+        ctx.moveTo(cx, yy);
+        ctx.lineTo(cx + w * 0.32, yy + h * 0.07);
+      }
+      ctx.stroke();
+    } else {
+      // A person: head, body, limbs. Enough to read as "whole organism".
+      const h = Math.min(height * 0.62, bodyPx);
+      const top = cy - h / 2;
+      ctx.beginPath();
+      ctx.arc(cx, top + h * 0.09, h * 0.09, 0, Math.PI * 2);
+      ctx.fill();
+      roundRect(ctx, cx - h * 0.1, top + h * 0.2, h * 0.2, h * 0.36, h * 0.06);
+      ctx.fill();
+      ctx.strokeStyle = body;
+      ctx.lineWidth = Math.max(3, h * 0.05);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(cx - h * 0.09, top + h * 0.24);
+      ctx.lineTo(cx - h * 0.2, top + h * 0.48);
+      ctx.moveTo(cx + h * 0.09, top + h * 0.24);
+      ctx.lineTo(cx + h * 0.2, top + h * 0.48);
+      ctx.moveTo(cx - h * 0.05, top + h * 0.56);
+      ctx.lineTo(cx - h * 0.08, top + h * 0.95);
+      ctx.moveTo(cx + h * 0.05, top + h * 0.56);
+      ctx.lineTo(cx + h * 0.08, top + h * 0.95);
+      ctx.stroke();
     }
-    ctx.stroke();
-  } else {
-    // A person: head, body, limbs. Enough to read as "whole organism".
-    const h = Math.min(height * 0.62, bodyPx);
-    const top = cy - h / 2;
-    ctx.beginPath();
-    ctx.arc(cx, top + h * 0.09, h * 0.09, 0, Math.PI * 2);
-    ctx.fill();
-    roundRect(ctx, cx - h * 0.1, top + h * 0.2, h * 0.2, h * 0.36, h * 0.06);
-    ctx.fill();
-    ctx.strokeStyle = ctx.fillStyle as string;
-    ctx.lineWidth = Math.max(3, h * 0.05);
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(cx - h * 0.09, top + h * 0.24);
-    ctx.lineTo(cx - h * 0.2, top + h * 0.48);
-    ctx.moveTo(cx + h * 0.09, top + h * 0.24);
-    ctx.lineTo(cx + h * 0.2, top + h * 0.48);
-    ctx.moveTo(cx - h * 0.05, top + h * 0.56);
-    ctx.lineTo(cx - h * 0.08, top + h * 0.95);
-    ctx.moveTo(cx + h * 0.05, top + h * 0.56);
-    ctx.lineTo(cx + h * 0.08, top + h * 0.95);
-    ctx.stroke();
-  }
+  }, { blur: 26, dy: 10, alpha: 0.24, color: theme.ink });
   ctx.restore();
 
   // The window we are zooming into.
   const boxR = Math.max(9, Math.min(width, height) * 0.06);
   ctx.save();
   ctx.strokeStyle = theme.accent;
-  ctx.lineWidth = 1.6;
-  ctx.setLineDash([4, 3]);
+  ctx.lineWidth = 1.8;
+  ctx.setLineDash([5, 4]);
   ctx.strokeRect(cx - boxR, cy - boxR, boxR * 2, boxR * 2);
   ctx.restore();
-  caption(ctx, cx + boxR + 8, cy, "zoom in here", theme, { size: 11, color: theme.accent });
-  caption(ctx, width / 2, height * 0.1, org.name, theme, { align: "center", size: 15 });
+  drawCallouts(rc, [{
+    id: "zoom", name: "Zoom in here", sub: "one patch of tissue",
+    x: cx + boxR, y: cy, rank: 0,
+  }], cx, boxR * 1.6, "");
+  caption(ctx, cx, 26, org.name, theme, { align: "center", size: 16 });
 }
 
 /** Mid zoom: many cells packed into a tissue, or many separate individuals. */
 function drawTissueView(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
-  const { ctx, theme, width, height, params } = rc;
+  const { ctx, theme, width, height, params, time } = rc;
   const plant = params.cellType === "plant";
   const cellPx = Math.max(4, org.cellM * pxPerM);
   const cols = Math.min(60, Math.ceil(width / cellPx) + 1);
   const rows = Math.min(45, Math.ceil(height / cellPx) + 1);
-  const fill = plant ? theme.sci["producer"] : mixHex(theme.accent, theme.surface, 0.45);
+  const tint = plant ? theme.sci["producer"] : theme.accent;
+  // A full membrane per cell is expensive; below this size it would not read
+  // anyway, so the far field falls back to lit discs.
+  const rich = cellPx >= 20 && cols * rows <= 300;
 
   ctx.save();
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       // Plant cells tile as neat boxes; animal cells offset and round over.
       const ox = plant ? 0 : ((r % 2) * cellPx) / 2;
-      const x = c * cellPx + ox;
-      const y = r * cellPx;
-      ctx.globalAlpha = org.cells === 1 ? 0.3 : 0.8;
-      ctx.fillStyle = fill;
-      if (plant) {
-        roundRect(ctx, x + 1, y + 1, cellPx - 2, cellPx - 2, Math.min(3, cellPx * 0.15));
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = theme.sci["solid"];
-        ctx.lineWidth = 1;
-        ctx.stroke();
+      const px = c * cellPx + ox + cellPx / 2;
+      const py = r * cellPx + cellPx / 2;
+      const rr = cellPx * (plant ? 0.46 : 0.44);
+      if (rich) {
+        if (plant) {
+          ctx.save();
+          ctx.fillStyle = hexA(theme.sci["solid"], 0.5);
+          roundRect(ctx, px - cellPx / 2 + 1, py - cellPx / 2 + 1, cellPx - 2, cellPx - 2,
+            cellPx * 0.16);
+          ctx.fill();
+          ctx.strokeStyle = hexA(darken(theme.sci["solid"], 0.3), 0.8);
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          ctx.restore();
+        }
+        membrane(ctx, px, py, rr, tint, {
+          scatter: 0.55, wobble: plant ? 0 : 0.045, t: time + r * 0.4 + c * 0.7,
+          rimStrength: 0.6,
+        });
+        nucleus(ctx, px - rr * 0.14, py + rr * 0.08, rr * 0.3, theme.sci["field"], time);
+        if (plant) {
+          for (let k = 0; k < 3; k++) {
+            chloroplast(ctx, px + Math.cos(k * 2.1 + 1) * rr * 0.52,
+              py + Math.sin(k * 2.1 + 1) * rr * 0.52,
+              rr * 0.5, rr * 0.28, 0.4 + k, theme.sci["producer"]);
+          }
+        }
       } else {
+        ctx.globalAlpha = org.cells === 1 ? 0.34 : 0.8;
+        const g = ctx.createRadialGradient(px - rr * 0.4, py - rr * 0.4, rr * 0.05, px, py, rr);
+        g.addColorStop(0, hexA(lighten(tint, 0.55), 0.75));
+        g.addColorStop(1, hexA(darken(tint, 0.1), 0.55));
+        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(x + cellPx / 2, y + cellPx / 2, cellPx * 0.44, 0, Math.PI * 2);
+        if (plant) {
+          roundRect(ctx, px - cellPx / 2 + 1, py - cellPx / 2 + 1, cellPx - 2, cellPx - 2,
+            Math.min(4, cellPx * 0.18));
+        } else {
+          ctx.arc(px, py, rr, 0, Math.PI * 2);
+        }
         ctx.fill();
         ctx.globalAlpha = 1;
-        ctx.strokeStyle = theme.line;
+        ctx.strokeStyle = hexA(plant ? theme.sci["solid"] : darken(tint, 0.25), 0.55);
         ctx.lineWidth = 1;
         ctx.stroke();
-      }
-      if (cellPx > 14) {
-        ctx.globalAlpha = 0.85;
-        ctx.fillStyle = theme.accent;
-        ctx.beginPath();
-        ctx.arc(x + cellPx * 0.42, y + cellPx * 0.42, cellPx * 0.13, 0, Math.PI * 2);
-        ctx.fill();
+        if (cellPx > 12) {
+          organelleDot(ctx, px - rr * 0.16, py + rr * 0.1, Math.max(1.2, rr * 0.28),
+            theme.sci["field"]);
+        }
       }
     }
   }
@@ -733,160 +920,290 @@ function drawTissueView(rc: RenderContext<State>, org: OrganismSpec, pxPerM: num
     ? "Not a tissue — just many separate one-celled organisms"
     : plant ? "Leaf tissue: cells stacked in a wall-to-wall grid"
       : "Tissue: many cells of the same kind, working together";
-  caption(ctx, width / 2, 18, text, rc.theme, { align: "center", size: 12 });
+  caption(ctx, width / 2, 22, text, rc.theme, { align: "center", size: 13 });
 }
 
-/** The main event: one cell, with its organelles at work. */
+/* ------------------------------------------------------------------ *
+ * The main event: one cell, filling the stage
+ * ------------------------------------------------------------------ */
+
 function drawCell(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
-  const { ctx, state, params, theme, width, height, overlays, band } = rc;
+  const { ctx, state, params, theme, width, height, overlays, band, time } = rc;
   const plant = params.cellType === "plant";
   const focus = effectiveFocus(state, params);
+  const has = (id: string) => state.built.includes(id);
+  const light = params.light as number;
+  const wall = plant && has("wall");
+
   const cx = width / 2;
   const cy = height * 0.5;
-  const cellR = Math.min(Math.max(30, (org.cellM * pxPerM) / 2), Math.min(width, height) * 0.44);
-  const has = (id: string) => state.built.includes(id);
-  const dark = isDarkTheme(theme);
+  // Honest scale, but the cell is never allowed to be a small dot in a big
+  // empty stage: it fills the height and leaves gutters for the names.
+  const wallT = wall ? Math.max(7, Math.min(width, height) * 0.028) : 0;
+  const cellR = Math.min(
+    Math.max(40, (org.cellM * pxPerM) / 2),
+    Math.min(width * 0.33, height * 0.455) - wallT,
+  );
+  const memTint = organelleColor("membrane", theme);
+  const toX = (u: number) => cx + u * cellR * INSET;
+  const toY = (u: number) => cy + u * cellR * INSET;
 
   /* --- light falling on the cell --------------------------------- */
-  const light = params.light as number;
   if (plant && light > 0.02) {
     ctx.save();
-    ctx.strokeStyle = theme.sci["light"];
-    ctx.globalAlpha = 0.14 + 0.4 * light;
-    ctx.lineWidth = 2;
+    ctx.globalCompositeOperation = "source-over";
     for (let i = 0; i < 7; i++) {
-      const x0 = -40 + (i / 6) * (width + 80);
-      ctx.beginPath();
-      ctx.moveTo(x0, -10);
-      ctx.lineTo(x0 + height * 0.45, height + 10);
-      ctx.stroke();
+      const x0 = -60 + (i / 6) * (width + 120) + Math.sin(time * 0.12 + i) * 6;
+      const w = 14 + (i % 3) * 7;
+      const g = ctx.createLinearGradient(x0, 0, x0 + w, 0);
+      g.addColorStop(0, hexA(theme.sci["light"], 0));
+      g.addColorStop(0.5, hexA(theme.sci["light"], 0.1 + 0.26 * light));
+      g.addColorStop(1, hexA(theme.sci["light"], 0));
+      ctx.fillStyle = g;
+      ctx.save();
+      ctx.translate(x0, -20);
+      ctx.transform(1, 0, 0.42, 1, 0, 0);
+      ctx.fillRect(0, 0, w, height + 40);
+      ctx.restore();
     }
     ctx.restore();
   }
 
-  /* --- the cell body --------------------------------------------- */
-  const wall = has("wall");
-  const boxy = plant;
-  ctx.save();
-  if (wall) {
-    // The wall is drawn as a real thickness, not an outline.
-    const t = Math.max(4, cellR * 0.08);
-    ctx.fillStyle = theme.sci["solid"];
-    roundRect(ctx, cx - cellR - t, cy - cellR - t, (cellR + t) * 2, (cellR + t) * 2, cellR * 0.16);
-    ctx.fill();
-    ctx.globalAlpha = 0.35;
-    ctx.fillStyle = mixHex(theme.sci["solid"], "#ffffff", 0.4);
-    roundRect(ctx, cx - cellR - t, cy - cellR - t, (cellR + t) * 2, t * 0.9, 3);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-  if (has("cytoplasm") || has("membrane")) {
-    const g = ctx.createRadialGradient(cx - cellR * 0.3, cy - cellR * 0.35, cellR * 0.1, cx, cy, cellR);
-    const jelly = theme.sci["liquid"];
-    g.addColorStop(0, hexA(mixHex(jelly, "#ffffff", dark ? 0.1 : 0.5), 0.5));
-    g.addColorStop(1, hexA(jelly, dark ? 0.34 : 0.22));
-    ctx.fillStyle = g;
-    if (boxy) {
-      roundRect(ctx, cx - cellR, cy - cellR, cellR * 2, cellR * 2, cellR * 0.14);
-      ctx.fill();
-    } else {
-      ctx.beginPath();
-      ctx.arc(cx, cy, cellR, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  if (has("membrane")) {
-    ctx.strokeStyle = focus === "membrane" ? theme.accent : theme.inkSoft;
-    ctx.lineWidth = focus === "membrane" ? 4.5 : 3;
-    if (boxy) roundRect(ctx, cx - cellR, cy - cellR, cellR * 2, cellR * 2, cellR * 0.14);
-    else {
-      ctx.beginPath();
-      ctx.arc(cx, cy, cellR, 0, Math.PI * 2);
-    }
+  /* --- an empty stage in Build mode still has to say what to do --- */
+  if (!has("membrane") && !has("cytoplasm") && !wall) {
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.accent, 0.4);
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 7]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, cellR, 0, Math.PI * 2);
     ctx.stroke();
-    // The phospholipid heads, which is what makes it a *double* layer.
-    if (cellR > 70) {
-      ctx.globalAlpha = 0.55;
-      ctx.lineWidth = 1;
-      if (boxy) roundRect(ctx, cx - cellR + 5, cy - cellR + 5, cellR * 2 - 10, cellR * 2 - 10, cellR * 0.12);
-      else {
-        ctx.beginPath();
-        ctx.arc(cx, cy, cellR - 5, 0, Math.PI * 2);
+    ctx.restore();
+    caption(ctx, cx, cy, "Click here to place the part you chose", theme, {
+      align: "center", size: 13, color: theme.inkSoft,
+    });
+    return;
+  }
+
+  /* --- the cell sits on something, so it casts something ---------- */
+  const outer = cellR + wallT;
+  ctx.save();
+  const ao = ctx.createRadialGradient(
+    cx, cy + outer * 0.12, outer * 0.55, cx, cy + outer * 0.12, outer * 1.4,
+  );
+  ao.addColorStop(0, hexA(theme.ink, 0.18));
+  ao.addColorStop(0.6, hexA(theme.ink, 0.08));
+  ao.addColorStop(1, hexA(theme.ink, 0));
+  ctx.fillStyle = ao;
+  ctx.beginPath();
+  ctx.arc(cx, cy + outer * 0.12, outer * 1.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  /* --- membrane and cytoplasm ------------------------------------ */
+  if (has("membrane")) {
+    membrane(ctx, cx, cy, cellR, memTint, {
+      scatter: 1, wobble: plant ? 0.012 : 0.028, t: time, rimStrength: 1,
+    });
+  } else if (has("cytoplasm")) {
+    // Cytoplasm with nothing to hold it in: a soft, edgeless pool.
+    ctx.save();
+    const g = ctx.createRadialGradient(
+      cx - cellR * 0.3, cy - cellR * 0.35, cellR * 0.05, cx, cy, cellR,
+    );
+    g.addColorStop(0, hexA(lighten(memTint, 0.6), 0.28));
+    g.addColorStop(1, hexA(memTint, 0.06));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, cellR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* --- the plant cell's wall, drawn as real thickness ------------- */
+  if (wall) {
+    const wallTint = organelleColor("wall", theme);
+    ctx.save();
+    // Ring: a rounded box outside, the membrane's circle punched out inside.
+    roundRect(ctx, cx - outer, cy - outer, outer * 2, outer * 2, outer * 0.3);
+    ctx.moveTo(cx + cellR, cy);
+    ctx.arc(cx, cy, cellR, 0, Math.PI * 2);
+    ctx.clip("evenodd");
+
+    const g = ctx.createLinearGradient(cx - outer, cy - outer, cx + outer, cy + outer);
+    g.addColorStop(0, lighten(wallTint, 0.5));
+    g.addColorStop(0.45, lighten(wallTint, 0.1));
+    g.addColorStop(1, darken(wallTint, 0.34));
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - outer - 2, cy - outer - 2, outer * 2 + 4, outer * 2 + 4);
+
+    // Cellulose: two crossing families of fibres, which is exactly why the
+    // wall is stiff in every direction at once.
+    ctx.lineCap = "round";
+    for (const dir of [1, -1]) {
+      ctx.strokeStyle = hexA(dir > 0 ? lighten(wallTint, 0.7) : darken(wallTint, 0.5), 0.28);
+      ctx.lineWidth = Math.max(1, wallT * 0.16);
+      ctx.beginPath();
+      const stepPx = Math.max(5, wallT * 0.52);
+      for (let s = -outer * 2; s < outer * 2; s += stepPx) {
+        ctx.moveTo(cx + s, cy - outer - 4);
+        ctx.lineTo(cx + s + dir * outer * 2.4, cy + outer + 4);
       }
       ctx.stroke();
     }
-  }
-  ctx.restore();
+    ctx.restore();
 
-  /* --- cytoplasmic streaming ------------------------------------- */
-  if (overlays.activity !== false && has("cytoplasm")) {
+    // Edges: a dark outer line and a lit inner one, so it reads as a slab.
     ctx.save();
-    ctx.fillStyle = theme.sci["liquid"];
-    for (const p of state.stream) {
-      const px = cx + Math.cos(p.a) * p.r * cellR * 0.92;
-      const py = cy + Math.sin(p.a) * p.r * cellR * 0.92;
-      ctx.globalAlpha = 0.16 + 0.2 * Math.abs(Math.sin(p.a * 2));
+    ctx.strokeStyle = hexA(darken(wallTint, 0.5), 0.85);
+    ctx.lineWidth = 1.6;
+    roundRect(ctx, cx - outer, cy - outer, outer * 2, outer * 2, outer * 0.3);
+    ctx.stroke();
+    ctx.restore();
+    rimLight(ctx, (c) => {
+      roundRect(c, cx - outer + 1, cy - outer + 1, outer * 2 - 2, outer * 2 - 2, outer * 0.29);
+    }, lighten(wallTint, 0.85), {
+      width: 2.2, alpha: 0.7,
+      bounds: { x: cx - outer, y: cy - outer, w: outer * 2, h: outer * 2 },
+    });
+  }
+
+  /* --- everything from here on lives inside the membrane ---------- */
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, cellR * 0.995, 0, Math.PI * 2);
+  ctx.clip();
+
+  if (has("cytoplasm")) {
+    // The jelly itself: a faint granular wash plus visible streaming.
+    ctx.save();
+    for (let i = 0; i < 70; i++) {
+      const a = i * 2.39996;
+      const rr = Math.sqrt((i + 0.5) / 70) * cellR * 0.97;
+      ctx.globalAlpha = 0.05 + 0.05 * ((i * 7) % 5) / 4;
+      ctx.fillStyle = lighten(memTint, 0.75);
       ctx.beginPath();
-      ctx.arc(px, py, Math.max(1.2, cellR * 0.02), 0, Math.PI * 2);
+      ctx.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, cellR * 0.02, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
+
+    if (overlays.activity !== false) {
+      ctx.save();
+      ctx.lineCap = "round";
+      for (const p of state.stream) {
+        const rr = p.r * cellR * 0.92;
+        ctx.globalAlpha = 0.1 + 0.16 * Math.abs(Math.sin(p.a * 2));
+        ctx.strokeStyle = lighten(memTint, 0.8);
+        ctx.lineWidth = Math.max(1.2, cellR * 0.014);
+        ctx.beginPath();
+        ctx.arc(cx, cy, rr, p.a - 0.16, p.a);
+        ctx.stroke();
+        ctx.globalAlpha = 0.3;
+        organelleDot(ctx, cx + Math.cos(p.a) * rr, cy + Math.sin(p.a) * rr,
+          Math.max(1.2, cellR * 0.014), lighten(memTint, 0.6));
+      }
+      ctx.restore();
+    }
   }
 
   /* --- organelles ------------------------------------------------ */
   const drawn = organellesFor(params.cellType as string)
     .filter((o) => has(o.id) && o.id !== "membrane" && o.id !== "cytoplasm" && o.id !== "wall");
-  // Big things first so the small ones stay clickable on top of them.
+  // Big things first so the small ones stay visible on top of them.
   drawn.sort((a, b) => b.r - a.r);
 
+  const tags: Tag[] = [];
   for (const spec of drawn) {
     const color = organelleColor(spec.id, theme);
     const lit = focus === spec.id;
+    const scale = LOOK[spec.id]?.scale ?? 1;
     for (let i = 0; i < spec.copies; i++) {
-      const [ox, oy] = copyOffset(spec, i);
-      const px = cx + ox * cellR;
-      const py = cy + oy * cellR;
-      const baseR = spec.r * cellR;
-      drawOrganelle(rc, spec, px, py, baseR, color, lit, i);
+      const [ox, oy] = placeCopy(spec, i, time);
+      const px = toX(ox);
+      const py = toY(oy);
+      drawOrganelle(rc, spec, px, py, spec.r * cellR * scale, color, lit, i);
+      if (i === 0) {
+        tags.push({
+          id: spec.id, name: spec.name, sub: `about ${metreLabel(spec.sizeM)} across`,
+          x: px, y: py - spec.r * cellR * scale * 0.5,
+          rank: TAG_RANK[spec.id] ?? 20,
+        });
+      }
+    }
+  }
+
+  /* --- transport vesicles drifting through the jelly -------------- */
+  if (has("cytoplasm")) {
+    for (let i = 0; i < 14; i++) {
+      const a = i * 2.39996 + time * (0.06 + (i % 4) * 0.015);
+      const rr = (0.3 + 0.56 * ((i * 5) % 7) / 7) * cellR * INSET;
+      const r = Math.max(1.6, cellR * (0.012 + 0.012 * ((i * 3) % 4) / 3));
+      organelleDot(ctx,
+        cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.94,
+        r, i % 2 ? theme.sci["velocity"] : theme.sci["field"]);
     }
   }
 
   /* --- molecules the organelles have just made -------------------- */
   if (overlays.activity !== false) {
     for (const s of state.sparks) {
-      const px = cx + s.x * cellR;
-      const py = cy + s.y * cellR;
+      const px = toX(s.x);
+      const py = toY(s.y);
       const a = Math.min(1, s.life);
-      ctx.save();
-      ctx.globalAlpha = 0.25 + 0.6 * a;
       const col = sparkColor(s.kind, theme);
-      sphere(ctx, px, py, Math.max(1.6, cellR * 0.022), col, { rim: false });
+      ctx.save();
+      ctx.globalAlpha = 0.3 + 0.6 * a;
+      glow(ctx, px, py, Math.max(6, cellR * 0.07), col, 0.32);
+      organelleDot(ctx, px, py, Math.max(1.8, cellR * 0.022), col);
       ctx.restore();
-      if (cellR > 110 && band !== "3-5") {
-        caption(ctx, px + 6, py - 6, SPARK_KIND[s.kind], theme, {
-          size: 9, color: sparkColor(s.kind, theme),
-        });
+      if (cellR > 130 && band !== "3-5") {
+        caption(ctx, px + 7, py - 7, SPARK_KIND[s.kind], theme, { size: 9, color: col });
       }
     }
   }
+  ctx.restore();
 
-  /* --- labels ----------------------------------------------------- */
+  /* --- re-assert the membrane over its contents ------------------- */
+  if (has("membrane")) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, cellR * 0.93, 0, Math.PI * 2);
+    ctx.strokeStyle = hexA(memTint, 0.16);
+    ctx.lineWidth = cellR * 0.14;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, cellR, 0, Math.PI * 2);
+    ctx.strokeStyle = hexA(darken(memTint, 0.25), focus === "membrane" ? 0.95 : 0.7);
+    ctx.lineWidth = Math.max(1.6, cellR * 0.022);
+    ctx.stroke();
+    ctx.restore();
+    rimLight(ctx, (c) => {
+      c.beginPath();
+      c.arc(cx, cy, cellR * 0.985, 0, Math.PI * 2);
+    }, lighten(memTint, 0.92), {
+      width: Math.max(1.4, cellR * 0.022), alpha: 0.75,
+      bounds: { x: cx - cellR, y: cy - cellR, w: cellR * 2, h: cellR * 2 },
+    });
+    if (focus === "membrane") glow(ctx, cx, cy, cellR * 1.3, theme.sci["light"], 0.16);
+  }
+
+  /* --- names, in pills, out of the way ---------------------------- */
   if (overlays.labels !== false && band !== "3-5") {
-    for (const spec of drawn) {
-      const [ox, oy] = copyOffset(spec, 0);
-      const px = cx + ox * cellR;
-      const py = cy + oy * cellR - spec.r * cellR - 9;
-      if (px < 4 || px > width - 4) continue;
-      caption(ctx, px, py, spec.name, theme, {
-        align: "center", size: 10,
-        color: focus === spec.id ? theme.accent : theme.inkSoft,
-      });
-    }
     if (has("membrane")) {
-      caption(ctx, cx, cy - cellR - (wall ? 18 : 10), wall ? "Cell wall + membrane" : "Cell membrane", theme, {
-        align: "center", size: 10, color: theme.inkSoft,
+      tags.push({
+        id: "membrane", name: "Cell membrane",
+        sub: `about ${metreLabel(7e-9)} thick`,
+        x: cx - cellR * 0.71, y: cy - cellR * 0.71, rank: 0,
       });
     }
+    if (wall) {
+      tags.push({
+        id: "wall", name: "Cell wall", sub: "cellulose fibres",
+        x: cx + outer * 0.72, y: cy + outer * 0.72, rank: 1,
+      });
+    }
+    drawCallouts(rc, tags, cx, outer, focus);
   }
 
   /* --- live numbers on the stage ---------------------------------- */
@@ -902,204 +1219,297 @@ function drawCell(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
   }
 }
 
-/** One organelle, drawn as the thing it is rather than a coloured dot. */
+/* ------------------------------------------------------------------ *
+ * One organelle, drawn as the thing it is
+ * ------------------------------------------------------------------ */
+
+/** A vacuole: a water-filled sac with a visible tonoplast and a slow swirl. */
+function vacuoleSac(
+  ctx: CanvasRenderingContext2D, x: number, y: number, r: number, tint: string, time: number,
+) {
+  ctx.save();
+  const g = ctx.createRadialGradient(x - r * 0.34, y - r * 0.38, r * 0.05, x, y, r);
+  g.addColorStop(0, hexA(lighten(tint, 0.8), 0.5));
+  g.addColorStop(0.62, hexA(lighten(tint, 0.25), 0.3));
+  g.addColorStop(1, hexA(tint, 0.46));
+  ctx.beginPath();
+  ctx.ellipse(x, y, r * 1.06, r * 0.95, 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  // Tonoplast: one real membrane, so it gets two leaflets like the other one.
+  ctx.lineWidth = Math.max(1.6, r * 0.035);
+  ctx.strokeStyle = hexA(darken(tint, 0.15), 0.8);
+  ctx.stroke();
+  ctx.lineWidth = Math.max(0.7, r * 0.014);
+  ctx.strokeStyle = hexA(lighten(tint, 0.95), 0.55);
+  ctx.stroke();
+
+  ctx.save();
+  ctx.clip();
+  ctx.strokeStyle = hexA(lighten(tint, 0.85), 0.16);
+  ctx.lineWidth = Math.max(1, r * 0.022);
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(x, y, r * (0.34 + i * 0.22), 0.5 + time * 0.1 + i * 1.4, 2.4 + time * 0.1 + i * 1.4);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.ellipse(x - r * 0.4, y - r * 0.44, r * 0.26, r * 0.13, -0.7, 0, Math.PI * 2);
+  ctx.fillStyle = hexA(lighten(tint, 0.95), 0.55);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** A centriole: nine triplets of tubes seen down the barrel. */
+function centrioleBarrel(
+  ctx: CanvasRenderingContext2D, x: number, y: number, r: number, tint: string, angle: number,
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.lineCap = "round";
+  ctx.strokeStyle = hexA(darken(tint, 0.2), 0.9);
+  ctx.lineWidth = Math.max(1.2, r * 0.24);
+  for (let i = 0; i < 5; i++) {
+    const px = -r * 0.85 + (i / 4) * r * 1.7;
+    ctx.beginPath();
+    ctx.moveTo(px, -r * 1.1);
+    ctx.lineTo(px, r * 1.1);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = hexA(lighten(tint, 0.6), 0.75);
+  ctx.lineWidth = Math.max(0.8, r * 0.11);
+  ctx.beginPath();
+  ctx.moveTo(-r * 1.02, -r * 1.1);
+  ctx.lineTo(r * 1.02, -r * 1.1);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawOrganelle(
   rc: RenderContext<State>, spec: OrganelleSpec,
   px: number, py: number, r: number, color: string, lit: boolean, copy: number,
 ) {
-  const { ctx, state, theme, params } = rc;
-  const t = state.t;
-  const pulse = 1 + 0.09 * Math.sin(t * 2.4 + copy * 1.7);
+  const { ctx, theme, params, time } = rc;
+  if (r <= 0) return;
 
   ctx.save();
+  if (lit) glow(ctx, px, py, r * 2.8, theme.sci["light"], 0.28);
+
   switch (spec.id) {
     case "mitochondria": {
-      // A stadium shape with cristae folded across it, pulsing as it works.
-      const w = r * 2.1 * pulse;
-      const h = r * 1.15;
-      ctx.translate(px, py);
-      ctx.rotate(0.4 + copy * 0.9);
-      const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-      g.addColorStop(0, mixHex(color, "#ffffff", 0.4));
-      g.addColorStop(1, mixHex(color, "#000000", 0.25));
-      ctx.fillStyle = g;
-      roundRect(ctx, -w / 2, -h / 2, w, h, h / 2);
-      ctx.fill();
-      ctx.strokeStyle = lit ? theme.accent : mixHex(color, "#000000", 0.45);
-      ctx.lineWidth = lit ? 2.4 : 1;
-      ctx.stroke();
-      ctx.strokeStyle = mixHex(color, "#000000", 0.4);
-      ctx.lineWidth = Math.max(0.8, h * 0.09);
-      ctx.beginPath();
-      const folds = 5;
-      for (let i = 1; i < folds; i++) {
-        const x = -w / 2 + (i / folds) * w;
-        ctx.moveTo(x, -h * 0.36);
-        ctx.quadraticCurveTo(x + (i % 2 ? h * 0.3 : -h * 0.3), 0, x, h * 0.36);
-      }
-      ctx.stroke();
+      // The folds are the point: they are the surface that makes the ATP.
+      const beat = lerp(0.94, 1.07, pulse(time + copy * 0.41, 0.34));
+      const w = r * 2.5 * beat;
+      const h = r * 1.24;
+      mitochondrion(ctx, px, py, w, h, 0.4 + copy * 0.87 + Math.sin(time * 0.16 + copy) * 0.06,
+        color);
       break;
     }
     case "chloroplast": {
-      // A lens packed with thylakoid stacks, glowing with the light it catches.
-      const light = params.light as number;
-      const w = r * 2.2;
-      const h = r * 1.25;
-      ctx.translate(px, py);
-      ctx.rotate(-0.3 + copy * 0.8);
-      if (light > 0.05) glow(ctx, 0, 0, w * 0.9, theme.sci["light"], 0.16 + 0.3 * light);
-      const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-      g.addColorStop(0, mixHex(color, "#ffffff", 0.45));
-      g.addColorStop(1, mixHex(color, "#000000", 0.3));
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = lit ? theme.accent : mixHex(color, "#000000", 0.45);
-      ctx.lineWidth = lit ? 2.4 : 1;
-      ctx.stroke();
-      ctx.fillStyle = mixHex(color, "#000000", 0.35);
-      for (let i = 0; i < 3; i++) {
-        const sx = -w * 0.24 + i * w * 0.24;
-        for (let j = 0; j < 3; j++) {
-          ctx.fillRect(sx - w * 0.06, -h * 0.16 + j * h * 0.13, w * 0.12, Math.max(1, h * 0.07));
-        }
-      }
+      const lightP = params.light as number;
+      const w = r * 2.3;
+      const h = r * 1.32;
+      if (lightP > 0.05) glow(ctx, px, py, w * 0.95, theme.sci["light"], 0.14 + 0.3 * lightP);
+      chloroplast(ctx, px, py, w, h, -0.3 + copy * 0.79 + Math.sin(time * 0.13 + copy) * 0.05,
+        color);
       break;
     }
     case "nucleus": {
-      sphere(ctx, px, py, r * pulse * 0.99, color, { glow: lit ? 0.4 : 0 });
-      // Chromatin: the DNA the nucleus exists to protect.
-      ctx.strokeStyle = mixHex(color, "#000000", 0.5);
-      ctx.lineWidth = Math.max(1, r * 0.07);
-      ctx.beginPath();
-      for (let i = 0; i < 4; i++) {
-        const a = t * 0.2 + i * 1.6;
-        ctx.moveTo(px + Math.cos(a) * r * 0.55, py + Math.sin(a) * r * 0.5);
-        ctx.quadraticCurveTo(
-          px + Math.cos(a + 1) * r * 0.2, py + Math.sin(a + 1) * r * 0.2,
-          px + Math.cos(a + 2.2) * r * 0.5, py + Math.sin(a + 2.2) * r * 0.55,
-        );
-      }
-      ctx.stroke();
-      // The nucleolus, where ribosomes are assembled.
-      sphere(ctx, px + r * 0.22, py - r * 0.18, r * 0.26, mixHex(color, "#000000", 0.3), { rim: false });
-      // Pores in the envelope: the way instructions get out.
-      ctx.fillStyle = theme.surface;
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2 + 0.2;
-        ctx.beginPath();
-        ctx.arc(px + Math.cos(a) * r, py + Math.sin(a) * r, Math.max(1, r * 0.07), 0, Math.PI * 2);
-        ctx.fill();
-      }
-      if (lit) {
-        ctx.strokeStyle = theme.accent;
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(px, py, r + 3, 0, Math.PI * 2);
-        ctx.stroke();
-      }
+      nucleus(ctx, px, py, r, color, time);
       break;
     }
     case "vacuole": {
-      const g = ctx.createRadialGradient(px - r * 0.3, py - r * 0.3, r * 0.1, px, py, r);
-      g.addColorStop(0, hexA(mixHex(color, "#ffffff", 0.6), 0.6));
-      g.addColorStop(1, hexA(color, 0.35));
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.ellipse(px, py, r * 1.15, r, 0.2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = lit ? theme.accent : hexA(color, 0.8);
-      ctx.lineWidth = lit ? 2.6 : 1.4;
-      ctx.stroke();
+      vacuoleSac(ctx, px, py, r, color, time);
       break;
     }
     case "er": {
-      // Folded sheets radiating away from the nucleus.
-      ctx.strokeStyle = lit ? theme.accent : color;
-      ctx.lineWidth = Math.max(1.2, r * 0.09);
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath();
-      for (let i = 0; i < 4; i++) {
-        const rr = r * (0.4 + i * 0.2);
-        ctx.moveTo(px - rr, py - rr * 0.5);
-        ctx.bezierCurveTo(px - rr * 0.2, py - rr, px + rr * 0.2, py + rr * 0.2, px + rr, py - rr * 0.3);
-      }
-      ctx.stroke();
+      // Rough ER hugging the nucleus, smooth ER reaching away from it.
+      const a = Math.atan2(py - rc.height * 0.5, px - rc.width * 0.5) + Math.PI / 2;
+      reticulum(ctx, px, py, r * 2.9, r * 1.5, color, {
+        studded: true, sheets: 5, angle: a + Math.sin(time * 0.12) * 0.03,
+      });
+      reticulum(ctx, px - r * 1.4, py - r * 1.5, r * 1.7, r * 0.9, color, {
+        studded: false, sheets: 4, angle: a - 0.7,
+      });
       break;
     }
     case "golgi": {
-      ctx.strokeStyle = lit ? theme.accent : color;
-      ctx.lineWidth = Math.max(1.4, r * 0.16);
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      for (let i = 0; i < 4; i++) {
-        const rr = r * (1 - i * 0.16);
-        ctx.moveTo(px - rr, py - r * 0.4 + i * r * 0.28);
-        ctx.quadraticCurveTo(px, py - r * 0.75 + i * r * 0.28, px + rr, py - r * 0.4 + i * r * 0.28);
-      }
-      ctx.stroke();
+      golgi(ctx, px, py, r * 2.1, r * 1.8, color,
+        -0.34 + Math.sin(time * 0.11) * 0.04);
       break;
     }
     case "ribosome": {
-      sphere(ctx, px, py, Math.max(1.6, r), color, { rim: false, glow: lit ? 0.9 : 0 });
+      // Two subunits clamped together — that is the whole machine.
+      organelleDot(ctx, px, py + r * 0.22, r * 0.78, color);
+      organelleDot(ctx, px + r * 0.06, py - r * 0.5, r * 0.56, lighten(color, 0.22));
       break;
     }
     case "lysosome": {
-      sphere(ctx, px, py, Math.max(2, r * pulse), color, { glow: lit ? 0.6 : 0 });
-      ctx.fillStyle = mixHex(color, "#000000", 0.4);
-      for (let i = 0; i < 3; i++) {
-        const a = i * 2.1 + t * 0.6;
-        ctx.beginPath();
-        ctx.arc(px + Math.cos(a) * r * 0.4, py + Math.sin(a) * r * 0.4, Math.max(0.8, r * 0.2), 0, Math.PI * 2);
-        ctx.fill();
+      const beat = lerp(0.94, 1.06, pulse(time + copy * 0.6, 0.28));
+      organelleDot(ctx, px, py, r * beat, color);
+      ctx.globalAlpha = 0.7;
+      for (let i = 0; i < 4; i++) {
+        const a = i * 1.9 + time * 0.35;
+        organelleDot(ctx, px + Math.cos(a) * r * 0.4, py + Math.sin(a) * r * 0.4,
+          Math.max(0.8, r * 0.17), darken(color, 0.35));
       }
+      ctx.globalAlpha = 1;
       break;
     }
     case "centriole": {
-      ctx.translate(px, py);
-      ctx.rotate(copy * 1.5708);
-      ctx.strokeStyle = lit ? theme.accent : color;
-      ctx.lineWidth = Math.max(1.4, r * 0.3);
-      ctx.beginPath();
-      for (let i = 0; i < 3; i++) {
-        ctx.moveTo(-r + i * r, -r * 1.3);
-        ctx.lineTo(-r + i * r, r * 1.3);
-      }
-      ctx.stroke();
+      centrioleBarrel(ctx, px, py, r, color, copy * 1.5708 + Math.sin(time * 0.1) * 0.04);
       break;
     }
     default: {
-      sphere(ctx, px, py, Math.max(2, r), color, { glow: lit ? 0.5 : 0 });
+      organelleDot(ctx, px, py, Math.max(2, r), color);
     }
+  }
+
+  if (lit) {
+    ctx.strokeStyle = hexA(theme.sci["light"], 0.9);
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.lineDashOffset = -time * 12;
+    ctx.beginPath();
+    ctx.arc(px, py, r * 1.6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
   ctx.restore();
 }
 
-/** Deep zoom: one organelle filling the frame, with what it does written out. */
+/* ------------------------------------------------------------------ *
+ * Deep zoom: one organelle filling the frame
+ * ------------------------------------------------------------------ */
+
+/** The feature worth pointing at once a part fills the frame. */
+const DETAIL: Record<string, { label: string; dx: number; dy: number }> = {
+  nucleus: { label: "Nucleolus", dx: 0.16, dy: 0.1 },
+  mitochondria: { label: "Cristae", dx: 0.1, dy: -0.2 },
+  chloroplast: { label: "Granum", dx: -0.2, dy: 0 },
+  er: { label: "Ribosomes", dx: 0, dy: -0.25 },
+  golgi: { label: "Cisternae", dx: 0, dy: -0.3 },
+  vacuole: { label: "Tonoplast", dx: -0.62, dy: -0.5 },
+  lysosome: { label: "Enzymes", dx: 0.3, dy: 0.3 },
+  ribosome: { label: "Two subunits", dx: 0.1, dy: -0.5 },
+  centriole: { label: "Tubes", dx: 0.4, dy: -0.6 },
+  membrane: { label: "Bilayer", dx: 0, dy: -0.98 },
+  wall: { label: "Cellulose", dx: 0, dy: -0.9 },
+  cytoplasm: { label: "Streaming", dx: 0.5, dy: 0.3 },
+};
+
 function drawOrganelleView(rc: RenderContext<State>, spec: OrganelleSpec | undefined) {
-  const { ctx, theme, width, height, band } = rc;
+  const { ctx, theme, width, height, band, time } = rc;
   if (!spec) {
     caption(ctx, width / 2, height / 2, "Pick a part to look inside", theme, {
       align: "center", size: 15,
     });
     return;
   }
-  const cx = width * 0.36;
-  const cy = height * 0.5;
-  const r = Math.min(width, height) * 0.28;
+  const cx = width * 0.33;
+  const cy = height * 0.52;
+  const r = Math.min(width * 0.24, height * 0.34);
   const color = organelleColor(spec.id, theme);
-  glow(ctx, cx, cy, r * 2, color, 0.16);
-  drawOrganelle(rc, spec, cx, cy, r, color, true, 0);
 
-  const tx = Math.min(width - 14, cx + r * 1.35);
-  caption(ctx, tx, cy - 46, spec.name, theme, { size: 16 });
-  caption(ctx, tx, cy - 24, `about ${metreLabel(spec.sizeM)} across`, theme, {
+  // Ambient occlusion so the subject sits in the frame rather than on it.
+  ctx.save();
+  const ao = ctx.createRadialGradient(cx, cy + r * 0.2, r * 0.6, cx, cy + r * 0.2, r * 2.1);
+  ao.addColorStop(0, hexA(theme.ink, 0.16));
+  ao.addColorStop(1, hexA(theme.ink, 0));
+  ctx.fillStyle = ao;
+  ctx.beginPath();
+  ctx.arc(cx, cy + r * 0.2, r * 2.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  glow(ctx, cx, cy, r * 2.2, color, 0.18);
+
+  switch (spec.id) {
+    case "membrane": {
+      membrane(ctx, cx, cy, r * 1.25, color, { scatter: 1, wobble: 0.03, t: time });
+      break;
+    }
+    case "cytoplasm": {
+      membrane(ctx, cx, cy, r * 1.25, color, { scatter: 0.9, wobble: 0.05, t: time });
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 1.24, 0, Math.PI * 2);
+      ctx.clip();
+      for (let i = 0; i < 26; i++) {
+        const a = i * 2.39996 + time * 0.1;
+        const rr = Math.sqrt((i + 0.5) / 26) * r * 1.15;
+        organelleDot(ctx, cx + Math.cos(a) * rr, cy + Math.sin(a) * rr,
+          Math.max(2, r * (0.03 + 0.02 * ((i * 3) % 4) / 3)),
+          i % 2 ? theme.sci["velocity"] : theme.sci["field"]);
+      }
+      ctx.restore();
+      break;
+    }
+    case "wall": {
+      // A slab of wall seen edge-on, with its crossing cellulose fibres.
+      const w = r * 2.3;
+      const h = r * 1.1;
+      ctx.save();
+      roundRect(ctx, cx - w / 2, cy - h / 2, w, h, h * 0.22);
+      ctx.clip();
+      const g = ctx.createLinearGradient(0, cy - h / 2, 0, cy + h / 2);
+      g.addColorStop(0, lighten(color, 0.5));
+      g.addColorStop(0.45, lighten(color, 0.08));
+      g.addColorStop(1, darken(color, 0.36));
+      ctx.fillStyle = g;
+      ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+      ctx.lineCap = "round";
+      for (const dir of [1, -1]) {
+        ctx.strokeStyle = hexA(dir > 0 ? lighten(color, 0.75) : darken(color, 0.5), 0.32);
+        ctx.lineWidth = Math.max(2, h * 0.06);
+        ctx.beginPath();
+        for (let s = -w; s < w; s += h * 0.2) {
+          ctx.moveTo(cx + s, cy - h);
+          ctx.lineTo(cx + s + dir * h * 2, cy + h);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+      rimLight(ctx, (c) => {
+        roundRect(c, cx - w / 2, cy - h / 2, w, h, h * 0.22);
+      }, lighten(color, 0.85), {
+        width: 2.4, alpha: 0.8,
+        bounds: { x: cx - w / 2, y: cy - h / 2, w, h },
+      });
+      break;
+    }
+    default:
+      drawOrganelle(rc, spec, cx, cy, r, color, false, 0);
+  }
+
+  // One feature named on the artwork's own terms, in a pill clear of it.
+  const d = DETAIL[spec.id];
+  if (d && band !== "3-5") {
+    callout(ctx, cx + d.dx * r, cy + d.dy * r, Math.max(12, cx - r * 1.45), cy - r * 1.05,
+      d.label, theme, {
+        side: "left",
+        accent: isDarkTheme(theme) ? darken(theme.accent, 0.5) : theme.accent,
+      });
+  }
+
+  const tx = Math.min(width - 14, cx + r * 1.5);
+  caption(ctx, tx, cy - 52, spec.name, theme, { size: 18 });
+  caption(ctx, tx, cy - 28, `about ${metreLabel(spec.sizeM)} across`, theme, {
     size: 11, color: theme.inkSoft,
   });
-  wrapText(rc, spec.job, tx, cy - 2, width - tx - 12, 13, theme.ink);
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.accent, 0.5);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(tx, cy - 16);
+  ctx.lineTo(Math.min(width - 14, tx + 46), cy - 16);
+  ctx.stroke();
+  ctx.restore();
+  wrapText(rc, spec.job, tx, cy + 4, width - tx - 12, 13, theme.ink);
   if (band === "6-8" || band === "9-12") {
-    wrapText(rc, spec.structure, tx, cy + 46, width - tx - 12, 11, theme.inkSoft);
+    wrapText(rc, spec.structure, tx, cy + 52, width - tx - 12, 11, theme.inkSoft);
   }
 }
 
@@ -1178,12 +1588,22 @@ function drawChecklist(rc: RenderContext<State>) {
 }
 
 function render(rc: RenderContext<State>) {
-  const { ctx, state, params, theme, width, height, overlays, band } = rc;
+  const { ctx, state, params, theme, width, height, overlays, band, time } = rc;
   const org = organismFor(params.cellType as string, params.bodyPlan as string);
   const span = viewSpan(params.zoom as number);
   const pxPerM = Math.min(width, height) / span;
 
-  sky(ctx, width, height, theme, "microscope");
+  // Depth, not a flat fill: a lilac wash that falls away at the corners, with
+  // two slowly parallaxing layers of out-of-focus motes in front of it.
+  depthWash(ctx, width, height, theme);
+  ctx.save();
+  ctx.translate(Math.sin(time * 0.05) * 12, Math.cos(time * 0.04) * 9);
+  bokeh(ctx, width, height, theme.accent, 15, 11);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(Math.sin(time * 0.08 + 1.3) * -18, Math.cos(time * 0.06) * 7);
+  bokeh(ctx, width, height, theme.sci["field"], 9, 29);
+  ctx.restore();
 
   // Which scene the zoom has arrived at, decided by how the view compares
   // with a real cell rather than by an arbitrary slider position.

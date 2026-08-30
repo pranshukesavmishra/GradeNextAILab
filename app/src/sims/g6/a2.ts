@@ -2,10 +2,10 @@ import type { RenderContext, SimManifest, SimModel } from "@engine/types";
 import { q } from "@engine/units";
 import { arrow, mixHex, roundRect } from "@ui/draw";
 import {
-  arcGauge, badge, bevelRect, caption, clamp01, dashFlow, easeInOut, glass,
+  arcGauge, badge, bevelRect, caption, clamp01, comet, dashFlow, easeInOut, glass,
   glow, gradient, gradientFill, groundPlane, hatchFill, hexA, innerGlow, isDarkTheme, labelLeader,
   lerp, material, metal, noiseWash, particleField, plastic, pulse, ribbon, rimLight,
-  sky, softShadow, sphere, spriteShadowEllipse, vignette,
+  sky, softShadow, sphere, spring, spriteShadowEllipse, vignette,
 } from "@ui/scene";
 
 /**
@@ -2417,6 +2417,1483 @@ export const g6a2CrossingCheck: SimManifest<G3State> = {
       hints: [
         "Switching the system reshuffles the deck but keeps your score.",
         "Read the boundary line under the plinth before the first card of a new system.",
+      ],
+    },
+  ],
+};
+
+/* ================================================================== *
+ * 4 · Follow the Atom  (A2.4)
+ *
+ * A farm valley at first light. Pick a tracer — one gram of carbon, one
+ * thousand kilojoules of sunlight, half a litre of rain — and walk it
+ * from station to station. Matter comes back round to where it started.
+ * Energy never does.
+ * ================================================================== */
+
+interface G4Station {
+  key: string; x: number; y: number;
+  name: string; note: string; region: string; amount: number;
+}
+
+interface G4Chain {
+  key: string; headline: string; unit: string; conserved: boolean;
+  moral: string; stations: G4Station[];
+}
+
+const G4_CHAINS: G4Chain[] = [
+  {
+    key: "energy", headline: "Following 1000 kJ of sunlight", unit: "kJ", conserved: false,
+    moral: "Energy travels one way through the farm and thins out at every handover.",
+    stations: [
+      { key: "sun", x: 122, y: 96, region: "sky", amount: 1000, name: "Sunlight on one square metre", note: "A bright day delivers roughly 1000 kJ to a square metre in half an hour." },
+      { key: "leaf", x: 432, y: 318, region: "field", amount: 10, name: "Sugar made in the maize leaf", note: "Crops capture about 1 per cent of the sunlight that lands on them." },
+      { key: "cob", x: 512, y: 292, region: "field", amount: 4, name: "Starch stored in the cob", note: "Around 40 per cent of the plant's store ends up in the grain." },
+      { key: "cow", x: 700, y: 358, region: "farm", amount: 0.4, name: "New tissue in the cow", note: "The ten per cent rule: most of what a cow eats is burned to keep it warm and moving." },
+      { key: "churn", x: 838, y: 398, region: "farm", amount: 0.16, name: "Energy in the milk", note: "Roughly 40 per cent of the cow's product energy leaves as milk." },
+      { key: "child", x: 932, y: 316, region: "farm", amount: 0.016, name: "Growth in the child who drinks it", note: "Ten per cent again. Of the original 1000 kJ, 0.016 kJ becomes new child." },
+    ],
+  },
+  {
+    key: "carbon", headline: "Following 1.00 g of carbon", unit: "g", conserved: true,
+    moral: "Not one atom is lost. The same carbon leaves the air and comes back to it.",
+    stations: [
+      { key: "air", x: 560, y: 152, region: "sky", amount: 1, name: "Carbon dioxide in the air", note: "Air is about 0.042 per cent carbon dioxide by volume." },
+      { key: "leaf", x: 432, y: 318, region: "field", amount: 1, name: "Locked into sugar by the leaf", note: "Photosynthesis rearranges the atoms; it does not create or destroy them." },
+      { key: "cob", x: 512, y: 292, region: "field", amount: 1, name: "Moved into starch in the cob", note: "Still exactly one gram of carbon, now in a different molecule." },
+      { key: "cow", x: 700, y: 358, region: "farm", amount: 1, name: "Eaten by the cow", note: "Digestion moves the carbon; it never changes how much there is." },
+      { key: "breath", x: 774, y: 296, region: "sky", amount: 1, name: "Breathed out as carbon dioxide", note: "Respiration is combustion run slowly, and it returns the carbon to the air." },
+      { key: "air2", x: 560, y: 152, region: "sky", amount: 1, name: "Back in the air above the field", note: "The loop is closed. The gram of carbon is where it began." },
+    ],
+  },
+  {
+    key: "water", headline: "Following 500 g of rain", unit: "g", conserved: true,
+    moral: "Water cycles too. The system borrows it, then hands every gram back.",
+    stations: [
+      { key: "cloud", x: 330, y: 84, region: "sky", amount: 500, name: "Water in a rain cloud", note: "Half a litre of rain, about a tumbler full." },
+      { key: "soil", x: 418, y: 434, region: "field", amount: 500, name: "Soaked into the field's soil", note: "Soil holds water between its grains until roots pull it out." },
+      { key: "stem", x: 434, y: 388, region: "field", amount: 500, name: "Drawn up the maize stem", note: "Evaporation from the leaves pulls an unbroken thread of water up the plant." },
+      { key: "leaf", x: 432, y: 318, region: "field", amount: 500, name: "Inside the leaf", note: "Under one per cent of it is used to build the plant. The rest passes straight through." },
+      { key: "vapour", x: 300, y: 176, region: "sky", amount: 500, name: "Transpired as water vapour", note: "One maize plant can transpire two litres on a hot day." },
+      { key: "cloud2", x: 330, y: 84, region: "sky", amount: 500, name: "Condensed back into cloud", note: "Every gram is accounted for. Matter cycles." },
+    ],
+  },
+];
+
+const G4_REGIONS: Record<string, string[]> = {
+  field: ["field"],
+  farm: ["field", "farm"],
+  valley: ["field", "farm", "valley", "sky"],
+};
+
+const G4_RINGS: Record<string, Rect> = {
+  field: { x: 358, y: 264, w: 244, h: 212 },
+  farm: { x: 358, y: 252, w: 622, h: 232 },
+  valley: { x: 54, y: 118, w: 930, h: 372 },
+};
+
+function g4Chain(key: string): G4Chain {
+  return G4_CHAINS.find((c) => c.key === key) ?? G4_CHAINS[0];
+}
+
+function g4Inside(region: string, boundary: string): boolean {
+  return (G4_REGIONS[boundary] ?? G4_REGIONS.field).includes(region);
+}
+
+/** Crossings made on the segments already travelled. */
+function g4Crossings(chain: G4Chain, boundary: string, seg: number): { inC: number; outC: number } {
+  let inC = 0, outC = 0;
+  for (let i = 0; i < Math.min(seg, chain.stations.length - 1); i++) {
+    const a = g4Inside(chain.stations[i].region, boundary);
+    const b = g4Inside(chain.stations[i + 1].region, boundary);
+    if (!a && b) inC++;
+    else if (a && !b) outC++;
+  }
+  return { inC, outC };
+}
+
+function fmtAmt(v: number): string {
+  if (v >= 100) return fx(v, 0);
+  if (v >= 10) return fx(v, 1);
+  if (v >= 1) return fx(v, 2);
+  return fx(v, 3);
+}
+
+interface G4State { t: number; pos: number; laps: number }
+
+const g4Model: SimModel<G4State> = {
+  init(params) { return { t: 0, pos: params.stage as number, laps: 0 }; },
+
+  applyParams(state, params, prev) {
+    if (params.tracer !== prev.tracer) return { t: state.t, pos: 0, laps: 0 };
+    return state;
+  },
+
+  step(state, dt, params) {
+    const chain = g4Chain(params.tracer as string);
+    const last = chain.stations.length - 1;
+    const t = state.t + dt;
+    if (params.autoPlay as boolean) {
+      let pos = state.pos + (params.speed as number) * dt;
+      let laps = state.laps;
+      if (pos > last) { pos = 0; laps += 1; }
+      return { t, pos, laps };
+    }
+    const target = Math.min(last, params.stage as number);
+    const k = 1 - Math.exp(-5.5 * dt);
+    return { t, pos: lerp(state.pos, target, k), laps: state.laps };
+  },
+
+  readouts(state, params) {
+    const chain = g4Chain(params.tracer as string);
+    const last = chain.stations.length - 1;
+    const i = Math.min(last, Math.floor(state.pos));
+    const j = Math.min(last, i + 1);
+    const frac = clamp01(state.pos - i);
+    const amount = lerp(chain.stations[i].amount, chain.stations[j].amount, frac);
+    const start = chain.stations[0].amount;
+    const { inC, outC } = g4Crossings(chain, params.boundary as string, Math.ceil(state.pos));
+    return [
+      { key: "stage", label: "Station", quantity: q(Math.round(state.pos) + 1, "count"), semantic: "distance", graphable: true },
+      {
+        key: "amount", label: `Carried now (${chain.unit})`, quantity: q(amount, "ratio"),
+        semantic: chain.conserved ? "mass" : "energy-total", graphable: true,
+      },
+      { key: "fraction", label: "Fraction of the start", quantity: q(amount / start, "percent"), unit: "%", semantic: "energy-total", graphable: true },
+      {
+        key: "lost", label: `Left behind as heat (${chain.unit})`, quantity: q(start - amount, "ratio"),
+        semantic: "energy-thermal", graphable: true,
+      },
+      { key: "crossIn", label: "Crossings inwards", quantity: q(inC, "count"), semantic: "cold" },
+      { key: "crossOut", label: "Crossings outwards", quantity: q(outC, "count"), semantic: "hot" },
+    ];
+  },
+
+  facts(state, params) {
+    const chain = g4Chain(params.tracer as string);
+    const last = chain.stations.length - 1;
+    const i = Math.min(last, Math.floor(state.pos));
+    const j = Math.min(last, i + 1);
+    const frac = clamp01(state.pos - i);
+    const amount = lerp(chain.stations[i].amount, chain.stations[j].amount, frac);
+    const start = chain.stations[0].amount;
+    const { inC, outC } = g4Crossings(chain, params.boundary as string, Math.ceil(state.pos));
+    return {
+      tracer: chain.key,
+      boundary: params.boundary as string,
+      station: i,
+      atEnd: state.pos >= last - 0.02,
+      amount, startAmount: start,
+      fractionLeft: amount / start,
+      lost: start - amount,
+      conserved: chain.conserved,
+      crossIn: inC, crossOut: outC,
+      crossings: inC + outC,
+      laps: state.laps,
+      stationKey: chain.stations[i].key,
+    };
+  },
+};
+
+function g4Maize(ctx: CanvasRenderingContext2D, x: number, y: number, h: number, theme: RenderContext<unknown>["theme"], t: number, seed: number) {
+  const green = theme.sci["producer"];
+  const sway = Math.sin(t * 0.9 + seed) * h * 0.05;
+  ctx.save();
+  ctx.strokeStyle = mixHex(green, "#000000", 0.28);
+  ctx.lineWidth = Math.max(1, h * 0.07);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.quadraticCurveTo(x + sway * 0.4, y - h * 0.6, x + sway, y - h);
+  ctx.stroke();
+  ctx.fillStyle = mixHex(green, "#ffffff", 0.12);
+  for (let i = 0; i < 3; i++) {
+    const ly = y - h * (0.35 + i * 0.22);
+    const dir = i % 2 === 0 ? 1 : -1;
+    ctx.beginPath();
+    ctx.moveTo(x + sway * 0.5, ly);
+    ctx.quadraticCurveTo(x + dir * h * 0.34, ly - h * 0.18, x + dir * h * 0.52, ly + h * 0.04);
+    ctx.quadraticCurveTo(x + dir * h * 0.3, ly + h * 0.08, x + sway * 0.5, ly);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function g4Render(rc: RenderContext<G4State>) {
+  const { ctx, state, params, theme, width, height, overlays, band } = rc;
+  const dark = isDarkTheme(theme);
+  const chain = g4Chain(params.tracer as string);
+  const boundary = params.boundary as string;
+  const last = chain.stations.length - 1;
+
+  const stripH = 118;
+  const bw = 1000, bh = 500;
+  const s = Math.min(width / bw, (height - stripH) / bh);
+  const ox = (width - bw * s) / 2;
+  const oy = (height - stripH - bh * s) / 2;
+  const X = (x: number) => ox + x * s;
+  const Y = (y: number) => oy + y * s;
+  const L = (v: number) => v * s;
+  const horizon = Y(300);
+
+  /* ---- dawn over the valley ---- */
+  sky(ctx, width, height, theme, "dusk", horizon);
+  // Two ridges behind the farm
+  for (const [amp, off, shade] of [[52, 34, 0.55], [34, 10, 0.72]]) {
+    ctx.save();
+    ctx.fillStyle = mixHex(theme.sci["producer"], "#000000", shade);
+    ctx.beginPath();
+    ctx.moveTo(0, horizon + L(4));
+    for (let px = 0; px <= width; px += L(24)) {
+      const u = px / Math.max(1, width);
+      ctx.lineTo(px, horizon - L(off + amp * (0.5 + 0.5 * Math.sin(u * 7 + amp))));
+    }
+    ctx.lineTo(width, horizon + L(4));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  groundPlane(ctx, horizon, 0, width, height, theme, "grass");
+  noiseWash(ctx, 0, horizon, width, height - horizon, { alpha: 0.05, seed: 44, count: 240 });
+
+  // Low sun with a long dawn glow
+  glow(ctx, X(122), Y(96), L(170), theme.sci["light"], 0.45);
+  sphere(ctx, X(122), Y(96), L(30), theme.sci["light"], { glow: 0.8 });
+
+  // Cloud
+  ctx.save();
+  ctx.globalAlpha = 0.72;
+  for (const o of [[-40, 6, 24], [0, -6, 32], [34, 8, 22]]) {
+    sphere(ctx, X(330 + o[0]), Y(84 + o[1]), L(o[2]), mixHex(theme.surface, theme.ink, 0.16));
+  }
+  ctx.restore();
+
+  // The stream
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.sci["liquid"], 0.75);
+  ctx.lineWidth = L(20);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(X(20), Y(486));
+  ctx.quadraticCurveTo(X(140), Y(432), X(268), Y(470));
+  ctx.stroke();
+  ctx.strokeStyle = hexA("#ffffff", 0.35 + 0.2 * pulse(state.t, 0.5));
+  ctx.lineWidth = L(3);
+  ctx.stroke();
+  ctx.restore();
+
+  // The maize field, rows getting bigger toward the front
+  for (let row = 0; row < 4; row++) {
+    const fy = 330 + row * 38;
+    const hgt = 30 + row * 9;
+    for (let i = 0; i < 9; i++) {
+      g4Maize(ctx, X(352 + i * 30 + (row % 2) * 14), Y(fy), L(hgt), theme, state.t, row * 3 + i);
+    }
+  }
+
+  // Dairy shed
+  const shedX = X(878), shedY = Y(300);
+  ctx.save();
+  ctx.fillStyle = mixHex(theme.sci["hot"], "#000000", 0.4);
+  ctx.beginPath();
+  ctx.moveTo(shedX - L(78), shedY);
+  ctx.lineTo(shedX, shedY - L(52));
+  ctx.lineTo(shedX + L(78), shedY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  material(ctx, shedX - L(66), shedY, L(132), L(72), mixHex(theme.inkSoft, "#ffffff", 0.2), L(3));
+  ctx.save();
+  ctx.fillStyle = mixHex(theme.ink, "#000000", 0.55);
+  roundRect(ctx, shedX - L(18), shedY + L(24), L(36), L(48), L(3));
+  ctx.fill();
+  ctx.restore();
+
+  // The cow
+  const cowX = X(700), cowY = Y(372);
+  spriteShadowEllipse(ctx, cowX, cowY + L(28), L(52), L(9), { alpha: 0.3 });
+  ctx.save();
+  const chew = Math.sin(state.t * 1.4) * L(2);
+  ctx.fillStyle = mixHex(theme.surface, theme.ink, dark ? 0.18 : 0.05);
+  ctx.beginPath();
+  ctx.ellipse(cowX, cowY, L(50), L(26), 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = mixHex(theme.ink, "#000000", 0.2);
+  ctx.beginPath();
+  ctx.ellipse(cowX - L(16), cowY - L(6), L(15), L(10), 0.3, 0, Math.PI * 2);
+  ctx.ellipse(cowX + L(20), cowY + L(6), L(11), L(8), -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = mixHex(theme.ink, "#000000", 0.25);
+  ctx.lineWidth = L(6);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  for (const dx of [-30, -12, 14, 32]) { ctx.moveTo(cowX + L(dx), cowY + L(20)); ctx.lineTo(cowX + L(dx), cowY + L(28)); }
+  ctx.stroke();
+  ctx.fillStyle = mixHex(theme.surface, theme.ink, dark ? 0.18 : 0.05);
+  ctx.beginPath();
+  ctx.ellipse(cowX - L(52), cowY - L(12) + chew, L(17), L(13), -0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  sphere(ctx, cowX - L(58), cowY - L(16) + chew, L(3), theme.ink);
+
+  // Milk churn and the child
+  metal(ctx, X(826), Y(384), L(26), L(34), theme.inkSoft, { radius: L(4), polish: 1 });
+  metal(ctx, X(832), Y(376), L(14), L(10), theme.inkSoft, { radius: L(3), polish: 1 });
+  sphere(ctx, X(932), Y(298), L(11), theme.sci["primary-consumer"]);
+  ctx.save();
+  ctx.strokeStyle = theme.sci["primary-consumer"];
+  ctx.lineWidth = L(11);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(X(932), Y(308)); ctx.lineTo(X(932), Y(340));
+  ctx.stroke();
+  ctx.lineWidth = L(6);
+  ctx.beginPath();
+  ctx.moveTo(X(932), Y(340)); ctx.lineTo(X(924), Y(362));
+  ctx.moveTo(X(932), Y(340)); ctx.lineTo(X(942), Y(362));
+  ctx.stroke();
+  ctx.restore();
+
+  /* ---- the boundary ring ---- */
+  if (overlays.ring !== false) {
+    const r = G4_RINGS[boundary] ?? G4_RINGS.field;
+    ctx.save();
+    ctx.setLineDash([L(14), L(10)]);
+    ctx.lineDashOffset = -state.t * 30;
+    ctx.lineWidth = Math.max(1.6, L(2.8));
+    ctx.strokeStyle = hexA(theme.accent, 0.85);
+    roundRect(ctx, X(r.x), Y(r.y), L(r.w), L(r.h), L(18));
+    ctx.stroke();
+    ctx.restore();
+    caption(ctx, X(r.x) + L(10), Y(r.y) + L(14),
+      boundary === "field" ? "boundary: the maize field" : boundary === "farm" ? "boundary: the whole farm" : "boundary: the valley",
+      theme, { size: Math.max(9, L(11)), color: theme.accent, weight: 700 });
+  }
+
+  /* ---- the route ---- */
+  const pts: Pt[] = [];
+  const segStarts: number[] = [];
+  for (let i = 0; i < last; i++) {
+    const a = chain.stations[i], b2 = chain.stations[i + 1];
+    const bend = (i % 2 === 0 ? 1 : -1) * L(34);
+    segStarts.push(pts.length);
+    const seg = curve({ x: X(a.x), y: Y(a.y) }, { x: X(b2.x), y: Y(b2.y) }, bend, 18);
+    pts.push(...(i === 0 ? seg : seg.slice(1)));
+  }
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  dashFlow(ctx, pts, theme.inkSoft, 0, { width: Math.max(1.2, L(2)), dash: L(5), gap: L(8), alpha: 0.6 });
+  ctx.restore();
+
+  const travelled = Math.max(2, Math.round((state.pos / last) * (pts.length - 1)) + 1);
+  const done = pts.slice(0, travelled);
+  if (done.length > 1) {
+    ribbon(ctx, done, L(11), hexA(theme.accent, 0.5), hexA(theme.accent, 0.15), { taper: 0.5, alpha: 0.85, core: true });
+    dashFlow(ctx, done, theme.accent, state.t * 46, { width: Math.max(1.6, L(2.6)), dash: L(8), gap: L(7), alpha: 0.95, glow: L(6) });
+  }
+
+  /* ---- station markers ---- */
+  const i0 = Math.min(last, Math.floor(state.pos));
+  const j0 = Math.min(last, i0 + 1);
+  const frac = clamp01(state.pos - i0);
+  const amountNow = lerp(chain.stations[i0].amount, chain.stations[j0].amount, frac);
+  const startAmt = chain.stations[0].amount;
+
+  chain.stations.forEach((st, idx) => {
+    const sxp = X(st.x), syp = Y(st.y);
+    const reached = state.pos >= idx - 0.02;
+    const active = idx === Math.round(state.pos);
+    const grow = active ? 1 + 0.18 * spring(clamp01((state.pos - idx + 0.5) * 2)) : 1;
+    const col = g4Inside(st.region, boundary) ? theme.accent : theme.inkSoft;
+    ctx.save();
+    ctx.globalAlpha = reached ? 1 : 0.42;
+    if (active) glow(ctx, sxp, syp, L(34), theme.accent, 0.55);
+    ctx.fillStyle = dark ? "rgba(14,20,28,0.9)" : "rgba(255,255,255,0.92)";
+    ctx.beginPath();
+    ctx.arc(sxp, syp, L(13) * grow, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = Math.max(1.6, L(active ? 3.4 : 2));
+    ctx.stroke();
+    ctx.fillStyle = col;
+    ctx.font = `700 ${Math.max(9, L(12))}px ui-monospace, monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(idx + 1), sxp, syp + L(0.5));
+    ctx.restore();
+  });
+
+  /* ---- energy shed at the handover the tracer is crossing ---- */
+  if (!chain.conserved && frac > 0.02 && i0 < last) {
+    const dropFrom = chain.stations[i0].amount, dropTo = chain.stations[j0].amount;
+    const lostHere = (dropFrom - dropTo) * frac;
+    const mid = pts[Math.min(pts.length - 1, Math.round(((i0 + frac) / last) * (pts.length - 1)))];
+    const puffs: { x: number; y: number; r: number; a: number }[] = [];
+    for (let k = 0; k < 22; k++) {
+      const rise = (state.t * 54 + k * 17) % 84;
+      puffs.push({
+        x: mid.x + L(Math.sin(state.t * 2 + k * 1.4) * (10 + rise * 0.32) + ((k % 5) - 2) * 5),
+        y: mid.y - L(rise * 0.9),
+        r: L(3.4 + rise * 0.05),
+        a: 0.7 * (1 - rise / 84),
+      });
+    }
+    particleField(ctx, puffs, theme.sci["energy-thermal"], { alpha: 0.6, buckets: 3, glow: L(5) });
+    if (band !== "K-2") {
+      badge(ctx, mid.x, mid.y - L(78), `- ${fmtAmt(lostHere)} ${chain.unit}`, theme, {
+        align: "center", color: theme.sci["energy-thermal"], sub: "escaped as heat",
+      });
+    }
+  }
+
+  /* ---- the tracer packet ---- */
+  const tp = pts[Math.min(pts.length - 1, Math.round((state.pos / last) * (pts.length - 1)))];
+  const tailFrom = Math.max(0, Math.round((state.pos / last) * (pts.length - 1)) - 16);
+  comet(ctx, pts.slice(tailFrom, Math.min(pts.length, tailFrom + 17)), theme.accent, L(5));
+  const packR = L(chain.conserved ? 13 : 8 + 7 * clamp01(Math.log10(Math.max(amountNow, 0.001) / 0.01) / 5));
+  sphere(ctx, tp.x, tp.y, packR, chain.conserved ? theme.sci["mass"] : theme.sci["energy-total"], { glow: 0.8 });
+  if (band !== "K-2") {
+    badge(ctx, tp.x, tp.y - packR - L(20), `${fmtAmt(amountNow)} ${chain.unit}`, theme, {
+      align: "center", color: chain.conserved ? theme.sci["mass"] : theme.sci["energy-total"],
+      sub: `${fx((amountNow / startAmt) * 100, amountNow / startAmt < 0.01 ? 3 : 1)} % of the start`,
+    });
+  }
+
+  /* ---- headline and the moral ---- */
+  caption(ctx, 16, 22, chain.headline, theme, { size: 17, weight: 800 });
+  caption(ctx, 16, 42, chain.stations[i0].note, theme, { size: 12, color: theme.inkSoft });
+  const { inC, outC } = g4Crossings(chain, boundary, Math.ceil(state.pos));
+  crossingKey(ctx, 16, 54, theme, [
+    { label: `${inC} in`, color: theme.sci["cold"] },
+    { label: `${outC} out`, color: theme.sci["hot"] },
+    { label: chain.conserved ? "nothing lost" : `${fmtAmt(startAmt - amountNow)} ${chain.unit} gone as heat`, color: chain.conserved ? theme.sci["mass"] : theme.sci["energy-thermal"] },
+  ]);
+
+  /* ---- the filmstrip: six stations, what arrives at each ---- */
+  const stripY = height - stripH + 8;
+  const gap = 8;
+  const tileW = (width - 24 - gap * (last)) / chain.stations.length;
+  ctx.save();
+  ctx.fillStyle = dark ? "rgba(12,17,24,0.72)" : "rgba(255,255,255,0.7)";
+  ctx.fillRect(0, stripY - 8, width, stripH);
+  ctx.restore();
+  chain.stations.forEach((st, idx) => {
+    const tx = 12 + idx * (tileW + gap);
+    const reached = state.pos >= idx - 0.02;
+    const active = idx === Math.round(state.pos);
+    const passed = idx === 0 ? 1 : st.amount / chain.stations[idx - 1].amount;
+    const col = active ? theme.accent : reached ? theme.inkSoft : theme.line;
+    softShadow(ctx, () => {
+      bevelRect(ctx, tx, stripY + (active ? -3 : 0), tileW, 92, 9,
+        mixHex(theme.surfaceAlt, active ? theme.accent : theme.ink, active ? 0.16 : 0.04),
+        { depth: active ? 1.6 : 0.6 });
+    }, { blur: active ? 14 : 6, dy: 3, alpha: active ? 0.3 : 0.14, color: active ? theme.accent : undefined });
+    const ty = stripY + (active ? -3 : 0);
+    ctx.save();
+    ctx.strokeStyle = hexA(col, active ? 0.9 : 0.4);
+    ctx.lineWidth = active ? 2 : 1;
+    roundRect(ctx, tx + 0.5, ty + 0.5, tileW - 1, 91, 8.5);
+    ctx.stroke();
+    ctx.globalAlpha = reached ? 1 : 0.5;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.font = '700 10px ui-monospace, monospace';
+    ctx.fillStyle = col;
+    ctx.fillText(`${idx + 1}`, tx + 10, ty + 14);
+    ctx.font = '600 11px "Bricolage Grotesque", system-ui, sans-serif';
+    ctx.fillStyle = theme.ink;
+    const nameLines = wrapText(ctx, st.name, tileW - 20).slice(0, 2);
+    nameLines.forEach((ln, k) => ctx.fillText(ln, tx + 10, ty + 32 + k * 14));
+    ctx.font = '700 15px ui-monospace, monospace';
+    ctx.fillStyle = chain.conserved ? theme.sci["mass"] : theme.sci["energy-total"];
+    ctx.fillText(`${fmtAmt(st.amount)} ${chain.unit}`, tx + 10, ty + 68);
+    // A bar for the share that survives the handover into this station
+    ctx.fillStyle = hexA(theme.grid, 0.9);
+    roundRect(ctx, tx + 10, ty + 80, tileW - 20, 5, 2.5);
+    ctx.fill();
+    ctx.fillStyle = idx === 0 ? theme.accent : passed > 0.5 ? theme.sci["mass"] : theme.sci["energy-thermal"];
+    roundRect(ctx, tx + 10, ty + 80, (tileW - 20) * clamp01(passed), 5, 2.5);
+    ctx.fill();
+    if (idx > 0) {
+      ctx.font = '500 9px ui-monospace, monospace';
+      ctx.fillStyle = theme.inkSoft;
+      ctx.textAlign = "right";
+      ctx.fillText(`${fx(passed * 100, passed < 0.1 ? 1 : 0)} % passed on`, tx + tileW - 10, ty + 68);
+    }
+    ctx.restore();
+  });
+
+  vignette(ctx, width, height, 0.15);
+}
+
+export const g6a2FollowTheAtom: SimManifest<G4State> = {
+  id: "g6a2-follow-the-atom",
+  title: "Follow the Atom",
+  tagline: "Walk one gram of carbon, or one thousand kilojoules of sunlight, station by station through a farm.",
+  subject: "engineering",
+  bands: ["3-5", "6-8", "9-12"],
+  grades: [5, 6, 7, 8],
+  standards: { ngss: ["MS-LS2-3", "MS-LS1-6", "MS-PS3-5"] },
+  learningGoals: [
+    "Trace a single quantity of matter or energy through the parts of a system.",
+    "Show that matter cycles and is conserved while energy flows one way and dwindles.",
+    "Count where a traced flow crosses a chosen boundary and where it stays inside.",
+  ],
+  misconceptions: [
+    "Energy is recycled through a food chain the way matter is",
+    "Energy that is lost has been destroyed",
+    "A cow turns most of the grass it eats into beef",
+  ],
+  interactionHint: "Drag the Station slider to step through, or switch on Auto-walk.",
+  params: {
+    tracer: {
+      type: "option", label: "What are you following?",
+      options: [
+        { value: "carbon", label: "1.00 g of carbon" },
+        { value: "energy", label: "1000 kJ of sunlight" },
+        { value: "water", label: "500 g of rain" },
+      ],
+      default: "energy",
+    },
+    stage: {
+      type: "number", label: "Station", kind: "count",
+      min: 0, max: 5, step: 1, default: 0,
+      help: "Step the tracer along by hand when Auto-walk is off.",
+    },
+    autoPlay: { type: "boolean", label: "Auto-walk", default: false },
+    speed: {
+      type: "number", label: "Walking speed", kind: "ratio",
+      min: 0.1, max: 1, step: 0.05, default: 0.32, bands: ["6-8", "9-12"],
+    },
+    boundary: {
+      type: "option", label: "Boundary you are auditing",
+      options: [
+        { value: "field", label: "The maize field" },
+        { value: "farm", label: "The whole farm" },
+        { value: "valley", label: "The valley" },
+      ],
+      default: "field",
+    },
+  },
+  overlays: [{ key: "ring", label: "Show the boundary", default: true }],
+  model: g4Model,
+  render: g4Render,
+  labs: [
+    {
+      id: "ten-percent",
+      title: "Where did the sunlight go?",
+      question: "How much of the sunlight that lands on a field ends up in the child who drinks the milk?",
+      bands: ["6-8", "9-12"],
+      minutes: 20,
+      standards: ["MS-LS2-3"],
+      setup: { tracer: "energy", stage: 0, autoPlay: false, speed: 0.32, boundary: "farm" },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Guess the survivor",
+          instruction: "1000 kJ of sunlight lands on a square metre of maize.",
+          predict: {
+            prompt: "How much of that 1000 kJ ends up as new growth in the child?",
+            options: ["About half of it", "About a tenth of it", "Less than a thousandth of it"],
+            correct: 2,
+            reveal: "About 0.016 kJ — roughly one part in sixty thousand. Every handover keeps around a tenth, and the plant only captured one per cent to begin with.",
+          },
+        },
+        {
+          id: "walk",
+          phase: "measure",
+          title: "Walk it station by station",
+          instruction: "Step the tracer from station 1 to station 6, recording the amount carried at each stop.",
+          requireData: 6,
+          check: { describe: "Tracer has reached the last station", test: (v) => v.facts.atEnd === true && v.facts.tracer === "energy" },
+          hints: ["The filmstrip along the bottom shows what percentage survives each handover."],
+        },
+        {
+          id: "analyze",
+          phase: "analyze",
+          title: "Find the biggest single loss",
+          instruction: "Compare the percentage passed on at each handover in the filmstrip.",
+          write: {
+            prompt: "Which handover wastes the largest share, and where does that energy actually go?",
+            placeholder: "The biggest loss is between ... and ... The energy is not destroyed; it ...",
+          },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "Explain the shape of the chain",
+          instruction: "Use the words one way and heat.",
+          write: {
+            prompt: "Why can a farm feed far more people on maize than on milk?",
+            placeholder: "Every extra step in the chain ...",
+          },
+        },
+      ],
+    },
+    {
+      id: "matter-comes-back",
+      title: "Does the carbon come back?",
+      question: "Is matter used up as it moves through a system the way energy is?",
+      bands: ["3-5", "6-8", "9-12"],
+      minutes: 18,
+      setup: { tracer: "carbon", stage: 0, autoPlay: false, speed: 0.32, boundary: "field" },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Predict the last station",
+          instruction: "You will follow one gram of carbon out of the air and through the farm.",
+          predict: {
+            prompt: "How much of that gram is left when it reaches station 6?",
+            options: ["Almost none — it gets used up", "About a tenth, like energy", "Exactly one gram — matter is conserved"],
+            correct: 2,
+            reveal: "Atoms are rearranged, never destroyed. The same gram of carbon leaves the air, passes through a leaf, a cob and a cow, and comes straight back to the air.",
+          },
+        },
+        {
+          id: "carbon-walk",
+          phase: "measure",
+          title: "Walk the carbon",
+          instruction: "Step all the way to station 6 and record the amount at each stop.",
+          requireData: 6,
+          check: { describe: "Carbon tracer at the last station", test: (v) => v.facts.tracer === "carbon" && v.facts.atEnd === true },
+        },
+        {
+          id: "energy-walk",
+          phase: "measure",
+          title: "Now do the same with energy",
+          instruction: "Switch the tracer to sunlight and walk it to the end again.",
+          requireData: 10,
+          check: { describe: "Energy tracer at the last station", test: (v) => v.facts.tracer === "energy" && v.facts.atEnd === true },
+        },
+        {
+          id: "analyze",
+          phase: "analyze",
+          title: "Put the two side by side",
+          instruction: "One tracer ended where it began. The other ended almost at nothing.",
+          write: {
+            prompt: "Describe the shape of each journey. Which one is a loop, and which one is a one-way street?",
+            placeholder: "The carbon journey is a ... because ... The energy journey is a ... because ...",
+          },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "One sentence for each",
+          instruction: "Write the rule that scientists use for matter and the rule they use for energy.",
+          write: {
+            prompt: "Matter ... through a system. Energy ... through a system.",
+            placeholder: "Matter cycles because ... Energy flows one way because ...",
+          },
+        },
+      ],
+    },
+  ],
+  challenges: [
+    {
+      id: "two-crossings",
+      title: "In and straight back out",
+      brief: "Find a tracer and a boundary where the flow crosses in once and out once, and comes back to where it started.",
+      bands: ["6-8", "9-12"],
+      setup: { tracer: "carbon", stage: 0, autoPlay: false, boundary: "field" },
+      goal: {
+        describe: "Reach the last station with one crossing in and one out",
+        test: (v) => v.facts.atEnd === true && (v.facts.crossIn as number) >= 1 && (v.facts.crossOut as number) >= 1,
+      },
+      stars: {
+        two: {
+          describe: "Do it with a conserved tracer, so nothing is lost on the way",
+          test: (v) => v.facts.atEnd === true && v.facts.conserved === true &&
+            (v.facts.crossIn as number) >= 1 && (v.facts.crossOut as number) >= 1,
+        },
+        three: {
+          describe: "Do it with exactly two crossings in total",
+          test: (v) => v.facts.atEnd === true && v.facts.conserved === true && (v.facts.crossings as number) === 2,
+        },
+      },
+      hints: [
+        "A cycle has to leave the system to get back to its starting point.",
+        "Try the carbon tracer with the field as your boundary.",
+      ],
+    },
+    {
+      id: "thousandth",
+      title: "Down to a thousandth",
+      brief: "Get a tracer to a station holding less than one part in a thousand of what it started with.",
+      bands: ["6-8", "9-12"],
+      setup: { tracer: "energy", stage: 0, autoPlay: false, boundary: "farm" },
+      goal: {
+        describe: "Fraction remaining below 0.1 per cent",
+        test: (v) => (v.facts.fractionLeft as number) < 0.001,
+      },
+      stars: {
+        two: {
+          describe: "Below one part in ten thousand",
+          test: (v) => (v.facts.fractionLeft as number) < 0.0001,
+        },
+        three: {
+          describe: "Below one part in fifty thousand, at the final station",
+          test: (v) => (v.facts.fractionLeft as number) < 0.00002 && v.facts.atEnd === true,
+        },
+      },
+      hints: [
+        "Only one of the three tracers loses anything at all.",
+        "Each handover in a food chain passes on roughly a tenth.",
+      ],
+    },
+  ],
+};
+
+/* ================================================================== *
+ * 5 · Where Do You Draw the Line  (A2.5, A2.1)
+ *
+ * A charging forecourt at dusk. Two cars, one question, three possible
+ * boundaries. The tailpipe boundary says the electric car emits nothing
+ * at all — which is true, and which answers almost none of the questions
+ * anybody actually asks.
+ * ================================================================== */
+
+/** Standard emission factors a student can look up. */
+const CO2_PER_LITRE = 2310;      // g CO2 from burning one litre of petrol
+const WELL_TO_TANK = 0.21;       // extra share for extracting, refining, delivering
+const PETROL_BUILD = 6.0e6;      // g CO2 to build a mid-size petrol car
+const EV_BUILD = 8.5e6;          // g CO2 to build the same car with a 60 kWh battery
+
+interface G5Split { tail: number; fuel: number; make: number }
+
+function g5Split(params: Record<string, number | boolean | string>): { petrol: G5Split; ev: G5Split; rank: number } {
+  const fuelUse = params.fuelUse as number;                 // litres per 100 km
+  const evUse = params.evUse as number;                     // kWh per 100 km at the plug
+  const grid = params.gridCarbon as number;                 // g CO2 per kWh
+  const lifeKm = (params.lifetimeKm as number) / 1000;      // stored in metres
+  const b = params.boundary as string;
+  const rank = b === "tailpipe" ? 0 : b === "fuel" ? 1 : 2;
+
+  const pTail = (CO2_PER_LITRE * fuelUse) / 100;
+  return {
+    petrol: {
+      tail: pTail,
+      fuel: rank >= 1 ? pTail * WELL_TO_TANK : 0,
+      make: rank >= 2 ? PETROL_BUILD / Math.max(1, lifeKm) : 0,
+    },
+    ev: {
+      tail: 0,
+      fuel: rank >= 1 ? (grid * evUse) / 100 : 0,
+      make: rank >= 2 ? EV_BUILD / Math.max(1, lifeKm) : 0,
+    },
+    rank,
+  };
+}
+
+const G5_QUESTIONS: Record<string, { text: string; need: number; missing: string }> = {
+  street: {
+    text: "Which car makes the air outside the school gate cleaner?",
+    need: 0,
+    missing: "what the car itself puffs out on that street",
+  },
+  today: {
+    text: "Which car adds less carbon dioxide for every kilometre driven this year?",
+    need: 1,
+    missing: "the CO2 released making the petrol and making the electricity",
+  },
+  lifetime: {
+    text: "Which car adds less carbon dioxide over its whole life?",
+    need: 2,
+    missing: "the CO2 released building the car and its battery",
+  },
+};
+
+const G5_RINGS: Record<string, Rect> = {
+  tailpipe: { x: 462, y: 372, w: 344, h: 118 },
+  fuel: { x: 396, y: 224, w: 570, h: 278 },
+  lifecycle: { x: 366, y: 148, w: 626, h: 356 },
+};
+
+interface G5State { t: number; p: G5Split; e: G5Split }
+
+function g5Total(s: G5Split): number { return s.tail + s.fuel + s.make; }
+
+const g5Model: SimModel<G5State> = {
+  init(params) {
+    const { petrol, ev } = g5Split(params);
+    return { t: 0, p: petrol, e: ev };
+  },
+
+  step(state, dt, params) {
+    const { petrol, ev } = g5Split(params);
+    const k = 1 - Math.exp(-6 * dt);
+    const ease = (a: G5Split, b: G5Split): G5Split => ({
+      tail: lerp(a.tail, b.tail, k), fuel: lerp(a.fuel, b.fuel, k), make: lerp(a.make, b.make, k),
+    });
+    return { t: state.t + dt, p: ease(state.p, petrol), e: ease(state.e, ev) };
+  },
+
+  readouts(_state, params) {
+    const { petrol, ev } = g5Split(params);
+    const pt = g5Total(petrol), et = g5Total(ev);
+    return [
+      { key: "petrolTotal", label: "Petrol car (g CO2 per km)", quantity: q(pt, "ratio"), semantic: "hot", graphable: true },
+      { key: "evTotal", label: "Electric car (g CO2 per km)", quantity: q(et, "ratio"), semantic: "cold", graphable: true },
+      { key: "gap", label: "Petrol minus electric (g/km)", quantity: q(pt - et, "ratio"), semantic: "energy-total", graphable: true },
+      { key: "petrolTail", label: "Petrol tailpipe only (g/km)", quantity: q(petrol.tail, "ratio"), semantic: "hot" },
+      { key: "evFuel", label: "Electric from the grid (g/km)", quantity: q(ev.fuel, "ratio"), semantic: "cold" },
+      {
+        key: "evBuild", label: "Electric car build share (g/km)", quantity: q(ev.make, "ratio"),
+        semantic: "mass", bands: ["6-8", "9-12"],
+      },
+    ];
+  },
+
+  facts(_state, params) {
+    const { petrol, ev, rank } = g5Split(params);
+    const pt = g5Total(petrol), et = g5Total(ev);
+    const qDef = G5_QUESTIONS[params.question as string] ?? G5_QUESTIONS.street;
+    return {
+      boundary: params.boundary as string,
+      question: params.question as string,
+      rank, needRank: qDef.need,
+      fits: rank === qDef.need,
+      tooNarrow: rank < qDef.need,
+      tooWide: rank > qDef.need,
+      petrolTotal: pt, evTotal: et,
+      gap: pt - et,
+      winner: Math.abs(pt - et) < 0.5 ? "tie" : et < pt ? "ev" : "petrol",
+      petrolWins: et > pt,
+      gridCarbon: params.gridCarbon as number,
+      fuelUse: params.fuelUse as number,
+      lifetimeKm: (params.lifetimeKm as number) / 1000,
+    };
+  },
+};
+
+/** A car in profile, lit from the forecourt lamps. */
+function g5Car(
+  ctx: CanvasRenderingContext2D, cx: number, cy: number, len: number,
+  color: string, theme: RenderContext<unknown>["theme"], t: number,
+) {
+  const h = len * 0.32;
+  const wheelR = len * 0.115;
+  spriteShadowEllipse(ctx, cx, cy + wheelR * 0.95, len * 0.52, wheelR * 0.5, { alpha: 0.4 });
+  ctx.save();
+  ctx.fillStyle = gradient(ctx, cx - len / 2, cy - h, len, h,
+    [mixHex(color, "#ffffff", 0.34), color, mixHex(color, "#000000", 0.4)], 100);
+  ctx.beginPath();
+  ctx.moveTo(cx - len * 0.5, cy);
+  ctx.quadraticCurveTo(cx - len * 0.5, cy - h * 0.5, cx - len * 0.36, cy - h * 0.52);
+  ctx.quadraticCurveTo(cx - len * 0.2, cy - h * 1.05, cx + len * 0.04, cy - h * 1.06);
+  ctx.quadraticCurveTo(cx + len * 0.26, cy - h * 1.0, cx + len * 0.36, cy - h * 0.5);
+  ctx.quadraticCurveTo(cx + len * 0.5, cy - h * 0.46, cx + len * 0.5, cy);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  // Glasshouse
+  ctx.save();
+  ctx.fillStyle = hexA(theme.ink, 0.55);
+  ctx.beginPath();
+  ctx.moveTo(cx - len * 0.28, cy - h * 0.56);
+  ctx.quadraticCurveTo(cx - len * 0.16, cy - h * 0.98, cx + len * 0.02, cy - h * 0.99);
+  ctx.quadraticCurveTo(cx + len * 0.2, cy - h * 0.94, cx + len * 0.27, cy - h * 0.56);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  rimLight(ctx, (c) => {
+    c.beginPath();
+    c.moveTo(cx - len * 0.5, cy - h * 0.42);
+    c.quadraticCurveTo(cx - len * 0.2, cy - h * 1.1, cx + len * 0.05, cy - h * 1.06);
+    c.quadraticCurveTo(cx + len * 0.3, cy - h * 1.0, cx + len * 0.5, cy - h * 0.1);
+  }, "#ffffff", { width: 1.6, alpha: 0.75 });
+  for (const dx of [-len * 0.29, len * 0.29]) {
+    ctx.save();
+    ctx.fillStyle = mixHex(theme.ink, "#000000", 0.35);
+    ctx.beginPath();
+    ctx.arc(cx + dx, cy, wheelR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    metal(ctx, cx + dx - wheelR * 0.5, cy - wheelR * 0.5, wheelR, wheelR, theme.inkSoft, { radius: wheelR * 0.5, polish: 1 });
+  }
+  glow(ctx, cx + len * 0.5, cy - h * 0.36, len * 0.2, theme.sci["light"], 0.5 + 0.1 * pulse(t, 0.4));
+}
+
+function g5Render(rc: RenderContext<G5State>) {
+  const { ctx, state, params, theme, width, height, overlays, band } = rc;
+  const dark = isDarkTheme(theme);
+  const f = fitBoard(width, height);
+  const { X, Y, L } = f;
+  const horizon = Y(334);
+  const grid = params.gridCarbon as number;
+  const boundary = params.boundary as string;
+  const qDef = G5_QUESTIONS[params.question as string] ?? G5_QUESTIONS.street;
+  const rank = boundary === "tailpipe" ? 0 : boundary === "fuel" ? 1 : 2;
+
+  const PET = theme.sci["hot"], EVC = theme.sci["cold"];
+
+  /* ---- dusk, wet tarmac, sodium light ---- */
+  sky(ctx, width, height, theme, "dusk", horizon);
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  for (const [hx, hw, hh] of [[0, 1000, 26], [420, 620, 44]]) {
+    ctx.fillStyle = mixHex(theme.ink, "#000000", 0.35);
+    ctx.beginPath();
+    ctx.moveTo(X(hx), horizon);
+    for (let px = 0; px <= hw; px += 40) {
+      ctx.lineTo(X(hx + px), horizon - L(hh * (0.4 + 0.6 * Math.sin(px * 0.013 + hw))));
+    }
+    ctx.lineTo(X(hx + hw), horizon);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Tarmac
+  gradientFill(ctx, 0, horizon, width, height - horizon, [
+    mixHex(theme.ink, "#1c2229", dark ? 0.9 : 0.72),
+    mixHex(theme.ink, "#0d1116", dark ? 0.95 : 0.86),
+  ], 90);
+  noiseWash(ctx, 0, horizon, width, height - horizon, { alpha: 0.05, seed: 63, count: 300 });
+
+  /* ---- distant industry ---- */
+  const dirty = clamp01((grid - 60) / 760);
+  // Power station, or a wind farm when the grid is clean
+  if (grid < 150) {
+    for (let i = 0; i < 3; i++) {
+      const wx = X(722 + i * 46), wy = Y(258 + i * 8);
+      ctx.save();
+      ctx.strokeStyle = hexA(theme.surface, 0.8);
+      ctx.lineWidth = Math.max(1.4, L(3));
+      ctx.beginPath();
+      ctx.moveTo(wx, wy); ctx.lineTo(wx, horizon);
+      ctx.stroke();
+      ctx.translate(wx, wy);
+      ctx.rotate(state.t * (1.1 + i * 0.2));
+      for (let k = 0; k < 3; k++) {
+        ctx.rotate((Math.PI * 2) / 3);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(0, -L(26));
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  } else {
+    const towerX = X(768);
+    ctx.save();
+    ctx.fillStyle = mixHex(theme.inkSoft, "#000000", 0.4);
+    ctx.beginPath();
+    ctx.moveTo(towerX - L(34), horizon);
+    ctx.quadraticCurveTo(towerX - L(16), Y(288), towerX - L(22), Y(252));
+    ctx.lineTo(towerX + L(22), Y(252));
+    ctx.quadraticCurveTo(towerX + L(16), Y(288), towerX + L(34), horizon);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    const plume: { x: number; y: number; r: number; a: number }[] = [];
+    for (let i = 0; i < 26; i++) {
+      const rise = (state.t * 22 + i * 13) % 150;
+      plume.push({
+        x: towerX + L(Math.sin(state.t * 0.5 + i * 0.6) * (6 + rise * 0.3) + rise * 0.28),
+        y: Y(250) - L(rise),
+        r: L(8 + rise * 0.16),
+        a: 0.55 * (1 - rise / 150),
+      });
+    }
+    particleField(ctx, plume, mixHex(theme.surface, theme.ink, 0.25 + 0.6 * dirty), { alpha: 0.4 + 0.35 * dirty, buckets: 3 });
+  }
+  // Refinery with its flare
+  const refX = X(896);
+  for (const [dx, hgt] of [[-26, 54], [0, 76], [24, 44]]) {
+    material(ctx, refX + L(dx) - L(7), horizon - L(hgt), L(14), L(hgt), mixHex(theme.inkSoft, "#000000", 0.45), L(2));
+  }
+  glow(ctx, refX, horizon - L(84), L(20 + 6 * pulse(state.t, 2.4)), theme.sci["hot"], 0.8);
+  // Car factory, sawtooth roof
+  const facX = X(980);
+  ctx.save();
+  ctx.fillStyle = mixHex(theme.inkSoft, "#000000", 0.5);
+  ctx.beginPath();
+  ctx.moveTo(facX - L(56), horizon);
+  ctx.lineTo(facX - L(56), Y(206));
+  for (let i = 0; i < 3; i++) {
+    ctx.lineTo(facX - L(56) + L(i * 26 + 13), Y(186));
+    ctx.lineTo(facX - L(56) + L(i * 26 + 26), Y(206));
+  }
+  ctx.lineTo(facX + L(22), horizon);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  /* ---- forecourt lamps ---- */
+  for (const lx of [300, 900]) {
+    metal(ctx, X(lx) - L(4), Y(232), L(8), L(128), theme.inkSoft, { radius: 2, polish: 0.7 });
+    metal(ctx, X(lx) - L(22), Y(224), L(44), L(12), theme.inkSoft, { radius: L(4), polish: 1 });
+    glow(ctx, X(lx), Y(236), L(96), theme.sci["light"], 0.4);
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = gradient(ctx, X(lx) - L(90), Y(234), L(180), L(226), [hexA(theme.sci["light"], 0.9), hexA(theme.sci["light"], 0)], 90);
+    ctx.beginPath();
+    ctx.moveTo(X(lx) - L(20), Y(234));
+    ctx.lineTo(X(lx) + L(20), Y(234));
+    ctx.lineTo(X(lx) + L(92), Y(470));
+    ctx.lineTo(X(lx) - L(92), Y(470));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* ---- charge post, pump, cars ---- */
+  const postX = X(416), postTop = Y(360);
+  plastic(ctx, postX - L(16), postTop, L(32), L(74), EVC, { radius: L(6) });
+  ctx.save();
+  ctx.fillStyle = hexA(theme.sci["light"], 0.6 + 0.3 * pulse(state.t, 1.1));
+  roundRect(ctx, postX - L(9), postTop + L(9), L(18), L(14), L(3));
+  ctx.fill();
+  ctx.restore();
+
+  const pumpX = X(842);
+  plastic(ctx, pumpX - L(20), Y(352), L(40), L(82), PET, { radius: L(6) });
+  metal(ctx, pumpX - L(13), Y(360), L(26), L(18), theme.inkSoft, { radius: L(3), polish: 0.9 });
+
+  g5Car(ctx, X(548), Y(452), L(158), EVC, theme, state.t);
+  g5Car(ctx, X(718), Y(456), L(162), PET, theme, state.t);
+
+  // Charging cable, with energy visibly running down it
+  const cable = curve({ x: postX + L(12), y: postTop + L(40) }, { x: X(486), y: Y(438) }, L(26), 16);
+  dashFlow(ctx, cable, EVC, state.t * 60, { width: Math.max(1.6, L(3.4)), dash: L(7), gap: L(6), alpha: 0.95, glow: L(5) });
+  // Fuel hose
+  const hose = curve({ x: pumpX - L(14), y: Y(376) }, { x: X(782), y: Y(438) }, L(-22), 16);
+  dashFlow(ctx, hose, PET, state.t * 40, { width: Math.max(1.6, L(3.2)), dash: L(6), gap: L(7), alpha: 0.9, glow: L(4) });
+
+  // Exhaust: the only emission the tailpipe boundary can see
+  const tailNow = state.p.tail;
+  if (tailNow > 1) {
+    const puffs: { x: number; y: number; r: number; a: number }[] = [];
+    const n = Math.min(26, Math.round(tailNow / 8));
+    for (let i = 0; i < n; i++) {
+      const d = (state.t * 44 + i * 15) % 96;
+      puffs.push({
+        x: X(640) - L(d * 0.9),
+        y: Y(452) - L(d * 0.34 + Math.sin(state.t * 2 + i) * 3),
+        r: L(4 + d * 0.09),
+        a: 0.65 * (1 - d / 96),
+      });
+    }
+    particleField(ctx, puffs, mixHex(theme.inkSoft, theme.ink, 0.4), { alpha: 0.5, buckets: 3 });
+  }
+
+  /* ---- the audit boundary ---- */
+  if (overlays.ring !== false) {
+    const r = G5_RINGS[boundary] ?? G5_RINGS.tailpipe;
+    ctx.save();
+    ctx.setLineDash([L(15), L(10)]);
+    ctx.lineDashOffset = -state.t * 32;
+    ctx.lineWidth = Math.max(2, L(3.2));
+    ctx.strokeStyle = hexA(theme.accent, 0.9);
+    roundRect(ctx, X(r.x), Y(r.y), L(r.w), L(r.h), L(18));
+    ctx.stroke();
+    ctx.restore();
+    innerGlow(ctx, (c) => roundRect(c, X(r.x), Y(r.y), L(r.w), L(r.h), L(18)), theme.accent, { inset: L(18), alpha: 0.14, steps: 3 });
+    caption(ctx, X(r.x) + L(12), Y(r.y) + L(15),
+      rank === 0 ? "counting: only what leaves the cars"
+        : rank === 1 ? "counting: the cars, the pump, the power station and the refinery"
+          : "counting: everything, factory included",
+      theme, { size: Math.max(9, L(11)), color: theme.accent, weight: 700 });
+  }
+
+  /* ---- the forecourt totem: the audit result, lit like a price sign ---- */
+  const bx = X(26), by = Y(56), bw2 = L(318), bh2 = L(276);
+  metal(ctx, X(178) - L(9), by + bh2, L(18), Y(470) - (by + bh2), theme.inkSoft, { radius: 2, polish: 0.6 });
+  softShadow(ctx, () => {
+    bevelRect(ctx, bx, by, bw2, bh2, L(12), mixHex(theme.surfaceAlt, theme.ink, dark ? 0.34 : 0.26), { depth: 1.6 });
+  }, { blur: L(20), dy: L(8), alpha: 0.4 });
+  const ix = bx + L(12), iy = by + L(12), iw = bw2 - L(24), ih = bh2 - L(24);
+  ctx.save();
+  ctx.fillStyle = gradient(ctx, ix, iy, iw, ih,
+    [mixHex(theme.ink, "#000000", dark ? 0.24 : 0.66), mixHex(theme.ink, "#000000", dark ? 0.5 : 0.8)], 110);
+  roundRect(ctx, ix, iy, iw, ih, L(6));
+  ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.font = `700 ${Math.max(10, L(13))}px "Bricolage Grotesque", system-ui, sans-serif`;
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("CARBON AUDIT", ix + L(12), iy + L(16));
+  ctx.font = `500 ${Math.max(8, L(10))}px ui-monospace, monospace`;
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  ctx.fillText("grams of CO2 per kilometre", ix + L(12), iy + L(32));
+  ctx.restore();
+
+  const baseY = iy + ih - L(34);
+  const topY = iy + L(48);
+  const maxVal = 300;
+  const scale = (baseY - topY) / maxVal;
+  const cols: [string, G5Split, string][] = [["Petrol", state.p, PET], ["Electric", state.e, EVC]];
+  cols.forEach(([name, sp, col], k) => {
+    const cxb = ix + L(56) + k * L(126);
+    const wBar = L(74);
+    let yCur = baseY;
+    const segs: [number, number, string][] = [
+      [sp.tail, 0.0, col],
+      [sp.fuel, 0.28, col],
+      [sp.make, 0.55, col],
+    ];
+    for (const [val, lighten, base] of segs) {
+      const hSeg = val * scale;
+      if (hSeg < 0.4) continue;
+      ctx.save();
+      ctx.fillStyle = gradient(ctx, cxb - wBar / 2, yCur - hSeg, wBar, hSeg,
+        [mixHex(base, "#ffffff", lighten + 0.22), mixHex(base, "#ffffff", lighten)], 0);
+      roundRect(ctx, cxb - wBar / 2, yCur - hSeg, wBar, hSeg, L(2));
+      ctx.fill();
+      ctx.strokeStyle = hexA("#000000", 0.35);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+      yCur -= hSeg;
+    }
+    const total = g5Total(sp);
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${Math.max(11, L(15))}px ui-monospace, monospace`;
+    ctx.fillStyle = col;
+    ctx.fillText(fx(total, 0), cxb, yCur - L(13));
+    ctx.font = `600 ${Math.max(8, L(10))}px "Bricolage Grotesque", system-ui, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.fillText(name, cxb, baseY + L(15));
+    ctx.restore();
+  });
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.28)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ix + L(10), baseY + 0.5);
+  ctx.lineTo(ix + iw - L(10), baseY + 0.5);
+  ctx.stroke();
+  ctx.restore();
+
+  /* ---- the question and whether this boundary can answer it ---- */
+  const fits = rank === qDef.need;
+  const narrow = rank < qDef.need;
+  const vColor = fits ? theme.sci["producer"] : theme.sci["hot"];
+  ctx.save();
+  ctx.font = '600 13px "Bricolage Grotesque", system-ui, sans-serif';
+  const verdict = fits
+    ? "This boundary can answer that question."
+    : narrow
+      ? `Too narrow. It leaves out ${qDef.missing}.`
+      : "Wider than the question needs — it counts CO2 released far from that street.";
+  const lines = wrapText(ctx, verdict, Math.min(430, width - 320));
+  const pw = Math.min(460, width - 300);
+  const phh = 46 + lines.length * 17;
+  const pxx = width - pw - 16, pyy = 14;
+  softShadow(ctx, () => {
+    ctx.fillStyle = dark ? "rgba(18,24,33,0.94)" : "rgba(255,255,255,0.96)";
+    roundRect(ctx, pxx, pyy, pw, phh, 11);
+    ctx.fill();
+  }, { blur: 16, dy: 5, alpha: 0.34 });
+  ctx.strokeStyle = hexA(vColor, 0.6);
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, pxx + 0.75, pyy + 0.75, pw - 1.5, phh - 1.5, 10.5);
+  ctx.stroke();
+  ctx.fillStyle = vColor;
+  roundRect(ctx, pxx + 1, pyy + 1, 5, phh - 2, 3);
+  ctx.fill();
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.font = '700 13px "Bricolage Grotesque", system-ui, sans-serif';
+  ctx.fillStyle = theme.ink;
+  const qLines = wrapText(ctx, qDef.text, pw - 30);
+  ctx.fillText(qLines[0], pxx + 16, pyy + 18);
+  ctx.font = '600 12px "Bricolage Grotesque", system-ui, sans-serif';
+  ctx.fillStyle = vColor;
+  lines.forEach((ln, i) => ctx.fillText(ln, pxx + 16, pyy + 40 + i * 17));
+  ctx.restore();
+
+  /* ---- winner chip and the live inputs ---- */
+  const pt = g5Total(state.p), et = g5Total(state.e);
+  if (band !== "K-2") {
+    const lead = Math.abs(pt - et);
+    const winner = lead < 0.5 ? "Too close to call" : et < pt ? "Electric is lower here" : "Petrol is lower here";
+    badge(ctx, X(185), Y(348), winner, theme, {
+      align: "center", color: lead < 0.5 ? theme.inkSoft : et < pt ? EVC : PET,
+      sub: lead < 0.5 ? "within half a gram" : `by ${fx(lead, 0)} g per km`,
+    });
+    badge(ctx, X(768), Y(214), `${fx(grid, 0)} g/kWh`, theme, { align: "center", color: EVC, sub: "grid carbon" });
+    badge(ctx, X(640), Y(500), `${fx(params.fuelUse as number, 1)} L/100 km`, theme, { align: "center", color: PET, sub: "petrol thirst" });
+  }
+  if (overlays.labels !== false) {
+    labelLeader(ctx, X(980), Y(196), X(700), Y(120), "Car factory", theme, {
+      color: rank >= 2 ? theme.accent : theme.inkSoft,
+      sub: rank >= 2 ? "inside the boundary" : "outside — not counted",
+      size: Math.max(9, L(11)), align: "left",
+    });
+    labelLeader(ctx, X(768), Y(276), X(430), Y(180), "Power station", theme, {
+      color: rank >= 1 ? theme.accent : theme.inkSoft,
+      sub: rank >= 1 ? "inside the boundary" : "outside — not counted",
+      size: Math.max(9, L(11)), align: "left",
+    });
+  }
+
+  vignette(ctx, width, height, 0.2);
+}
+
+export const g6a2WhereToDrawTheLine: SimManifest<G5State> = {
+  id: "g6a2-boundary-for-purpose",
+  title: "Where Do You Draw the Line",
+  tagline: "Audit two cars three ways and find out why the boundary you pick decides the answer you get.",
+  subject: "engineering",
+  bands: ["6-8", "9-12"],
+  grades: [6, 7, 8, 9, 10],
+  standards: { ngss: ["MS-ETS1-1", "MS-ETS1-2", "MS-ESS3-4", "HS-ETS1-3"] },
+  learningGoals: [
+    "Choose a system boundary that fits the question being asked.",
+    "Show that a narrow boundary can be perfectly true and still misleading.",
+    "Test whether a conclusion survives when the boundary is widened.",
+  ],
+  misconceptions: [
+    "An electric car has no carbon emissions at all",
+    "A wider boundary is always the better one",
+    "Where you draw the boundary is a detail, not part of the answer",
+  ],
+  interactionHint: "Pick the question first, then find the boundary that can honestly answer it.",
+  params: {
+    question: {
+      type: "option", label: "The question you are answering",
+      options: [
+        { value: "street", label: "Cleaner air at the school gate?" },
+        { value: "today", label: "Less CO2 per kilometre driven?" },
+        { value: "lifetime", label: "Less CO2 over the whole life?" },
+      ],
+      default: "lifetime",
+    },
+    boundary: {
+      type: "option", label: "Boundary you are drawing",
+      options: [
+        { value: "tailpipe", label: "The cars only" },
+        { value: "fuel", label: "Cars plus making the fuel" },
+        { value: "lifecycle", label: "Everything, factory included" },
+      ],
+      default: "tailpipe",
+    },
+    gridCarbon: {
+      type: "number", label: "Grid carbon (g CO2 per kWh)", kind: "ratio",
+      min: 15, max: 900, step: 5, default: 380,
+      marks: [
+        { value: 20, label: "hydro" },
+        { value: 380, label: "world" },
+        { value: 820, label: "coal" },
+      ],
+      help: "A hydro grid is near 20, the world average is about 380, an all-coal grid about 820.",
+    },
+    fuelUse: {
+      type: "number", label: "Petrol used (L per 100 km)", kind: "ratio",
+      min: 4, max: 12, step: 0.1, default: 7,
+      marks: [{ value: 5, label: "small" }, { value: 7, label: "family" }, { value: 11, label: "large" }],
+    },
+    evUse: {
+      type: "number", label: "Electricity used (kWh per 100 km)", kind: "ratio",
+      min: 13, max: 28, step: 0.5, default: 20, bands: ["6-8", "9-12"],
+    },
+    lifetimeKm: {
+      type: "number", label: "Distance driven before scrapping", kind: "length", unit: "km",
+      min: 5e7, max: 4e8, step: 1e7, default: 2e8, bands: ["6-8", "9-12"],
+      help: "Building a car costs the same CO2 whether it does 50 000 km or 400 000 km.",
+    },
+  },
+  overlays: [
+    { key: "ring", label: "Show the boundary", default: true },
+    { key: "labels", label: "Part names", default: true },
+  ],
+  model: g5Model,
+  render: g5Render,
+  labs: [
+    {
+      id: "zero-emission",
+      title: "Is an electric car really zero emission?",
+      question: "Which boundary makes an electric car look perfect, and is that boundary honest?",
+      bands: ["6-8", "9-12"],
+      minutes: 22,
+      standards: ["MS-ESS3-4"],
+      setup: { question: "lifetime", boundary: "tailpipe", gridCarbon: 380, fuelUse: 7, evUse: 20, lifetimeKm: 2e8 },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Predict before you widen",
+          instruction: "With the boundary round the cars alone, the electric car reads zero.",
+          predict: {
+            prompt: "What happens to the electric car's number as you widen the boundary?",
+            options: [
+              "It stays at zero — the car really does emit nothing",
+              "It rises, because CO2 is released making the electricity and the car",
+              "It falls below zero, because the car saves emissions",
+            ],
+            correct: 1,
+            reveal: "The zero is true and useless. Nothing leaves the car, but a power station and a battery factory did the emitting somewhere else.",
+          },
+        },
+        {
+          id: "tailpipe",
+          phase: "measure",
+          title: "Read the tailpipe audit",
+          instruction: "With the boundary on the cars only, record both totals.",
+          requireData: 1,
+          check: { describe: "Boundary is the cars only", test: (v) => v.facts.boundary === "tailpipe" },
+        },
+        {
+          id: "fuel",
+          phase: "measure",
+          title: "Add the fuel chain",
+          instruction: "Widen to cars plus making the fuel and record again.",
+          requireData: 2,
+          check: { describe: "Boundary includes the fuel chain", test: (v) => v.facts.boundary === "fuel" },
+        },
+        {
+          id: "life",
+          phase: "measure",
+          title: "Add the factories",
+          instruction: "Widen once more to everything and record a third row.",
+          requireData: 3,
+          check: { describe: "Boundary is the whole life cycle", test: (v) => v.facts.boundary === "lifecycle" && v.facts.fits === true },
+        },
+        {
+          id: "analyze",
+          phase: "analyze",
+          title: "Which number changed most?",
+          instruction: "Compare how far each car's total moved as the boundary grew.",
+          write: {
+            prompt: "Whose total grew more as you widened the line, and why does that make sense?",
+            placeholder: "The electric car's total grew by ... because most of its emissions happen ...",
+          },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "Answer the advert",
+          instruction: "An advert says zero emissions. Reply in two sentences.",
+          write: {
+            prompt: "Is the claim true? What boundary is it using, and what does it leave out?",
+            placeholder: "The claim is true only if the boundary is ... It leaves out ...",
+          },
+        },
+      ],
+    },
+    {
+      id: "find-the-flip",
+      title: "Find the flip",
+      question: "Is there a grid dirty enough to make the petrol car the lower-carbon choice?",
+      bands: ["9-12"],
+      minutes: 25,
+      setup: { question: "lifetime", boundary: "lifecycle", gridCarbon: 380, fuelUse: 5, evUse: 20, lifetimeKm: 2e8 },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Commit to an answer",
+          instruction: "The petrol car here is a small efficient one at 5 L per 100 km.",
+          predict: {
+            prompt: "Is there a grid carbon value where the petrol car wins on the whole-life boundary?",
+            options: [
+              "No — the electric car always wins",
+              "Yes, but only on a very dirty grid",
+              "Yes, on any grid above the world average",
+            ],
+            correct: 1,
+            reveal: "With a small efficient petrol car and a coal-heavy grid, the electric car can come out worse. Against an average family car on an average grid it does not.",
+          },
+        },
+        {
+          id: "sweep",
+          phase: "measure",
+          title: "Sweep the grid",
+          instruction: "Record both totals at 100, 300, 500, 700 and 900 g CO2 per kWh.",
+          requireData: 5,
+          check: { describe: "Boundary is the whole life cycle", test: (v) => v.facts.boundary === "lifecycle" },
+          hints: ["Change only the grid slider. Everything else must stay put for a fair test."],
+        },
+        {
+          id: "crossover",
+          phase: "analyze",
+          title: "Locate the crossover",
+          instruction: "Find the grid value where the two totals are within a few grams of each other.",
+          write: {
+            prompt: "At roughly what grid carbon do the two cars tie, and how did you narrow it down?",
+            placeholder: "They tie near ... g per kWh. I found it by ...",
+          },
+        },
+        {
+          id: "fair",
+          phase: "analyze",
+          title: "Now make the petrol car a big one",
+          instruction: "Raise petrol use toward 11 L per 100 km and sweep the grid again.",
+          check: { describe: "Petrol use above 9 L per 100 km", test: (v) => (v.facts.fuelUse as number) >= 9 },
+          write: {
+            prompt: "What happened to the crossover point, and what does that tell you about comparisons like this?",
+            placeholder: "The crossover moved ... which shows that the answer depends on ...",
+          },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "Write the caveat",
+          instruction: "A newspaper wants one line under a headline.",
+          write: {
+            prompt: "Write the sentence that has to sit under any answer to which car is cleaner.",
+            placeholder: "This answer holds only if the boundary is ... and the grid is ...",
+          },
+        },
+      ],
+    },
+  ],
+  challenges: [
+    {
+      id: "fit-the-question",
+      title: "Fit the question",
+      brief: "Pick the whole-life question and set the one boundary that can honestly answer it.",
+      bands: ["6-8", "9-12"],
+      setup: { question: "lifetime", boundary: "tailpipe", gridCarbon: 380, fuelUse: 7, evUse: 20, lifetimeKm: 2e8 },
+      goal: {
+        describe: "The boundary matches the question being asked",
+        test: (v) => v.facts.fits === true,
+      },
+      stars: {
+        two: {
+          describe: "Match the boundary to the whole-life question in particular",
+          test: (v) => v.facts.fits === true && v.facts.question === "lifetime",
+        },
+        three: {
+          describe: "Do it for all three questions in one session",
+          test: (v) => v.facts.fits === true && v.data.length >= 3,
+        },
+      },
+      hints: [
+        "Read the verdict card at the top right. It tells you narrow or wide, not right or wrong.",
+        "A question about the whole life needs the factory inside the line.",
+      ],
+    },
+    {
+      id: "make-petrol-win",
+      title: "Make the petrol car win",
+      brief: "Find honest settings where the petrol car has the lower whole-life total.",
+      bands: ["9-12"],
+      setup: { question: "lifetime", boundary: "lifecycle", gridCarbon: 380, fuelUse: 7, evUse: 20, lifetimeKm: 2e8 },
+      goal: {
+        describe: "Petrol total below electric total on the whole-life boundary",
+        test: (v) => v.facts.boundary === "lifecycle" && v.facts.petrolWins === true,
+      },
+      stars: {
+        two: {
+          describe: "Win by more than 20 g per km",
+          test: (v) => v.facts.boundary === "lifecycle" && (v.facts.gap as number) < -20,
+        },
+        three: {
+          describe: "Win by more than 20 g per km on a grid under 700 g per kWh",
+          test: (v) => v.facts.boundary === "lifecycle" && (v.facts.gap as number) < -20 &&
+            (v.facts.gridCarbon as number) < 700,
+        },
+      },
+      hints: [
+        "Three sliders can help the petrol car: how thirsty it is, how dirty the grid is, and how far the cars are driven.",
+        "A short life spreads the battery factory's CO2 over very few kilometres.",
       ],
     },
   ],

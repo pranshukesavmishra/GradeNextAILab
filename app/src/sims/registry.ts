@@ -1,4 +1,7 @@
 import type { AnySim, GradeBand, Subject } from "@engine/types";
+import {
+  g6b1CellTheory, g6b1FirstLook, g6b1HowSmall, g6b1LivingTest, g6b1OneOrMany,
+} from "./topics/g6b1";
 import { circuitsSim } from "./physics/circuits";
 import { collisionsSim } from "./physics/collisions";
 import { electricForceSim } from "./physics/electric-force";
@@ -69,6 +72,11 @@ import { unitCircleSim } from "./math/unit-circle";
  * filtering, labs, and challenges all read from the manifest.
  */
 export const SIMS: AnySim[] = [
+  g6b1CellTheory,
+  g6b1FirstLook,
+  g6b1OneOrMany,
+  g6b1LivingTest,
+  g6b1HowSmall,
   circuitsSim,
   collisionsSim,
   electricForceSim,

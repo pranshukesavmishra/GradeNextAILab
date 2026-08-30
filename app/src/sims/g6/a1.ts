@@ -2510,3 +2510,1729 @@ export const g6a1NestedMachine: SimManifest<BuildState> = {
     },
   ],
 };
+
+/* ================================================================== *
+ * A1.3 — Life Support: interactions among a system's parts
+ *
+ * A classroom aquarium in its cabinet. Switch one component off and
+ * watch the consequences travel around the loop for hours. Every
+ * number here comes from real aquarium physics: 100 L of water, a
+ * 300 W heater, oxygen saturation from the standard temperature
+ * formula, and nitrifying bacteria with saturating kinetics.
+ * ================================================================== */
+
+const TANK_VOLUME = 100;          // litres
+const TANK_MASS = 100;            // kg of water
+const WATER_C = 4186;             // J per kg per K
+const HEATER_W = 300;             // watts
+const LOSS_W_PER_K = 25;          // watts lost per kelvin above the room
+const SETPOINT_K = 298.15;        // 25 degrees C
+
+/** Oxygen saturation in mg/L for fresh water at 1 atm, standard fit. */
+function oxygenSaturation(celsius: number): number {
+  const c = Math.max(0, Math.min(40, celsius));
+  return 14.652 - 0.41022 * c + 0.0079910 * c * c - 0.000077774 * c * c * c;
+}
+
+/** Biological rates roughly double for every 10 K, the usual Q10 of 2. */
+function q10(kelvin: number): number {
+  return Math.pow(2, (kelvin - SETPOINT_K) / 10);
+}
+
+interface FishAgent { x: number; y: number; vx: number; vy: number; ph: number; kind: number }
+interface Bubble { x: number; y: number; v: number; r: number }
+
+interface TankState {
+  t: number;            // seconds of aquarium time
+  T: number;            // water temperature, K
+  heaterOn: boolean;
+  o2: number;           // mg per litre
+  nh: number;           // total ammonia, mg per litre
+  comfort: number;      // 0-1, set by the worst of the three conditions
+  limiter: string;
+  minO2: number;
+  maxNH: number;
+  minComfort: number;
+  lightOn: boolean;
+  fish: FishAgent[];
+  bubbles: Bubble[];
+}
+
+function makeFish(n: number, pick: () => number): FishAgent[] {
+  const out: FishAgent[] = [];
+  for (let i = 0; i < n; i++) {
+    out.push({
+      x: 0.15 + pick() * 0.7,
+      y: 0.25 + pick() * 0.5,
+      vx: (pick() - 0.5) * 0.06,
+      vy: (pick() - 0.5) * 0.02,
+      ph: pick() * 6.28,
+      kind: i % 3,
+    });
+  }
+  return out;
+}
+
+const tankModel: SimModel<TankState> = {
+  init(params, ctx) {
+    return {
+      t: 0,
+      T: SETPOINT_K,
+      heaterOn: false,
+      o2: oxygenSaturation(SETPOINT_K - 273.15),
+      nh: 0.05,
+      comfort: 1,
+      limiter: "nothing",
+      minO2: 99,
+      maxNH: 0,
+      minComfort: 1,
+      lightOn: true,
+      fish: makeFish(Math.round(params.fish as number), () => ctx.rng.next()),
+      bubbles: [],
+    };
+  },
+
+  applyParams(state, params, prev, ctx) {
+    if (params.fish !== prev.fish) {
+      const want = Math.round(params.fish as number);
+      let fish = state.fish;
+      if (want < fish.length) fish = fish.slice(0, want);
+      else if (want > fish.length) {
+        fish = [...fish, ...makeFish(want - fish.length, () => ctx.rng.next())];
+      }
+      return { ...state, fish };
+    }
+    return state;
+  },
+
+  step(state, dt, params, ctx, _inputs) {
+    if (dt <= 0) return state;
+    const broken = params.broken as string;
+    const room = params.roomTemp as number;
+    const feedKg = params.feed as number;
+    const feedG = feedKg * 1000;
+    const nFish = state.fish.length;
+
+    const t = state.t + dt;
+    const hourOfDay = (t / 3600) % 24;
+    const timerOn = params.dayNight as boolean;
+    const lightWorks = broken !== "light";
+    const lightOn = lightWorks && (timerOn ? hourOfDay >= 8 && hourOfDay < 16 : true);
+    const plantsAlive = broken !== "plants";
+    const pumpOn = broken !== "pump";
+    const bacteriaAlive = broken !== "bacteria";
+
+    /* --- temperature: a 300 W heater against 25 W/K of losses --- */
+    const thermostatWorks = broken !== "thermostat";
+    const heaterWorks = broken !== "heater";
+    let heaterOn = state.heaterOn;
+    if (!heaterWorks) heaterOn = false;
+    else if (!thermostatWorks) heaterOn = true;
+    else if (state.T < SETPOINT_K - 0.3) heaterOn = true;
+    else if (state.T > SETPOINT_K + 0.3) heaterOn = false;
+    const power = heaterOn ? HEATER_W : 0;
+    const loss = LOSS_W_PER_K * (state.T - room);
+    let T = state.T + ((power - loss) * dt) / (TANK_MASS * WATER_C);
+    T = Math.max(275, Math.min(320, T));
+    const celsius = T - 273.15;
+    const rate = q10(T);
+
+    /* --- dissolved oxygen --- */
+    const dtH = dt / 3600;
+    const sat = oxygenSaturation(celsius);
+    const ka = pumpOn ? 0.9 : 0.18;                       // per hour
+    const photo = plantsAlive ? (lightOn ? 0.9 : -0.2) : 0;
+    const fishUse = nFish * 0.09 * rate;
+    const bactUse = bacteriaAlive && pumpOn ? 0.1 * rate : 0.02;
+    let o2 = state.o2 + (ka * (sat - state.o2) + photo - fishUse - bactUse) * dtH;
+    o2 = Math.max(0, Math.min(16, o2));
+
+    /* --- ammonia: fish and food in, nitrifying bacteria out --- */
+    const produced = (nFish * 0.012 + feedG * 0.02) * rate;
+    const oxygenOk = o2 > 2 ? 1 : 0.2;
+    const vmax = bacteriaAlive ? 0.3 * rate * oxygenOk * (pumpOn ? 1 : 0.25) : 0;
+    const removed = (vmax * state.nh) / (0.1 + state.nh);
+    let nh = state.nh + (produced - removed) * dtH;
+    nh = Math.max(0, Math.min(12, nh));
+
+    /* --- comfort is set by the worst condition, not the average --- */
+    const fT = clamp01(1 - Math.abs(celsius - 25) / 7);
+    const fO = clamp01((o2 - 2.5) / 3.5);
+    const fA = clamp01(1 - (nh - 0.15) / 1.0);
+    const comfort = Math.min(fT, fO, fA);
+    const limiter = comfort === fO && fO <= fT && fO <= fA ? "oxygen"
+      : comfort === fA && fA <= fT ? "ammonia"
+        : comfort === fT && fT < 0.999 ? "temperature" : "nothing";
+
+    /* --- the fish themselves --- */
+    const gasping = o2 < 4;
+    const sick = nh > 0.8;
+    const swim = 0.55 + comfort * 0.8;
+    const fish = state.fish.map((f) => {
+      const targetY = gasping ? 0.9 : sick ? 0.14 : 0.3 + 0.4 * ((f.ph % 1));
+      let vx = f.vx + (ctx.rng.next() - 0.5) * 0.02 * swim;
+      let vy = f.vy + (targetY - f.y) * 0.02 + (ctx.rng.next() - 0.5) * 0.006;
+      vx = Math.max(-0.09, Math.min(0.09, vx)) * (0.92 + 0.06 * swim);
+      vy = Math.max(-0.05, Math.min(0.05, vy));
+      let x = f.x + vx * dt * 0.02 * swim;
+      let y = f.y + vy * dt * 0.02;
+      if (x < 0.07) { x = 0.07; vx = Math.abs(vx); }
+      if (x > 0.93) { x = 0.93; vx = -Math.abs(vx); }
+      y = Math.max(0.08, Math.min(0.94, y));
+      return { ...f, x, y, vx, vy };
+    });
+
+    /* --- bubbles from the filter outflow --- */
+    let bubbles = state.bubbles
+      .map((b) => ({ ...b, y: b.y + b.v * dt * 0.01, x: b.x + Math.sin(b.y * 18 + b.r) * 0.0015 }))
+      .filter((b) => b.y < 0.98);
+    if (pumpOn && bubbles.length < 34 && ctx.rng.chance(Math.min(1, dt * 0.6))) {
+      bubbles = [...bubbles, { x: 0.86 + ctx.rng.next() * 0.06, y: 0.1, v: 1.4 + ctx.rng.next() * 1.4, r: 1 + ctx.rng.next() * 1.6 }];
+    }
+
+    return {
+      t, T, heaterOn, o2, nh, comfort, limiter, lightOn, fish, bubbles,
+      minO2: Math.min(state.minO2, o2),
+      maxNH: Math.max(state.maxNH, nh),
+      minComfort: Math.min(state.minComfort, comfort),
+    };
+  },
+
+  readouts(state) {
+    return [
+      {
+        key: "temp", label: "Water temperature", quantity: q(state.T, "temperature"), unit: "°C",
+        semantic: "energy-thermal", graphable: true,
+      },
+      {
+        key: "oxygen", label: "Dissolved oxygen (mg/L)", quantity: q(state.o2, "ratio"),
+        semantic: "gas", graphable: true,
+      },
+      {
+        key: "ammonia", label: "Ammonia (mg/L)", quantity: q(state.nh, "ratio"),
+        semantic: "acid", graphable: true,
+      },
+      {
+        key: "comfort", label: "Fish comfort", quantity: q(state.comfort, "percent"), unit: "%",
+        semantic: "energy-kinetic", graphable: true,
+      },
+      {
+        key: "hours", label: "Time in the tank", quantity: q(state.t, "time"), unit: "h",
+        semantic: "time", graphable: false,
+      },
+      {
+        key: "saturation", label: "Oxygen the water can hold (mg/L)",
+        quantity: q(oxygenSaturation(state.T - 273.15), "ratio"),
+        semantic: "gas", graphable: true, bands: ["6-8", "9-12"],
+      },
+    ];
+  },
+
+  facts(state, params) {
+    return {
+      broken: params.broken as string,
+      celsius: state.T - 273.15,
+      oxygen: state.o2,
+      ammonia: state.nh,
+      comfort: state.comfort,
+      limiter: state.limiter,
+      hours: state.t / 3600,
+      minOxygen: state.minO2,
+      maxAmmonia: state.maxNH,
+      minComfort: state.minComfort,
+      heaterOn: state.heaterOn,
+      lightOn: state.lightOn,
+      fishCount: state.fish.length,
+    };
+  },
+};
+
+/* ---------------- the cabinet ---------------- */
+
+const TANK_BUBBLES: Particle[] = [];
+
+function drawFish(
+  ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string,
+  heading: number, wag: number, dim: number,
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(heading >= 0 ? 1 : -1, 1);
+  ctx.globalAlpha = dim;
+  // Tail first, so the body overlaps it.
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.85, 0);
+  ctx.lineTo(-size * 1.5, -size * 0.55 + wag * size * 0.4);
+  ctx.lineTo(-size * 1.5, size * 0.55 + wag * size * 0.4);
+  ctx.closePath();
+  ctx.fillStyle = mixHex(color, "#000000", 0.25);
+  ctx.fill();
+  const g = ctx.createLinearGradient(0, -size * 0.7, 0, size * 0.7);
+  g.addColorStop(0, mixHex(color, "#ffffff", 0.5));
+  g.addColorStop(0.55, color);
+  g.addColorStop(1, mixHex(color, "#000000", 0.35));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, size, size * 0.55, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = hexA(color, 0.55);
+  ctx.beginPath();
+  ctx.ellipse(-size * 0.1, size * 0.25, size * 0.4, size * 0.3, 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath(); ctx.arc(size * 0.52, -size * 0.12, size * 0.16, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#000000";
+  ctx.beginPath(); ctx.arc(size * 0.56, -size * 0.12, size * 0.08, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function renderTank(rc: RenderContext<TankState>) {
+  const { ctx, state: s, params, theme, width: W, height: H, band, overlays, time: t } = rc;
+  const dark = isDarkTheme(theme);
+  const broken = params.broken as string;
+  const water = theme.sci["liquid"];
+  const leaf = theme.sci["producer"];
+  const hot = theme.sci["hot"];
+  const cold = theme.sci["cold"];
+  const gas = theme.sci["gas"];
+  const acid = theme.sci["acid"];
+  const steel = theme.sci["mass"];
+  const wood = theme.sci["decomposer"];
+  const good = theme.sci["energy-kinetic"];
+  const celsius = s.T - 273.15;
+
+  /* ---- the room and the cabinet ---- */
+  const consoleW = Math.min(268, W * 0.3);
+  const tankX = 26;
+  const tankW = Math.max(220, W - consoleW - 66);
+  const tankY = Math.round(H * 0.17);
+  const tankH = Math.round(H * 0.56);
+  const standY = tankY + tankH + 14;
+
+  sky(ctx, W, H, theme, "indoor");
+  gradientFill(ctx, 0, 0, W, H, [
+    mixHex(theme.surfaceAlt, theme.ink, dark ? 0.15 : 0.08),
+    mixHex(theme.surfaceAlt, theme.ink, dark ? 0.05 : 0.02),
+    mixHex(theme.surfaceAlt, theme.ink, dark ? 0.22 : 0.12),
+  ], 90);
+  noiseWash(ctx, 0, 0, W, H, { alpha: 0.04, seed: 5, count: 280, color: dark ? "#ffffff" : "#000000" });
+  material(ctx, tankX - 16, standY, tankW + 32, H - standY - 8, mixHex(wood, "#000000", 0.25), 4);
+  ctx.save();
+  ctx.strokeStyle = hexA(mixHex(wood, "#000000", 0.5), 0.9);
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(tankX - 16, standY + 16); ctx.lineTo(tankX + tankW + 16, standY + 16);
+  ctx.moveTo(tankX + tankW * 0.5, standY + 16); ctx.lineTo(tankX + tankW * 0.5, H - 8);
+  ctx.stroke();
+  ctx.restore();
+
+  /* ---- the light bar over the tank ---- */
+  const litNow = s.lightOn;
+  metal(ctx, tankX + 10, tankY - 26, tankW - 20, 14, steel, { radius: 4 });
+  if (litNow) {
+    gradientFill(ctx, tankX + 14, tankY - 13, tankW - 28, 8, [
+      hexA(theme.sci["light"], 0.2), hexA(theme.sci["light"], 0.95), hexA(theme.sci["light"], 0.2),
+    ], 0);
+    glow(ctx, tankX + tankW / 2, tankY - 10, tankW * 0.55, theme.sci["light"], 0.2);
+  } else {
+    material(ctx, tankX + 14, tankY - 13, tankW - 28, 8, mixHex(steel, "#000000", 0.4), 2);
+  }
+
+  /* ---- the water ---- */
+  const waterTop = tankY + 16;
+  ctx.save();
+  ctx.beginPath();
+  roundRect(ctx, tankX, tankY, tankW, tankH, 6);
+  ctx.clip();
+  gradientFill(ctx, tankX, waterTop, tankW, tankH - 16, [
+    { at: 0, color: hexA(mixHex(water, "#ffffff", litNow ? 0.35 : 0.05), 0.95) },
+    { at: 0.6, color: hexA(water, 0.9) },
+    { at: 1, color: hexA(mixHex(water, "#000000", 0.45), 0.95) },
+  ], 90);
+  // Light shafts, only while the lamp is on.
+  if (litNow) {
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = theme.sci["light"];
+    for (let i = 0; i < 6; i++) {
+      const bx = tankX + 30 + i * (tankW - 60) / 5 + Math.sin(t * 0.4 + i) * 8;
+      ctx.beginPath();
+      ctx.moveTo(bx - 8, waterTop);
+      ctx.lineTo(bx + 8, waterTop);
+      ctx.lineTo(bx + 36, tankY + tankH);
+      ctx.lineTo(bx + 4, tankY + tankH);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  // The gravel bed.
+  const gravelY = tankY + tankH - 26;
+  gradientFill(ctx, tankX, gravelY, tankW, 30, [
+    mixHex(wood, "#ffffff", 0.15), mixHex(wood, "#000000", 0.4),
+  ], 90);
+  ctx.save();
+  for (let i = 0; i < 60; i++) {
+    const gx = tankX + ((i * 137) % (tankW - 8)) + 4;
+    const gy = gravelY + 2 + ((i * 53) % 20);
+    ctx.fillStyle = hexA(mixHex(wood, i % 2 ? "#ffffff" : "#000000", 0.3), 0.7);
+    ctx.beginPath(); ctx.ellipse(gx, gy, 3.4, 2.2, i, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+
+  // Plants: living stems that sway, or a dashed gap where they were.
+  const plantsAlive = broken !== "plants";
+  for (let i = 0; i < 5; i++) {
+    const px = tankX + 26 + i * 26;
+    const hgt = 70 + (i % 3) * 26;
+    const pts: { x: number; y: number }[] = [];
+    for (let k = 0; k <= 8; k++) {
+      const f = k / 8;
+      pts.push({
+        x: px + Math.sin(t * 0.8 + i + f * 2.4) * 7 * f,
+        y: gravelY + 4 - f * hgt,
+      });
+    }
+    if (plantsAlive) {
+      ribbon(ctx, pts, 9, hexA(mixHex(leaf, "#000000", 0.2), 0.95), hexA(mixHex(leaf, "#ffffff", 0.3), 0.9),
+        { taper: 0.8, core: true });
+      for (let k = 2; k < pts.length; k += 2) {
+        ctx.save();
+        ctx.fillStyle = hexA(mixHex(leaf, "#ffffff", 0.12), 0.9);
+        ctx.beginPath();
+        ctx.ellipse(pts[k].x + (k % 4 ? 8 : -8), pts[k].y, 9, 4.4, k % 4 ? 0.5 : -0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      // Oxygen pearling off the leaves while the light is on.
+      if (litNow) {
+        for (let k = 0; k < 2; k++) {
+          const f = ((t * 0.5 + i * 0.3 + k * 0.5) % 1);
+          ctx.save();
+          ctx.globalAlpha = 0.6 * (1 - f);
+          sphere(ctx, px + 8, gravelY - hgt * 0.7 - f * 60, 1.8, mixHex(gas, "#ffffff", 0.5));
+          ctx.restore();
+        }
+      }
+    } else {
+      ctx.save();
+      ctx.setLineDash([4, 5]);
+      ctx.strokeStyle = hexA(theme.inkSoft, 0.45);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (const p of pts) ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // The heater tube, glowing when it is actually drawing power.
+  const heatX = tankX + tankW - 42;
+  glass(ctx, heatX - 9, waterTop + 22, 18, tankH * 0.5, 9, theme, { alpha: dark ? 0.16 : 0.3 });
+  ctx.save();
+  ctx.strokeStyle = s.heaterOn ? mixHex(hot, "#ffffff", 0.25) : mixHex(steel, "#000000", 0.2);
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (let i = 0; i <= 30; i++) {
+    const f = i / 30;
+    const py = waterTop + 34 + f * (tankH * 0.5 - 26);
+    const px = heatX + Math.sin(f * Math.PI * 7) * 5;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  ctx.restore();
+  if (s.heaterOn) {
+    glow(ctx, heatX, waterTop + 22 + tankH * 0.25, 40, hot, 0.3 + 0.1 * pulse(t, 0.8));
+    for (let i = 0; i < 5; i++) {
+      const f = ((t * 0.35 + i * 0.2) % 1);
+      ctx.save();
+      ctx.globalAlpha = 0.32 * (1 - f);
+      ctx.strokeStyle = hot;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      const sy = waterTop + 22 + tankH * 0.45 - f * tankH * 0.4;
+      ctx.moveTo(heatX - 6, sy);
+      ctx.quadraticCurveTo(heatX + Math.sin(f * 8 + i) * 8, sy - 10, heatX + 6, sy - 20);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  lamp(ctx, heatX, waterTop + 14, 4, s.heaterOn ? hot : theme.inkSoft, s.heaterOn, t);
+
+  // Bubbles from the filter outflow.
+  TANK_BUBBLES.length = 0;
+  for (const b of s.bubbles) {
+    TANK_BUBBLES.push({
+      x: tankX + b.x * tankW,
+      y: tankY + tankH - b.y * (tankH - 20),
+      r: b.r,
+      a: 0.7,
+    });
+  }
+  particleField(ctx, TANK_BUBBLES, mixHex(gas, "#ffffff", 0.6), { size: 2, alpha: 0.75, glow: 3 });
+
+  // The fish.
+  for (const f of s.fish) {
+    const fx = tankX + f.x * tankW;
+    const fy = tankY + tankH - f.y * (tankH - 30) - 8;
+    const col = f.kind === 0 ? theme.sci["acceleration"] : f.kind === 1 ? theme.sci["light"] : theme.sci["velocity"];
+    const wag = Math.sin(t * (4 + s.comfort * 6) + f.ph);
+    drawFish(ctx, fx, fy, 11, col, f.vx >= 0 ? 1 : -1, wag, 0.55 + s.comfort * 0.45);
+  }
+  // Gasping at the surface is the visible symptom of low oxygen.
+  if (s.o2 < 4) {
+    for (let i = 0; i < 6; i++) {
+      const f = ((t * 0.8 + i * 0.17) % 1);
+      ctx.save();
+      ctx.globalAlpha = 0.5 * (1 - f);
+      sphere(ctx, tankX + 60 + i * 40, waterTop + 8 - f * 8, 2.2, mixHex(gas, "#ffffff", 0.4));
+      ctx.restore();
+    }
+  }
+
+  // A surface line with a moving ripple.
+  ctx.save();
+  ctx.strokeStyle = hexA(mixHex(water, "#ffffff", 0.75), 0.9);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let x = tankX; x <= tankX + tankW; x += 6) {
+    const yy = waterTop + Math.sin(x * 0.05 + t * 1.4) * 1.8;
+    if (x === tankX) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+  }
+  ctx.stroke();
+  ctx.restore();
+  ctx.restore();
+
+  /* ---- glass, then the hardware hanging on it ---- */
+  glass(ctx, tankX, tankY, tankW, tankH, 6, theme, { alpha: dark ? 0.1 : 0.16 });
+  metal(ctx, tankX - 5, tankY - 6, tankW + 10, 12, steel, { radius: 3 });
+  metal(ctx, tankX - 5, tankY + tankH - 4, tankW + 10, 12, steel, { radius: 3 });
+
+  // The filter box on the back wall, with its outflow.
+  const filtX = tankX + tankW - 66, filtY = tankY - 4;
+  const pumpOn = broken !== "pump";
+  material(ctx, filtX, filtY, 62, 48, mixHex(steel, "#000000", 0.15), 5);
+  bevelRect(ctx, filtX + 6, filtY + 8, 50, 22, 4, mixHex(theme.surfaceAlt, theme.ink, 0.14), { depth: -1 });
+  lamp(ctx, filtX + 14, filtY + 38, 4.5, pumpOn ? good : theme.sci["force"], true, t);
+  caption(ctx, filtX + 24, filtY + 38, pumpOn ? "400 L/h" : "off", theme, {
+    size: 9.5, color: pumpOn ? theme.inkSoft : theme.sci["force"], weight: 700,
+  });
+  if (pumpOn) {
+    const spout: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 6; i++) {
+      const f = i / 6;
+      spout.push({ x: filtX + 8 - f * 12, y: filtY + 48 + f * 26 + Math.sin(t * 3 + f * 4) * 1.5 });
+    }
+    ribbon(ctx, spout, 9, hexA(mixHex(water, "#ffffff", 0.6), 0.85), hexA(water, 0.2), { taper: 0.9, core: true });
+  }
+  if (broken === "bacteria") {
+    caption(ctx, filtX + 31, filtY + 20, "no bacteria", theme, {
+      align: "center", size: 9.5, color: theme.sci["force"], weight: 800,
+    });
+  }
+
+  /* ---- the interaction web, drawn on the real objects ---- */
+  if (overlays.web !== false) {
+    const nodes: Record<string, [number, number]> = {
+      light: [tankX + tankW / 2, tankY - 18],
+      plants: [tankX + 74, gravelY - 60],
+      fish: [tankX + tankW * 0.45, tankY + tankH * 0.45],
+      heater: [heatX, waterTop + 22 + tankH * 0.2],
+      filter: [filtX + 8, filtY + 62],
+      water: [tankX + tankW * 0.28, tankY + tankH * 0.7],
+    };
+    const web: [string, string, string, boolean][] = [
+      ["light", "plants", theme.sci["light"], litNow && plantsAlive],
+      ["plants", "water", gas, litNow && plantsAlive],
+      ["fish", "water", acid, true],
+      ["water", "fish", gas, s.o2 > 3],
+      ["heater", "water", hot, s.heaterOn],
+      ["filter", "water", cold, pumpOn],
+    ];
+    for (let i = 0; i < web.length; i++) {
+      const [a, b, col, live] = web[i];
+      const p = nodes[a], qq = nodes[b];
+      ctx.save();
+      ctx.globalAlpha = live ? 0.5 + 0.35 * pulse(t + i * 0.3, 0.45) : 0.18;
+      if (live) {
+        dashFlow(ctx, [{ x: p[0], y: p[1] }, { x: qq[0], y: qq[1] }], col, t * 24 + i * 9,
+          { width: 2.4, dash: 5, gap: 7, glow: 4 });
+        arrow(ctx, lerp(p[0], qq[0], 0.72), lerp(p[1], qq[1], 0.72), qq[0], qq[1], col, { width: 1.6, head: 8 });
+      } else {
+        ctx.strokeStyle = hexA(theme.inkSoft, 0.6);
+        ctx.setLineDash([3, 6]);
+        ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(qq[0], qq[1]); ctx.stroke();
+        // A cut mark where the interaction has been broken.
+        const mx = (p[0] + qq[0]) / 2, my = (p[1] + qq[1]) / 2;
+        ctx.setLineDash([]);
+        ctx.strokeStyle = theme.sci["force"];
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(mx - 6, my - 6); ctx.lineTo(mx + 6, my + 6);
+        ctx.moveTo(mx + 6, my - 6); ctx.lineTo(mx - 6, my + 6);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ---- instrument console ---- */
+  const cx0 = W - consoleW - 18;
+  panelCard(ctx, cx0, 16, consoleW, 214, theme, "WATER CHEMISTRY");
+  const gaugeY = 84;
+  const gw = consoleW / 3;
+  arcGauge(ctx, cx0 + gw * 0.5, gaugeY, Math.min(34, gw * 0.42), clamp01((celsius - 15) / 20), hot, theme,
+    `${num(celsius, 1)}`, { sub: "deg C", width: 7, ticks: 5 });
+  arcGauge(ctx, cx0 + gw * 1.5, gaugeY, Math.min(34, gw * 0.42), clamp01(s.o2 / 12), gas, theme,
+    `${num(s.o2, 1)}`, { sub: "mg/L O2", width: 7, ticks: 5 });
+  arcGauge(ctx, cx0 + gw * 2.5, gaugeY, Math.min(34, gw * 0.42), clamp01(s.nh / 2), acid, theme,
+    `${num(s.nh, 2)}`, { sub: "mg/L NH3", width: 7, ticks: 5 });
+
+  // Comfort, and the one condition that is holding it down.
+  const barY = 148;
+  caption(ctx, cx0 + 14, barY - 12, "fish comfort", theme, { size: 10.5, color: theme.inkSoft, weight: 700 });
+  const barW = consoleW - 28;
+  bevelRect(ctx, cx0 + 14, barY, barW, 14, 7, mixHex(theme.surfaceAlt, theme.ink, 0.1), { depth: -1 });
+  const comfortCol = s.comfort > 0.7 ? good : s.comfort > 0.4 ? theme.sci["light"] : theme.sci["force"];
+  ctx.save();
+  roundRect(ctx, cx0 + 14, barY, Math.max(3, barW * s.comfort), 14, 7);
+  ctx.fillStyle = comfortCol;
+  ctx.fill();
+  ctx.restore();
+  caption(ctx, cx0 + 14 + barW, barY + 7, pctText(s.comfort), theme, {
+    align: "right", size: 10.5, color: theme.surface, weight: 800,
+  });
+  caption(ctx, cx0 + 14, barY + 32, s.limiter === "nothing"
+    ? "Nothing is limiting them right now."
+    : `Limited by ${s.limiter}.`, theme, { size: 11, color: s.limiter === "nothing" ? good : comfortCol, weight: 700 });
+  const dayNo = Math.floor(s.t / 86400) + 1;
+  const hourOfDay = (s.t / 3600) % 24;
+  caption(ctx, cx0 + 14, barY + 52,
+    `day ${dayNo}, hour ${num(hourOfDay, 1)}  ·  ${litNow ? "lights on" : "lights off"}`, theme,
+    { size: 10.5, color: theme.inkSoft });
+  caption(ctx, cx0 + 14, barY + 70, `saturation at this temperature: ${num(oxygenSaturation(celsius), 1)} mg/L`,
+    theme, { size: 10, color: theme.inkSoft });
+
+  /* ---- the fault strip ---- */
+  if (broken !== "none") {
+    const names: Record<string, string> = {
+      heater: "heater", thermostat: "thermostat", pump: "pump and filter flow",
+      bacteria: "filter bacteria", light: "lamp", plants: "plants",
+    };
+    panelCard(ctx, cx0, 244, consoleW, 62, theme, "FAULT", theme.sci["force"]);
+    lamp(ctx, cx0 + 20, 282, 6, theme.sci["force"], true, t);
+    caption(ctx, cx0 + 36, 276, `${names[broken] ?? broken} switched off`, theme,
+      { size: 11.5, color: theme.ink, weight: 700 });
+    caption(ctx, cx0 + 36, 292, "watch what else changes", theme, { size: 10, color: theme.inkSoft });
+  }
+
+  /* ---- labels on the hardware ---- */
+  if (overlays.labels !== false && band !== "3-5") {
+    labelLeader(ctx, heatX, waterTop + 40, Math.min(cx0 - 24, tankX + tankW + 6), tankY + 26,
+      "heater 300 W", theme, { color: hot, size: 10.5, align: "left", sub: "25 C setpoint" });
+    labelLeader(ctx, tankX + 74, gravelY - 50, tankX + 12, tankY + tankH + 44, "plants", theme,
+      { color: leaf, size: 10.5, align: "left", sub: "oxygen in light" });
+    labelLeader(ctx, filtX + 4, filtY + 60, tankX + tankW * 0.5, tankY + tankH + 44, "filter", theme,
+      { color: cold, size: 10.5, align: "left", sub: "flow and bacteria" });
+  }
+
+  badge(ctx, tankX + 12, tankY + tankH - 12, `${TANK_VOLUME} L`, theme, { align: "left", color: water });
+  badge(ctx, tankX + tankW - 12, tankY + 36, `${s.fish.length}`, theme, {
+    align: "right", color: theme.sci["primary-consumer"], sub: "fish",
+  });
+
+  vignette(ctx, W, H, 0.2);
+}
+
+export const g6a1InteractionWeb: SimManifest<TankState> = {
+  id: "g6a1-interaction-web",
+  title: "Life Support",
+  tagline: "Switch one part of the aquarium off and follow the trouble around the loop.",
+  subject: "engineering",
+  bands: ["6-8", "9-12"],
+  grades: [6, 7, 8, 9],
+  standards: { ngss: ["MS-ETS1-4", "MS-LS1-3", "MS-LS2-3"] },
+  learningGoals: [
+    "Trace how breaking one part of a system changes parts that were never touched.",
+    "Use measurements over time to identify which interaction has been lost.",
+    "Explain that a system's condition is set by its worst-off requirement, not the average.",
+  ],
+  misconceptions: [
+    "Breaking one part only affects that part",
+    "Warmer water holds more oxygen",
+    "The filter is only there to catch dirt",
+    "If most readings are fine, the system is fine",
+  ],
+  interactionHint: "Press play. One aquarium hour passes every couple of seconds.",
+  tickRate: 1,
+  timeScale: 1800,
+  params: {
+    broken: {
+      type: "option", label: "Switch off",
+      options: [
+        { value: "none", label: "Nothing - all working" },
+        { value: "heater", label: "Heater" },
+        { value: "thermostat", label: "Thermostat" },
+        { value: "pump", label: "Pump and flow" },
+        { value: "bacteria", label: "Filter bacteria" },
+        { value: "light", label: "Lamp" },
+        { value: "plants", label: "Plants" },
+      ],
+      default: "none",
+      help: "Break exactly one thing, then watch which readings move.",
+    },
+    fish: {
+      type: "number", label: "Fish in the tank", kind: "count",
+      min: 0, max: 12, step: 1, default: 6,
+      help: "A 100 L tank comfortably holds about eight small fish.",
+    },
+    feed: {
+      type: "number", label: "Food per day", kind: "mass", unit: "g",
+      min: 0, max: 0.006, step: 0.0005, default: 0.002,
+      help: "Uneaten food rots into ammonia just as fish waste does.",
+    },
+    roomTemp: {
+      type: "number", label: "Room temperature", kind: "temperature", unit: "°C",
+      min: 288.15, max: 301.15, step: 0.5, default: 294.15, bands: ["6-8", "9-12"],
+      marks: [
+        { value: 288.15, label: "15" },
+        { value: 294.15, label: "21" },
+        { value: 301.15, label: "28" },
+      ],
+    },
+    dayNight: {
+      type: "boolean", label: "Lamp on a timer", default: true,
+      help: "Eight hours of light, sixteen hours of dark, like a real classroom tank.",
+    },
+  },
+  overlays: [
+    { key: "web", label: "Interaction arrows", default: true },
+    { key: "labels", label: "Equipment labels", default: true, bands: ["6-8", "9-12"] },
+  ],
+  model: tankModel,
+  render: renderTank,
+  labs: [
+    {
+      id: "pump-matters",
+      title: "What is the pump really for?",
+      question: "The pump moves water. What else does it move?",
+      bands: ["6-8", "9-12"],
+      minutes: 25,
+      setup: { broken: "none", fish: 8, feed: 0.002, roomTemp: 294.15, dayNight: true },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Predict before you break it",
+          instruction: "You are about to switch the pump off and leave everything else alone.",
+          predict: {
+            prompt: "Which readings will change within a day?",
+            options: [
+              "Only the water flow, nothing measurable",
+              "Oxygen only",
+              "Oxygen and ammonia, because both depend on flow",
+            ],
+            correct: 2,
+            reveal:
+              "The pump stirs the surface, which is where oxygen enters, and it feeds oxygen-hungry bacteria "
+              + "that strip out ammonia. Stopping it breaks two interactions at once.",
+          },
+        },
+        {
+          id: "baseline",
+          phase: "measure",
+          title: "Record a healthy baseline",
+          instruction: "Run for about six hours with nothing broken, recording data as you go.",
+          requireData: 3,
+          check: {
+            describe: "Six aquarium hours with nothing broken",
+            test: (v) => (v.facts.hours as number) >= 6 && v.params.broken === "none",
+          },
+        },
+        {
+          id: "break-pump",
+          phase: "measure",
+          title: "Stop the pump",
+          instruction: "Switch the pump off and keep recording until oxygen falls below 5 mg/L.",
+          requireData: 6,
+          check: {
+            describe: "Pump off and oxygen below 5 mg/L",
+            test: (v) => v.params.broken === "pump" && (v.facts.oxygen as number) < 5,
+          },
+          hints: [
+            "Night is the hard part: the plants stop making oxygen and everything keeps breathing.",
+            "Watch the fish. They rise to the surface long before the gauge reaches zero.",
+          ],
+        },
+        {
+          id: "analyze",
+          phase: "analyze",
+          title: "Read your table",
+          instruction: "Compare oxygen and ammonia before and after the pump stopped.",
+          write: {
+            prompt: "Which two readings moved, and which interaction does each one belong to?",
+            placeholder: "Oxygen fell because ... and ammonia rose because ...",
+          },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "Name the hidden jobs",
+          instruction: "The pump has more than one job in this system.",
+          write: {
+            prompt: "List everything the pump was doing that nobody would guess from watching the water move.",
+          },
+        },
+      ],
+    },
+    {
+      id: "cold-water-oxygen",
+      title: "Does warm water hold more oxygen?",
+      question: "Cold drinks go flat slowly. What does temperature do to oxygen in the tank?",
+      bands: ["6-8", "9-12"],
+      minutes: 20,
+      setup: { broken: "none", fish: 8, feed: 0.002, roomTemp: 294.15, dayNight: false },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Commit to an answer",
+          instruction: "Think about a fizzy drink left in the sun.",
+          predict: {
+            prompt: "As water gets warmer, the oxygen it can hold ...",
+            options: ["goes up", "goes down", "stays the same"],
+            correct: 1,
+            reveal:
+              "Warm water holds less dissolved gas. Saturation falls from about 9.1 mg/L at 20 degrees C to "
+              + "8.2 at 25 and 7.6 at 30, while the fish need more oxygen at every step up.",
+          },
+        },
+        {
+          id: "cool",
+          phase: "measure",
+          title: "Run it cool",
+          instruction: "Switch off the heater, let the tank settle toward the room, and record.",
+          requireData: 3,
+          check: {
+            describe: "Heater off and water below 23 degrees C",
+            test: (v) => v.params.broken === "heater" && (v.facts.celsius as number) < 23,
+          },
+        },
+        {
+          id: "hot",
+          phase: "measure",
+          title: "Now run it hot",
+          instruction: "Break the thermostat instead, so the heater never switches off, and record again.",
+          requireData: 6,
+          check: {
+            describe: "Thermostat broken and water above 29 degrees C",
+            test: (v) => v.params.broken === "thermostat" && (v.facts.celsius as number) > 29,
+          },
+          hints: ["A 300 W heater against 25 W per kelvin of loss settles about 12 K above the room."],
+        },
+        {
+          id: "analyze",
+          phase: "analyze",
+          title: "Plot the pattern",
+          instruction: "Compare the saturation reading at your two temperatures.",
+          write: {
+            prompt: "Write the saturation you measured at each temperature and the difference between them.",
+            placeholder: "At ... degrees C the water could hold ... mg/L, and at ... degrees C only ...",
+          },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "Two effects, one direction",
+          instruction: "Warming does two separate things to the oxygen supply.",
+          write: {
+            prompt: "Explain why warming is doubly hard on the fish, using both the supply and the demand.",
+          },
+        },
+      ],
+    },
+  ],
+  challenges: [
+    {
+      id: "hold-the-line",
+      title: "Hold the line",
+      brief: "Keep fish comfort above 80 percent for a full day with ten fish.",
+      bands: ["6-8", "9-12"],
+      setup: { broken: "none", fish: 10, feed: 0.002, roomTemp: 294.15, dayNight: true },
+      goal: {
+        describe: "Ten fish, 24 hours, comfort never below 0.8",
+        test: (v) => (v.facts.fishCount as number) >= 10 && (v.facts.hours as number) >= 24
+          && (v.facts.minComfort as number) >= 0.8,
+      },
+      stars: {
+        two: {
+          describe: "48 hours above 0.8",
+          test: (v) => (v.facts.fishCount as number) >= 10 && (v.facts.hours as number) >= 48
+            && (v.facts.minComfort as number) >= 0.8,
+        },
+        three: {
+          describe: "48 hours above 0.9",
+          test: (v) => (v.facts.fishCount as number) >= 10 && (v.facts.hours as number) >= 48
+            && (v.facts.minComfort as number) >= 0.9,
+        },
+      },
+      hints: [
+        "Overfeeding puts ammonia in faster than the bacteria can take it out.",
+        "The night is the dangerous half of the day, because the plants stop giving oxygen.",
+      ],
+    },
+    {
+      id: "ammonia-spike",
+      title: "Find the ammonia",
+      brief: "Push ammonia past 1.0 mg/L without adding a single fish.",
+      bands: ["6-8", "9-12"],
+      setup: { broken: "none", fish: 6, feed: 0.002, roomTemp: 294.15, dayNight: true },
+      goal: {
+        describe: "Ammonia above 1.0 mg/L with six fish or fewer",
+        test: (v) => (v.facts.maxAmmonia as number) > 1 && (v.facts.fishCount as number) <= 6,
+      },
+      stars: {
+        two: {
+          describe: "Above 1.0 mg/L within 18 aquarium hours",
+          test: (v) => (v.facts.maxAmmonia as number) > 1 && (v.facts.fishCount as number) <= 6
+            && (v.facts.hours as number) <= 18,
+        },
+      },
+      hints: [
+        "Ammonia has one way out of this tank, and it is alive.",
+        "Food that nobody eats rots. Try the feeding control as well as the fault switch.",
+      ],
+    },
+  ],
+};
+
+/* ================================================================== *
+ * A1.4 — Murmuration Rig: emergent properties
+ *
+ * Two flight cages at dusk, side by side, holding the same number of
+ * identical birds. In the left cage every bird flies alone. In the
+ * right one each bird watches a handful of neighbours - and a flock
+ * appears that no bird was ever told to make.
+ *
+ * The order parameter, the seven-neighbour rule and the alarm wave
+ * all come from real starling research.
+ * ================================================================== */
+
+const BIRD_SPEED = 11;      // m/s, a starling's cruising speed
+const ARENA_W = 44;         // metres across one cage
+const ARENA_H = 26;         // metres tall
+const NEIGHBOUR_CUT = 9;    // m, birds further away are ignored
+const LINK_R = 3.2;         // m, two birds this close count as one group
+const MAX_K = 12;
+
+interface Bird { x: number; y: number; vx: number; vy: number; a: number }
+
+interface FlockState {
+  free: Bird[];
+  flock: Bird[];
+  orderFree: number;
+  orderFlock: number;
+  spacing: number;
+  groups: number;
+  alarmed: number;
+  maxAlarmed: number;
+  alarmX: number;
+  alarmY: number;
+  hawkX: number;
+  hawkY: number;
+  hawkVX: number;
+  hawkVY: number;
+  minOrder: number;
+  maxOrder: number;
+}
+
+function makeBirds(n: number, pick: () => number): Bird[] {
+  const out: Bird[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = pick() * Math.PI * 2;
+    out.push({
+      x: ARENA_W * (0.2 + pick() * 0.6),
+      y: ARENA_H * (0.2 + pick() * 0.6),
+      vx: Math.cos(a) * BIRD_SPEED,
+      vy: Math.sin(a) * BIRD_SPEED,
+      a: 0,
+    });
+  }
+  return out;
+}
+
+function orderParameter(birds: Bird[]): number {
+  if (birds.length === 0) return 0;
+  let sx = 0, sy = 0;
+  for (const b of birds) {
+    const sp = Math.hypot(b.vx, b.vy) || 1;
+    sx += b.vx / sp;
+    sy += b.vy / sp;
+  }
+  return Math.hypot(sx, sy) / birds.length;
+}
+
+interface FlockOpts {
+  rules: boolean;
+  k: number;
+  align: number;
+  cohere: number;
+  separate: number;
+  noise: number;
+  hawk: { x: number; y: number } | null;
+  alarm: { x: number; y: number; live: boolean };
+}
+
+interface FlockResult { birds: Bird[]; spacing: number; groups: number; alarmed: number }
+
+/**
+ * One flock step. Each bird looks at its k nearest neighbours inside a
+ * 9 m circle, blends three simple urges into a desired heading, and turns
+ * toward it at a bounded rate. Nothing in here knows the word "flock".
+ */
+function stepFlock(birds: Bird[], dt: number, o: FlockOpts, rand: () => number): FlockResult {
+  const n = birds.length;
+  if (n === 0) return { birds, spacing: 0, groups: 0, alarmed: 0 };
+  const k = Math.max(1, Math.min(MAX_K, Math.round(o.k)));
+  const nd = new Array<number>(n * k).fill(Infinity);
+  const ni = new Array<number>(n * k).fill(-1);
+  const parent = new Array<number>(n);
+  for (let i = 0; i < n; i++) parent[i] = i;
+  const find = (i: number): number => {
+    let r = i;
+    while (parent[r] !== r) r = parent[r];
+    while (parent[i] !== r) { const nx = parent[i]; parent[i] = r; i = nx; }
+    return r;
+  };
+
+  const insert = (i: number, j: number, d: number) => {
+    const base = i * k;
+    if (d >= nd[base + k - 1]) return;
+    let slot = k - 1;
+    while (slot > 0 && nd[base + slot - 1] > d) {
+      nd[base + slot] = nd[base + slot - 1];
+      ni[base + slot] = ni[base + slot - 1];
+      slot--;
+    }
+    nd[base + slot] = d;
+    ni[base + slot] = j;
+  };
+
+  const cut2 = NEIGHBOUR_CUT * NEIGHBOUR_CUT;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const dx = birds[j].x - birds[i].x;
+      const dy = birds[j].y - birds[i].y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > cut2) continue;
+      const d = Math.sqrt(d2);
+      insert(i, j, d);
+      insert(j, i, d);
+      if (d < LINK_R) {
+        const ri = find(i), rj = find(j);
+        if (ri !== rj) parent[ri] = rj;
+      }
+    }
+  }
+
+  const out: Bird[] = new Array(n);
+  let spacingSum = 0;
+  let alarmedCount = 0;
+  const turnRate = 4.2;
+
+  for (let i = 0; i < n; i++) {
+    const b = birds[i];
+    const base = i * k;
+    let ax = 0, ay = 0, cx = 0, cy = 0, sx = 0, sy = 0, cnt = 0, maxAlarm = 0;
+    for (let m = 0; m < k; m++) {
+      const j = ni[base + m];
+      if (j < 0) break;
+      const nb = birds[j];
+      const d = Math.max(0.2, nd[base + m]);
+      const sp = Math.hypot(nb.vx, nb.vy) || 1;
+      ax += nb.vx / sp; ay += nb.vy / sp;
+      cx += nb.x; cy += nb.y;
+      if (d < 2.2) { sx += (b.x - nb.x) / (d * d); sy += (b.y - nb.y) / (d * d); }
+      if (nb.a > maxAlarm) maxAlarm = nb.a;
+      cnt++;
+    }
+    spacingSum += cnt > 0 ? nd[base] : NEIGHBOUR_CUT;
+
+    const sp0 = Math.hypot(b.vx, b.vy) || 1;
+    let dx = b.vx / sp0, dy = b.vy / sp0;
+
+    if (o.rules && cnt > 0) {
+      const inv = 1 / cnt;
+      const alen = Math.hypot(ax, ay) || 1;
+      dx += o.align * 2.2 * (ax / alen);
+      dy += o.align * 2.2 * (ay / alen);
+      const tox = cx * inv - b.x, toy = cy * inv - b.y;
+      const tlen = Math.hypot(tox, toy) || 1;
+      dx += o.cohere * 1.6 * (tox / tlen);
+      dy += o.cohere * 1.6 * (toy / tlen);
+      const slen = Math.hypot(sx, sy);
+      if (slen > 0) {
+        dx += o.separate * 2.4 * (sx / slen);
+        dy += o.separate * 2.4 * (sy / slen);
+      }
+    }
+
+    // Alarm spreads bird to bird. That is why the wave outruns the birds.
+    let alarm = Math.max(b.a - dt * 0.55, o.rules ? maxAlarm - dt * 0.9 : 0);
+    if (o.alarm.live) {
+      const adx = b.x - o.alarm.x, ady = b.y - o.alarm.y;
+      if (adx * adx + ady * ady < 16) alarm = 1;
+    }
+    if (o.hawk) {
+      const hdx = b.x - o.hawk.x, hdy = b.y - o.hawk.y;
+      const hd = Math.hypot(hdx, hdy);
+      if (hd < 7) {
+        alarm = 1;
+        dx += (hdx / (hd || 1)) * 3.4;
+        dy += (hdy / (hd || 1)) * 3.4;
+      }
+    }
+    alarm = clamp01(alarm);
+    if (alarm > 0.25) alarmedCount++;
+    if (alarm > 0.25 && o.alarm.live) {
+      const adx = b.x - o.alarm.x, ady = b.y - o.alarm.y;
+      const ad = Math.hypot(adx, ady) || 1;
+      dx += (adx / ad) * alarm * 1.6;
+      dy += (ady / ad) * alarm * 1.6;
+    }
+
+    // Soft walls: birds wheel away from the edge rather than bouncing off it.
+    const margin = 4;
+    if (b.x < margin) dx += (margin - b.x) * 0.5;
+    if (b.x > ARENA_W - margin) dx -= (b.x - (ARENA_W - margin)) * 0.5;
+    if (b.y < margin) dy += (margin - b.y) * 0.5;
+    if (b.y > ARENA_H - margin) dy -= (b.y - (ARENA_H - margin)) * 0.5;
+
+    const jitter = (rand() - 0.5) * o.noise * (o.rules ? 2.4 : 7.5);
+    let want = Math.atan2(dy, dx) + jitter;
+    const have = Math.atan2(b.vy, b.vx);
+    let diff = want - have;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    const maxTurn = turnRate * dt * (1 + alarm);
+    want = have + Math.max(-maxTurn, Math.min(maxTurn, diff));
+
+    const vx = Math.cos(want) * BIRD_SPEED;
+    const vy = Math.sin(want) * BIRD_SPEED;
+    out[i] = {
+      x: Math.max(0.4, Math.min(ARENA_W - 0.4, b.x + vx * dt)),
+      y: Math.max(0.4, Math.min(ARENA_H - 0.4, b.y + vy * dt)),
+      vx, vy, a: alarm,
+    };
+  }
+
+  let groups = 0;
+  for (let i = 0; i < n; i++) if (find(i) === i) groups++;
+  return { birds: out, spacing: spacingSum / n, groups, alarmed: alarmedCount / n };
+}
+
+const flockModel: SimModel<FlockState> = {
+  init(params, ctx) {
+    const n = Math.round(params.birds as number);
+    return {
+      free: makeBirds(n, () => ctx.rng.next()),
+      flock: makeBirds(n, () => ctx.rng.next()),
+      orderFree: 0, orderFlock: 0, spacing: 0, groups: n, alarmed: 0, maxAlarmed: 0,
+      alarmX: 0, alarmY: 0,
+      hawkX: ARENA_W * 0.5, hawkY: -6, hawkVX: 0, hawkVY: 0,
+      minOrder: 1, maxOrder: 0,
+    };
+  },
+
+  applyParams(state, params, prev, ctx) {
+    if (params.birds === prev.birds) return state;
+    const want = Math.round(params.birds as number);
+    const fit = (arr: Bird[]) => want < arr.length
+      ? arr.slice(0, want)
+      : [...arr, ...makeBirds(want - arr.length, () => ctx.rng.next())];
+    return { ...state, free: fit(state.free), flock: fit(state.flock) };
+  },
+
+  step(state, dt, params, ctx, inputs) {
+    let alarmX = state.alarmX, alarmY = state.alarmY;
+    let live = false;
+    for (const input of inputs) {
+      if (input.type === "pointerdown") {
+        // A startle from a random edge, so a click always shows the wave.
+        const side = ctx.rng.int(0, 3);
+        alarmX = side === 0 ? 1 : side === 1 ? ARENA_W - 1 : ctx.rng.range(2, ARENA_W - 2);
+        alarmY = side === 2 ? 1 : side === 3 ? ARENA_H - 1 : ctx.rng.range(2, ARENA_H - 2);
+        live = true;
+      }
+    }
+    if (dt <= 0) return live ? { ...state, alarmX, alarmY } : state;
+
+    const hawkOn = params.predator as boolean;
+    let hawkX = state.hawkX, hawkY = state.hawkY, hawkVX = state.hawkVX, hawkVY = state.hawkVY;
+    if (hawkOn) {
+      let cx = ARENA_W / 2, cy = ARENA_H / 2;
+      if (state.flock.length > 0) {
+        cx = state.flock.reduce((sum, b) => sum + b.x, 0) / state.flock.length;
+        cy = state.flock.reduce((sum, b) => sum + b.y, 0) / state.flock.length;
+      }
+      const dx = cx - hawkX, dy = cy - hawkY;
+      const d = Math.hypot(dx, dy) || 1;
+      hawkVX += (dx / d) * 34 * dt;
+      hawkVY += (dy / d) * 34 * dt;
+      const hs = Math.hypot(hawkVX, hawkVY) || 1;
+      const cap = 19;
+      hawkVX = (hawkVX / hs) * Math.min(hs, cap);
+      hawkVY = (hawkVY / hs) * Math.min(hs, cap);
+      hawkX += hawkVX * dt;
+      hawkY += hawkVY * dt;
+      if (hawkX < -10 || hawkX > ARENA_W + 10 || hawkY < -10 || hawkY > ARENA_H + 10) {
+        hawkX = ctx.rng.range(0, ARENA_W); hawkY = -8; hawkVX = 0; hawkVY = 0;
+      }
+    } else {
+      hawkY = -8;
+    }
+
+    const common = {
+      k: params.neighbours as number,
+      align: params.align as number,
+      cohere: params.cohere as number,
+      separate: params.separate as number,
+      noise: params.noise as number,
+      alarm: { x: alarmX, y: alarmY, live },
+    };
+    const freeRes = stepFlock(state.free, dt, { ...common, rules: false, hawk: null }, () => ctx.rng.next());
+    const flockRes = stepFlock(state.flock, dt, {
+      ...common, rules: true, hawk: hawkOn ? { x: hawkX, y: hawkY } : null,
+    }, () => ctx.rng.next());
+
+    const orderFlock = orderParameter(flockRes.birds);
+    return {
+      free: freeRes.birds,
+      flock: flockRes.birds,
+      orderFree: orderParameter(freeRes.birds),
+      orderFlock,
+      spacing: flockRes.spacing,
+      groups: flockRes.groups,
+      alarmed: flockRes.alarmed,
+      maxAlarmed: Math.max(state.maxAlarmed, flockRes.alarmed),
+      alarmX, alarmY,
+      hawkX, hawkY, hawkVX, hawkVY,
+      minOrder: Math.min(state.minOrder, orderFlock),
+      maxOrder: Math.max(state.maxOrder, orderFlock),
+    };
+  },
+
+  readouts(state) {
+    const n = Math.max(1, state.flock.length);
+    return [
+      {
+        key: "orderFlock", label: "Order, rules on", quantity: q(state.orderFlock, "percent"), unit: "%",
+        semantic: "energy-kinetic", graphable: true,
+      },
+      {
+        key: "orderFree", label: "Order, rules off", quantity: q(state.orderFree, "percent"), unit: "%",
+        semantic: "mass", graphable: true,
+      },
+      {
+        key: "expected", label: "Order expected by chance", quantity: q(1 / Math.sqrt(n), "percent"), unit: "%",
+        semantic: "time", graphable: true, bands: ["6-8", "9-12"],
+      },
+      {
+        key: "spacing", label: "Nearest neighbour", quantity: q(state.spacing, "length"), unit: "m",
+        semantic: "distance", graphable: true,
+      },
+      { key: "groups", label: "Separate groups", quantity: q(state.groups, "count"), semantic: "mass", graphable: true },
+      {
+        key: "alarmed", label: "Birds alarmed", quantity: q(state.alarmed, "percent"), unit: "%",
+        semantic: "force", graphable: true, bands: ["6-8", "9-12"],
+      },
+    ];
+  },
+
+  facts(state) {
+    const n = Math.max(1, state.flock.length);
+    return {
+      orderFlock: state.orderFlock,
+      orderFree: state.orderFree,
+      expected: 1 / Math.sqrt(n),
+      ratio: state.orderFlock / Math.max(0.02, state.orderFree),
+      spacing: state.spacing,
+      groups: state.groups,
+      birds: state.flock.length,
+      alarmed: state.alarmed,
+      maxAlarmed: state.maxAlarmed,
+      minOrder: state.minOrder,
+      maxOrder: state.maxOrder,
+    };
+  },
+};
+
+/* ---------------- dusk, and the birds in it ---------------- */
+
+function drawBird(
+  ctx: CanvasRenderingContext2D, x: number, y: number, size: number, angle: number,
+  flap: number, color: string, alarm: number,
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.strokeStyle = alarm > 0.25 ? mixHex(color, "#ffffff", 0.35) : color;
+  ctx.lineWidth = Math.max(1, size * 0.34);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const sweep = 0.5 + 0.5 * flap;
+  ctx.beginPath();
+  ctx.moveTo(-size * 1.5 * sweep, -size * 1.15 * (1 - sweep * 0.4));
+  ctx.quadraticCurveTo(-size * 0.2, -size * 0.15, size * 0.9, 0);
+  ctx.quadraticCurveTo(-size * 0.2, size * 0.15, -size * 1.5 * sweep, size * 1.15 * (1 - sweep * 0.4));
+  ctx.stroke();
+  ctx.restore();
+}
+
+function renderFlock(rc: RenderContext<FlockState>) {
+  const { ctx, state: s, params, theme, width: W, height: H, band, overlays, time: t } = rc;
+  const dark = isDarkTheme(theme);
+  const good = theme.sci["energy-kinetic"];
+  const alarmC = theme.sci["force"];
+  const inkBird = mixHex(theme.ink, dark ? "#ffffff" : "#000000", 0.18);
+
+  /* ---- one evening sky over both cages ---- */
+  const horizon = Math.round(H * 0.82);
+  sky(ctx, W, H, theme, "dusk", horizon);
+  glow(ctx, W * 0.18, horizon - 10, Math.min(W * 0.5, 420), theme.sci["light"], dark ? 0.28 : 0.4);
+  ctx.save();
+  ctx.globalAlpha = dark ? 0.7 : 0.25;
+  for (let i = 0; i < 60; i++) {
+    const sxp = ((i * 197) % 1000) / 1000 * W;
+    const syp = ((i * 89) % 400) / 400 * (H * 0.4);
+    ctx.fillStyle = "#ffffff";
+    ctx.globalAlpha = (dark ? 0.55 : 0.2) * (0.3 + 0.7 * pulse(t + i, 0.12));
+    ctx.beginPath(); ctx.arc(sxp, syp, 0.9, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+
+  // A skyline of roofs and poplars along the horizon.
+  ctx.save();
+  ctx.fillStyle = mixHex(theme.ink, "#000000", dark ? 0.35 : 0.1);
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, horizon - 14);
+  for (let i = 0; i < 26; i++) {
+    const bx = (i / 26) * W;
+    const bh = 8 + ((i * 37) % 34);
+    ctx.lineTo(bx, horizon - bh);
+    ctx.lineTo(bx + W / 26, horizon - bh);
+  }
+  ctx.lineTo(W, horizon - 10);
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+  for (let i = 0; i < 7; i++) {
+    const px = 40 + i * (W - 80) / 6;
+    ctx.beginPath();
+    ctx.ellipse(px, horizon - 34, 11, 40, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(px - 2, horizon - 34, 4, 34);
+  }
+  ctx.restore();
+
+  /* ---- two cages ---- */
+  const gutter = 16;
+  const cageY = 92;
+  const cageH = Math.max(140, horizon - cageY - 92);
+  const cageW = (W - gutter * 3) / 2;
+  const cages: { x: number; birds: Bird[]; rules: boolean; order: number; title: string; sub: string }[] = [
+    {
+      x: gutter, birds: s.free, rules: false, order: s.orderFree,
+      title: "RULES OFF", sub: "every bird flies alone",
+    },
+    {
+      x: gutter * 2 + cageW, birds: s.flock, rules: true, order: s.orderFlock,
+      title: "RULES ON", sub: `each bird watches ${Math.round(params.neighbours as number)} neighbours`,
+    },
+  ];
+
+  for (const cage of cages) {
+    const sxm = cageW / ARENA_W;
+    const sym = cageH / ARENA_H;
+
+    // The cage interior is a slightly deeper slice of the same evening.
+    ctx.save();
+    roundRect(ctx, cage.x, cageY, cageW, cageH, 8);
+    ctx.clip();
+    gradientFill(ctx, cage.x, cageY, cageW, cageH, [
+      hexA(mixHex(theme.surface, theme.ink, dark ? 0.28 : 0.1), 0.5),
+      hexA(mixHex(theme.surface, theme.ink, dark ? 0.5 : 0.2), 0.55),
+    ], 90);
+    noiseWash(ctx, cage.x, cageY, cageW, cageH, { alpha: 0.05, seed: 17, count: 160, color: "#ffffff" });
+
+    // Motion smears first, then the birds over them.
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle = inkBird;
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    for (const b of cage.birds) {
+      const bx = cage.x + b.x * sxm, by = cageY + cageH - b.y * sym;
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx - b.vx * 0.05 * sxm, by + b.vy * 0.05 * sym);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    for (const b of cage.birds) {
+      const bx = cage.x + b.x * sxm, by = cageY + cageH - b.y * sym;
+      const ang = Math.atan2(-b.vy * sym, b.vx * sxm);
+      const flap = Math.sin(t * 9 + b.x * 0.7 + b.y * 0.4);
+      drawBird(ctx, bx, by, 4.4, ang, flap, b.a > 0.25 ? alarmC : inkBird, b.a);
+    }
+
+    // The hawk only hunts the flock that has rules.
+    if ((params.predator as boolean) && cage.rules && s.hawkY > -6) {
+      const hx = cage.x + s.hawkX * sxm, hy = cageY + cageH - s.hawkY * sym;
+      const hang = Math.atan2(-s.hawkVY * sym, s.hawkVX * sxm);
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      dashFlow(ctx, [{ x: hx - s.hawkVX * sxm, y: hy + s.hawkVY * sym }, { x: hx, y: hy }],
+        alarmC, t * 30, { width: 2, dash: 4, gap: 6 });
+      ctx.restore();
+      drawBird(ctx, hx, hy, 12, hang, Math.sin(t * 4) * 0.5, mixHex(alarmC, "#000000", 0.25), 1);
+    }
+
+    // The flock's own heading: a property of the group, not of any bird.
+    if (overlays.heading !== false && cage.birds.length > 0) {
+      let mx = 0, my = 0, cxm = 0, cym = 0;
+      for (const b of cage.birds) {
+        const sp = Math.hypot(b.vx, b.vy) || 1;
+        mx += b.vx / sp; my += b.vy / sp; cxm += b.x; cym += b.y;
+      }
+      const n = cage.birds.length;
+      mx /= n; my /= n; cxm /= n; cym /= n;
+      const ox = cage.x + cxm * sxm, oy = cageY + cageH - cym * sym;
+      const len = Math.hypot(mx, my) * 96;
+      if (len > 3) {
+        arrow(ctx, ox, oy, ox + (mx / (Math.hypot(mx, my) || 1)) * len,
+          oy - (my / (Math.hypot(mx, my) || 1)) * len, cage.rules ? good : theme.sci["mass"],
+          { width: 3, head: 12 });
+      }
+      sphere(ctx, ox, oy, 3.4, cage.rules ? good : theme.sci["mass"]);
+    }
+    ctx.restore();
+
+    // Glass and frame over the top, so the birds are inside something.
+    glass(ctx, cage.x, cageY, cageW, cageH, 8, theme, { alpha: dark ? 0.06 : 0.1 });
+    metal(ctx, cage.x - 5, cageY - 10, cageW + 10, 12, theme.sci["mass"], { radius: 4 });
+    metal(ctx, cage.x - 5, cageY + cageH - 2, cageW + 10, 12, theme.sci["mass"], { radius: 4 });
+    metal(ctx, cage.x - 6, cageY - 6, 8, cageH + 14, theme.sci["mass"], { radius: 3 });
+    metal(ctx, cage.x + cageW - 2, cageY - 6, 8, cageH + 14, theme.sci["mass"], { radius: 3 });
+
+    // Header and instruments.
+    const accent = cage.rules ? good : theme.sci["mass"];
+    panelCard(ctx, cage.x, cageY - 74, cageW, 58, theme, undefined, accent);
+    caption(ctx, cage.x + 16, cageY - 50, cage.title, theme, { size: 14, color: theme.ink, weight: 800 });
+    caption(ctx, cage.x + 16, cageY - 31, cage.sub, theme, { size: 11, color: theme.inkSoft });
+    arcGauge(ctx, cage.x + cageW - 42, cageY - 45, 24, cage.order, accent, theme,
+      num(cage.order, 2), { sub: "order", width: 6, ticks: 5 });
+
+    if (band !== "3-5") {
+      badge(ctx, cage.x + 14, cageY + cageH + 26, `${cage.birds.length}`, theme,
+        { align: "left", color: theme.inkSoft, sub: "birds" });
+      if (cage.rules) {
+        badge(ctx, cage.x + cageW * 0.42, cageY + cageH + 26, `${num(s.spacing, 1)} m`, theme,
+          { align: "center", color: theme.sci["distance"], sub: "nearest bird" });
+        badge(ctx, cage.x + cageW - 14, cageY + cageH + 26, `${s.groups}`, theme,
+          { align: "right", color: s.groups <= 2 ? good : theme.sci["light"], sub: "groups" });
+      } else {
+        badge(ctx, cage.x + cageW - 14, cageY + cageH + 26, num(1 / Math.sqrt(Math.max(1, cage.birds.length)), 2),
+          theme, { align: "right", color: theme.sci["time"], sub: "chance level" });
+      }
+    }
+  }
+
+  /* ---- the comparison, spelled out ---- */
+  const strip = H - 54;
+  caption(ctx, W / 2, 30, "Same birds. Same speed. One rule book.", theme, {
+    align: "center", size: 16, color: theme.ink, weight: 800,
+  });
+  caption(ctx, W / 2, 52, "The flock is a property of the group, not of any bird in it.", theme, {
+    align: "center", size: 11.5, color: theme.inkSoft,
+  });
+  const barW = Math.min(W - 120, 520);
+  const barX = (W - barW) / 2;
+  bevelRect(ctx, barX, strip, barW, 16, 8, mixHex(theme.surfaceAlt, theme.ink, 0.12), { depth: -1 });
+  ctx.save();
+  roundRect(ctx, barX, strip, Math.max(4, barW * clamp01(s.orderFree)), 16, 8);
+  ctx.fillStyle = hexA(theme.sci["mass"], 0.85);
+  ctx.fill();
+  roundRect(ctx, barX, strip, Math.max(4, barW * clamp01(s.orderFlock)), 8, 5);
+  ctx.fillStyle = good;
+  ctx.fill();
+  ctx.restore();
+  const chance = 1 / Math.sqrt(Math.max(1, s.flock.length));
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.ink, 0.7);
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(barX + barW * chance, strip - 6);
+  ctx.lineTo(barX + barW * chance, strip + 22);
+  ctx.stroke();
+  ctx.restore();
+  caption(ctx, barX + barW * chance, strip + 32, `chance ${num(chance, 2)}`, theme,
+    { align: "center", size: 10, color: theme.inkSoft });
+  caption(ctx, barX - 10, strip + 8, "0", theme, { align: "right", size: 10, color: theme.inkSoft });
+  caption(ctx, barX + barW + 10, strip + 8, "1", theme, { size: 10, color: theme.inkSoft });
+
+  if (s.alarmed > 0.02) {
+    badge(ctx, W / 2, strip - 26, pctText(s.alarmed), theme,
+      { align: "center", color: alarmC, sub: "alarm has reached" });
+  }
+
+  vignette(ctx, W, H, 0.22);
+}
+
+export const g6a1Murmuration: SimManifest<FlockState> = {
+  id: "g6a1-murmuration",
+  title: "Murmuration Rig",
+  tagline: "Two cages of identical birds: switch on three simple rules and watch a flock appear.",
+  subject: "engineering",
+  bands: ["6-8", "9-12"],
+  grades: [6, 7, 8, 9],
+  standards: { ngss: ["MS-LS2-2", "MS-ETS1-4"] },
+  learningGoals: [
+    "Describe an emergent property as one the whole system has and no part has.",
+    "Measure order in a group and compare it with what independent motion would give.",
+    "Explain how a signal can cross a flock faster than any single bird travels.",
+  ],
+  misconceptions: [
+    "A flock needs a leader deciding where to go",
+    "Complicated group behaviour needs complicated rules",
+    "Emergent properties belong to the individuals as well as the group",
+    "Any group of animals moving together is a flock",
+  ],
+  interactionHint: "Click the stage to startle the birds and watch the alarm spread.",
+  tickRate: 45,
+  params: {
+    birds: {
+      type: "number", label: "Birds in each cage", kind: "count",
+      min: 10, max: 120, step: 5, default: 60,
+      help: "Both cages always hold the same number.",
+    },
+    neighbours: {
+      type: "number", label: "Neighbours each bird watches", kind: "count",
+      min: 1, max: 12, step: 1, default: 7,
+      marks: [{ value: 7, label: "real starlings" }],
+      help: "Real starlings track about six or seven neighbours, however far away they are.",
+    },
+    align: {
+      type: "number", label: "Match their heading", kind: "ratio",
+      min: 0, max: 1, step: 0.05, default: 0.6,
+    },
+    cohere: {
+      type: "number", label: "Move toward them", kind: "ratio",
+      min: 0, max: 1, step: 0.05, default: 0.35,
+    },
+    separate: {
+      type: "number", label: "Do not crowd them", kind: "ratio",
+      min: 0, max: 1, step: 0.05, default: 0.8,
+    },
+    noise: {
+      type: "number", label: "Wind and wobble", kind: "ratio",
+      min: 0, max: 1, step: 0.05, default: 0.15, bands: ["6-8", "9-12"],
+    },
+    predator: {
+      type: "boolean", label: "Release a falcon", default: false,
+      help: "It hunts the right-hand cage only.",
+    },
+  },
+  overlays: [
+    { key: "heading", label: "Average heading", default: true },
+  ],
+  model: flockModel,
+  render: renderFlock,
+  labs: [
+    {
+      id: "where-is-the-flock",
+      title: "Where does the flock come from?",
+      question: "No bird can see the flock. So who decides its shape?",
+      bands: ["6-8", "9-12"],
+      minutes: 25,
+      setup: { birds: 60, neighbours: 7, align: 0, cohere: 0, separate: 0.8, noise: 0.15, predator: false },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Predict the source",
+          instruction: "Sixty identical birds, no leader, no plan.",
+          predict: {
+            prompt: "What is needed before a flock appears?",
+            options: [
+              "One bird has to lead and the rest follow",
+              "Each bird only has to react to a few neighbours",
+              "The birds need to see the whole flock at once",
+            ],
+            correct: 1,
+            reveal:
+              "Local rules are enough. Each starling tracks about seven neighbours and nothing else, and the "
+              + "flock shape is what those thousands of small decisions add up to.",
+          },
+        },
+        {
+          id: "baseline",
+          phase: "measure",
+          title: "Measure disorder first",
+          instruction: "With Match their heading at zero, record the order in both cages.",
+          requireData: 2,
+          check: {
+            describe: "Alignment turned right down",
+            test: (v) => (v.params.align as number) <= 0.05,
+          },
+          hints: ["Compare the two order readings with the chance level marked on the bar."],
+        },
+        {
+          id: "switch-on",
+          phase: "measure",
+          title: "Switch the rules on",
+          instruction: "Raise Match their heading to 0.6 and record again once the picture settles.",
+          requireData: 5,
+          check: {
+            describe: "Order in the right cage above 0.7",
+            test: (v) => (v.facts.orderFlock as number) > 0.7,
+          },
+        },
+        {
+          id: "analyze",
+          phase: "analyze",
+          title: "Compare with chance",
+          instruction: "Independent birds should give an order of about one over the square root of the number of birds.",
+          write: {
+            prompt: "What order did the rules-off cage give, and how close is it to the chance value?",
+            placeholder: "With 60 birds, chance predicts ... and I measured ...",
+          },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "Say what emerged",
+          instruction: "Name one property the flock has that no single bird has.",
+          write: {
+            prompt: "Which properties belong to the flock and not to any bird in it?",
+            placeholder: "The flock has ... but no single bird has ...",
+          },
+        },
+      ],
+    },
+    {
+      id: "seven-neighbours",
+      title: "How many neighbours is enough?",
+      question: "Would a starling do better watching everybody?",
+      bands: ["6-8", "9-12"],
+      minutes: 25,
+      setup: { birds: 80, neighbours: 1, align: 0.6, cohere: 0.35, separate: 0.8, noise: 0.15, predator: false },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Predict the shape of the curve",
+          instruction: "You will raise the number of neighbours from one to twelve.",
+          predict: {
+            prompt: "How will the order change as each bird watches more neighbours?",
+            options: [
+              "It climbs steadily all the way to twelve",
+              "It climbs steeply at first, then flattens off",
+              "It hardly changes at all",
+            ],
+            correct: 1,
+            reveal:
+              "Order rises fast for the first few neighbours and then saturates. Real starlings settle at "
+              + "six or seven, which buys almost all of the benefit for a fraction of the attention.",
+          },
+        },
+        {
+          id: "sweep",
+          phase: "measure",
+          title: "Sweep the control",
+          instruction: "Record the order at 1, 2, 4, 7 and 12 neighbours, waiting for it to settle each time.",
+          requireData: 5,
+          hints: [
+            "Give each setting a few seconds. The order takes time to build.",
+            "Watch the groups readout too: too few neighbours and the flock splits.",
+          ],
+        },
+        {
+          id: "knee",
+          phase: "analyze",
+          title: "Find the knee",
+          instruction: "Look for the point where extra neighbours stop paying.",
+          write: {
+            prompt: "At which number of neighbours did the order stop improving much?",
+            placeholder: "Going from 1 to 4 changed the order by ... but going from 7 to 12 only ...",
+          },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "Explain the choice",
+          instruction: "Watching neighbours costs a bird attention.",
+          write: {
+            prompt: "Why might evolution settle on about seven neighbours rather than one or fifty?",
+          },
+        },
+      ],
+    },
+  ],
+  challenges: [
+    {
+      id: "one-flock",
+      title: "One flock, not five",
+      brief: "Get eighty birds into a single group with an order above 0.9.",
+      bands: ["6-8", "9-12"],
+      setup: { birds: 80, neighbours: 7, align: 0.3, cohere: 0.2, separate: 0.8, noise: 0.3, predator: false },
+      goal: {
+        describe: "Order above 0.8 with at most two groups",
+        test: (v) => (v.facts.orderFlock as number) > 0.8 && (v.facts.groups as number) <= 2
+          && (v.facts.birds as number) >= 80,
+      },
+      stars: {
+        two: {
+          describe: "Order above 0.9 in a single group",
+          test: (v) => (v.facts.orderFlock as number) > 0.9 && (v.facts.groups as number) <= 1
+            && (v.facts.birds as number) >= 80,
+        },
+        three: {
+          describe: "Order above 0.95 in a single group with wind at 0.3 or more",
+          test: (v) => (v.facts.orderFlock as number) > 0.95 && (v.facts.groups as number) <= 1
+            && (v.facts.birds as number) >= 80 && (v.params.noise as number) >= 0.3,
+        },
+      },
+      hints: [
+        "Alignment makes them point the same way; cohesion is what keeps them in one group.",
+        "Too much separation and the flock blows apart into clumps.",
+      ],
+    },
+    {
+      id: "the-wave",
+      title: "Send a wave",
+      brief: "Startle one edge of the flock and get the alarm to more than seventy percent of the birds.",
+      bands: ["6-8", "9-12"],
+      setup: { birds: 100, neighbours: 7, align: 0.7, cohere: 0.45, separate: 0.8, noise: 0.1, predator: false },
+      goal: {
+        describe: "Alarm reached over 70 percent of the flock",
+        test: (v) => (v.facts.maxAlarmed as number) > 0.7,
+      },
+      stars: {
+        two: {
+          describe: "Over 90 percent alarmed",
+          test: (v) => (v.facts.maxAlarmed as number) > 0.9,
+        },
+      },
+      hints: [
+        "Alarm only passes from bird to neighbour, so the flock has to be joined up.",
+        "Raise cohesion first: a scattered flock cannot carry a wave.",
+      ],
+    },
+  ],
+};
