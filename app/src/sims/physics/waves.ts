@@ -238,7 +238,7 @@ function render(rc: RenderContext<State>) {
   const yMax = Math.max(0.22, amp * 1.9, envPeak * 1.3);
 
   /* ---- Stage ---------------------------------------------------------- */
-  const padX = Math.max(46, width * 0.07);
+  const padX = Math.max(92, width * 0.115);
   const benchY = height * 0.9;
   const boardT = height * 0.075;
   const boardB = height * 0.775;
@@ -252,7 +252,7 @@ function render(rc: RenderContext<State>) {
   depthWash(ctx, width, height, theme);
   // The measuring board the string is stretched in front of. Its scale is the
   // reason a wavelength can be read straight off the apparatus.
-  const bL = padX - 26, bR = width - padX + 26;
+  const bL = 14, bR = width - 14;
   softShadow(ctx, () => {
     plastic(ctx, bL, boardT - 22, bR - bL, boardB - boardT + 44, theme.surfaceAlt,
       { radius: 12, gloss: 0.28 });
@@ -290,9 +290,10 @@ function render(rc: RenderContext<State>) {
   ], 90);
   ctx.fillRect(0, benchY - 6, width, height - benchY + 6);
   ctx.restore();
-  const standH = benchY - (axisY - (boardB - boardT) * 0.5) + 10;
-  clampStand(ctx, padX - 30, benchY, standH, Math.max(26, width * 0.03));
-  clampStand(ctx, width - padX + 30, benchY, standH, Math.max(26, width * 0.03));
+  const standH = benchY - boardT + 12;
+  const standW = Math.max(70, width * 0.085);
+  clampStand(ctx, padX * 0.42, benchY, standH, standW);
+  clampStand(ctx, width - padX * 0.42, benchY, standH, standW);
 
   /* ---- Rest axis -------------------------------------------------------- */
   ctx.save();
@@ -446,10 +447,21 @@ function render(rc: RenderContext<State>) {
     // A vibration generator on the stand, with a shaft that visibly drives
     // the end of the string up and down.
     softShadow(ctx, () => {
-      metal(ctx, dx - driverW * 1.9, dy - driverW * 0.6, driverW * 1.5, driverW * 1.2,
+      metal(ctx, dx - driverW * 1.45, dy - driverW * 0.62, driverW * 1.15, driverW * 1.24,
         theme.sci["mass"], { radius: 4, angle: 90 });
     }, { blur: 14, dy: 5, alpha: 0.4 });
-    metal(ctx, dx - driverW * 0.55, dy - driverW * 0.16, driverW * 0.62, driverW * 0.32,
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.ink, 0.35);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let i = 1; i < 4; i++) {
+      const gy = dy - driverW * 0.62 + (driverW * 1.24 * i) / 4;
+      ctx.moveTo(dx - driverW * 1.34, gy);
+      ctx.lineTo(dx - driverW * 0.42, gy);
+    }
+    ctx.stroke();
+    ctx.restore();
+    metal(ctx, dx - driverW * 0.32, dy - driverW * 0.14, driverW * 0.34, driverW * 0.28,
       theme.sci["mass"], { radius: 2, angle: 0 });
     sphere(ctx, dx, dy, ropeW * 0.72, theme.sci["force"]);
     // Throw markers showing how far the shaft travels.
@@ -566,12 +578,12 @@ function render(rc: RenderContext<State>) {
       arrow(ctx, ax, Y(state.env[bi]), ax, axisY, aCol, { width: 2, head: 9 });
       const side = ax > width * 0.55 ? "left" : "right";
       callout(ctx, ax, (axisY + Y(state.env[bi])) / 2,
-        ax + (side === "right" ? 40 : -40), boardB + 4,
+        ax + (side === "right" ? 40 : -40), boardB + 48,
         "Amplitude", theme, { sub: `${state.env[bi].toFixed(2)} m`, side, accent: aCol });
     }
     if (!twoSources) {
       callout(ctx, X(LENGTH), axisY + Math.max(38, (boardB - boardT) * 0.22),
-        width - padX - 40, boardB + 4,
+        width - padX * 0.5, boardB + 48,
         boundary === "fixed" ? "Tied down" : boundary === "free" ? "Free to slide" : "Wave escapes",
         theme, {
           sub: boundary === "fixed" ? "reflects flipped" : boundary === "free" ? "reflects upright" : "absorbed",

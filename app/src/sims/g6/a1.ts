@@ -5042,7 +5042,7 @@ function renderLadder(rc: RenderContext<LadderState>) {
   noiseWash(ctx, 0, 0, W, H, { alpha: 0.04, seed: 77, count: 260, color: dark ? "#ffffff" : "#000000" });
 
   /* ---- the logarithmic rule down the left edge ---- */
-  const rulX = 54;
+  const rulX = 78;
   const rulTop = 74, rulBot = H - 76;
   const EXP_MIN = -6.4, EXP_MAX = 7.4;
   const expToY = (e: number) => lerp(rulBot, rulTop, (e - EXP_MIN) / (EXP_MAX - EXP_MIN));
@@ -5061,7 +5061,9 @@ function renderLadder(rc: RenderContext<LadderState>) {
     [-6, "1 µm"], [-3, "1 mm"], [0, "1 m"], [3, "1 km"], [6, "1000 km"],
   ];
   for (const [e, txt] of tickLabels) {
-    caption(ctx, rulX + 16, expToY(e), txt, theme, { size: 10, color: theme.inkSoft, weight: 600 });
+    caption(ctx, rulX - 16, expToY(e), txt, theme, {
+      align: "right", size: 10, color: theme.inkSoft, weight: 600,
+    });
   }
   for (let i = 0; i < RUNGS.length; i++) {
     const y = expToY(Math.log10(RUNGS[i].size));
@@ -5079,10 +5081,16 @@ function renderLadder(rc: RenderContext<LadderState>) {
   caption(ctx, rulX, rulTop - 48, "powers of ten", theme, { align: "center", size: 10.5, color: theme.ink, weight: 700 });
 
   /* ---- the stage: the current rung, cross-fading with its neighbour ---- */
-  const stageX = (rulX + 40 + (W - 260)) / 2;
+  // Three columns that never touch: the rule, a label gutter, the artwork,
+  // and the card stack. Everything else is derived from them.
+  const cardW = Math.min(232, Math.max(168, W * 0.26));
+  const cardX = W - cardW - 16;
+  const labelRight = rulX + 200;
+  const artL = labelRight + 18;
+  const artR = cardX - 22;
+  const stageX = (artL + artR) / 2;
   const stageY = H * 0.48;
-  const base = Math.min((W - rulX - 300) / 340, (H - 190) / 300);
-  const k = Math.max(0.42, base);
+  const k = Math.max(0.34, Math.min((artR - artL) / 360, (H - 200) / 300));
   const pairs: [number, number, number][] = lo === hi
     ? [[lo, 1, 1]]
     : [[lo, 1 - f, lerp(1, 0.32, f)], [hi, f, lerp(2.6, 1, f)]];
@@ -5096,27 +5104,24 @@ function renderLadder(rc: RenderContext<LadderState>) {
     ctx.restore();
   }
 
-  /* ---- labels, parked well clear of the artwork ---- */
+  /* ---- labels, stacked in their own gutter and ordered by height ---- */
   if (overlays.labels !== false && f < 0.25) {
-    let li = 0, ri = 0;
-    for (let i = 0; i < here.parts.length; i++) {
-      const p = here.parts[i];
-      const px = stageX + p.x * k, py = stageY + p.y * k;
-      const toLeft = px < stageX;
-      const ty = 132 + (toLeft ? li : ri) * 40;
-      if (ty > H - 150) continue;
-      labelLeader(ctx, px, py, toLeft ? rulX + 74 : W - 264, ty, p.name, theme, {
+    const order = here.parts
+      .map((p, i) => ({ p, i }))
+      .sort((a, b) => a.p.y - b.p.y);
+    const rows = Math.min(order.length, Math.max(1, Math.floor((H - 260) / 42)));
+    const top = Math.max(120, stageY - (rows - 1) * 21 - 60);
+    for (let r = 0; r < rows; r++) {
+      const { p, i } = order[r];
+      labelLeader(ctx, stageX + p.x * k, stageY + p.y * k, labelRight, top + r * 42, p.name, theme, {
         color: i === s.focus ? theme.accent : theme.inkSoft,
-        size: 11, align: toLeft ? "left" : "right",
-        sub: band === "3-5" ? undefined : p.note,
+        size: 11, align: "left",
+        sub: band === "3-5" || W < 760 ? undefined : p.note,
       });
-      if (toLeft) li++; else ri++;
     }
   }
 
   /* ---- the nesting statement ---- */
-  const cardW = Math.min(238, W * 0.27);
-  const cardX = W - cardW - 16;
   panelCard(ctx, cardX, 16, cardW, 96, theme, "THIS RUNG");
   caption(ctx, cardX + 14, 46, here.name, theme, { size: 17, color: theme.ink, weight: 800 });
   caption(ctx, cardX + 14, 68, here.sizeLabel, theme, { size: 12, color: theme.accent, weight: 700 });
@@ -5129,13 +5134,16 @@ function renderLadder(rc: RenderContext<LadderState>) {
   caption(ctx, cardX + 14, 190, "and it is made of", theme, { size: 10, color: theme.inkSoft });
   wrapLeft(ctx, here.madeOf, cardX + 14, 206, cardW - 28, theme, 11, theme.inkSoft);
 
-  if (overlays.tests !== false) {
-    systemTestCard(ctx, cardX, 228, cardW, theme, here.parts.length, here.interactions, here.job, t);
+  // The last two cards only appear when the stage is tall enough to hold them.
+  let cardY = 228;
+  if (overlays.tests !== false && cardY + 92 < H - 128) {
+    systemTestCard(ctx, cardX, cardY, cardW, theme, here.parts.length, here.interactions, here.job, t);
+    cardY += 104;
   }
-
-  /* ---- the job, and the fact worth keeping ---- */
-  panelCard(ctx, cardX, 330, cardW, 88, theme, "ITS JOB");
-  wrapLeft(ctx, here.job, cardX + 14, 358, cardW - 28, theme, 11.5, theme.ink);
+  if (cardY + 88 < H - 128) {
+    panelCard(ctx, cardX, cardY, cardW, 88, theme, "ITS JOB");
+    wrapLeft(ctx, here.job, cardX + 14, cardY + 28, cardW - 28, theme, 11.5, theme.ink);
+  }
 
   /* ---- how far this rung is from the two ends ---- */
   const earth = RUNGS[RUNGS.length - 1];
@@ -5156,7 +5164,7 @@ function renderLadder(rc: RenderContext<LadderState>) {
   }
 
   /* ---- the scale bar, and the fact ---- */
-  wrapCaption(ctx, here.fact, stageX, H - 34, Math.min(W - rulX - 300, 520), theme, 11.5);
+  wrapCaption(ctx, here.fact, stageX, H - 30, Math.max(240, Math.min(artR - artL + 60, 520)), theme, 11.5);
   caption(ctx, stageX, 44, "Every rung is a system. Only the size changes.", theme, {
     align: "center", size: 14, color: theme.ink, weight: 800,
   });
