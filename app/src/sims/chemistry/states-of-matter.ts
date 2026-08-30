@@ -543,7 +543,7 @@ function cellGlass(
   // Machined collars: this cell is sealed, which is why the gas cannot leave.
   const steel = theme.sci["mass"];
   metal(ctx, x - wall * 2.4, y - wall * 2.8, w + wall * 4.8, wall * 2.4, steel, { radius: wall * 0.6 });
-  metal(ctx, x - wall * 2.4, y + h + wall * 0.4, w + wall * 4.8, wall * 2.4, steel, { radius: wall * 0.6 });
+  metal(ctx, x - wall * 1.9, y + h + wall * 0.5, w + wall * 3.8, wall * 1.7, steel, { radius: wall * 0.5 });
 }
 
 /**
@@ -656,9 +656,9 @@ function render(rc: RenderContext<State>) {
 
   /* ---- layout: the cell owns the middle of the stage ---- */
   const wall = Math.max(5, M * 0.016);
-  const innerW = Math.min(width * 0.60, height * 0.70 * (BOX_W / BOX_H));
+  const innerW = Math.min(width * 0.565, height * 0.70 * (BOX_W / BOX_H));
   const innerH = innerW * (BOX_H / BOX_W);
-  const inL = width * 0.165;
+  const inL = width * 0.155;
   const inB = height * 0.785;
   const inT = inB - innerH;
   const inR = inL + innerW;
@@ -669,24 +669,61 @@ function render(rc: RenderContext<State>) {
   /* ---- the heating stage the cell sits on ---- */
   const heatFrac = clamp((setT - 300) / 400, 0, 1);
   const chillFrac = clamp((300 - setT) / 300, 0, 1);
-  const plateT = inB + wall * 2.8;
-  const plateH = Math.max(9, M * 0.038);
+  const plateT = inB + wall * 3.2;
+  const plateH = Math.max(11, M * 0.05);
+  const plateL = inL - wall * 4.2;
+  const plateW = innerW + wall * 8.4;
   contactShadow(ctx, (inL + inR) / 2, benchY, innerW * 0.4, 0);
-  for (const lx of [inL + innerW * 0.13, inR - innerW * 0.13]) {
-    metal(ctx, lx - wall * 0.55, plateT + plateH * 0.8, wall * 1.1,
-      benchY - plateT - plateH * 0.8, steel, { radius: 2, angle: 0 });
+  for (const lx of [plateL + plateW * 0.1, plateL + plateW * 0.9]) {
+    const legW = wall * 1.7;
+    metal(ctx, lx - legW / 2, plateT + plateH * 0.7, legW,
+      benchY - plateT - plateH * 0.7, steel, { radius: 2, angle: 0 });
+    metal(ctx, lx - legW, benchY - wall * 0.5, legW * 2, wall * 0.7, steel, { radius: 2 });
   }
-  metal(ctx, inL - wall * 3.2, plateT, innerW + wall * 6.4, plateH, steel,
-    { radius: plateH * 0.3 });
+  // A cast body with a recessed element well, so the stage has a machined face
+  // rather than reading as a second rail under the cell's own flange.
+  softShadow(ctx, () => {
+    metal(ctx, plateL, plateT, plateW, plateH, blend(steel, theme.ink, 0.35),
+      { radius: plateH * 0.22, polish: 0.75 });
+  }, { blur: 12, dy: 5, alpha: 0.3 });
+  ctx.save();
+  ctx.fillStyle = hexA(theme.ink, dark ? 0.6 : 0.42);
+  roundRect(ctx, plateL + plateW * 0.05, plateT + plateH * 0.22,
+    plateW * 0.9, plateH * 0.34, plateH * 0.16);
+  ctx.fill();
+  ctx.restore();
   // A real element does not sit at one brightness — it breathes as it cycles.
   const breathe = 0.88 + 0.12 * Math.sin(time * 2.3) + 0.05 * Math.sin(time * 5.7);
   if (heatFrac > 0.02 || chillFrac > 0.02) {
+    const eColour = heatFrac >= chillFrac ? hot : cold;
+    const eStrength = Math.max(heatFrac, chillFrac) * breathe;
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    glow(ctx, (inL + inR) / 2, plateT + plateH * 0.4, innerW * 0.55,
-      heatFrac >= chillFrac ? hot : cold,
-      0.55 * Math.max(heatFrac, chillFrac) * breathe);
+    ctx.fillStyle = hexA(eColour, 0.85 * eStrength);
+    roundRect(ctx, plateL + plateW * 0.07, plateT + plateH * 0.27,
+      plateW * 0.86, plateH * 0.24, plateH * 0.12);
+    ctx.fill();
+    glow(ctx, (inL + inR) / 2, plateT + plateH * 0.4, innerW * 0.55, eColour, 0.5 * eStrength);
     ctx.restore();
+    // Heat haze between the element and the base of the cell.
+    if (heatFrac > 0.15) {
+      ctx.save();
+      ctx.globalAlpha = 0.3 * heatFrac;
+      ctx.strokeStyle = hexA(hot, 0.6);
+      ctx.lineWidth = 1.4;
+      for (let i = 0; i < 9; i++) {
+        const hx = plateL + plateW * (0.12 + 0.09 * i);
+        ctx.beginPath();
+        for (let k = 0; k <= 8; k++) {
+          const f = k / 8;
+          const hy = plateT - f * (plateT - inB - wall);
+          const wob = Math.sin(time * 3.4 + i * 1.7 + f * 5.5) * wall * 0.7 * f;
+          if (k === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx + wob, hy);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
   }
 
   /* ---- inside the cell, before the glass goes over it ---- */
@@ -810,7 +847,7 @@ function render(rc: RenderContext<State>) {
   }
 
   /* ---- callouts, out in the clear right margin ---- */
-  const calloutX = inR + Math.max(22, width * 0.028);
+  const calloutX = inR + Math.max(18, width * 0.022);
   callout(ctx, inR - innerW * 0.05, inT + innerH * 0.1, calloutX, height * 0.16,
     `${s.label}  ${s.formula}`, theme, { sub: "sealed cell, fixed volume", side: "right" });
 
@@ -818,7 +855,7 @@ function render(rc: RenderContext<State>) {
   const parts = state.phase === 0
     ? "locked in place, vibrating"
     : state.coexist
-      ? "fast ones are escaping the liquid"
+      ? "fast ones escaping"
       : state.phase === 1
         ? "touching, but free to slide"
         : "far apart, filling the cell";

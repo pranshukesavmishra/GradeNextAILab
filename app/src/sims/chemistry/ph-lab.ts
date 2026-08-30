@@ -1,8 +1,12 @@
-import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
+import type {
+  ParamValues, RenderContext, SimManifest, SimModel, ThemeColors,
+} from "@engine/types";
 import { q } from "@engine/units";
-import { camera, roundRect } from "@ui/draw";
+import { roundRect } from "@ui/draw";
+import { beaker, clampStand, flask as flaskGlass } from "@ui/labware";
+import { callout, depthWash } from "@ui/organic";
 import {
-  caption, contactShadow, groundPlane, hexA, isDarkTheme, lifted, material, sky, sphere, vignette,
+  contactShadow, groundPlane, hexA, isDarkTheme, metal, softShadow, sphere, vignette,
 } from "@ui/scene";
 
 /**
@@ -314,13 +318,34 @@ function blend(a: string, b: string, t: number): string {
   return out;
 }
 
-/** The universal-indicator ramp: acid → neutral → base, nothing decorative. */
-function indicatorColor(ph: number, theme: RenderContext<State>["theme"]): string {
-  const a = theme.sci["acid"];
-  const n = theme.sci["neutral"];
-  const b = theme.sci["base"];
-  if (ph <= 7) return blend(a, n, clamp(ph / 7, 0, 1));
-  return blend(n, b, clamp((ph - 7) / 7, 0, 1));
+/**
+ * Universal indicator, as it actually behaves in a flask.
+ *
+ * The real dye does not run red-to-blue through grey: it goes red, orange,
+ * yellow, green, teal, blue, violet, and a student who has watched a titration
+ * flip is looking for exactly those bands. Every stop is a theme token, so the
+ * ramp still tracks light and dark mode.
+ */
+function indicatorColor(ph: number, theme: ThemeColors): string {
+  const stops: [number, string][] = [
+    [0, theme.sci["acid"]],
+    [2.5, theme.sci["acid"]],
+    [4.2, theme.sci["energy-thermal"]],
+    [5.6, theme.sci["light"]],
+    [7, theme.sci["neutral"]],
+    [8.6, theme.sci["distance"]],
+    [11, theme.sci["base"]],
+    [14, theme.sci["field"]],
+  ];
+  const p = clamp(ph, 0, 14);
+  for (let i = 1; i < stops.length; i++) {
+    if (p <= stops[i][0]) {
+      const [p0, c0] = stops[i - 1];
+      const [p1, c1] = stops[i];
+      return blend(c0, c1, (p - p0) / (p1 - p0));
+    }
+  }
+  return stops[stops.length - 1][1];
 }
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -333,341 +358,485 @@ function jitter(i: number, salt: number): number {
   return s - Math.floor(s);
 }
 
-// World is 24 wide by 15 tall: the glassware on the left, the curve on the right.
-const W = 24;
-const H = 15;
+/**
+ * The palette's light and dark ends, whichever mode is running.
+ *
+ * Speculars are light and instrument faces are dark whatever the theme does,
+ * and a simulation may only take colour from the theme — so these two roles
+ * swap between `surface` and `ink` rather than being written down as hexes.
+ */
+function lightOf(theme: ThemeColors): string {
+  return isDarkTheme(theme) ? theme.ink : theme.surface;
+}
 
-/** Bench height, in world units. Everything glass stands on this line. */
-const BENCH_Y = 2.9;
+function darkOf(theme: ThemeColors): string {
+  return isDarkTheme(theme) ? theme.surface : theme.ink;
+}
+
+/**
+ * The outline of the conical flask the labware module draws.
+ *
+ * Glass on a pale bench has almost no silhouette of its own; with the shape in
+ * hand the flask can cast a shadow and carry a dark edge, which is what stops
+ * it dissolving into the backdrop.
+ */
+function flaskPath(
+  ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+) {
+  const neckW = w * 0.26, neckH = h * 0.3, mid = x + w / 2;
+  ctx.beginPath();
+  ctx.moveTo(mid - neckW / 2, y);
+  ctx.lineTo(mid - neckW / 2, y + neckH);
+  ctx.lineTo(x + w * 0.04, y + h - w * 0.1);
+  ctx.quadraticCurveTo(x, y + h, x + w * 0.14, y + h);
+  ctx.lineTo(x + w * 0.86, y + h);
+  ctx.quadraticCurveTo(x + w, y + h, x + w * 0.96, y + h - w * 0.1);
+  ctx.lineTo(mid + neckW / 2, y + neckH);
+  ctx.lineTo(mid + neckW / 2, y);
+  ctx.closePath();
+}
+
+/**
+ * A 50 mL burette: graduated bore, standing titrant with its own meniscus,
+ * a stopcock with a knurled tap, and a drawn-out tip.
+ *
+ * Returns the y of the tip, which is where the next drop leaves from.
+ */
+function burette(
+  ctx: CanvasRenderingContext2D,
+  cx: number, top: number, barrelBot: number, w: number, tipBot: number,
+  drained: number, titrant: string, theme: ThemeColors,
+): number {
+  const dark = isDarkTheme(theme);
+  const light = lightOf(theme);
+  const x = cx - w / 2;
+  const h = barrelBot - top;
+
+  softShadow(ctx, () => {
+    ctx.fillStyle = hexA(theme.surface, dark ? 0.4 : 0.7);
+    roundRect(ctx, x, top, w, h, w * 0.3);
+    ctx.fill();
+  }, { blur: 12, dy: 3, alpha: dark ? 0.5 : 0.22 });
+
+  // Bore, then the titrant standing in it.
+  ctx.save();
+  roundRect(ctx, x, top, w, h, w * 0.3);
+  ctx.clip();
+  const bore = ctx.createLinearGradient(x, 0, x + w, 0);
+  bore.addColorStop(0, hexA(light, dark ? 0.14 : 0.4));
+  bore.addColorStop(0.45, hexA(light, dark ? 0.05 : 0.16));
+  bore.addColorStop(1, hexA(light, dark ? 0.12 : 0.24));
+  ctx.fillStyle = bore;
+  ctx.fillRect(x, top, w, h);
+
+  const colTop = top + h * clamp(drained, 0, 1);
+  const col = ctx.createLinearGradient(x, 0, x + w, 0);
+  col.addColorStop(0, hexA(titrant, 0.62));
+  col.addColorStop(0.35, hexA(titrant, 0.95));
+  col.addColorStop(1, hexA(titrant, 0.6));
+  ctx.fillStyle = col;
+  ctx.fillRect(x, colTop, w, barrelBot - colTop);
+  ctx.beginPath();
+  ctx.moveTo(x, colTop + w * 0.26);
+  ctx.quadraticCurveTo(cx, colTop - w * 0.16, x + w, colTop + w * 0.26);
+  ctx.strokeStyle = hexA(light, 0.85);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Graduations: an instrument, not a coloured bar.
+  ctx.strokeStyle = hexA(theme.ink, dark ? 0.55 : 0.42);
+  ctx.beginPath();
+  for (let i = 0; i <= 20; i++) {
+    const ty = top + w * 0.5 + (i / 20) * (h - w);
+    const long = i % 5 === 0;
+    ctx.lineWidth = long ? 1.4 : 0.9;
+    ctx.moveTo(x + w * 0.55, ty);
+    ctx.lineTo(x + w * (long ? 0.96 : 0.82), ty);
+  }
+  ctx.stroke();
+  // The vertical highlight that turns a rectangle into a round glass tube.
+  ctx.fillStyle = hexA(light, 0.7);
+  ctx.fillRect(x + w * 0.2, top + w * 0.4, Math.max(1.5, w * 0.1), h - w * 0.8);
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.ink, dark ? 0.55 : 0.35);
+  ctx.lineWidth = 1.4;
+  roundRect(ctx, x, top, w, h, w * 0.3);
+  ctx.stroke();
+  ctx.restore();
+
+  // Stopcock: a barrel across the tube with a tap on the side.
+  const scH = w * 0.9;
+  metal(ctx, cx - w * 0.95, barrelBot, w * 1.9, scH, theme.sci["mass"], { radius: w * 0.2 });
+  sphere(ctx, cx + w * 1.05, barrelBot + scH * 0.5, w * 0.42, theme.sci["mass"]);
+
+  // Drawn-out tip.
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.32, barrelBot + scH);
+  ctx.lineTo(cx + w * 0.32, barrelBot + scH);
+  ctx.lineTo(cx + w * 0.1, tipBot);
+  ctx.lineTo(cx - w * 0.1, tipBot);
+  ctx.closePath();
+  const tip = ctx.createLinearGradient(cx - w * 0.32, 0, cx + w * 0.32, 0);
+  tip.addColorStop(0, hexA(light, dark ? 0.2 : 0.55));
+  tip.addColorStop(0.5, hexA(light, dark ? 0.06 : 0.2));
+  tip.addColorStop(1, hexA(light, dark ? 0.16 : 0.36));
+  ctx.fillStyle = tip;
+  ctx.fill();
+  ctx.strokeStyle = hexA(theme.ink, dark ? 0.5 : 0.3);
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.restore();
+  return tipBot;
+}
+
+/** A dark instrument face inside a machined shell — the bench-top console. */
+function consoleFace(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, theme: ThemeColors,
+) {
+  const shell = theme.sci["mass"];
+  softShadow(ctx, () => {
+    metal(ctx, x, y, w, h, shell, { radius: Math.min(14, h * 0.05) });
+  }, { blur: 18, dy: 8, alpha: 0.32 });
+  const pad = Math.max(9, w * 0.022);
+  ctx.save();
+  ctx.fillStyle = hexA(darkOf(theme), 0.92);
+  roundRect(ctx, x + pad, y + pad, w - pad * 2, h - pad * 2, Math.min(9, h * 0.03));
+  ctx.fill();
+  ctx.strokeStyle = hexA(lightOf(theme), 0.16);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  // A diagonal sweep of room light across the cover glass.
+  ctx.clip();
+  const sweep = ctx.createLinearGradient(x, y, x + w * 0.7, y + h);
+  sweep.addColorStop(0, hexA(lightOf(theme), 0.1));
+  sweep.addColorStop(0.35, hexA(lightOf(theme), 0.015));
+  sweep.addColorStop(1, hexA(lightOf(theme), 0));
+  ctx.fillStyle = sweep;
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+  return { x: x + pad * 2, y: y + pad * 2, w: w - pad * 4, h: h - pad * 4 };
+}
 
 function render(rc: RenderContext<State>) {
-  const { ctx, state, params, theme, width, height, overlays, band } = rc;
-  const cam = camera({ x0: -0.4, y0: -1.3, x1: W + 0.4, y1: H + 0.4, width, height });
-  const px = (x: number) => cam.toScreenX(x);
-  const py = (y: number) => cam.toScreenY(y);
-  const scale = cam.scale;
+  const { ctx, state, params, theme, width, height, overlays, band, time } = rc;
   const dark = isDarkTheme(theme);
+  const light = lightOf(theme);
+  const M = Math.min(width, height);
   const tint = indicatorColor(state.ph, theme);
-  const glass = theme.sci["solid"];
+  const contents = FLASK[params.substance as string] ?? FLASK.water;
+  const titrantColour = params.titrant === "acid" ? theme.sci["acid"] : theme.sci["base"];
 
-  /* ---- the room and the bench everything is standing on ---- */
-  sky(ctx, width, height, theme, "indoor");
-  const benchY = py(BENCH_Y);
+  /* ---- the room and the bench ---- */
+  depthWash(ctx, width, height, theme);
+  const benchY = height * 0.855;
   groundPlane(ctx, benchY, 0, width, height, theme, "lab");
 
-  /* ---- burette ---- */
-  const buretteX = 4.3;
-  const tubeW = 0.92;
-  const barrelTop = py(H - 0.1);
-  const barrelBot = py(10.6);
-  const bxL = px(buretteX - tubeW / 2);
-  const bWpx = tubeW * scale;
+  /* ---- the stand the burette is clamped to ---- */
+  const flaskW = Math.min(width * 0.185, height * 0.325);
+  const flaskH = flaskW * 1.16;
+  const flaskX = width * 0.115;
+  const flaskY = benchY - flaskH;
+  const cx = flaskX + flaskW / 2;
 
-  // The titrant left in the burette drains as the student adds more.
+  const standX = width * 0.062;
+  clampStand(ctx, standX, benchY, height * 0.84, M * 0.155);
+
+  // The clamp arm goes on behind the glass; only its jaw wraps in front.
+  const jawY = height * 0.16;
+  metal(ctx, standX, jawY, cx - standX + M * 0.02, M * 0.028, theme.sci["mass"],
+    { radius: 3 });
+
+  /* ---- the burette ---- */
+  const tubeW = Math.max(12, M * 0.052);
+  const barrelTop = height * 0.06;
+  const barrelBot = height * 0.335;
+  const tipBot = height * 0.44;
   const drained = clamp(state.added / CURVE_MAX, 0, 1);
-  const titrantColour = params.titrant === "acid" ? theme.sci["acid"] : theme.sci["base"];
-  const colH = (barrelBot - barrelTop - 6) * (1 - drained);
+  const tipY = burette(ctx, cx, barrelTop, barrelBot, tubeW, tipBot,
+    drained, titrantColour, theme);
 
+  // The jaw wraps the tube, so the burette is held rather than floating.
   ctx.save();
-  const bore = ctx.createLinearGradient(bxL, 0, bxL + bWpx, 0);
-  bore.addColorStop(0, hexA(glass, dark ? 0.34 : 0.2));
-  bore.addColorStop(0.35, hexA(theme.surface, 0.55));
-  bore.addColorStop(1, hexA(glass, dark ? 0.4 : 0.26));
-  ctx.fillStyle = bore;
-  roundRect(ctx, bxL, barrelTop, bWpx, barrelBot - barrelTop, 4);
-  ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  const col = ctx.createLinearGradient(bxL, 0, bxL + bWpx, 0);
-  col.addColorStop(0, hexA(titrantColour, 0.5));
-  col.addColorStop(0.35, hexA(titrantColour, 0.9));
-  col.addColorStop(1, hexA(titrantColour, 0.55));
-  ctx.fillStyle = col;
-  roundRect(ctx, bxL + 2, barrelBot - 3 - colH, bWpx - 4, colH, 3);
-  ctx.fill();
-  ctx.restore();
-
-  // Graduations, so the burette reads as an instrument rather than a bar.
-  ctx.save();
-  ctx.strokeStyle = hexA(theme.ink, 0.4);
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = hexA(theme.sci["mass"], 0.95);
+  ctx.lineWidth = Math.max(3, M * 0.011);
+  ctx.lineCap = "round";
   ctx.beginPath();
-  for (let i = 0; i <= 10; i++) {
-    const ty = barrelTop + 4 + (i / 10) * (barrelBot - barrelTop - 8);
-    const long = i % 2 === 0;
-    ctx.moveTo(bxL + 1.5, ty);
-    ctx.lineTo(bxL + (long ? bWpx * 0.55 : bWpx * 0.34), ty);
-  }
+  ctx.arc(cx, jawY + M * 0.014, tubeW * 0.8, Math.PI * 1.72, Math.PI * 1.28);
   ctx.stroke();
-  ctx.strokeStyle = hexA(glass, 0.75);
+  ctx.restore();
+
+  /* ---- the flask, its indicator colour, and what is dissolved in it ---- */
+  contactShadow(ctx, cx, benchY + 1, flaskW * 0.42, 0);
+  const level = clamp(state.totalVolume / (CURVE_MAX + 5e-5), 0.18, 0.62);
+  softShadow(ctx, () => {
+    flaskPath(ctx, flaskX, flaskY, flaskW, flaskH);
+    ctx.fillStyle = hexA(theme.surface, dark ? 0.42 : 0.82);
+    ctx.fill();
+  }, { blur: 18, dy: 8, alpha: dark ? 0.5 : 0.26 });
+  flaskGlass(ctx, flaskX, flaskY, flaskW, flaskH, theme, {
+    level, color: tint, t: time, bubbles: 0,
+  });
+  ctx.save();
+  flaskPath(ctx, flaskX, flaskY, flaskW, flaskH);
+  ctx.strokeStyle = hexA(theme.ink, dark ? 0.6 : 0.42);
   ctx.lineWidth = 1.6;
-  roundRect(ctx, bxL, barrelTop, bWpx, barrelBot - barrelTop, 4);
   ctx.stroke();
   ctx.restore();
 
-  // Stopcock and tapering tip.
-  material(ctx, bxL - bWpx * 0.42, barrelBot, bWpx * 1.84, Math.max(5, scale * 0.42), theme.inkSoft, 3);
-  const tipTop = barrelBot + Math.max(5, scale * 0.42);
-  const tipBot = py(9.95);
-  ctx.save();
-  ctx.fillStyle = hexA(glass, 0.7);
-  ctx.beginPath();
-  ctx.moveTo(bxL + bWpx * 0.3, tipTop);
-  ctx.lineTo(bxL + bWpx * 0.7, tipTop);
-  ctx.lineTo(px(buretteX) + 2, tipBot);
-  ctx.lineTo(px(buretteX) - 2, tipBot);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  if (band !== "K-2") {
-    caption(ctx, bxL + bWpx + 10, py(13.2), params.titrant === "acid" ? "Acid (HCl)" : "Base (NaOH)",
-      theme, { size: 11, color: titrantColour });
-  }
-
-  /* ---- beaker ---- */
-  const bx = 1.2, bw = 6.3, bhMax = 6.1;
-  const level = clamp(state.totalVolume / (CURVE_MAX + 5e-5), 0.1, 1) * bhMax;
-  const gl = px(bx), gr = px(bx + bw);
-  const gTop = py(BENCH_Y + bhMax);
-  const gBot = benchY;
-  const liqTop = py(BENCH_Y + level);
-  const wallW = Math.max(2.5, scale * 0.11);
-
-  contactShadow(ctx, (gl + gr) / 2, benchY + 1, (gr - gl) * 0.32, 0);
-
-  // The liquid: a body of colour with a real surface line, not a flat block.
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(gl, liqTop, gr - gl, gBot - liqTop);
-  ctx.clip();
-  const body = ctx.createLinearGradient(0, liqTop, 0, gBot);
-  body.addColorStop(0, hexA(tint, 0.62));
-  body.addColorStop(1, hexA(tint, 0.94));
-  ctx.fillStyle = body;
-  ctx.fillRect(gl, liqTop, gr - gl, gBot - liqTop);
-  ctx.restore();
-
-  /* ---- ions, drawn on a log scale ---- */
+  // Ions, drawn on a log scale inside the body of the liquid.
+  const surfaceY = flaskY + flaskH * (1 - level);
   if (overlays.ions && band !== "K-2") {
-    const nH = Math.round(clamp(((14 - state.ph) / 14) * 26, 0, 26));
-    const nOH = Math.round(clamp((state.ph / 14) * 26, 0, 26));
-    const rIon = Math.max(2.5, scale * 0.15);
-    for (let i = 0; i < nH; i++) {
-      const ix = bx + 0.45 + jitter(i, 1) * (bw - 0.9);
-      const iy = BENCH_Y + 0.35 + ((jitter(i, 2) + state.swirl) % 1) * Math.max(0.2, level - 0.7);
-      sphere(ctx, px(ix), py(iy), rIon, theme.sci["acid"]);
+    const nH = Math.round(clamp(((14 - state.ph) / 14) * 24, 0, 24));
+    const nOH = Math.round(clamp((state.ph / 14) * 24, 0, 24));
+    const rIon = Math.max(2.4, M * 0.011);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(flaskX + flaskW * 0.04, surfaceY + rIon * 2);
+    ctx.lineTo(flaskX + flaskW * 0.96, surfaceY + rIon * 2);
+    ctx.lineTo(flaskX + flaskW * 0.9, benchY - 2);
+    ctx.lineTo(flaskX + flaskW * 0.1, benchY - 2);
+    ctx.closePath();
+    ctx.clip();
+    for (let i = 0; i < nH + nOH; i++) {
+      const isH = i < nH;
+      const k = isH ? i : i - nH;
+      const drift = (jitter(k, isH ? 2 : 4) + state.swirl * (isH ? 1 : 0.8)) % 1;
+      const ix = flaskX + flaskW * (0.12 + jitter(k, isH ? 1 : 3) * 0.76);
+      const iy = surfaceY + rIon * 3 + drift * Math.max(6, benchY - surfaceY - rIon * 6);
+      sphere(ctx, ix, iy, rIon, isH ? theme.sci["acid"] : theme.sci["base"]);
     }
-    for (let i = 0; i < nOH; i++) {
-      const ix = bx + 0.45 + jitter(i, 3) * (bw - 0.9);
-      const iy = BENCH_Y + 0.35 + ((jitter(i, 4) + state.swirl * 0.8) % 1) * Math.max(0.2, level - 0.7);
-      sphere(ctx, px(ix), py(iy), rIon, theme.sci["base"]);
-    }
+    ctx.restore();
   }
 
-  // Surface: a lit meniscus ellipse, which is what says "looking into a beaker".
-  ctx.save();
-  ctx.fillStyle = hexA(tint, 0.5);
-  ctx.beginPath();
-  ctx.ellipse((gl + gr) / 2, liqTop, (gr - gl) / 2, Math.max(3, scale * 0.24), 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,0.5)";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.ellipse((gl + gr) / 2, liqTop, (gr - gl) / 2 - 1, Math.max(3, scale * 0.24), 0, Math.PI, 0);
-  ctx.stroke();
-  ctx.restore();
-
-  /* ---- falling drop, on its way in ---- */
+  /* ---- the drop on its way down ---- */
   if (state.added > 0) {
-    const dropY = 9.7 - state.dropPhase * (9.7 - (BENCH_Y + level + 0.2));
-    sphere(ctx, px(buretteX), py(dropY), Math.max(2.5, scale * 0.19), titrantColour, { glow: 0.5 });
+    const fall = state.dropPhase;
+    const dy = tipY + fall * (surfaceY - tipY);
+    const squash = 1 + fall * 0.45;
+    ctx.save();
+    ctx.translate(cx, dy);
+    ctx.scale(1 / squash, squash);
+    sphere(ctx, 0, 0, Math.max(2.6, M * 0.011), titrantColour, { glow: 0.7 });
+    ctx.restore();
+    // The ripple where the last drop landed.
+    const ring = (fall + 0.9) % 1;
+    ctx.save();
+    ctx.globalAlpha = 0.4 * (1 - ring);
+    ctx.strokeStyle = hexA(light, 0.9);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(cx, surfaceY, flaskW * 0.1 + ring * flaskW * 0.3,
+      (flaskW * 0.1 + ring * flaskW * 0.3) * 0.22, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
-  /* ---- the glass, drawn over the contents ---- */
+  /* ---- a spare sample of the same solution, standing on the bench ---- */
+  const sbW = Math.min(width * 0.075, height * 0.13);
+  const sbH = sbW * 1.15;
+  const sbX = width * 0.335;
+  const sbY = benchY - sbH;
+  contactShadow(ctx, sbX + sbW / 2, benchY + 1, sbW * 0.5, 0);
+  softShadow(ctx, () => {
+    ctx.fillStyle = hexA(theme.surface, dark ? 0.4 : 0.8);
+    roundRect(ctx, sbX, sbY, sbW, sbH, sbW * 0.1);
+    ctx.fill();
+  }, { blur: 12, dy: 6, alpha: dark ? 0.45 : 0.22 });
+  beaker(ctx, sbX, sbY, sbW, sbH, theme, { level: 0.52, color: tint, t: time });
   ctx.save();
-  ctx.lineJoin = "round";
-  ctx.beginPath();
-  ctx.moveTo(gl, gTop);
-  ctx.lineTo(gl, gBot - 2);
-  ctx.quadraticCurveTo(gl, gBot, gl + 6, gBot);
-  ctx.lineTo(gr - 6, gBot);
-  ctx.quadraticCurveTo(gr, gBot, gr, gBot - 2);
-  ctx.lineTo(gr, gTop);
-  ctx.strokeStyle = hexA(glass, 0.65);
-  ctx.lineWidth = wallW;
+  ctx.strokeStyle = hexA(theme.ink, dark ? 0.55 : 0.36);
+  ctx.lineWidth = 1.4;
+  roundRect(ctx, sbX, sbY, sbW, sbH, sbW * 0.1);
   ctx.stroke();
-  // Rim and pouring spout.
-  ctx.strokeStyle = hexA(glass, 0.95);
-  ctx.lineWidth = Math.max(2, wallW * 0.7);
-  ctx.beginPath();
-  ctx.moveTo(gl - 3, gTop);
-  ctx.lineTo(gr - (gr - gl) * 0.22, gTop);
-  ctx.quadraticCurveTo(gr + 4, gTop - 3, gr + 7, gTop + 3);
-  ctx.stroke();
-  // Graduation marks and a specular streak.
-  ctx.strokeStyle = hexA(theme.ink, 0.28);
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let i = 1; i <= 4; i++) {
-    const ty = gBot - (i / 5) * (gBot - gTop);
-    ctx.moveTo(gl + wallW, ty);
-    ctx.lineTo(gl + wallW + (gr - gl) * 0.12, ty);
-  }
-  ctx.stroke();
-  const sheen = ctx.createLinearGradient(gl, 0, gl + (gr - gl) * 0.4, 0);
-  sheen.addColorStop(0, "rgba(255,255,255,0.28)");
-  sheen.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = sheen;
-  ctx.fillRect(gl + wallW, gTop + 4, (gr - gl) * 0.16, gBot - gTop - 6);
   ctx.restore();
 
-  const flask = FLASK[params.substance as string] ?? FLASK.water;
-  caption(ctx, (gl + gr) / 2, gTop - 16, flask.label, theme, { align: "center", size: 14 });
+  /* ---- callouts, in the clear strip between glassware and console ---- */
+  const calloutX = width * 0.315;
+  callout(ctx, cx, jawY + M * 0.11, calloutX, height * 0.14,
+    params.titrant === "acid" ? "0.1 M HCl" : "0.1 M NaOH", theme,
+    { sub: "in the burette", side: "right", accent: titrantColour });
+  callout(ctx, cx + flaskW * 0.18, surfaceY + (benchY - surfaceY) * 0.45,
+    calloutX, height * 0.55, contents.label, theme,
+    { sub: `${(state.totalVolume * 1e6).toFixed(0)} mL in the flask`, side: "right", accent: tint });
 
-  /* ---- the bench meter: the big pH number, on the front of the bench ---- */
-  const meterX = px(0.9), meterW = px(8.0) - px(0.9);
-  const meterY = py(2.35), meterH = py(0.25) - py(2.35);
-  material(ctx, meterX, meterY, meterW, meterH, theme.surfaceAlt, 8);
+  /* ---- the bench-top console ---- */
+  const conX = width * 0.475;
+  const conY = height * 0.075;
+  const con = consoleFace(ctx, conX, conY, width * 0.5, benchY - conY, theme);
+
+  const rowGap = con.h * 0.035;
+  const chartH = con.h * 0.5;
+  const chartY = con.y + con.h * 0.09;
+  const rampY = chartY + chartH + rowGap * 2.2;
+  const rampH = Math.max(14, con.h * 0.075);
+  const readY = rampY + rampH + con.h * 0.11;
+
   ctx.save();
-  ctx.font = `700 ${Math.max(22, scale * 1.45)}px system-ui, sans-serif`;
-  ctx.fillStyle = tint;
-  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.shadowColor = hexA(tint, 0.55);
-  ctx.shadowBlur = 14;
-  ctx.fillText(
-    `pH ${state.ph.toFixed(band === "9-12" ? 2 : 1)}`,
-    meterX + meterW / 2, meterY + meterH * (band === "9-12" ? 0.38 : 0.5),
-  );
-  ctx.restore();
-  if (band === "9-12") {
-    caption(ctx, meterX + meterW / 2, meterY + meterH * 0.78, flask.note, theme, {
-      align: "center", size: 10, color: theme.inkSoft, weight: 500,
-    });
-  }
-
-  /* ---- titration curve ---- */
-  const gx = 9.9, gy = 3.6, gw = W - gx - 0.7, gh = 10.1;
-  ctx.save();
-  ctx.fillStyle = hexA(theme.surface, dark ? 0.42 : 0.62);
-  roundRect(ctx, px(gx), py(gy + gh), gw * scale, gh * scale, 7);
-  ctx.fill();
-  ctx.strokeStyle = hexA(theme.line, 0.9);
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  ctx.textAlign = "left";
+  ctx.fillStyle = hexA(light, 0.72);
+  ctx.font = `600 ${Math.max(10, M * 0.023)}px "Bricolage Grotesque", system-ui, sans-serif`;
+  ctx.fillText("TITRATION CURVE", con.x, con.y + con.h * 0.03);
+  ctx.textAlign = "right";
+  ctx.fillStyle = hexA(light, 0.55);
+  ctx.font = `500 ${Math.max(9, M * 0.021)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.fillText(`${(state.added * 1e6).toFixed(1)} mL added`, con.x + con.w, con.y + con.h * 0.03);
   ctx.restore();
 
+  /* ---- chart ---- */
+  const chartX = con.x + M * 0.055;
+  const chartW = con.w - M * 0.055;
+  const curveX = (v: number) => chartX + (v / CURVE_MAX) * chartW;
+  const curveY = (p: number) => chartY + chartH - (clamp(p, 0, 14) / 14) * chartH;
+
   ctx.save();
-  ctx.strokeStyle = theme.grid;
+  ctx.strokeStyle = hexA(light, 0.12);
   ctx.lineWidth = 1;
   ctx.beginPath();
-  for (let p = 2; p <= 12; p += 2) {
-    const yy = py(gy + (p / 14) * gh);
-    ctx.moveTo(px(gx), yy);
-    ctx.lineTo(px(gx + gw), yy);
+  for (let p = 0; p <= 14; p += 2) {
+    ctx.moveTo(chartX, curveY(p));
+    ctx.lineTo(chartX + chartW, curveY(p));
   }
   ctx.stroke();
-  ctx.restore();
-
-  // pH 7 line: the reference students are always hunting for.
-  ctx.save();
-  ctx.strokeStyle = theme.sci["neutral"];
+  ctx.strokeStyle = hexA(theme.sci["neutral"], 0.85);
   ctx.lineWidth = 1.5;
   ctx.setLineDash([5, 4]);
   ctx.beginPath();
-  ctx.moveTo(px(gx), py(gy + (7 / 14) * gh));
-  ctx.lineTo(px(gx + gw), py(gy + (7 / 14) * gh));
+  ctx.moveTo(chartX, curveY(7));
+  ctx.lineTo(chartX + chartW, curveY(7));
   ctx.stroke();
   ctx.restore();
 
-  const curveX = (v: number) => gx + (v / CURVE_MAX) * gw;
-  const curveY = (p: number) => gy + (clamp(p, 0, 14) / 14) * gh;
-
-  // Only the part actually titrated is drawn — the rest is still unknown.
-  const lastIdx = Math.min(CURVE_N - 1, Math.round((state.maxAdded / CURVE_MAX) * (CURVE_N - 1)));
-  if (lastIdx > 0) {
-    lifted(ctx, 8, 2, () => {
-      ctx.save();
-      ctx.strokeStyle = theme.accent;
-      ctx.lineWidth = 3;
-      ctx.lineJoin = "round";
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      for (let i = 0; i <= lastIdx; i++) {
-        const v = (i / (CURVE_N - 1)) * CURVE_MAX;
-        const sx = px(curveX(v));
-        const sy = py(curveY(state.curve[i]));
-        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
-      }
-      ctx.stroke();
-      ctx.restore();
-    }, 0.3);
-  }
+  ctx.save();
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = hexA(light, 0.6);
+  ctx.font = `600 ${Math.max(9, M * 0.02)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  for (const p of [0, 7, 14]) ctx.fillText(String(p), chartX - 6, curveY(p));
+  ctx.save();
+  ctx.translate(con.x + M * 0.012, chartY + chartH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = "center";
+  ctx.fillStyle = hexA(light, 0.5);
+  ctx.font = `600 ${Math.max(9, M * 0.021)}px "Bricolage Grotesque", system-ui, sans-serif`;
+  ctx.fillText("pH", 0, 0);
+  ctx.restore();
+  ctx.restore();
 
   if (overlays.equivalence && state.equivalence > 0 && state.equivalence <= CURVE_MAX) {
-    const ex = px(curveX(state.equivalence));
+    const ex = curveX(state.equivalence);
     ctx.save();
-    ctx.strokeStyle = theme.sci["neutral"];
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = hexA(theme.sci["neutral"], 0.8);
+    ctx.lineWidth = 1.4;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(ex, py(gy));
-    ctx.lineTo(ex, py(gy + gh));
+    ctx.moveTo(ex, chartY);
+    ctx.lineTo(ex, chartY + chartH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = theme.sci["neutral"];
+    ctx.font = `600 ${Math.max(9, M * 0.02)}px "Bricolage Grotesque", system-ui, sans-serif`;
+    ctx.fillText("equivalence", ex, chartY + 3);
+    ctx.restore();
+  }
+
+  const lastIdx = Math.min(CURVE_N - 1, Math.round((state.maxAdded / CURVE_MAX) * (CURVE_N - 1)));
+  if (lastIdx > 0) {
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.accent, 0.9);
+    ctx.shadowColor = hexA(theme.accent, 0.8);
+    ctx.shadowBlur = 10;
+    ctx.lineWidth = 3;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let i = 0; i <= lastIdx; i++) {
+      const v = (i / (CURVE_N - 1)) * CURVE_MAX;
+      const sx = curveX(v);
+      const sy = curveY(state.curve[i]);
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    }
     ctx.stroke();
     ctx.restore();
-    caption(ctx, ex, py(gy) + 14, "equivalence", theme, {
-      align: "center", size: 10, color: theme.sci["neutral"],
-    });
   }
+  sphere(ctx, curveX(state.added), curveY(state.ph), Math.max(4.5, M * 0.014), tint, { glow: 0.9 });
 
-  sphere(ctx, px(curveX(state.added)), py(curveY(state.ph)), Math.max(4.5, scale * 0.26), tint,
-    { glow: 0.6 });
-
-  caption(ctx, px(gx) - 6, py(gy + gh), "14", theme, { align: "right", size: 10, color: theme.inkSoft });
-  caption(ctx, px(gx) - 6, py(gy), "0", theme, { align: "right", size: 10, color: theme.inkSoft });
-  caption(ctx, px(gx) - 6, py(gy + gh / 2), "pH", theme, {
-    align: "right", size: 11, color: theme.inkSoft,
-  });
-  caption(ctx, px(gx), py(gy + gh) - 14, "Titration curve", theme, { size: 13 });
-  caption(ctx, px(gx + gw), py(gy) + 15, `${(state.added * 1e6).toFixed(1)} mL added`, theme, {
-    align: "right", size: 11, color: theme.inkSoft,
-  });
-
-  /* ---- the universal-indicator chart, under the curve it explains ---- */
-  const rampX = gx, rampW = gw, rampTop = py(2.3), rampBot = py(1.45);
-  for (let i = 0; i < 28; i++) {
-    const p = (i / 27) * 14;
-    ctx.fillStyle = indicatorColor(p, theme);
-    ctx.fillRect(px(rampX + (i / 28) * rampW), rampTop, (rampW / 28) * scale + 1, rampBot - rampTop);
-  }
+  /* ---- the universal-indicator chart, in the colours of the dye ---- */
+  const SEG = 56;
   ctx.save();
-  ctx.strokeStyle = hexA(theme.ink, 0.35);
-  ctx.lineWidth = 1;
-  ctx.strokeRect(px(rampX), rampTop, rampW * scale, rampBot - rampTop);
+  roundRect(ctx, chartX, rampY, chartW, rampH, rampH * 0.28);
+  ctx.clip();
+  for (let i = 0; i < SEG; i++) {
+    ctx.fillStyle = indicatorColor((i / (SEG - 1)) * 14, theme);
+    ctx.fillRect(chartX + (i / SEG) * chartW, rampY, chartW / SEG + 1, rampH);
+  }
+  const gloss = ctx.createLinearGradient(0, rampY, 0, rampY + rampH);
+  gloss.addColorStop(0, hexA(light, 0.3));
+  gloss.addColorStop(0.5, hexA(light, 0));
+  ctx.fillStyle = gloss;
+  ctx.fillRect(chartX, rampY, chartW, rampH);
   ctx.restore();
-  const markX = px(rampX + (clamp(state.ph, 0, 14) / 14) * rampW);
   ctx.save();
-  ctx.fillStyle = theme.ink;
+  ctx.strokeStyle = hexA(light, 0.25);
+  ctx.lineWidth = 1;
+  roundRect(ctx, chartX, rampY, chartW, rampH, rampH * 0.28);
+  ctx.stroke();
+  // The pointer riding the scale at the pH the solver just returned.
+  const markX = chartX + (clamp(state.ph, 0, 14) / 14) * chartW;
+  ctx.fillStyle = light;
   ctx.beginPath();
-  ctx.moveTo(markX, rampTop - 1);
-  ctx.lineTo(markX - 5, rampTop - 9);
-  ctx.lineTo(markX + 5, rampTop - 9);
+  ctx.moveTo(markX, rampY - 1);
+  ctx.lineTo(markX - rampH * 0.4, rampY - rampH * 0.62);
+  ctx.lineTo(markX + rampH * 0.4, rampY - rampH * 0.62);
   ctx.closePath();
   ctx.fill();
+  ctx.textBaseline = "top";
+  ctx.font = `600 ${Math.max(9, M * 0.02)}px "Bricolage Grotesque", system-ui, sans-serif`;
+  ctx.textAlign = "left";
+  ctx.fillStyle = hexA(theme.sci["acid"], 0.95);
+  ctx.fillText("0  acid", chartX, rampY + rampH + 5);
+  ctx.textAlign = "center";
+  ctx.fillStyle = hexA(theme.sci["neutral"], 0.95);
+  ctx.fillText("7  neutral", chartX + chartW / 2, rampY + rampH + 5);
+  ctx.textAlign = "right";
+  ctx.fillStyle = hexA(theme.sci["base"], 0.95);
+  ctx.fillText("14  base", chartX + chartW, rampY + rampH + 5);
   ctx.restore();
-  if (band !== "K-2") {
-    caption(ctx, px(rampX), rampBot + 12, "0 acid", theme, { size: 10, color: theme.sci["acid"] });
-    caption(ctx, px(rampX + rampW / 2), rampBot + 12, "7", theme, {
-      size: 10, align: "center", color: theme.sci["neutral"],
-    });
-    caption(ctx, px(rampX + rampW), rampBot + 12, "14 base", theme, {
-      size: 10, align: "right", color: theme.sci["base"],
-    });
-  }
 
-  vignette(ctx, width, height, 0.14);
+  /* ---- the meter readout ---- */
+  const readH = con.y + con.h - readY;
+  ctx.save();
+  ctx.fillStyle = hexA(darkOf(theme), 0.75);
+  roundRect(ctx, con.x, readY, con.w, readH, readH * 0.16);
+  ctx.fill();
+  ctx.strokeStyle = hexA(tint, 0.5);
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = tint;
+  ctx.shadowColor = hexA(tint, 0.75);
+  ctx.shadowBlur = 18;
+  ctx.font = `700 ${Math.max(24, readH * 0.6)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.fillText(`pH ${state.ph.toFixed(band === "9-12" ? 2 : 1)}`,
+    con.x + con.w * 0.045, readY + readH * 0.5);
+  ctx.shadowBlur = 0;
+  ctx.textAlign = "right";
+  ctx.fillStyle = hexA(light, 0.72);
+  ctx.font = `600 ${Math.max(10, M * 0.023)}px "Bricolage Grotesque", system-ui, sans-serif`;
+  ctx.fillText(contents.label, con.x + con.w * 0.96, readY + readH * 0.34);
+  ctx.fillStyle = hexA(light, 0.45);
+  ctx.font = `500 ${Math.max(9, M * 0.02)}px "Bricolage Grotesque", system-ui, sans-serif`;
+  ctx.fillText(contents.note, con.x + con.w * 0.96, readY + readH * 0.66);
+  ctx.restore();
+
+  vignette(ctx, width, height, 0.16);
 }
 
 /* ------------------------------------------------------------------ *

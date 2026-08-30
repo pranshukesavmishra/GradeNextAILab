@@ -592,16 +592,16 @@ function organelleColor(id: string, theme: Theme): string {
     case "mitochondria": return lighten(theme.sci["hot"], 0.24);
     case "chloroplast": return theme.sci["producer"];
     case "vacuole": return theme.sci["liquid"];
-    case "nucleus": return theme.sci["field"];
+    case "nucleus": return lighten(theme.sci["field"], 0.16);
     case "wall": return theme.sci["solid"];
     case "membrane": return theme.accent;
     case "cytoplasm": return theme.accent;
-    case "er": return lighten(theme.accent, 0.3);
-    case "golgi": return theme.sci["gas"];
+    case "er": return theme.accent;
+    case "golgi": return darken(theme.sci["gas"], 0.12);
     case "ribosome": return theme.sci["velocity"];
     // Lysosomes really are acid bags, so the acid token is the honest one.
     case "lysosome": return theme.sci["acid"];
-    case "centriole": return theme.inkSoft;
+    case "centriole": return theme.sci["mass"];
     default: return theme.inkSoft;
   }
 }
@@ -620,16 +620,23 @@ function sparkColor(kind: number, theme: Theme): string {
  * carries only how big a part is *drawn* and, for the vacuole, where it is
  * drawn, so composition can be tuned without touching a single fact.
  */
-const LOOK: Record<string, { scale: number; at?: [number, number] }> = {
-  nucleus: { scale: 1.12 },
-  mitochondria: { scale: 1.16 },
-  chloroplast: { scale: 1.06 },
-  vacuole: { scale: 1.32, at: [0.3, -0.06] },
-  er: { scale: 1.22 },
-  golgi: { scale: 1.24 },
-  ribosome: { scale: 1.35 },
-  lysosome: { scale: 1.25 },
-  centriole: { scale: 1.3 },
+const LOOK: Record<string, {
+  scale: number;
+  at?: [number, number];
+  /** Drawn half-extent as a fraction of the cell radius, for keeping inside. */
+  extent?: number;
+  /** All copies drawn at the first copy's place — a centrosome is one body. */
+  together?: boolean;
+}> = {
+  nucleus: { scale: 1.2, extent: 1.05 },
+  mitochondria: { scale: 1.1, extent: 1.34 },
+  chloroplast: { scale: 1.04, extent: 1.24 },
+  vacuole: { scale: 1.32, extent: 1.1, at: [0.32, -0.08] },
+  er: { scale: 1, extent: 0.95 },
+  golgi: { scale: 1.2, extent: 1.15 },
+  ribosome: { scale: 0.95, extent: 1.6 },
+  lysosome: { scale: 1.05, extent: 1.2 },
+  centriole: { scale: 1.15, extent: 1.5, together: true },
 };
 
 /** How much of the cell radius the contents are allowed to occupy. */
@@ -640,7 +647,7 @@ function placeCopy(
   spec: OrganelleSpec, i: number, time: number,
 ): [number, number] {
   const look = LOOK[spec.id];
-  const [bx, by] = look?.at ?? copyOffset(spec, i);
+  const [bx, by] = look?.at ?? copyOffset(spec, look?.together ? 0 : i);
   const drift = spec.id === "nucleus" || spec.id === "vacuole" ? 0.008 : 0.022;
   return [
     bx + Math.sin(time * 0.23 + i * 1.7 + bx * 4) * drift,
@@ -699,7 +706,7 @@ const TAG_RANK: Record<string, number> = {
  * the leaders never cross each other.
  */
 function drawCallouts(
-  rc: RenderContext<State>, tags: Tag[], cx: number, cellR: number, focus: string,
+  rc: RenderContext<State>, tags: Tag[], cx: number, cellR: number,
 ) {
   const { ctx, theme, width, height } = rc;
   if (tags.length === 0) return;
@@ -709,7 +716,6 @@ function drawCallouts(
   const bottom = height - 56;
   const cap = Math.max(2, Math.floor((bottom - top) / rowH) + 1);
   const pill = isDarkTheme(theme) ? darken(theme.accent, 0.5) : theme.accent;
-  const lit = lighten(theme.sci["light"], isDarkTheme(theme) ? 0 : 0.05);
 
   const left: Tag[] = [];
   const right: Tag[] = [];
@@ -732,7 +738,7 @@ function drawCallouts(
     list.forEach((t, i) => {
       callout(ctx, t.x, t.y, edge, start + step * i, t.name, theme, {
         side,
-        accent: focus === t.id ? lit : pill,
+        accent: pill,
         ...(withSub && t.sub ? { sub: t.sub } : {}),
       });
     });
@@ -841,7 +847,7 @@ function drawFarView(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number
   drawCallouts(rc, [{
     id: "zoom", name: "Zoom in here", sub: "one patch of tissue",
     x: cx + boxR, y: cy, rank: 0,
-  }], cx, boxR * 1.6, "");
+  }], cx, boxR * 1.6);
   caption(ctx, cx, 26, org.name, theme, { align: "center", size: 16 });
 }
 
@@ -942,11 +948,54 @@ function drawCell(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
   const wallT = wall ? Math.max(7, Math.min(width, height) * 0.028) : 0;
   const cellR = Math.min(
     Math.max(40, (org.cellM * pxPerM) / 2),
-    Math.min(width * 0.33, height * 0.455) - wallT,
+    Math.min(width * 0.345, height * 0.465) - wallT,
   );
   const memTint = organelleColor("membrane", theme);
   const toX = (u: number) => cx + u * cellR * INSET;
   const toY = (u: number) => cy + u * cellR * INSET;
+
+  /*
+   * Composition. The roster scatters copies by a golden angle, which is honest
+   * but lets a mitochondrion land square on the nucleus. So the two big bodies
+   * carry a keep-out disc and everything else — including the molecules the
+   * organelles emit, so a spark never parts company with its source — is
+   * displaced smoothly around them by the same field.
+   */
+  const keepOuts: { x: number; y: number; r: number }[] = [];
+  for (const id of ["nucleus", "vacuole"]) {
+    const s = organellesFor(params.cellType as string).find((o) => o.id === id);
+    if (!s || !has(id)) continue;
+    const look = LOOK[id];
+    const [bx, by] = look?.at ?? [s.x, s.y];
+    keepOuts.push({
+      x: bx, y: by,
+      r: (s.r * (look?.scale ?? 1) * (look?.extent ?? 1)) / INSET + 0.1,
+    });
+  }
+  const nudge = (ux: number, uy: number): [number, number] => {
+    let x = ux;
+    let y = uy;
+    for (const k of keepOuts) {
+      const dx = x - k.x;
+      const dy = y - k.y;
+      const d = Math.hypot(dx, dy);
+      if (d >= k.r) continue;
+      const a = d < 1e-4 ? 0.9 : Math.atan2(dy, dx);
+      // Push out past the ring in proportion to how deep it sat, so the ones
+      // that were buried end up spread rather than stacked on one circle.
+      const out = k.r * (1 + 0.32 * (1 - d / k.r));
+      x = k.x + Math.cos(a) * out;
+      y = k.y + Math.sin(a) * out;
+    }
+    return [x, y];
+  };
+  /** Keep a body's whole drawn width inside the membrane. */
+  const contain = (ux: number, uy: number, ext: number): [number, number] => {
+    const rad = Math.hypot(ux, uy);
+    const lim = Math.max(0.12, (0.93 - ext) / INSET);
+    if (rad <= lim || rad < 1e-4) return [ux, uy];
+    return [(ux / rad) * lim, (uy / rad) * lim];
+  };
 
   /* --- light falling on the cell --------------------------------- */
   if (plant && light > 0.02) {
@@ -1074,6 +1123,21 @@ function drawCell(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
   ctx.arc(cx, cy, cellR * 0.995, 0, Math.PI * 2);
   ctx.clip();
 
+  if (has("membrane") || has("cytoplasm")) {
+    // A veil over the interior: the far wall of a fluid-filled sac is darker
+    // than the near one, and that difference is most of what says "volume".
+    ctx.save();
+    const veil = ctx.createRadialGradient(
+      cx - cellR * 0.3, cy - cellR * 0.34, cellR * 0.05, cx, cy, cellR,
+    );
+    veil.addColorStop(0, hexA(lighten(memTint, 0.6), 0.16));
+    veil.addColorStop(0.68, hexA(memTint, 0.1));
+    veil.addColorStop(1, hexA(darken(memTint, 0.25), 0.26));
+    ctx.fillStyle = veil;
+    ctx.fillRect(cx - cellR, cy - cellR, cellR * 2, cellR * 2);
+    ctx.restore();
+  }
+
   if (has("cytoplasm")) {
     // The jelly itself: a faint granular wash plus visible streaming.
     ctx.save();
@@ -1117,9 +1181,14 @@ function drawCell(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
   for (const spec of drawn) {
     const color = organelleColor(spec.id, theme);
     const lit = focus === spec.id;
-    const scale = LOOK[spec.id]?.scale ?? 1;
+    const look = LOOK[spec.id];
+    const scale = look?.scale ?? 1;
+    const fixed = spec.id === "nucleus" || spec.id === "vacuole";
+    const ext = spec.r * scale * (look?.extent ?? 1);
     for (let i = 0; i < spec.copies; i++) {
-      const [ox, oy] = placeCopy(spec, i, time);
+      const [bx, by] = placeCopy(spec, i, time);
+      const [nx, ny] = fixed ? [bx, by] : nudge(bx, by);
+      const [ox, oy] = fixed ? [nx, ny] : contain(nx, ny, ext);
       const px = toX(ox);
       const py = toY(oy);
       drawOrganelle(rc, spec, px, py, spec.r * cellR * scale, color, lit, i);
@@ -1135,9 +1204,9 @@ function drawCell(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
 
   /* --- transport vesicles drifting through the jelly -------------- */
   if (has("cytoplasm")) {
-    for (let i = 0; i < 14; i++) {
-      const a = i * 2.39996 + time * (0.06 + (i % 4) * 0.015);
-      const rr = (0.3 + 0.56 * ((i * 5) % 7) / 7) * cellR * INSET;
+    for (let i = 0; i < 20; i++) {
+      const a = i * 2.39996 + time * (0.05 + (i % 4) * 0.014);
+      const rr = (0.22 + 0.66 * ((i * 5) % 9) / 9) * cellR * INSET;
       const r = Math.max(1.6, cellR * (0.012 + 0.012 * ((i * 3) % 4) / 3));
       organelleDot(ctx,
         cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.94,
@@ -1148,8 +1217,9 @@ function drawCell(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
   /* --- molecules the organelles have just made -------------------- */
   if (overlays.activity !== false) {
     for (const s of state.sparks) {
-      const px = toX(s.x);
-      const py = toY(s.y);
+      const [sx, sy] = nudge(s.x, s.y);
+      const px = toX(sx);
+      const py = toY(sy);
       const a = Math.min(1, s.life);
       const col = sparkColor(s.kind, theme);
       ctx.save();
@@ -1203,7 +1273,7 @@ function drawCell(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
         x: cx + outer * 0.72, y: cy + outer * 0.72, rank: 1,
       });
     }
-    drawCallouts(rc, tags, cx, outer, focus);
+    drawCallouts(rc, tags, cx, outer);
   }
 
   /* --- live numbers on the stage ---------------------------------- */
@@ -1222,6 +1292,73 @@ function drawCell(rc: RenderContext<State>, org: OrganismSpec, pxPerM: number) {
 /* ------------------------------------------------------------------ *
  * One organelle, drawn as the thing it is
  * ------------------------------------------------------------------ */
+
+/**
+ * Chromatin and nucleolus, laid over the kit's nucleus.
+ *
+ * The kit gives the envelope, the pores and the lit body. Over that goes a
+ * veil that settles its first-pass threads into mottled texture, then long
+ * coils — DNA is wound thread, not shards — and a nucleolus dense enough that
+ * a student can point at it and say what it is.
+ */
+function chromatin(
+  ctx: CanvasRenderingContext2D, x: number, y: number, r: number, tint: string, time: number,
+) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.92, 0, Math.PI * 2);
+  ctx.clip();
+
+  const veil = ctx.createRadialGradient(x - r * 0.34, y - r * 0.36, r * 0.06, x, y, r);
+  veil.addColorStop(0, hexA(lighten(tint, 0.42), 0.55));
+  veil.addColorStop(0.62, hexA(tint, 0.5));
+  veil.addColorStop(1, hexA(darken(tint, 0.34), 0.6));
+  ctx.fillStyle = veil;
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
+
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (let i = 0; i < 10; i++) {
+    const seed = i * 2.399 + 0.4;
+    const dark = i % 2 === 0;
+    ctx.strokeStyle = hexA(dark ? darken(tint, 0.5) : lighten(tint, 0.55), dark ? 0.52 : 0.24);
+    ctx.lineWidth = Math.max(0.9, r * (dark ? 0.05 : 0.028));
+    ctx.beginPath();
+    for (let k = 0; k <= 30; k++) {
+      const u = k / 30;
+      const a = seed + u * 3.1 + Math.sin(time * 0.16 + i) * 0.05;
+      const rad = r * (0.2 + 0.55 * (0.5 + 0.5 * Math.sin(seed * 3.1 + u * 16.5)));
+      const qx = x + Math.cos(a) * rad * 0.88;
+      const qy = y + Math.sin(a) * rad * 0.82;
+      if (k === 0) ctx.moveTo(qx, qy); else ctx.lineTo(qx, qy);
+    }
+    ctx.stroke();
+  }
+
+  // The nucleolus, restated over the veil so it stays the densest thing here.
+  const nx = x + r * 0.17;
+  const ny = y + r * 0.12;
+  const nr = r * 0.31;
+  const ng = ctx.createRadialGradient(nx - nr * 0.38, ny - nr * 0.42, nr * 0.04, nx, ny, nr);
+  ng.addColorStop(0, lighten(tint, 0.2));
+  ng.addColorStop(0.45, darken(tint, 0.36));
+  ng.addColorStop(1, darken(tint, 0.62));
+  ctx.fillStyle = ng;
+  ctx.beginPath();
+  ctx.arc(nx, ny, nr, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(nx - nr * 0.34, ny - nr * 0.4, nr * 0.32, nr * 0.16, -0.6, 0, Math.PI * 2);
+  ctx.fillStyle = hexA(lighten(tint, 0.92), 0.3);
+  ctx.fill();
+
+  // One specular for the whole sphere, so it still reads as a lit ball.
+  ctx.beginPath();
+  ctx.ellipse(x - r * 0.34, y - r * 0.37, r * 0.24, r * 0.13, -0.66, 0, Math.PI * 2);
+  ctx.fillStyle = hexA(lighten(tint, 0.95), 0.3);
+  ctx.fill();
+  ctx.restore();
+}
 
 /** A vacuole: a water-filled sac with a visible tonoplast and a slow swirl. */
 function vacuoleSac(
@@ -1262,29 +1399,61 @@ function vacuoleSac(
   ctx.restore();
 }
 
-/** A centriole: nine triplets of tubes seen down the barrel. */
+/**
+ * A centriole. The pair sits at right angles — that is what a centrosome is —
+ * so one is drawn as a barrel from the side and one down its open end, where
+ * the nine triplets of tubes are what a student can actually count.
+ */
 function centrioleBarrel(
-  ctx: CanvasRenderingContext2D, x: number, y: number, r: number, tint: string, angle: number,
+  ctx: CanvasRenderingContext2D, x: number, y: number, r: number, tint: string,
+  angle: number, endOn: boolean,
 ) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
-  ctx.lineCap = "round";
-  ctx.strokeStyle = hexA(darken(tint, 0.2), 0.9);
-  ctx.lineWidth = Math.max(1.2, r * 0.24);
-  for (let i = 0; i < 5; i++) {
-    const px = -r * 0.85 + (i / 4) * r * 1.7;
+  if (endOn) {
+    const g = ctx.createRadialGradient(-r * 0.3, -r * 0.34, r * 0.05, 0, 0, r);
+    g.addColorStop(0, lighten(tint, 0.5));
+    g.addColorStop(1, darken(tint, 0.3));
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.moveTo(px, -r * 1.1);
-    ctx.lineTo(px, r * 1.1);
+    ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexA(darken(tint, 0.45), 0.9);
+    ctx.lineWidth = Math.max(0.8, r * 0.08);
     ctx.stroke();
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      organelleDot(ctx, Math.cos(a) * r * 0.62, Math.sin(a) * r * 0.62,
+        Math.max(1, r * 0.15), lighten(tint, 0.3));
+    }
+  } else {
+    const g = ctx.createLinearGradient(0, -r * 0.7, 0, r * 0.7);
+    g.addColorStop(0, lighten(tint, 0.5));
+    g.addColorStop(0.5, tint);
+    g.addColorStop(1, darken(tint, 0.34));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 1.05, r * 0.62, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexA(darken(tint, 0.45), 0.85);
+    ctx.lineWidth = Math.max(0.8, r * 0.07);
+    ctx.stroke();
+    ctx.strokeStyle = hexA(darken(tint, 0.35), 0.55);
+    ctx.lineWidth = Math.max(0.8, r * 0.09);
+    ctx.lineCap = "round";
+    for (let i = 0; i < 4; i++) {
+      const px = -r * 0.6 + (i / 3) * r * 1.2;
+      ctx.beginPath();
+      ctx.moveTo(px, -r * 0.5);
+      ctx.lineTo(px, r * 0.5);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.28, -r * 0.24, r * 0.3, r * 0.13, -0.2, 0, Math.PI * 2);
+    ctx.fillStyle = hexA(lighten(tint, 0.95), 0.4);
+    ctx.fill();
   }
-  ctx.strokeStyle = hexA(lighten(tint, 0.6), 0.75);
-  ctx.lineWidth = Math.max(0.8, r * 0.11);
-  ctx.beginPath();
-  ctx.moveTo(-r * 1.02, -r * 1.1);
-  ctx.lineTo(r * 1.02, -r * 1.1);
-  ctx.stroke();
   ctx.restore();
 }
 
@@ -1296,7 +1465,7 @@ function drawOrganelle(
   if (r <= 0) return;
 
   ctx.save();
-  if (lit) glow(ctx, px, py, r * 2.8, theme.sci["light"], 0.28);
+  if (lit) glow(ctx, px, py, r * 2.6, theme.sci["light"], 0.34);
 
   switch (spec.id) {
     case "mitochondria": {
@@ -1319,6 +1488,7 @@ function drawOrganelle(
     }
     case "nucleus": {
       nucleus(ctx, px, py, r, color, time);
+      chromatin(ctx, px, py, r, color, time);
       break;
     }
     case "vacuole": {
@@ -1328,23 +1498,24 @@ function drawOrganelle(
     case "er": {
       // Rough ER hugging the nucleus, smooth ER reaching away from it.
       const a = Math.atan2(py - rc.height * 0.5, px - rc.width * 0.5) + Math.PI / 2;
-      reticulum(ctx, px, py, r * 2.9, r * 1.5, color, {
-        studded: true, sheets: 5, angle: a + Math.sin(time * 0.12) * 0.03,
+      reticulum(ctx, px, py, r * 1.55, r * 1, color, {
+        studded: true, sheets: 7, angle: a + Math.sin(time * 0.12) * 0.03,
       });
-      reticulum(ctx, px - r * 1.4, py - r * 1.5, r * 1.7, r * 0.9, color, {
-        studded: false, sheets: 4, angle: a - 0.7,
-      });
+      reticulum(ctx, px + Math.cos(a) * r * 1.15, py + Math.sin(a) * r * 1.15,
+        r * 1.05, r * 0.62, color, {
+          studded: false, sheets: 4, angle: a - 0.55,
+        });
       break;
     }
     case "golgi": {
-      golgi(ctx, px, py, r * 2.1, r * 1.8, color,
-        -0.34 + Math.sin(time * 0.11) * 0.04);
+      golgi(ctx, px, py, r * 1.75, r * 2.05, color,
+        -0.36 + Math.sin(time * 0.11) * 0.04);
       break;
     }
     case "ribosome": {
       // Two subunits clamped together — that is the whole machine.
-      organelleDot(ctx, px, py + r * 0.22, r * 0.78, color);
-      organelleDot(ctx, px + r * 0.06, py - r * 0.5, r * 0.56, lighten(color, 0.22));
+      organelleDot(ctx, px, py + r * 0.14, r * 0.82, color);
+      organelleDot(ctx, px + r * 0.02, py - r * 0.3, r * 0.58, lighten(color, 0.12));
       break;
     }
     case "lysosome": {
@@ -1360,7 +1531,9 @@ function drawOrganelle(
       break;
     }
     case "centriole": {
-      centrioleBarrel(ctx, px, py, r, color, copy * 1.5708 + Math.sin(time * 0.1) * 0.04);
+      // Two of them, offset just enough to read as a pair.
+      centrioleBarrel(ctx, px + (copy ? r * 1.05 : -r * 0.5), py + (copy ? -r * 0.7 : r * 0.4),
+        r, color, Math.sin(time * 0.1) * 0.05 - 0.3, copy === 1);
       break;
     }
     default: {
@@ -1369,14 +1542,12 @@ function drawOrganelle(
   }
 
   if (lit) {
-    ctx.strokeStyle = hexA(theme.sci["light"], 0.9);
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.lineDashOffset = -time * 12;
+    const ring = r * (LOOK[spec.id]?.extent ?? 1) * 1.07;
+    ctx.strokeStyle = hexA(theme.sci["light"], 0.24 + 0.2 * pulse(time, 0.4));
+    ctx.lineWidth = Math.max(1.2, r * 0.028);
     ctx.beginPath();
-    ctx.arc(px, py, r * 1.6, 0, Math.PI * 2);
+    ctx.arc(px, py, ring, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.setLineDash([]);
   }
   ctx.restore();
 }

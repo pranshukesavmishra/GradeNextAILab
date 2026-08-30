@@ -3,7 +3,7 @@ import { q } from "@engine/units";
 import { arrow, mixHex, roundRect } from "@ui/draw";
 import {
   arcGauge, badge, bevelRect, caption, clamp01, contactShadow, dashFlow, easeInOut,
-  glass, glow, gradientFill, hexA, innerGlow, isDarkTheme, labelLeader, lerp, material,
+  glass, glow, gradient, gradientFill, hexA, innerGlow, isDarkTheme, labelLeader, lerp, material,
   metal, noiseWash, particleField, plastic, pulse, rimLight, ribbon, sky, softShadow,
   sphere, spriteShadowEllipse, spring, vignette,
   type Particle,
@@ -4232,6 +4232,1157 @@ export const g6a1Murmuration: SimManifest<FlockState> = {
       hints: [
         "Alarm only passes from bird to neighbour, so the flock has to be joined up.",
         "Raise cohesion first: a scattered flock cannot carry a wave.",
+      ],
+    },
+  ],
+};
+
+/* ================================================================== *
+ * A1.5 — The Scale Ladder
+ *
+ * Eight real systems, from a mitochondrion at one micrometre to the
+ * Earth at 12 700 kilometres. Step the ladder and the same three
+ * questions get the same answer every time: parts, interactions,
+ * a job of its own. Thirteen powers of ten apart, and all of them
+ * are systems.
+ * ================================================================== */
+
+interface RungPart { name: string; x: number; y: number; note: string }
+
+interface Rung {
+  id: string;
+  name: string;
+  /** Characteristic size in metres. */
+  size: number;
+  sizeLabel: string;
+  partOf: string;
+  madeOf: string;
+  job: string;
+  interactions: number;
+  parts: RungPart[];
+  fact: string;
+}
+
+const RUNGS: Rung[] = [
+  {
+    id: "mitochondrion", name: "Mitochondrion", size: 1e-6, sizeLabel: "1 micrometre",
+    partOf: "a living cell", madeOf: "membranes, enzymes and its own loop of DNA",
+    job: "turns food and oxygen into the ATP the cell spends",
+    interactions: 5,
+    parts: [
+      { name: "outer membrane", x: 0, y: -66, note: "lets small molecules through" },
+      { name: "cristae", x: -44, y: -6, note: "folds that carry the enzymes" },
+      { name: "matrix", x: 52, y: 26, note: "where the reactions happen" },
+      { name: "its own DNA", x: -74, y: 24, note: "a loop, like a bacterium's" },
+    ],
+    fact: "One liver cell runs between 1 000 and 2 000 of these at once.",
+  },
+  {
+    id: "cell", name: "Plant cell", size: 5e-5, sizeLabel: "50 micrometres",
+    partOf: "a leaf", madeOf: "a wall, a nucleus, chloroplasts, a vacuole and mitochondria",
+    job: "keeps itself alive and builds sugar from light",
+    interactions: 7,
+    parts: [
+      { name: "cell wall", x: -112, y: -70, note: "stiff cellulose, holds the shape" },
+      { name: "vacuole", x: 26, y: 6, note: "water store that keeps the cell firm" },
+      { name: "nucleus", x: -66, y: 30, note: "holds the instructions" },
+      { name: "chloroplast", x: 70, y: -52, note: "makes sugar from light" },
+      { name: "mitochondrion", x: -20, y: 62, note: "the whole of the rung below" },
+    ],
+    fact: "A single leaf cell can hold 50 chloroplasts and hundreds of mitochondria.",
+  },
+  {
+    id: "leaf", name: "Leaf", size: 0.1, sizeLabel: "10 centimetres",
+    partOf: "a tree", madeOf: "veins, packed cells, a waxy skin and thousands of stomata",
+    job: "catches light and trades gases with the air",
+    interactions: 6,
+    parts: [
+      { name: "midrib", x: 0, y: 4, note: "the plumbing trunk line" },
+      { name: "veins", x: 54, y: -34, note: "water in, sugar out" },
+      { name: "blade", x: -66, y: -50, note: "the light-catching surface" },
+      { name: "stoma", x: 62, y: 62, note: "a pore that opens and closes" },
+    ],
+    fact: "A leaf carries roughly 100 to 300 stomata on every square millimetre of its underside.",
+  },
+  {
+    id: "tree", name: "Tree", size: 25, sizeLabel: "25 metres",
+    partOf: "a forest", madeOf: "roots, trunk, branches and about 200 000 leaves",
+    job: "lifts water from the soil and builds wood out of air",
+    interactions: 6,
+    parts: [
+      { name: "roots", x: -30, y: 92, note: "draw water and hold the soil" },
+      { name: "trunk", x: 6, y: 34, note: "carries water up, sugar down" },
+      { name: "branches", x: 60, y: -26, note: "spread the leaves into the light" },
+      { name: "canopy", x: -46, y: -74, note: "the tree's solar array" },
+    ],
+    fact: "A mature oak moves over 150 litres of water a day from soil to sky.",
+  },
+  {
+    id: "forest", name: "Forest", size: 3e3, sizeLabel: "3 kilometres",
+    partOf: "a river basin", madeOf: "thousands of trees, soil, fungi, animals and streams",
+    job: "cycles water and carbon and shelters everything living in it",
+    interactions: 8,
+    parts: [
+      { name: "canopy", x: -60, y: -58, note: "the top layer that takes the light" },
+      { name: "understorey", x: 62, y: -14, note: "shade-tolerant young trees" },
+      { name: "soil and fungi", x: -20, y: 74, note: "roots trade sugar for minerals" },
+      { name: "stream", x: 74, y: 62, note: "carries the water out" },
+    ],
+    fact: "Fungal threads link tree roots across a whole forest, trading sugar for phosphorus.",
+  },
+  {
+    id: "watershed", name: "River basin", size: 6e4, sizeLabel: "60 kilometres",
+    partOf: "a continent", madeOf: "ridges, tributaries, a main river, lakes and forests",
+    job: "collects every drop that falls on it and delivers it to the sea",
+    interactions: 7,
+    parts: [
+      { name: "ridge line", x: -84, y: -66, note: "the edge of the basin" },
+      { name: "tributaries", x: 30, y: -34, note: "small streams joining up" },
+      { name: "main river", x: 8, y: 52, note: "the one way out" },
+      { name: "lake", x: -62, y: 30, note: "stores water and slows it down" },
+    ],
+    fact: "Every point on land belongs to exactly one river basin. The boundary is a ridge, not a fence.",
+  },
+  {
+    id: "continent", name: "Continent", size: 5e6, sizeLabel: "5 000 kilometres",
+    partOf: "the planet Earth", madeOf: "mountain belts, plains, ice, rivers and coastlines",
+    job: "carries the weather, the rivers and everything that lives on land",
+    interactions: 6,
+    parts: [
+      { name: "mountain belt", x: -46, y: -40, note: "where plates collide" },
+      { name: "river systems", x: 44, y: 18, note: "basins draining to the coast" },
+      { name: "ice sheet", x: -6, y: -88, note: "fresh water locked up as solid" },
+      { name: "coastline", x: 82, y: 62, note: "the land and ocean boundary" },
+    ],
+    fact: "Continental crust is about 35 km thick, roughly five times thicker than ocean crust.",
+  },
+  {
+    id: "earth", name: "Earth", size: 1.27e7, sizeLabel: "12 700 kilometres",
+    partOf: "the Solar System", madeOf: "geosphere, hydrosphere, atmosphere and biosphere",
+    job: "cycles matter round and round while energy passes through",
+    interactions: 8,
+    parts: [
+      { name: "geosphere", x: -40, y: 52, note: "rock, from crust to core" },
+      { name: "hydrosphere", x: 62, y: 10, note: "ocean, ice and rivers" },
+      { name: "atmosphere", x: 4, y: -104, note: "a shell of gas 100 km deep" },
+      { name: "biosphere", x: -70, y: -34, note: "every living thing, in a thin skin" },
+    ],
+    fact: "Earth is 12 700 km across and its breathable air is only about 10 km deep.",
+  },
+];
+
+interface LadderState {
+  pos: number;
+  target: number;
+  focus: number;
+  seen: boolean[];
+}
+
+const ladderModel: SimModel<LadderState> = {
+  init(params) {
+    const seen = RUNGS.map(() => false);
+    const start = Math.round(params.rung as number);
+    seen[start] = true;
+    return { pos: start, target: start, focus: -1, seen };
+  },
+
+  applyParams(state, params, prev) {
+    if (params.rung !== prev.rung) {
+      const target = Math.round(params.rung as number);
+      const seen = state.seen.slice();
+      seen[target] = true;
+      return { ...state, target, seen, focus: -1 };
+    }
+    return state;
+  },
+
+  step(state, dt, params, _ctx, inputs) {
+    let focus = state.focus;
+    const here = RUNGS[Math.round(state.target)];
+    for (const input of inputs) {
+      if (input.type === "pointerdown") focus = (focus + 2) % (here.parts.length + 1) - 1;
+    }
+    if (dt <= 0) return focus === state.focus ? state : { ...state, focus };
+    const target = Math.round(params.rung as number);
+    const seen = state.seen[target] ? state.seen : state.seen.map((v, i) => v || i === target);
+    const pos = state.pos + (target - state.pos) * Math.min(1, dt * 3.2);
+    return { ...state, pos, target, seen, focus };
+  },
+
+  readouts(state) {
+    const here = RUNGS[Math.round(state.target)];
+    const below = RUNGS[Math.max(0, Math.round(state.target) - 1)];
+    const earth = RUNGS[RUNGS.length - 1];
+    return [
+      {
+        key: "size", label: "Size of this system", quantity: q(here.size, "length"), unit: "m",
+        semantic: "distance", graphable: true,
+      },
+      {
+        key: "exponent", label: "Powers of ten (log of the size in metres)",
+        quantity: q(Math.log10(here.size), "ratio"), semantic: "time", graphable: true,
+        bands: ["6-8", "9-12"],
+      },
+      {
+        key: "stepsToEarth", label: "Steps of ten up to Earth",
+        quantity: q(Math.log10(earth.size / here.size), "ratio"), semantic: "distance", graphable: true,
+      },
+      { key: "parts", label: "Named parts at this level", quantity: q(here.parts.length, "count"), semantic: "mass", graphable: false },
+      {
+        key: "timesBigger", label: "Times bigger than the level below",
+        quantity: q(here.size / below.size, "ratio"), semantic: "distance", graphable: false,
+        bands: ["6-8", "9-12"],
+      },
+      {
+        key: "visited", label: "Rungs visited", quantity: q(state.seen.filter(Boolean).length, "count"),
+        semantic: "energy-kinetic", graphable: false,
+      },
+    ];
+  },
+
+  facts(state) {
+    const here = RUNGS[Math.round(state.target)];
+    return {
+      rung: here.id,
+      name: here.name,
+      partOf: here.partOf,
+      size: here.size,
+      exponent: Math.log10(here.size),
+      parts: here.parts.length,
+      interactions: here.interactions,
+      visited: state.seen.filter(Boolean).length,
+      allSeen: state.seen.every(Boolean),
+      focus: state.focus,
+    };
+  },
+};
+
+/* ---------------- artwork for each rung ---------------- */
+
+function drawTreeShape(
+  ctx: CanvasRenderingContext2D, theme: ThemeColors, x: number, y: number, h: number,
+  t: number, sway: number, tint: number,
+) {
+  const wood = mixHex(theme.sci["decomposer"], theme.surface, tint);
+  const leaf = mixHex(theme.sci["producer"], theme.surface, tint);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.strokeStyle = wood;
+  ctx.lineWidth = Math.max(1.5, h * 0.07);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(h * 0.04, -h * 0.4, 0, -h * 0.66);
+  ctx.stroke();
+  const s = Math.sin(t * 0.7 + x * 0.05) * sway;
+  for (const [dx, dy, r] of [[-h * 0.22, -h * 0.7, h * 0.24], [h * 0.2, -h * 0.76, h * 0.21],
+    [0, -h * 0.9, h * 0.26]] as [number, number, number][]) {
+    sphere(ctx, dx + s, dy, r, leaf, { glow: 0.06 });
+  }
+  ctx.restore();
+}
+
+function drawRungArt(
+  ctx: CanvasRenderingContext2D, rung: Rung, theme: ThemeColors, t: number,
+  flows: boolean, focus: number,
+) {
+  const dark = isDarkTheme(theme);
+  const leafC = theme.sci["producer"];
+  const water = theme.sci["liquid"];
+  const rock = theme.sci["mass"];
+  const air = theme.sci["gas"];
+  const gold = theme.sci["current"];
+  const purple = theme.sci["momentum"];
+
+  switch (rung.id) {
+    case "mitochondrion": {
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 132, 68, 0, 0, Math.PI * 2);
+      ctx.fillStyle = hexA(mixHex(purple, theme.surface, 0.6), 0.9);
+      ctx.fill();
+      innerGlow(ctx, (c) => { c.beginPath(); c.ellipse(0, 0, 132, 68, 0, 0, Math.PI * 2); }, purple,
+        { inset: 16, alpha: 0.4 });
+      ctx.strokeStyle = mixHex(purple, "#000000", 0.15);
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.strokeStyle = hexA(mixHex(purple, "#ffffff", 0.5), 0.9);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 122, 58, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      // Cristae: the folds that carry the enzyme chains.
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 120, 56, 0, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.strokeStyle = hexA(mixHex(purple, "#ffffff", 0.35), 0.95);
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      for (let i = 0; i < 7; i++) {
+        const cxp = -100 + i * 33;
+        ctx.beginPath();
+        ctx.moveTo(cxp, -58);
+        ctx.quadraticCurveTo(cxp + 26, 0, cxp, 58);
+        ctx.stroke();
+      }
+      ctx.restore();
+      // The proton gradient, running along the folds.
+      if (flows) {
+        for (let i = 0; i < 7; i++) {
+          const cxp = -100 + i * 33;
+          dashFlow(ctx, [{ x: cxp, y: 50 }, { x: cxp + 22, y: 0 }, { x: cxp, y: -50 }], gold,
+            t * 30 + i * 8, { width: 2, dash: 3, gap: 8, alpha: 0.85, glow: 3 });
+        }
+        for (let i = 0; i < 5; i++) {
+          const f = ((t * 0.4 + i * 0.2) % 1);
+          ctx.save();
+          ctx.globalAlpha = 0.85 * (1 - f);
+          sphere(ctx, 90 + f * 70, -20 + i * 14 - f * 24, 4.5, gold, { glow: 0.9 });
+          ctx.restore();
+        }
+        caption(ctx, 168, -46, "ATP out", theme, { size: 11, color: gold, weight: 700 });
+      }
+      sphere(ctx, -74, 24, 9, mixHex(gold, "#ffffff", 0.2), { glow: 0.4 });
+      ctx.restore();
+      break;
+    }
+
+    case "cell": {
+      const w = 250, h = 172;
+      ctx.save();
+      material(ctx, -w / 2, -h / 2, w, h, mixHex(leafC, "#000000", 0.35), 16);
+      material(ctx, -w / 2 + 9, -h / 2 + 9, w - 18, h - 18, mixHex(leafC, theme.surface, dark ? 0.62 : 0.72), 12);
+      glass(ctx, -66, -50, 150, 104, 22, theme, { alpha: dark ? 0.16 : 0.3, tint: water });
+      caption(ctx, 10, 2, "vacuole", theme, { align: "center", size: 10.5, color: theme.inkSoft });
+      sphere(ctx, -66, 30, 26, mixHex(purple, "#000000", 0.05), { glow: 0.2 });
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = mixHex(purple, "#ffffff", 0.4);
+      for (let i = 0; i < 8; i++) {
+        const a = i * 0.9 + t * 0.2;
+        ctx.beginPath();
+        ctx.arc(-66 + Math.cos(a) * 13, 30 + Math.sin(a) * 13, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      // Chloroplasts stream round the inside of the wall.
+      for (let i = 0; i < 9; i++) {
+        const u = ((t * 0.05 + i / 9) % 1) * 4;
+        const seg = Math.floor(u), fr = u - seg;
+        const corners: [number, number][] = [[-100, -62], [100, -62], [100, 62], [-100, 62]];
+        const a = corners[seg % 4], b = corners[(seg + 1) % 4];
+        const px = lerp(a[0], b[0], fr), py = lerp(a[1], b[1], fr);
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(seg * Math.PI / 2 + 0.2);
+        ctx.fillStyle = mixHex(leafC, "#000000", 0.08);
+        ctx.beginPath(); ctx.ellipse(0, 0, 13, 8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = hexA(mixHex(leafC, "#ffffff", 0.45), 0.8);
+        ctx.beginPath(); ctx.ellipse(-3, -2.4, 6, 3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+      // Mitochondria: the rung below, sitting inside this one.
+      for (const [mx, my] of [[-20, 62], [64, 58], [-4, -66]] as [number, number][]) {
+        ctx.save();
+        ctx.translate(mx, my);
+        ctx.fillStyle = mixHex(purple, theme.surface, 0.3);
+        ctx.beginPath(); ctx.ellipse(0, 0, 17, 8.5, 0.2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = hexA(mixHex(purple, "#ffffff", 0.4), 0.9);
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        for (let i = 0; i < 4; i++) { ctx.moveTo(-9 + i * 6, -6); ctx.lineTo(-6 + i * 6, 6); }
+        ctx.stroke();
+        ctx.restore();
+      }
+      if (flows) {
+        dashFlow(ctx, [{ x: -104, y: 40 }, { x: -40, y: 20 }, { x: 40, y: -10 }], water, t * 22,
+          { width: 2, dash: 4, gap: 8, alpha: 0.7, glow: 3 });
+      }
+      ctx.restore();
+      break;
+    }
+
+    case "leaf": {
+      ctx.save();
+      // Blade.
+      ctx.beginPath();
+      ctx.moveTo(-140, 6);
+      ctx.quadraticCurveTo(-40, -104, 132, -30);
+      ctx.quadraticCurveTo(-10, 76, -140, 6);
+      ctx.closePath();
+      ctx.fillStyle = gradient(ctx, -140, -104, 280, 180, [
+        mixHex(leafC, "#ffffff", 0.32), leafC, mixHex(leafC, "#000000", 0.28),
+      ], 115);
+      ctx.fill();
+      rimLight(ctx, (c) => {
+        c.beginPath();
+        c.moveTo(-140, 6);
+        c.quadraticCurveTo(-40, -104, 132, -30);
+        c.quadraticCurveTo(-10, 76, -140, 6);
+        c.closePath();
+      }, mixHex(leafC, "#ffffff", 0.75), { width: 2, alpha: 0.8, bounds: { x: -140, y: -104, w: 280, h: 180 } });
+      // Midrib and veins.
+      ctx.strokeStyle = hexA(mixHex(leafC, "#ffffff", 0.55), 0.95);
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-134, 4);
+      ctx.quadraticCurveTo(-10, -12, 128, -30);
+      ctx.stroke();
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      for (let i = 1; i < 8; i++) {
+        const f = i / 8;
+        const bx = lerp(-134, 128, f), by = lerp(4, -30, f) - Math.sin(f * 3) * 6;
+        ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + 14, by - 34 * (1 - f * 0.5), bx + 26, by - 46 * (1 - f * 0.6));
+        ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + 10, by + 26 * (1 - f * 0.4), bx + 22, by + 36 * (1 - f * 0.5));
+      }
+      ctx.stroke();
+      if (flows) {
+        dashFlow(ctx, [{ x: -134, y: 4 }, { x: 0, y: -14 }, { x: 128, y: -30 }], water, t * 26,
+          { width: 2.4, dash: 4, gap: 7, glow: 3 });
+      }
+      // A magnified stoma, because the pore is what makes it a gas exchanger.
+      ctx.save();
+      ctx.translate(66, 66);
+      ctx.beginPath(); ctx.arc(0, 0, 34, 0, Math.PI * 2);
+      ctx.fillStyle = hexA(mixHex(leafC, theme.surface, 0.55), 0.96);
+      ctx.fill();
+      ctx.strokeStyle = hexA(theme.ink, 0.35);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      const gape = 5 + 3 * pulse(t, 0.3);
+      for (const sgn of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(0, sgn * (gape + 5), 20, 8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = mixHex(leafC, "#000000", 0.2);
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 13, gape, 0, 0, Math.PI * 2);
+      ctx.fillStyle = mixHex(theme.ink, theme.surface, 0.35);
+      ctx.fill();
+      if (flows) {
+        arrow(ctx, -22, -26, -6, -6, air, { width: 1.6, head: 7 });
+        arrow(ctx, 8, -6, 24, -28, theme.sci["gas"], { width: 1.6, head: 7 });
+      }
+      ctx.restore();
+      ctx.strokeStyle = hexA(theme.ink, 0.3);
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
+      ctx.beginPath();
+      ctx.moveTo(40, 40); ctx.lineTo(8, 8);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      break;
+    }
+
+    case "tree": {
+      ctx.save();
+      const groundY = 96;
+      gradientFill(ctx, -170, groundY, 340, 90, [
+        mixHex(theme.sci["decomposer"], "#ffffff", 0.1), mixHex(theme.sci["decomposer"], "#000000", 0.45),
+      ], 90);
+      ctx.strokeStyle = mixHex(theme.sci["decomposer"], "#ffffff", 0.25);
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = -Math.PI / 2 + (i - 2.5) * 0.42;
+        ctx.moveTo(0, groundY);
+        ctx.quadraticCurveTo(Math.cos(a) * 40, groundY + 26, Math.cos(a) * 78, groundY + 62);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = gradient(ctx, -20, -60, 40, 160,
+        [mixHex(theme.sci["decomposer"], "#ffffff", 0.28), mixHex(theme.sci["decomposer"], "#000000", 0.3)], 0);
+      ctx.lineWidth = 22;
+      ctx.beginPath();
+      ctx.moveTo(0, groundY);
+      ctx.quadraticCurveTo(8, 10, 2, -46);
+      ctx.stroke();
+      ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.moveTo(2, -20); ctx.quadraticCurveTo(-40, -46, -62, -74);
+      ctx.moveTo(2, -34); ctx.quadraticCurveTo(44, -52, 66, -30);
+      ctx.moveTo(2, -46); ctx.quadraticCurveTo(10, -76, 26, -92);
+      ctx.stroke();
+      const sway = Math.sin(t * 0.8) * 4;
+      for (const [bx, by, br] of [[-56, -84, 46], [56, -46, 38], [16, -104, 52], [-16, -60, 40]] as
+        [number, number, number][]) {
+        sphere(ctx, bx + sway * 0.5, by, br, mixHex(leafC, "#000000", 0.06), { glow: 0.1 });
+      }
+      if (flows) {
+        dashFlow(ctx, [{ x: -4, y: groundY }, { x: 4, y: 10 }, { x: 0, y: -50 }], water, t * 24,
+          { width: 3, dash: 4, gap: 8, glow: 4 });
+        dashFlow(ctx, [{ x: 10, y: -50 }, { x: 12, y: 10 }, { x: 6, y: groundY }], gold, t * 20,
+          { width: 2.4, dash: 3, gap: 9, glow: 4 });
+        for (let i = 0; i < 4; i++) {
+          const f = ((t * 0.3 + i * 0.25) % 1);
+          arrow(ctx, 120, -120 + f * 30 + i * 8, 96, -104 + f * 30 + i * 8, theme.sci["light"], { width: 1.5 });
+        }
+      }
+      ctx.restore();
+      break;
+    }
+
+    case "forest": {
+      ctx.save();
+      const horizonY = 30;
+      gradientFill(ctx, -190, -140, 380, 300, [
+        hexA(mixHex(air, theme.surface, 0.5), 0.7), hexA(mixHex(leafC, theme.surface, 0.65), 0.6),
+      ], 90);
+      // Three depth layers, each paler and smaller than the one in front.
+      for (let layer = 0; layer < 3; layer++) {
+        const tint = 0.55 - layer * 0.22;
+        const yy = horizonY - 30 + layer * 34;
+        const hh = 52 + layer * 30;
+        for (let i = 0; i < 9 - layer; i++) {
+          const x = -170 + i * (340 / (8 - layer)) + (layer % 2 ? 16 : 0);
+          drawTreeShape(ctx, theme, x, yy + hh * 0.5, hh, t, layer === 2 ? 3 : 1, tint);
+        }
+        if (layer < 2) {
+          ctx.save();
+          ctx.globalAlpha = 0.35;
+          gradientFill(ctx, -190, yy + hh * 0.3, 380, 40, [
+            hexA(theme.surface, 0), hexA(theme.surface, 0.9),
+          ], 90);
+          ctx.restore();
+        }
+      }
+      gradientFill(ctx, -190, 96, 380, 70, [
+        mixHex(theme.sci["decomposer"], "#000000", 0.15), mixHex(theme.sci["decomposer"], "#000000", 0.55),
+      ], 90);
+      // The stream that carries the water out of the forest.
+      const stream: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 10; i++) {
+        const f = i / 10;
+        stream.push({ x: lerp(-186, 186, f), y: 122 + Math.sin(f * 6 + 1) * 16 });
+      }
+      ribbon(ctx, stream, 20, hexA(mixHex(water, "#ffffff", 0.35), 0.95), hexA(water, 0.85),
+        { taper: 0.3, core: true });
+      if (flows) {
+        dashFlow(ctx, stream, mixHex(water, "#ffffff", 0.6), t * 34, { width: 2.4, dash: 6, gap: 10, glow: 3 });
+        for (let i = 0; i < 5; i++) {
+          const f = ((t * 0.16 + i * 0.2) % 1);
+          ctx.save();
+          ctx.globalAlpha = 0.3 * Math.sin(f * Math.PI);
+          ctx.fillStyle = air;
+          ctx.beginPath();
+          ctx.ellipse(-150 + f * 300, -80 - i * 8, 54, 12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+      break;
+    }
+
+    case "watershed": {
+      ctx.save();
+      gradientFill(ctx, -190, -140, 380, 300, [
+        mixHex(leafC, theme.surface, 0.55), mixHex(theme.sci["decomposer"], theme.surface, 0.4),
+      ], 110);
+      // Ridge lines that fence the basin in.
+      ctx.strokeStyle = hexA(mixHex(rock, "#000000", 0.2), 0.9);
+      ctx.lineWidth = 3;
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(-186, -30);
+      ctx.lineTo(-120, -92); ctx.lineTo(-52, -50); ctx.lineTo(10, -104);
+      ctx.lineTo(86, -46); ctx.lineTo(150, -96); ctx.lineTo(186, -34);
+      ctx.stroke();
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      for (let i = 0; i < 5; i++) {
+        ctx.strokeStyle = hexA(rock, 0.8);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-186, -18 + i * 16);
+        ctx.quadraticCurveTo(0, -60 + i * 18, 186, -22 + i * 16);
+        ctx.stroke();
+      }
+      ctx.restore();
+      // A branching river: tributaries joining into one way out.
+      const trunkPts: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 12; i++) {
+        const f = i / 12;
+        trunkPts.push({ x: lerp(-30, 120, f) + Math.sin(f * 5) * 18, y: lerp(-40, 132, f) });
+      }
+      ribbon(ctx, trunkPts, 16, hexA(mixHex(water, "#ffffff", 0.4), 0.95), hexA(water, 0.9),
+        { taper: 0.25, core: true });
+      for (const [sx, sy, ex, ey] of [[-150, -60, -32, -34], [-96, -20, -20, -12], [96, -34, 34, 22],
+        [150, -50, 62, 50], [-140, 40, 10, 62]] as [number, number, number, number][]) {
+        const br: { x: number; y: number }[] = [];
+        for (let i = 0; i <= 8; i++) {
+          const f = i / 8;
+          br.push({ x: lerp(sx, ex, f) + Math.sin(f * 4 + sx) * 7, y: lerp(sy, ey, f) });
+        }
+        ribbon(ctx, br, 8, hexA(mixHex(water, "#ffffff", 0.3), 0.9), hexA(water, 0.8), { taper: 0.5 });
+        if (flows) dashFlow(ctx, br, mixHex(water, "#ffffff", 0.7), t * 26, { width: 1.8, dash: 4, gap: 8 });
+      }
+      ctx.save();
+      ctx.fillStyle = hexA(mixHex(water, "#000000", 0.1), 0.95);
+      ctx.beginPath();
+      ctx.ellipse(-66, 30, 40, 20, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = hexA(mixHex(water, "#ffffff", 0.5), 0.7);
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.restore();
+      for (let i = 0; i < 7; i++) drawTreeShape(ctx, theme, -170 + i * 26, 96 + (i % 2) * 8, 28, t, 1, 0.25);
+      if (flows) {
+        dashFlow(ctx, trunkPts, mixHex(water, "#ffffff", 0.75), t * 30, { width: 3, dash: 6, gap: 9, glow: 4 });
+        for (let i = 0; i < 12; i++) {
+          const f = ((t * 0.5 + i * 0.13) % 1);
+          ctx.save();
+          ctx.globalAlpha = 0.5 * (1 - f);
+          ctx.strokeStyle = water;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          const rx = -170 + i * 30;
+          ctx.moveTo(rx, -130 + f * 40);
+          ctx.lineTo(rx - 3, -118 + f * 40);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+      break;
+    }
+
+    case "continent": {
+      ctx.save();
+      gradientFill(ctx, -190, -140, 380, 300, [hexA(water, 0.85), hexA(mixHex(water, "#000000", 0.35), 0.9)], 110);
+      ctx.beginPath();
+      ctx.moveTo(-150, -70);
+      ctx.bezierCurveTo(-60, -128, 70, -112, 128, -56);
+      ctx.bezierCurveTo(168, -8, 116, 76, 34, 96);
+      ctx.bezierCurveTo(-42, 116, -142, 60, -150, -70);
+      ctx.closePath();
+      ctx.fillStyle = gradient(ctx, -160, -130, 340, 240, [
+        mixHex(leafC, "#ffffff", 0.2), mixHex(theme.sci["decomposer"], theme.surface, 0.25),
+        mixHex(leafC, "#000000", 0.15),
+      ], 115);
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      // Mountain belt.
+      ctx.strokeStyle = hexA(mixHex(rock, "#ffffff", 0.25), 0.95);
+      ctx.lineWidth = 3;
+      ctx.lineJoin = "round";
+      for (let row = 0; row < 3; row++) {
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const mx = -110 + i * 20;
+          const my = -46 + row * 15 + (i % 2) * 6;
+          ctx.moveTo(mx - 9, my + 7); ctx.lineTo(mx, my - 8); ctx.lineTo(mx + 9, my + 7);
+        }
+        ctx.stroke();
+      }
+      // Ice at the top, rivers running to the sea.
+      ctx.fillStyle = hexA(mixHex(theme.sci["cold"], "#ffffff", 0.7), 0.85);
+      ctx.beginPath();
+      ctx.ellipse(-6, -104, 92, 30, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = hexA(water, 0.9);
+      ctx.lineWidth = 2.4;
+      for (const [sx, sy] of [[-70, -20], [10, -14], [72, -30]] as [number, number][]) {
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.quadraticCurveTo(sx + 20, sy + 50, sx + 6, sy + 108);
+        ctx.stroke();
+      }
+      if (flows) {
+        for (let i = 0; i < 4; i++) {
+          const f = ((t * 0.08 + i * 0.25) % 1);
+          ctx.save();
+          ctx.globalAlpha = 0.28;
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.ellipse(-190 + f * 380, -80 + i * 46, 60, 15, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+      ctx.strokeStyle = hexA(mixHex(theme.ink, theme.surface, 0.4), 0.6);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+      break;
+    }
+
+    case "earth":
+    default: {
+      const R = 118;
+      ctx.save();
+      glow(ctx, 0, 0, R * 1.7, mixHex(air, "#ffffff", 0.3), 0.34);
+      sphere(ctx, 0, 0, R, mixHex(water, "#000000", 0.12), { glow: 0.14 });
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, 0, R - 2, 0, Math.PI * 2); ctx.clip();
+      // Land masses, drifting slowly so the planet reads as turning.
+      const spin = t * 0.08;
+      for (let i = 0; i < 5; i++) {
+        const cxp = ((i * 96 + spin * 160) % (R * 3)) - R * 1.5;
+        const cyp = -70 + i * 34;
+        ctx.save();
+        ctx.translate(cxp, cyp);
+        ctx.fillStyle = mixHex(leafC, "#000000", 0.06 + (i % 3) * 0.05);
+        ctx.beginPath();
+        ctx.moveTo(-44, 0);
+        ctx.bezierCurveTo(-24, -30, 26, -34, 46, -6);
+        ctx.bezierCurveTo(56, 16, 10, 36, -18, 26);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.fillStyle = hexA(mixHex(theme.sci["cold"], "#ffffff", 0.75), 0.85);
+      ctx.beginPath(); ctx.ellipse(0, -R + 12, R * 0.7, 20, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, R - 12, R * 0.6, 18, 0, 0, Math.PI * 2); ctx.fill();
+      // Cloud bands.
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = "#ffffff";
+      for (let i = 0; i < 6; i++) {
+        const cy2 = -88 + i * 34;
+        const off = ((t * 12 + i * 60) % (R * 2.6)) - R * 1.3;
+        ctx.beginPath();
+        ctx.ellipse(off, cy2, 46, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      // Night side.
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = gradient(ctx, -R, -R, R * 2, R * 2, [
+        hexA("#000000", 0), hexA("#000000", 0.15), hexA("#000000", 0.85),
+      ], 0);
+      ctx.fillRect(-R, -R, R * 2, R * 2);
+      ctx.restore();
+      ctx.restore();
+      // The atmosphere, drawn to scale: a thin shell, not a halo.
+      ctx.strokeStyle = hexA(mixHex(air, "#ffffff", 0.45), 0.85);
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(0, 0, R + 5, 0, Math.PI * 2); ctx.stroke();
+      if (flows) {
+        for (let i = 0; i < 3; i++) {
+          const a0 = t * 0.3 + i * 2.1;
+          dashFlow(ctx, [
+            { x: Math.cos(a0) * (R + 24), y: Math.sin(a0) * (R + 24) },
+            { x: Math.cos(a0 + 0.8) * (R + 30), y: Math.sin(a0 + 0.8) * (R + 30) },
+            { x: Math.cos(a0 + 1.6) * (R + 24), y: Math.sin(a0 + 1.6) * (R + 24) },
+          ], air, t * 20, { width: 2, dash: 4, gap: 8, alpha: 0.7 });
+        }
+        for (let i = 0; i < 5; i++) {
+          const yy = -80 + i * 40;
+          arrow(ctx, -R - 84, yy, -R - 26, yy, theme.sci["light"], { width: 1.8 });
+        }
+        caption(ctx, -R - 60, -110, "sunlight in", theme, { align: "center", size: 10.5, color: theme.sci["light"], weight: 700 });
+      }
+      ctx.restore();
+      break;
+    }
+  }
+
+  // The part the student has clicked through to.
+  if (focus >= 0 && focus < rung.parts.length) {
+    const p = rung.parts[focus];
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.accent, 0.5 + 0.4 * pulse(t, 0.8));
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([5, 5]);
+    ctx.lineDashOffset = -t * 22;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 30, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function renderLadder(rc: RenderContext<LadderState>) {
+  const { ctx, state: s, params, theme, width: W, height: H, band, overlays, time: t } = rc;
+  const dark = isDarkTheme(theme);
+  const flows = params.flows as boolean;
+  const idx = Math.round(s.target);
+  const here = RUNGS[idx];
+  const lo = Math.max(0, Math.min(RUNGS.length - 1, Math.floor(s.pos)));
+  const hi = Math.max(0, Math.min(RUNGS.length - 1, lo + 1));
+  const f = clamp01(s.pos - lo);
+
+  /* ---- the observatory ---- */
+  sky(ctx, W, H, theme, idx >= 6 ? "space" : idx <= 1 ? "microscope" : "indoor");
+  if (idx >= 6) {
+    ctx.save();
+    for (let i = 0; i < 120; i++) {
+      const sxp = ((i * 271) % 1000) / 1000 * W;
+      const syp = ((i * 613) % 1000) / 1000 * H;
+      ctx.globalAlpha = 0.2 + 0.5 * ((i % 7) / 7) * (0.5 + 0.5 * pulse(t + i, 0.1));
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath(); ctx.arc(sxp, syp, 0.5 + (i % 3) * 0.35, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+  gradientFill(ctx, 0, 0, W, H, [
+    hexA(mixHex(theme.surfaceAlt, theme.ink, dark ? 0.1 : 0.04), 0.5),
+    hexA(theme.surface, 0),
+    hexA(mixHex(theme.surfaceAlt, theme.ink, dark ? 0.18 : 0.08), 0.6),
+  ], 90);
+  noiseWash(ctx, 0, 0, W, H, { alpha: 0.04, seed: 77, count: 260, color: dark ? "#ffffff" : "#000000" });
+
+  /* ---- the logarithmic rule down the left edge ---- */
+  const rulX = 54;
+  const rulTop = 74, rulBot = H - 76;
+  const EXP_MIN = -6.4, EXP_MAX = 7.4;
+  const expToY = (e: number) => lerp(rulBot, rulTop, (e - EXP_MIN) / (EXP_MAX - EXP_MIN));
+  metal(ctx, rulX - 11, rulTop - 18, 22, rulBot - rulTop + 36, theme.sci["mass"], { radius: 8, angle: 0 });
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.ink, 0.5);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let e = -6; e <= 7; e++) {
+    const y = expToY(e);
+    ctx.moveTo(rulX - 9, y); ctx.lineTo(rulX + 9, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+  const tickLabels: [number, string][] = [
+    [-6, "1 µm"], [-3, "1 mm"], [0, "1 m"], [3, "1 km"], [6, "1000 km"],
+  ];
+  for (const [e, txt] of tickLabels) {
+    caption(ctx, rulX + 16, expToY(e), txt, theme, { size: 10, color: theme.inkSoft, weight: 600 });
+  }
+  for (let i = 0; i < RUNGS.length; i++) {
+    const y = expToY(Math.log10(RUNGS[i].size));
+    const on = i === idx;
+    sphere(ctx, rulX, y, on ? 7 : 4, on ? theme.accent : (s.seen[i] ? theme.sci["energy-kinetic"] : theme.inkSoft));
+  }
+  const sliderY = expToY(lerp(Math.log10(RUNGS[lo].size), Math.log10(RUNGS[hi].size), f));
+  softShadow(ctx, () => {
+    metal(ctx, rulX - 20, sliderY - 11, 40, 22, theme.sci["current"], { radius: 5, angle: 100 });
+  }, { blur: 10, dy: 3, alpha: 0.3 });
+  caption(ctx, rulX, sliderY, num(Math.log10(here.size), 1), theme, {
+    align: "center", size: 10.5, color: theme.ink, weight: 800,
+  });
+  caption(ctx, rulX, rulTop - 34, "metres", theme, { align: "center", size: 10, color: theme.inkSoft });
+  caption(ctx, rulX, rulTop - 48, "powers of ten", theme, { align: "center", size: 10.5, color: theme.ink, weight: 700 });
+
+  /* ---- the stage: the current rung, cross-fading with its neighbour ---- */
+  const stageX = (rulX + 40 + (W - 260)) / 2;
+  const stageY = H * 0.48;
+  const base = Math.min((W - rulX - 300) / 340, (H - 190) / 300);
+  const k = Math.max(0.42, base);
+  const pairs: [number, number, number][] = lo === hi
+    ? [[lo, 1, 1]]
+    : [[lo, 1 - f, lerp(1, 0.32, f)], [hi, f, lerp(2.6, 1, f)]];
+  for (const [ri, alpha, scale] of pairs) {
+    if (alpha <= 0.01) continue;
+    ctx.save();
+    ctx.globalAlpha = clamp01(alpha);
+    ctx.translate(stageX, stageY);
+    ctx.scale(k * scale, k * scale);
+    drawRungArt(ctx, RUNGS[ri], theme, t, flows, alpha > 0.55 ? s.focus : -1);
+    ctx.restore();
+  }
+
+  /* ---- labels, parked well clear of the artwork ---- */
+  if (overlays.labels !== false && f < 0.25) {
+    let li = 0, ri = 0;
+    for (let i = 0; i < here.parts.length; i++) {
+      const p = here.parts[i];
+      const px = stageX + p.x * k, py = stageY + p.y * k;
+      const toLeft = px < stageX;
+      const ty = 132 + (toLeft ? li : ri) * 40;
+      if (ty > H - 150) continue;
+      labelLeader(ctx, px, py, toLeft ? rulX + 74 : W - 264, ty, p.name, theme, {
+        color: i === s.focus ? theme.accent : theme.inkSoft,
+        size: 11, align: toLeft ? "left" : "right",
+        sub: band === "3-5" ? undefined : p.note,
+      });
+      if (toLeft) li++; else ri++;
+    }
+  }
+
+  /* ---- the nesting statement ---- */
+  const cardW = Math.min(238, W * 0.27);
+  const cardX = W - cardW - 16;
+  panelCard(ctx, cardX, 16, cardW, 96, theme, "THIS RUNG");
+  caption(ctx, cardX + 14, 46, here.name, theme, { size: 17, color: theme.ink, weight: 800 });
+  caption(ctx, cardX + 14, 68, here.sizeLabel, theme, { size: 12, color: theme.accent, weight: 700 });
+  caption(ctx, cardX + 14, 88, `about ${here.size.toExponential(1)} m across`, theme,
+    { size: 10.5, color: theme.inkSoft });
+
+  panelCard(ctx, cardX, 124, cardW, 92, theme, "NESTED BOTH WAYS");
+  caption(ctx, cardX + 14, 152, "it is a part of", theme, { size: 10, color: theme.inkSoft });
+  wrapLeft(ctx, here.partOf, cardX + 14, 168, cardW - 28, theme, 11.5, theme.ink);
+  caption(ctx, cardX + 14, 190, "and it is made of", theme, { size: 10, color: theme.inkSoft });
+  wrapLeft(ctx, here.madeOf, cardX + 14, 206, cardW - 28, theme, 11, theme.inkSoft);
+
+  if (overlays.tests !== false) {
+    systemTestCard(ctx, cardX, 228, cardW, theme, here.parts.length, here.interactions, here.job, t);
+  }
+
+  /* ---- the job, and the fact worth keeping ---- */
+  panelCard(ctx, cardX, 330, cardW, 88, theme, "ITS JOB");
+  wrapLeft(ctx, here.job, cardX + 14, 358, cardW - 28, theme, 11.5, theme.ink);
+
+  /* ---- how far this rung is from the two ends ---- */
+  const earth = RUNGS[RUNGS.length - 1];
+  const cellRung = RUNGS[1];
+  const stepsUp = Math.log10(earth.size / here.size);
+  const stepsDown = Math.log10(here.size / cellRung.size);
+  badge(ctx, stageX, H - 96, `${num(stepsUp, 1)}`, theme, {
+    align: "center", color: theme.sci["distance"], sub: "steps of ten up to Earth",
+  });
+  if (band !== "3-5") {
+    badge(ctx, stageX - 168, H - 96, `${num(stepsDown, 1)}`, theme, {
+      align: "center", color: theme.sci["time"], sub: "steps up from a cell",
+    });
+    const below = RUNGS[Math.max(0, idx - 1)];
+    badge(ctx, stageX + 168, H - 96, idx === 0 ? "-" : `x${num(here.size / below.size, 0)}`, theme, {
+      align: "center", color: theme.sci["mass"], sub: "bigger than the rung below",
+    });
+  }
+
+  /* ---- the scale bar, and the fact ---- */
+  wrapCaption(ctx, here.fact, stageX, H - 34, Math.min(W - rulX - 300, 520), theme, 11.5);
+  caption(ctx, stageX, 44, "Every rung is a system. Only the size changes.", theme, {
+    align: "center", size: 14, color: theme.ink, weight: 800,
+  });
+  ctx.save();
+  ctx.globalAlpha = 0.4 + 0.35 * pulse(t, 0.45);
+  caption(ctx, stageX, 66, "click the stage to point at one part", theme, {
+    align: "center", size: 10.5, color: theme.accent, weight: 700,
+  });
+  ctx.restore();
+
+  vignette(ctx, W, H, 0.2);
+}
+
+/** Left-aligned wrapped text, for the narrow cards in this sim. */
+function wrapLeft(
+  ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number,
+  theme: ThemeColors, size: number, color: string,
+) {
+  ctx.save();
+  ctx.font = `600 ${size}px "Bricolage Grotesque", system-ui, sans-serif`;
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let line = "";
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test;
+  }
+  if (line) lines.push(line);
+  ctx.restore();
+  for (let i = 0; i < Math.min(lines.length, 3); i++) {
+    caption(ctx, x, y + i * (size + 3), lines[i], theme, { size, color, weight: 600 });
+  }
+}
+
+export const g6a1ScaleLadder: SimManifest<LadderState> = {
+  id: "g6a1-scale-ladder",
+  title: "The Scale Ladder",
+  tagline: "Climb from a mitochondrion to the whole planet and ask the same three questions at every rung.",
+  subject: "engineering",
+  bands: ["3-5", "6-8", "9-12"],
+  grades: [5, 6, 7, 8],
+  standards: { ngss: ["MS-LS1-1", "MS-LS1-3", "MS-ESS2-1"], ccssMath: ["8.EE.A.3"] },
+  learningGoals: [
+    "Recognise the same system pattern at scales thirteen powers of ten apart.",
+    "State what a given system is a part of and what it is made of.",
+    "Compare sizes using powers of ten rather than raw numbers.",
+  ],
+  misconceptions: [
+    "Only small things like cells are systems",
+    "Only huge things like the Earth are systems",
+    "Systems at different sizes work by different rules",
+    "A thing stops being a system once you find what it is made of",
+  ],
+  interactionHint: "Move the ladder control, then click the stage to point at one part at a time.",
+  params: {
+    rung: {
+      type: "number", label: "Rung of the ladder", kind: "count",
+      min: 0, max: 7, step: 1, default: 2,
+      marks: [
+        { value: 0, label: "mitochondrion" },
+        { value: 2, label: "leaf" },
+        { value: 4, label: "forest" },
+        { value: 7, label: "Earth" },
+      ],
+      help: "Each step is a bigger system that the one before it belongs to.",
+    },
+    flows: {
+      type: "boolean", label: "Show what moves between the parts", default: true,
+      help: "Matter and energy move at every scale, from protons to whole ocean currents.",
+    },
+  },
+  overlays: [
+    { key: "labels", label: "Part labels", default: true },
+    { key: "tests", label: "The three questions", default: true, bands: ["3-5", "6-8", "9-12"] },
+  ],
+  model: ladderModel,
+  render: renderLadder,
+  labs: [
+    {
+      id: "same-questions",
+      title: "The same three questions",
+      question: "Does the word system mean the same thing at every size?",
+      bands: ["3-5", "6-8", "9-12"],
+      minutes: 20,
+      setup: { rung: 0, flows: true },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Predict before you climb",
+          instruction: "You will look at a mitochondrion, a forest and the Earth.",
+          predict: {
+            prompt: "Will all three pass the three system tests - parts, interactions, a job of its own?",
+            options: [
+              "Only the mitochondrion, because it is built to do something",
+              "Only the Earth, because it is the biggest",
+              "All three, because the tests do not care about size",
+            ],
+            correct: 2,
+            reveal:
+              "Systems thinking is scale free. The same three questions get a yes at one micrometre and at "
+              + "twelve thousand seven hundred kilometres.",
+          },
+        },
+        {
+          id: "small",
+          phase: "measure",
+          title: "Start at the bottom",
+          instruction: "Sit on rung 0 and record the size and the number of parts.",
+          requireData: 1,
+          check: { describe: "On the mitochondrion rung", test: (v) => v.facts.rung === "mitochondrion" },
+        },
+        {
+          id: "middle",
+          phase: "measure",
+          title: "Climb to the forest",
+          instruction: "Move to rung 4 and record again.",
+          requireData: 2,
+          check: { describe: "On the forest rung", test: (v) => v.facts.rung === "forest" },
+        },
+        {
+          id: "top",
+          phase: "measure",
+          title: "All the way to the planet",
+          instruction: "Move to rung 7 and record a third row.",
+          requireData: 3,
+          check: { describe: "On the Earth rung", test: (v) => v.facts.rung === "earth" },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "Write the pattern",
+          instruction: "Compare the three rows in your table.",
+          write: {
+            prompt: "What stayed the same across all three rungs, and what changed?",
+            placeholder: "At every rung there were ... The only thing that really changed was ...",
+          },
+        },
+      ],
+    },
+    {
+      id: "powers-of-ten",
+      title: "How far is a cell from a planet?",
+      question: "How many steps of ten separate a plant cell from the Earth?",
+      bands: ["6-8", "9-12"],
+      minutes: 25,
+      setup: { rung: 1, flows: false },
+      steps: [
+        {
+          id: "predict",
+          phase: "hypothesis",
+          title: "Guess the gap",
+          instruction: "A plant cell is 50 micrometres across. Earth is 12 700 kilometres across.",
+          predict: {
+            prompt: "How many times of ten do you multiply a cell by to reach the Earth?",
+            options: ["About 4", "About 8", "About 11", "About 20"],
+            correct: 2,
+            reveal:
+              "Fifty micrometres is 5 times ten to the minus five metres, and Earth is 1.27 times ten to the "
+              + "seventh. That is a gap of about 11.4 powers of ten.",
+          },
+        },
+        {
+          id: "read-cell",
+          phase: "measure",
+          title: "Read the small end",
+          instruction: "On rung 1, record the size and the power of ten.",
+          requireData: 1,
+          check: { describe: "On the plant cell rung", test: (v) => v.facts.rung === "cell" },
+        },
+        {
+          id: "climb",
+          phase: "measure",
+          title: "Climb one rung at a time",
+          instruction: "Record a row at every rung from 2 up to 7, watching the slider on the rule.",
+          requireData: 7,
+          hints: [
+            "The rule is logarithmic, so equal steps on it mean equal multiplications.",
+            "Notice how uneven the real rungs are: cell to leaf is a bigger jump than tree to forest.",
+          ],
+        },
+        {
+          id: "analyze",
+          phase: "analyze",
+          title: "Do the subtraction",
+          instruction: "Subtract the power of ten at the cell from the one at the Earth.",
+          write: {
+            prompt: "Write the two exponents and their difference, and say what that difference means.",
+            placeholder: "The cell is 10 to the ... and Earth is 10 to the ..., so the gap is ...",
+          },
+        },
+        {
+          id: "conclude",
+          phase: "conclude",
+          title: "Explain the ladder",
+          instruction: "The ladder has only eight rungs but spans thirteen powers of ten.",
+          write: {
+            prompt: "Why is a logarithmic scale the only sensible way to draw this ladder?",
+          },
+        },
+      ],
+    },
+  ],
+  challenges: [
+    {
+      id: "climb-it-all",
+      title: "Climb the whole ladder",
+      brief: "Visit every rung from the mitochondrion to the Earth.",
+      bands: ["3-5", "6-8", "9-12"],
+      setup: { rung: 0, flows: true },
+      goal: { describe: "Four or more rungs visited", test: (v) => (v.facts.visited as number) >= 4 },
+      stars: {
+        two: { describe: "Six rungs visited", test: (v) => (v.facts.visited as number) >= 6 },
+        three: { describe: "Every rung visited", test: (v) => v.facts.allSeen === true },
+      },
+      hints: ["Take them in order. Each rung is a part of the one above it."],
+    },
+    {
+      id: "find-the-scale",
+      title: "Find the sixty kilometre system",
+      brief: "Stop on the rung whose system is about ten to the power of five metres across.",
+      bands: ["6-8", "9-12"],
+      setup: { rung: 0, flows: true },
+      goal: {
+        describe: "On a rung between 10 kilometres and 1000 kilometres across",
+        test: (v) => Math.abs((v.facts.exponent as number) - 4.8) < 0.6,
+      },
+      stars: {
+        two: {
+          describe: "On that rung with every smaller rung already visited",
+          test: (v) => Math.abs((v.facts.exponent as number) - 4.8) < 0.6 && (v.facts.visited as number) >= 6,
+        },
+      },
+      hints: [
+        "Ten to the fifth metres is a hundred thousand metres, which is a hundred kilometres.",
+        "Read the number on the brass slider: it is the power of ten you are standing on.",
       ],
     },
   ],
