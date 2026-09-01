@@ -25,6 +25,26 @@ import { arcGauge, glow, hexA, isDarkTheme, vignette } from "@ui/scene";
 const PAD = 28;
 
 /**
+ * The living palette.
+ *
+ * Semantic science tokens carry meaning for physics quantities and are
+ * deliberately muted so they never shout over a diagram. Biology needs the
+ * opposite: a cell should look alive and inviting, in the brand's violet
+ * family, with enough saturation to hold a student's eye. These are the
+ * colours specimens are drawn in.
+ */
+const BIO = {
+  cytoplasm: "#8e5bc4",
+  nucleus: "#5c2a86",
+  mito: "#e0708a",
+  er: "#7b6be0",
+  golgi: "#4aa3d8",
+  chloro: "#3fae62",
+  vesicle: "#43b6e8",
+  microbe: "#9a4fc9",
+} as const;
+
+/**
  * Last rendered canvas size per simulation.
  *
  * Pointer input arrives in CSS pixels, but hit tests are far clearer written
@@ -153,47 +173,45 @@ function drawSpecimen(
 
   switch (a.art) {
     case "cell": {
-      membrane(ctx, x, y, size, theme.sci["liquid"] ?? accent, { t, wobble: 0.02, scatter: 0.7 });
-      nucleus(ctx, x - size * 0.08, y - size * 0.05, size * 0.34, theme.sci["field"] ?? accent, t);
+      membrane(ctx, x, y, size, BIO.cytoplasm, { t, wobble: 0.02, scatter: 0.95 });
+      nucleus(ctx, x - size * 0.08, y - size * 0.05, size * 0.34, BIO.nucleus, t);
       for (let i = 0; i < 3; i++) {
         const ang = t * 0.12 + i * 2.1;
         mitochondrion(
           ctx, x + Math.cos(ang) * size * 0.55, y + Math.sin(ang) * size * 0.5,
-          size * 0.3, size * 0.14, ang, theme.sci["energy-thermal"] ?? "#d98b8b",
+          size * 0.4, size * 0.18, ang, BIO.mito,
         );
       }
       reticulum(ctx, x + size * 0.34, y + size * 0.3, size * 0.5, size * 0.26,
-        theme.sci["momentum"] ?? accent, { studded: true, angle: -0.25 });
-      golgi(ctx, x - size * 0.46, y + size * 0.36, size * 0.34, size * 0.22,
-        theme.sci["base"] ?? accent, 0.15);
+        BIO.er, { studded: true, angle: -0.25 });
+      golgi(ctx, x - size * 0.46, y + size * 0.36, size * 0.34, size * 0.22, BIO.golgi, 0.15);
       if (a.plant) {
         for (let i = 0; i < 4; i++) {
           const ang = -t * 0.1 + i * 1.6;
           chloroplast(ctx, x + Math.cos(ang) * size * 0.62, y + Math.sin(ang) * size * 0.58,
-            size * 0.26, size * 0.15, ang, theme.sci["producer"] ?? "#3f8f4a");
+            size * 0.26, size * 0.15, ang, BIO.chloro);
         }
       }
       for (let i = 0; i < 9; i++) {
         const ang = i * 0.79 + t * 0.05;
         const rr = size * (0.3 + 0.55 * ((i * 7) % 10) / 10);
-        organelleDot(ctx, x + Math.cos(ang) * rr, y + Math.sin(ang) * rr,
-          size * 0.035, theme.sci["charge-neg"] ?? accent);
+        organelleDot(ctx, x + Math.cos(ang) * rr, y + Math.sin(ang) * rr, size * 0.045, BIO.vesicle);
       }
       break;
     }
     case "organelle": {
-      const c = theme.sci["energy-thermal"] ?? accent;
-      if (a.which === "nucleus") nucleus(ctx, x, y, size, theme.sci["field"] ?? accent, t);
+      const c = BIO.mito;
+      if (a.which === "nucleus") nucleus(ctx, x, y, size, BIO.nucleus, t);
       else if (a.which === "mitochondrion") mitochondrion(ctx, x, y, size * 1.9, size * 0.9, 0.18, c);
-      else if (a.which === "reticulum") reticulum(ctx, x, y, size * 2, size * 1.1, theme.sci["momentum"] ?? accent, { studded: true });
-      else if (a.which === "chloroplast") chloroplast(ctx, x, y, size * 1.9, size, 0.16, theme.sci["producer"] ?? "#3f8f4a");
-      else if (a.which === "golgi") golgi(ctx, x, y, size * 1.7, size * 1.1, theme.sci["base"] ?? accent);
-      else organelleDot(ctx, x, y, size * 0.5, theme.sci["charge-neg"] ?? accent);
+      else if (a.which === "reticulum") reticulum(ctx, x, y, size * 2, size * 1.1, BIO.er, { studded: true });
+      else if (a.which === "chloroplast") chloroplast(ctx, x, y, size * 1.9, size, 0.16, BIO.chloro);
+      else if (a.which === "golgi") golgi(ctx, x, y, size * 1.7, size * 1.1, BIO.golgi);
+      else organelleDot(ctx, x, y, size * 0.5, BIO.vesicle);
       break;
     }
     case "microbe":
-      if (a.which === "virus") virus(ctx, x, y, size * 0.7, theme.sci["field"] ?? accent, t);
-      else bacterium(ctx, x, y, size * 1.7, size * 0.62, 0.1, theme.sci["decomposer"] ?? accent, t);
+      if (a.which === "virus") virus(ctx, x, y, size * 0.7, BIO.microbe, t);
+      else bacterium(ctx, x, y, size * 1.7, size * 0.62, 0.1, BIO.microbe, t);
       break;
     case "glassware": {
       const liq = a.level !== undefined
@@ -281,7 +299,7 @@ function renderSort(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
   specimenJar(ctx, width / 2 - jw / 2, PAD * 1.5, jw, jh, theme,
     `SPECIMEN ${(state.index % specimens.length) + 1}`,
     (cx, cy, cw, ch) =>
-      drawSpecimen(rc, cur, cx + cw / 2, cy + ch * 0.5, Math.min(cw, ch) * 0.42));
+      drawSpecimen(rc, cur, cx + cw / 2, cy + ch * 0.5, Math.min(cw, ch) * 0.5));
 
   if (overlays.labels) {
     callout(ctx, width / 2 + jw * 0.34, PAD * 1.5 + jh * 0.42,

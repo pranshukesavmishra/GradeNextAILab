@@ -32,14 +32,14 @@ export function membrane(
   x: number, y: number, r: number, tint: string,
   opts: { rimStrength?: number; scatter?: number; wobble?: number; t?: number } = {},
 ) {
-  const scatter = opts.scatter ?? 0.5;
+  const scatter = opts.scatter ?? 0.85;
   const t = opts.t ?? 0;
   const wob = opts.wobble ?? 0;
 
   ctx.save();
   // Outer scatter halo: light bleeding through the cell's edge.
   const halo = ctx.createRadialGradient(x, y, r * 0.72, x, y, r * 1.16);
-  halo.addColorStop(0, hexA(tint, 0.34 * scatter));
+  halo.addColorStop(0, hexA(tint, 0.46 * scatter));
   halo.addColorStop(1, hexA(tint, 0));
   ctx.fillStyle = halo;
   ctx.beginPath();
@@ -52,10 +52,10 @@ export function membrane(
   const body = ctx.createRadialGradient(
     x + KEY.x * r * 0.5, y + KEY.y * r * 0.5, r * 0.05, x, y, r,
   );
-  body.addColorStop(0, hexA(tint, 0.16));
-  body.addColorStop(0.55, hexA(tint, 0.28));
-  body.addColorStop(0.88, hexA(tint, 0.5));
-  body.addColorStop(1, hexA(tint, 0.66));
+  body.addColorStop(0, hexA(mix(tint, "#ffffff", 0.55), 0.5));
+  body.addColorStop(0.5, hexA(tint, 0.42));
+  body.addColorStop(0.86, hexA(tint, 0.66));
+  body.addColorStop(1, hexA(mix(tint, "#000000", 0.15), 0.82));
   ctx.fillStyle = body;
   ctx.fill();
 
@@ -126,9 +126,9 @@ export function nucleus(
   const g = ctx.createRadialGradient(
     x + KEY.x * r * 0.45, y + KEY.y * r * 0.45, r * 0.06, x, y, r,
   );
-  g.addColorStop(0, mix(tint, "#ffffff", 0.5));
-  g.addColorStop(0.6, tint);
-  g.addColorStop(1, mix(tint, "#000000", 0.42));
+  g.addColorStop(0, mix(tint, "#ffffff", 0.62));
+  g.addColorStop(0.55, mix(tint, "#ffffff", 0.18));
+  g.addColorStop(1, mix(tint, "#000000", 0.2));
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -138,8 +138,8 @@ export function nucleus(
   // does not swim between frames.
   ctx.save();
   ctx.clip();
-  ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = mix(tint, "#000000", 0.4);
+  ctx.globalAlpha = 0.42;
+  ctx.strokeStyle = mix(tint, "#ffffff", 0.5);
   ctx.lineWidth = Math.max(0.8, r * 0.05);
   ctx.lineCap = "round";
   for (let i = 0; i < 11; i++) {
@@ -161,17 +161,17 @@ export function nucleus(
   const ng = ctx.createRadialGradient(
     nx + KEY.x * r * 0.16, ny + KEY.y * r * 0.16, 0, nx, ny, r * 0.34,
   );
-  ng.addColorStop(0, mix(tint, "#ffffff", 0.3));
-  ng.addColorStop(0.5, mix(tint, "#000000", 0.3));
-  ng.addColorStop(1, mix(tint, "#000000", 0.58));
+  ng.addColorStop(0, mix(tint, "#ffffff", 0.34));
+  ng.addColorStop(0.5, mix(tint, "#000000", 0.12));
+  ng.addColorStop(1, mix(tint, "#000000", 0.34));
   ctx.fillStyle = ng;
   ctx.beginPath();
   ctx.arc(nx, ny, r * 0.34, 0, Math.PI * 2);
   ctx.fill();
 
   // Envelope: double membrane with visible pores.
-  ctx.strokeStyle = mix(tint, "#000000", 0.5);
-  ctx.lineWidth = Math.max(1.2, r * 0.055);
+  ctx.strokeStyle = mix(tint, "#000000", 0.28);
+  ctx.lineWidth = Math.max(1.2, r * 0.05);
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
   ctx.strokeStyle = hexA("#ffffff", 0.3);
   ctx.lineWidth = Math.max(0.6, r * 0.018);
@@ -181,7 +181,7 @@ export function nucleus(
     const a = (i / 14) * Math.PI * 2 + 0.2;
     ctx.beginPath();
     ctx.arc(x + Math.cos(a) * r, y + Math.sin(a) * r, Math.max(1, r * 0.055), 0, Math.PI * 2);
-    ctx.fillStyle = mix(tint, "#000000", 0.25);
+    ctx.fillStyle = mix(tint, "#ffffff", 0.3);
     ctx.fill();
   }
 
@@ -691,10 +691,12 @@ export function depthWash(
   ctx: CanvasRenderingContext2D, w: number, h: number, theme: ThemeColors,
 ) {
   const dark = isDarkTheme(theme);
-  const g = ctx.createRadialGradient(w * 0.5, h * 0.44, 0, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
-  g.addColorStop(0, dark ? "#241a2e" : "#ffffff");
-  g.addColorStop(0.55, dark ? "#191122" : "#f6f0fa");
-  g.addColorStop(1, dark ? "#0d0913" : "#e7dcf0");
+  const g = ctx.createRadialGradient(w * 0.5, h * 0.38, 0, w * 0.5, h * 0.52, Math.max(w, h) * 0.78);
+  // A bright lilac ground. Specimens are violet, so the backdrop must stay light
+  // and clean or the whole scene turns to mud.
+  g.addColorStop(0, dark ? "#2a1c38" : "#ffffff");
+  g.addColorStop(0.5, dark ? "#1d1228" : "#f7f1fd");
+  g.addColorStop(1, dark ? "#100a18" : "#e6d8f5");
   ctx.save();
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
@@ -711,8 +713,8 @@ export function bokeh(
   for (let i = 0; i < count; i++) {
     const x = rnd() * w, y = rnd() * h, r = 8 + rnd() * 30;
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, hexA(tint, 0.16));
-    g.addColorStop(0.7, hexA(tint, 0.06));
+    g.addColorStop(0, hexA(tint, 0.1));
+    g.addColorStop(0.7, hexA(tint, 0.035));
     g.addColorStop(1, hexA(tint, 0));
     ctx.fillStyle = g;
     ctx.beginPath();
