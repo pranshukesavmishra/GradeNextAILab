@@ -62,11 +62,16 @@ export function useSim(opts: UseSimOptions): SimHandle {
   const runnerRef = useRef<SimRunner | null>(null);
   if (runnerRef.current === null || runnerRef.current.manifest.id !== manifest.id) {
     runnerRef.current = new SimRunner({ manifest, params: initial, band });
+    runnerRef.current.playing = true;
   }
   const runner = runnerRef.current;
 
   const [params, setParamsState] = useState<ParamValues>(initial);
-  const [playing, setPlaying] = useState(false);
+  // Simulations start running. A science simulation that opens frozen reads as
+  // broken: the student sees a still picture, and nothing invites them to press
+  // anything. Whatever the sim does - particles jostling, a heart beating, a
+  // wave travelling - is the reason it exists, so it should already be doing it.
+  const [playing, setPlaying] = useState(true);
   const [speed, setSpeedState] = useState(1);
   const [frame, setFrame] = useState(0);
   const [series, setSeries] = useState<DataRow[]>([]);
