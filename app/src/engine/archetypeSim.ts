@@ -11,7 +11,7 @@ import {
 import {
   barMagnet, battery, beaker, bulb, burner, cart, clampStand, flask, spring, testTube,
 } from "@ui/labware";
-import { arcGauge, glow, hexA, isDarkTheme, vignette } from "@ui/scene";
+import { arcGauge, beginLabels, glow, hexA, isDarkTheme, vignette } from "@ui/scene";
 
 /**
  * The archetype renderer.
@@ -256,6 +256,7 @@ function makeRender(spec: ArchetypeSpec) {
     const dark = isDarkTheme(theme);
     stageSize.set(spec.id, { w: width, h: height });
 
+    beginLabels(ctx);
     depthWash(ctx, width, height, theme);
     bokeh(ctx, width, height, theme.accent, 7, 11);
 

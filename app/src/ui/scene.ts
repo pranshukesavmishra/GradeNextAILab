@@ -1311,3 +1311,93 @@ export function spring(t: number): number {
   if (x >= 1) return 1;
   return 1 - Math.exp(-7.5 * x) * Math.cos(9 * x);
 }
+
+/* ------------------------------------------------------------------ *
+ * Label placement — never let two labels overlap
+ * ------------------------------------------------------------------ */
+
+interface Placed { x: number; y: number; w: number; h: number }
+
+/**
+ * A per-frame register of where labels have already been drawn.
+ *
+ * Simulations place labels next to the thing they describe, and when two
+ * things drift close together their labels land on top of each other and both
+ * become unreadable. Every screenshot of a busy scene showed this. So labels
+ * claim a rectangle here, and a label that would collide is nudged clear
+ * before it is drawn rather than being allowed to overwrite its neighbour.
+ *
+ * Call `beginLabels()` once at the top of a render, then place through
+ * `labelBox`. The register is per-canvas, keyed by the context.
+ */
+const labelRegisters = new WeakMap<CanvasRenderingContext2D, Placed[]>();
+
+export function beginLabels(ctx: CanvasRenderingContext2D): void {
+  labelRegisters.set(ctx, []);
+}
+
+/**
+ * Claim a rectangle for a label, nudging it clear of anything already placed.
+ * Returns the position actually granted, which the caller must draw at.
+ */
+export function labelBox(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  opts: { bounds?: { w: number; h: number }; maxNudge?: number } = {},
+): { x: number; y: number } {
+  const taken = labelRegisters.get(ctx);
+  if (!taken) return { x, y };
+
+  const step = h + 6;
+  const limit = opts.maxNudge ?? 6;
+  let ny = y;
+
+  const hits = (ty: number) =>
+    taken.some((p) =>
+      x < p.x + p.w + 4 && x + w + 4 > p.x && ty < p.y + p.h + 3 && ty + h + 3 > p.y);
+
+  // Try alternating above and below the requested spot, taking the first clear
+  // slot. Alternating keeps a column of labels centred on its subjects rather
+  // than drifting steadily downward.
+  for (let i = 0; i <= limit && hits(ny); i++) {
+    const dir = i % 2 === 0 ? 1 : -1;
+    const mag = Math.ceil((i + 1) / 2) * step;
+    ny = y + dir * mag;
+    if (opts.bounds) ny = Math.max(2, Math.min(opts.bounds.h - h - 2, ny));
+  }
+
+  taken.push({ x, y: ny, w, h });
+  return { x, y: ny };
+}
+
+/**
+ * Text with a halo, placed so it cannot collide with another label.
+ * Returns the box it occupied, so callers can draw a leader line to it.
+ */
+export function safeLabel(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, text: string, theme: ThemeColors,
+  opts: {
+    size?: number; weight?: number; color?: string;
+    align?: CanvasTextAlign; bounds?: { w: number; h: number };
+  } = {},
+): { x: number; y: number; w: number; h: number } {
+  const size = opts.size ?? 12;
+  ctx.save();
+  ctx.font = `${opts.weight ?? 600} ${size}px "Source Sans 3", system-ui, sans-serif`;
+  const w = ctx.measureText(text).width;
+  const h = size + 4;
+  const align = opts.align ?? "left";
+  const left = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
+
+  const pos = labelBox(ctx, left, y - h / 2, w, h, opts.bounds ? { bounds: opts.bounds } : {});
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = isDarkTheme(theme) ? "rgba(8,10,16,0.8)" : "rgba(255,255,255,0.86)";
+  ctx.strokeText(text, pos.x, pos.y + h / 2);
+  ctx.fillStyle = opts.color ?? theme.ink;
+  ctx.fillText(text, pos.x, pos.y + h / 2);
+  ctx.restore();
+  return { x: pos.x, y: pos.y, w, h };
+}

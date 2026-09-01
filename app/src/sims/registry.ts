@@ -35,6 +35,18 @@ import {
 import {
   g6c1MovingOrStored, g6c1TwiceTheSpeed, g6c1LiftedAndReady, g6c1ArmToLight, g6c1NothingIsLost, g6c1WhereItEndsUp,
 } from "./topics/g6c1";
+import {
+  g6c2CutItAgain, g6c2HowASmell, g6c2SolidLiquidGas, g6c2HowFast, g6c2SparkAndBath, g6c2InsideAThermo,
+} from "./topics/g6c2";
+import {
+  g6c3WhichWay, g6c3AlongTheRod, g6c3WarmAirRises, g6c3AcrossTheGap, g6c3MetalFeelsColder, g6c3MeetingInMiddle,
+} from "./topics/g6c3";
+import {
+  g6c4WhichMaterial, g6c4HowMuchMatter, g6c4FairTestRig, g6c4MinuteByMinute, g6c4TwoDataSets, g6c4DoesItFollow,
+} from "./topics/g6c4";
+import {
+  g6c5WhatBlocksHeat, g6c5CriteriaOrLimit, g6c5BuildTheCup, g6c5TestTheCup, g6c5TwoDesigns, g6c5OneChange,
+} from "./topics/g6c5";
 import { circuitsSim } from "./physics/circuits";
 import { collisionsSim } from "./physics/collisions";
 import { electricForceSim } from "./physics/electric-force";
@@ -173,6 +185,30 @@ export const SIMS: AnySim[] = [
   g6c1ArmToLight,
   g6c1NothingIsLost,
   g6c1WhereItEndsUp,
+  g6c2CutItAgain,
+  g6c2HowASmell,
+  g6c2SolidLiquidGas,
+  g6c2HowFast,
+  g6c2SparkAndBath,
+  g6c2InsideAThermo,
+  g6c3WhichWay,
+  g6c3AlongTheRod,
+  g6c3WarmAirRises,
+  g6c3AcrossTheGap,
+  g6c3MetalFeelsColder,
+  g6c3MeetingInMiddle,
+  g6c4WhichMaterial,
+  g6c4HowMuchMatter,
+  g6c4FairTestRig,
+  g6c4MinuteByMinute,
+  g6c4TwoDataSets,
+  g6c4DoesItFollow,
+  g6c5WhatBlocksHeat,
+  g6c5CriteriaOrLimit,
+  g6c5BuildTheCup,
+  g6c5TestTheCup,
+  g6c5TwoDesigns,
+  g6c5OneChange,
   circuitsSim,
   collisionsSim,
   electricForceSim,

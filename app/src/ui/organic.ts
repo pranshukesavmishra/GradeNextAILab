@@ -1,5 +1,5 @@
 import type { ThemeColors } from "@engine/types";
-import { hexA, isDarkTheme } from "./scene";
+import { hexA, isDarkTheme, labelBox } from "./scene";
 
 /**
  * Organic rendering — cells, organelles, microbes, glassware.
@@ -636,17 +636,6 @@ export function callout(
   ctx.lineWidth = 1.4;
   ctx.stroke();
 
-  // Elbow leader: out then across, never a diagonal through the artwork.
-  const midX = side === "left" ? toX + 14 : toX - 14;
-  ctx.strokeStyle = hexA(accent, 0.8);
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(fromX, fromY);
-  ctx.lineTo(midX, fromY);
-  ctx.lineTo(midX, toY);
-  ctx.lineTo(side === "left" ? toX + 4 : toX - 4, toY);
-  ctx.stroke();
-
   // Pill
   ctx.font = '700 13px "Bricolage Grotesque", system-ui, sans-serif';
   const tw = ctx.measureText(text).width;
@@ -658,7 +647,22 @@ export function callout(
   const pw = Math.max(tw, sw) + 22;
   const ph = opts.sub ? 40 : 27;
   const px = side === "left" ? toX - pw : toX;
-  const py = toY - ph / 2;
+  // Claim the pill's rectangle so a second callout is nudged clear instead of
+  // being drawn on top of this one.
+  const slot = labelBox(ctx, px, toY - ph / 2, pw, ph);
+  const py = slot.y;
+
+  // Elbow leader, drawn after the pill has claimed its slot so it points at
+  // where the pill actually ended up rather than where it was requested.
+  const midX = side === "left" ? toX + 14 : toX - 14;
+  ctx.strokeStyle = hexA(accent, 0.8);
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(midX, fromY);
+  ctx.lineTo(midX, py + ph / 2);
+  ctx.lineTo(side === "left" ? toX + 4 : toX - 4, py + ph / 2);
+  ctx.stroke();
 
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.22)";
