@@ -71,7 +71,7 @@ function makeModel(spec: ArchetypeSpec): SimModel<ArchetypeState> {
     step(state, dt, params, _ctx, inputs) {
       const s = { ...state, t: state.t + dt, flash: Math.max(0, state.flash - dt * 2.2) };
       for (const input of inputs) handleInput(spec, s, input);
-      if (spec.kind === "process" && s.playing) {
+      if ((spec.kind === "process" || spec.kind === "trace") && s.playing) {
         const rate = Number(params.rate ?? 0.6);
         s.progress = (s.progress + dt * 0.16 * rate) % 1;
       }

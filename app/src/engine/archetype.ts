@@ -147,7 +147,7 @@ export function initState(spec: ArchetypeSpec): ArchetypeState {
   return {
     t: 0, index: 0, placed: {}, correct: 0, attempted: 0, streak: 0, best: 0,
     selected: spec.specimens?.[0]?.parts?.[0]?.id ?? "",
-    built: [], progress: 0, playing: spec.kind === "process",
+    built: [], progress: 0, playing: spec.kind === "process" || spec.kind === "trace",
     samples: [], showB: false, lastRight: false, flash: 0,
   };
 }
@@ -203,7 +203,7 @@ export function paramsOf(spec: ArchetypeSpec): SimManifest["params"] {
   if (spec.kind === "compare") {
     p.showB = { type: "boolean", label: "Show the second setup", default: true };
   }
-  if (spec.kind === "process") {
+  if (spec.kind === "process" || spec.kind === "trace") {
     p.rate = {
       type: "number", label: "Speed", kind: "count",
       min: 0, max: 2, step: 0.1, default: 0.6,
