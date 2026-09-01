@@ -227,7 +227,7 @@ const ONE_CHANGE: ArchetypeSpec = {
     { name: "Version 4", at: 0.8,
       caption: "Add foil and a base pad: 81 degrees. A real gain, but a small one: radiation was never the main route out." },
     { name: "Where next", at: 1,
-      caption: "Doubling the foam would add about 3 degrees and break the 20 mm limit. The design is finished when the next change costs more than it earns." },
+      caption: "Another 5 mm of foam would add about 4 degrees, the next 10 mm only 3 more, and 20 mm is the limit the brief allows. Each change buys less than the one before." },
   ],
 };
 

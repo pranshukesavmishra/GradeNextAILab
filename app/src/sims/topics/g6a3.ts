@@ -169,7 +169,7 @@ const BUILD_THE_POND: ArchetypeSpec = {
     {
       id: "jar", name: "Pond in a jar", art: { art: "glassware", which: "flask", level: 0.6, bubbles: 2 },
       parts: [
-        { id: "jar", name: "The jar", at: [0.34, -0.3],
+        { id: "boundary", name: "The jar", at: [0.34, -0.3],
           note: "The boundary. Glass lets light in and keeps water in, which makes this closed to matter and open to energy." },
         { id: "water", name: "Pond water", at: [0, 0.14],
           note: "The medium everything else lives in, and the store that carries dissolved gases and nutrients." },

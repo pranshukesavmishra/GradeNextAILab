@@ -42,7 +42,7 @@ const WHERE_DOES_IT_END: ArchetypeSpec = {
       art: { art: "glassware", which: "beaker", level: 0.55 } },
     { id: "salt", name: "The salt dissolved in it", category: "inside",
       because: "Dissolved salt is spread through the liquid, so it sits inside the boundary.",
-      art: { art: "sphere", color: "#dfe3ea", radius: 0.34 } },
+      art: { art: "sphere", color: "#f2f4f7", radius: 0.3 } },
     { id: "bulb", name: "The thermometer bulb dipped in the liquid", category: "inside",
       because: "It is surrounded by the liquid, and it reads the system's own temperature.",
       art: { art: "glassware", which: "testTube", level: 0.3 } },
@@ -54,7 +54,7 @@ const WHERE_DOES_IT_END: ArchetypeSpec = {
       art: { art: "apparatus", which: "stand" } },
     { id: "air", name: "The room air above the liquid", category: "outside",
       because: "Outside the line, and it receives steam as an output from the system.",
-      art: { art: "sphere", color: "#cfd8e3", radius: 0.5, glow: 0.3 } },
+      art: { art: "sphere", color: "#b9cfe3", radius: 0.52, glow: 0.6 } },
   ],
 };
 
