@@ -1021,7 +1021,7 @@ function drawField(
       data[o] = c[0];
       data[o + 1] = c[1];
       data[o + 2] = c[2];
-      data[o + 3] = Math.round(Math.abs(v) * (dark ? 190 : 150));
+      data[o + 3] = Math.round(Math.abs(v) * (dark ? 190 : 175));
     }
   }
   sctx.putImageData(img, 0, 0);
@@ -1153,8 +1153,10 @@ export function prismDispersion(
   ctx.fill();
 
   // The white beam arriving. Drawn before the glass so the glass sits over it.
+  // A warm near-white: on a dark ground waveRay burns its core to white, and
+  // on a pale ground the residual gold is what keeps the beam visible at all.
   waveRay(ctx, entry.x - d0.x * inLen, entry.y - d0.y * inLen, entry.x, entry.y,
-    "#fff8e8", { theme, width: size * 0.036, intensity: flicker, fadeTo: 1 });
+    "#ffdf8a", { theme, width: size * 0.036, intensity: flicker, fadeTo: 1 });
 
   /* --- the glass ---------------------------------------------------- */
 
@@ -1169,9 +1171,9 @@ export function prismDispersion(
   tri();
   // Glass is mostly what is behind it, plus a cool tint and a lot of edge.
   const body = ctx.createLinearGradient(A.x - size * 0.4, A.y, C.x, C.y);
-  body.addColorStop(0, hexA(dark ? "#9fd8ff" : "#e8f6ff", dark ? 0.2 : 0.62));
-  body.addColorStop(0.45, hexA(dark ? "#5f7fa8" : "#ffffff", dark ? 0.1 : 0.3));
-  body.addColorStop(1, hexA(dark ? "#b9e6ff" : "#bfe0f5", dark ? 0.24 : 0.5));
+  body.addColorStop(0, hexA(dark ? "#9fd8ff" : "#cfe9f8", dark ? 0.2 : 0.85));
+  body.addColorStop(0.45, hexA(dark ? "#5f7fa8" : "#f4fbff", dark ? 0.1 : 0.75));
+  body.addColorStop(1, hexA(dark ? "#b9e6ff" : "#9dc9e4", dark ? 0.24 : 0.8));
   ctx.fillStyle = body;
   ctx.fill();
 

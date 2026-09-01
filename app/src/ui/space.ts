@@ -192,7 +192,8 @@ export function planet(
   // is grazing and the ground is dim but not dark, and the width of that band
   // is what makes a planet look round.
   for (const [dcg, alpha] of [
-    [0.15, 0.25], [0.09, 0.35], [0.04, 0.5], [-0.02, 1],
+    [0.22, 0.14], [0.17, 0.2], [0.12, 0.28],
+    [0.08, 0.38], [0.04, 0.55], [-0.02, 1],
   ] as const) {
     ctx.save();
     litRegionPath(ctx, x, y, r, sunAngle, cg + dcg);
@@ -212,13 +213,17 @@ export function planet(
   // it, out toward the limb when the sun is off to one side.
   const sinG = Math.sqrt(Math.max(0, 1 - cg * cg));
   const ssx = x + sx * r * sinG * 0.72, ssy = y + sy * r * sinG * 0.72;
+  ctx.save();
+  litRegionPath(ctx, x, y, r, sunAngle, cg);
+  ctx.clip();
   ctx.globalCompositeOperation = "lighter";
-  const hot = ctx.createRadialGradient(ssx, ssy, 0, ssx, ssy, r * 1.25);
-  hot.addColorStop(0, hexA(mix(tint, "#ffffff", 0.8), 0.4));
-  hot.addColorStop(0.45, hexA(mix(tint, "#ffffff", 0.5), 0.12));
+  const hot = ctx.createRadialGradient(ssx, ssy, 0, ssx, ssy, r * 1.1);
+  hot.addColorStop(0, hexA(mix(tint, "#ffffff", 0.8), 0.22));
+  hot.addColorStop(0.45, hexA(mix(tint, "#ffffff", 0.5), 0.07));
   hot.addColorStop(1, hexA(tint, 0));
   ctx.fillStyle = hot;
   ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  ctx.restore();
   ctx.globalCompositeOperation = "source-over";
 
   // Limb darkening: a sphere's edge is seen through more of its own air and at
@@ -249,21 +254,28 @@ export function planet(
       x, y, r * Math.abs(cg), r, sunAngle,
       Math.PI / 2, cg >= 0 ? Math.PI * 1.5 : -Math.PI / 2, cg < 0,
     );
-    ctx.strokeStyle = hexA(mix(acol, "#ffd9a8", 0.35), 0.5 * atm);
-    ctx.lineWidth = Math.max(1.5, r * 0.06);
+    ctx.strokeStyle = hexA(mix(acol, "#ffd9a8", 0.35), 0.07 * atm);
+    ctx.lineWidth = Math.max(2.5, r * 0.11);
+    ctx.stroke();
+    ctx.strokeStyle = hexA(mix(acol, "#ffd9a8", 0.45), 0.12 * atm);
+    ctx.lineWidth = Math.max(1.2, r * 0.035);
     ctx.stroke();
     ctx.restore();
 
     ctx.save();
     // Seen edge-on, air is thick, so a planet with an atmosphere carries a
     // halo all the way round, brightest where the sun is grazing it.
-    const halo = ctx.createRadialGradient(x, y, r * 0.93, x, y, r * 1.2);
-    halo.addColorStop(0, hexA(acol, 0.42 * atm));
-    halo.addColorStop(0.35, hexA(acol, 0.16 * atm));
+    const halo = ctx.createRadialGradient(x, y, r * 0.93, x, y, r * 1.22);
+    halo.addColorStop(0, hexA(acol, 0.45 * atm));
+    halo.addColorStop(0.35, hexA(acol, 0.17 * atm));
     halo.addColorStop(1, hexA(acol, 0));
     ctx.fillStyle = halo;
+    // An annulus, not a disc: the glow belongs OUTSIDE the limb. Filled across
+    // the whole body it washes the night side pale and the planet loses its
+    // night, which is the one thing this function exists to show.
     ctx.beginPath();
-    ctx.arc(x, y, r * 1.2, 0, Math.PI * 2);
+    ctx.arc(x, y, r * 1.22, 0, Math.PI * 2);
+    ctx.arc(x, y, r * 0.995, 0, Math.PI * 2, true);
     ctx.fill();
 
     // The lit limb, brightest where the sun grazes it and fading round the
@@ -276,10 +288,10 @@ export function planet(
       const f = Math.pow(Math.cos(((i / segs) - 0.5) * Math.PI), 1.6);
       ctx.beginPath();
       ctx.arc(x, y, r * 0.985, a0, a1 + 0.01);
-      ctx.strokeStyle = hexA(mix(acol, "#ffffff", 0.45), 0.6 * atm * f);
+      ctx.strokeStyle = hexA(mix(acol, "#ffffff", 0.45), 0.38 * atm * f);
       ctx.lineWidth = Math.max(1.2, r * 0.03);
       ctx.stroke();
-      ctx.strokeStyle = hexA("#ffffff", 0.42 * atm * f * f);
+      ctx.strokeStyle = hexA("#ffffff", 0.22 * atm * f * f);
       ctx.lineWidth = Math.max(0.6, r * 0.011);
       ctx.stroke();
     }
@@ -364,7 +376,8 @@ function rockySurface(
     const light = hash(i * 13 + seed) > 0.5;
     const col = light ? mix(tint, "#f3e4c4", 0.5) : mix(tint, "#12212f", 0.45);
     const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-    g.addColorStop(0, hexA(col, 0.5));
+    g.addColorStop(0, hexA(col, 0.62));
+    g.addColorStop(0.6, hexA(col, 0.3));
     g.addColorStop(1, hexA(col, 0));
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -517,16 +530,18 @@ export function starBody(
   // thin haze that happens to have structure, not a crown of spikes.
   ctx.lineCap = "round";
   for (let i = 0; i < 40; i++) {
-    const a = (i / 40) * Math.PI * 2 + hash(i * 5) * 0.14;
+    const a = (i / 40) * Math.PI * 2 + hash(i * 5) * 0.55;
     const len = r * (1.1 + hash(i * 9) * 1.05)
       * (0.9 + 0.1 * Math.sin(t * 0.7 + i * 1.3));
-    const x0 = x + Math.cos(a) * r * 0.9, y0 = y + Math.sin(a) * r * 0.9;
+    const x0 = x + Math.cos(a) * r * 1.02, y0 = y + Math.sin(a) * r * 1.02;
     const x1 = x + Math.cos(a) * len, y1 = y + Math.sin(a) * len;
     const g = ctx.createLinearGradient(x0, y0, x1, y1);
-    g.addColorStop(0, hexA(col, 0.14));
+    g.addColorStop(0, hexA(col, 0));
+    g.addColorStop(0.12, hexA(col, 0.045));
+    g.addColorStop(0.5, hexA(col, 0.018));
     g.addColorStop(1, hexA(col, 0));
     ctx.strokeStyle = g;
-    ctx.lineWidth = r * (0.05 + hash(i * 3) * 0.08);
+    ctx.lineWidth = r * (0.14 + hash(i * 3) * 0.2);
     ctx.beginPath();
     ctx.moveTo(x0, y0);
     ctx.lineTo(x1, y1);
@@ -552,15 +567,15 @@ export function starBody(
   // Granulation: convection cells rising, spilling over and sinking. They churn
   // rather than scroll, because the surface is boiling in place.
   ctx.globalCompositeOperation = "lighter";
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 80; i++) {
     const a = hash(i * 7 + 1) * Math.PI * 2;
     const rad = Math.sqrt(hash(i * 11 + 2)) * r;
     const cxp = x + Math.cos(a) * rad, cyp = y + Math.sin(a) * rad;
     const pulse = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 0.9 + hash(i * 13) * 6.28));
-    const cr = r * (0.035 + hash(i * 17) * 0.055);
+    const cr = r * (0.06 + hash(i * 17) * 0.08);
     const g = ctx.createRadialGradient(cxp, cyp, 0, cxp, cyp, cr);
-    g.addColorStop(0, hexA(hotCore, 0.22 * pulse));
-    g.addColorStop(0.6, hexA(hotCore, 0.08 * pulse));
+    g.addColorStop(0, hexA(hotCore, 0.09 * pulse));
+    g.addColorStop(0.6, hexA(hotCore, 0.035 * pulse));
     g.addColorStop(1, hexA(hotCore, 0));
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -578,8 +593,8 @@ export function starBody(
       const sxp = x + Math.cos(a) * rad, syp = y + Math.sin(a) * rad;
       const sr = r * (0.07 + hash(i * 31) * 0.07);
       const g = ctx.createRadialGradient(sxp, syp, 0, sxp, syp, sr * 1.9);
-      g.addColorStop(0, hexA(mix(col, "#2b0a00", 0.7), 0.55));
-      g.addColorStop(0.5, hexA(mix(col, "#2b0a00", 0.5), 0.22));
+      g.addColorStop(0, hexA(mix(col, "#2b0a00", 0.7), 0.38));
+      g.addColorStop(0.5, hexA(mix(col, "#2b0a00", 0.5), 0.15));
       g.addColorStop(1, hexA(col, 0));
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -587,19 +602,32 @@ export function starBody(
       ctx.fill();
     }
   }
+  // Limb darkening, applied last so it dims the granulation too. Light from
+  // the edge of the disc leaves the star at a slant, through more of its own
+  // cooler outer gas, so the rim is genuinely dimmer than the centre — and it
+  // is that gradient, more than anything else, that makes a star look spherical
+  // rather than like a bright coin.
+  const dim = ctx.createRadialGradient(x, y, r * 0.45, x, y, r);
+  dim.addColorStop(0, hexA(edge, 0));
+  dim.addColorStop(0.75, hexA(edge, 0.22));
+  dim.addColorStop(1, hexA(edge, 0.6));
+  ctx.fillStyle = dim;
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
   ctx.restore();
 
   // Chromosphere: the thin bright rim just above the surface.
   ctx.globalCompositeOperation = "lighter";
   ctx.beginPath();
   ctx.arc(x, y, r * 0.99, 0, Math.PI * 2);
-  ctx.strokeStyle = hexA(mix(col, "#ffffff", 0.6), 0.5);
-  ctx.lineWidth = Math.max(1, r * 0.035);
+  ctx.strokeStyle = hexA(mix(col, "#ffffff", 0.6), 0.1);
+  ctx.lineWidth = Math.max(1, r * 0.016);
   ctx.stroke();
 
   // Prominences: loops of plasma following the magnetic field out and back.
   for (let i = 0; i < 3; i++) {
-    const a = hash(i * 41 + 6) * Math.PI * 2 + t * 0.05;
+    // Spread round the limb: three loops that happen to land together read as
+    // eyelashes rather than as magnetic structure.
+    const a = (i / 3) * Math.PI * 2 + hash(i * 41 + 6) * 0.7 + t * 0.05;
     const arc = 0.3 + hash(i * 43) * 0.25;
     const h = r * (0.1 + hash(i * 47) * 0.12) * (0.7 + 0.3 * Math.sin(t * 0.8 + i));
     const p0 = { x: x + Math.cos(a) * r * 0.98, y: y + Math.sin(a) * r * 0.98 };

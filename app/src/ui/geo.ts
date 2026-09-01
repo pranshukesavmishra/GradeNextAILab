@@ -347,11 +347,11 @@ export function strataColumn(
 
     // A very coarse bed carries pebbles: a conglomerate, and visibly one.
     if (g > 0.8 && bh > 12) {
-      const pebbles = Math.max(3, Math.round(fw / 42));
+      const pebbles = Math.max(5, Math.round(fw / 26));
       for (let k = 0; k < pebbles; k++) {
         const px = fx + ins + (fw - ins * 2) * hash21(k * 3.1, i + seed);
         const py = edge[i] + bh * (0.2 + 0.6 * hash21(k * 5.7, i + seed + 4));
-        const pr = bh * (0.1 + 0.14 * hash21(k * 7.3, i));
+        const pr = Math.min(bh * 0.16, fw * 0.028) * (0.5 + 0.7 * hash21(k * 7.3, i));
         const pc = mix(L.color, hash21(k, i) > 0.5 ? ROCK_LIGHT : ROCK_SHADE, 0.36);
         const pg = ctx.createRadialGradient(
           px + KEY.x * pr, py + KEY.y * pr, 0, px, py, pr,
@@ -729,8 +729,11 @@ export function plateSection(
   ctx.fillRect(x, py(SEA), w, h * (1 - SEA) + 1);
 
   /* --- mantle ----------------------------------------------------- */
-  let minL = 1;
-  for (let i = 0; i <= N; i++) minL = Math.min(minL, P.litho(i / N));
+  let minL = 1, maxL = 0;
+  for (let i = 0; i <= N; i++) {
+    minL = Math.min(minL, P.litho(i / N));
+    maxL = Math.max(maxL, P.litho(i / N));
+  }
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(x, y + h);
@@ -803,10 +806,13 @@ export function plateSection(
   for (let i = N; i >= 0; i--) ctx.lineTo(px(i / N), py(P.litho(i / N)));
   ctx.closePath();
   ctx.clip();
-  const lg = ctx.createLinearGradient(0, py(minL - 0.3), 0, py(minL + 0.05));
-  lg.addColorStop(0, mix(pal.lithoMantle, ROCK_LIGHT, 0.24));
-  lg.addColorStop(0.6, pal.lithoMantle);
-  lg.addColorStop(1, mix(pal.lithoMantle, pal.mantle[1], 0.5));
+  // Olive peridotite at the top of the band, warming toward the asthenosphere
+  // at its base: the plate is the part that is cool enough to stay rigid, and
+  // the colour has to show where that stops being true.
+  const lg = ctx.createLinearGradient(0, py(minL - 0.16), 0, py(maxL));
+  lg.addColorStop(0, mix(pal.lithoMantle, ROCK_LIGHT, 0.3));
+  lg.addColorStop(0.45, pal.lithoMantle);
+  lg.addColorStop(1, mix(pal.lithoMantle, pal.mantle[1], 0.55));
   ctx.fillStyle = lg;
   ctx.fillRect(x, y, w, h);
   for (let k = 0; k < 260; k++) {
@@ -1803,7 +1809,7 @@ export function terrain(
     ctx.fillStyle = sg;
     ctx.fillRect(x, y, w, h);
     const sun = ctx.createRadialGradient(x + w * 0.14, y, 0, x + w * 0.14, y, w * 0.5);
-    sun.addColorStop(0, hexA("#fff3cc", pal.dark ? 0.2 : 0.6));
+    sun.addColorStop(0, hexA("#fff3cc", pal.dark ? 0.16 : 0.38));
     sun.addColorStop(1, hexA("#fff3cc", 0));
     ctx.fillStyle = sun;
     ctx.fillRect(x, y, w, h);
@@ -1815,25 +1821,44 @@ export function terrain(
     for (const v of profile) mean += v;
     mean /= profile.length;
     for (let k = 1; k >= 0; k--) {
-      const relief = 0.34 - k * 0.14;
-      const lift = 0.03 + k * 0.045;
+      // Sitting a little below the near skyline, the far hills show only
+      // through the gaps — which is what "further away" looks like.
+      const relief = 0.15 - k * 0.045;
+      const lift = -0.03 + k * 0.055;
       ctx.beginPath();
       ctx.moveTo(x, y + h);
       for (let i = 0; i <= N; i++) {
         const u = i / N;
-        const v = lerp(mean,
-          sampleProfile(profile, clamp01(u * 0.66 + 0.2 + k * 0.13)), relief)
-          + lift + noise1(u * 4 + k * 9, seed + 40 + k) * 0.025;
+        // Deliberately not a copy of the profile in front: a distant skyline
+        // that mirrors the near valley reads as water lying in that valley.
+        const v = mean + lift
+          + relief * (noise1(u * 2.3 + k * 11, seed + 40 + k)
+            + noise1(u * 5.7 + k * 5, seed + 44 + k) * 0.45);
         ctx.lineTo(x + w * u, y + h * (1 - clamp01(v)));
       }
       ctx.lineTo(x + w, y + h);
       ctx.closePath();
+      // Tinted through the vegetation colour before it is hazed, so a distant
+      // hillside reads as land rather than as fog sitting in the valley.
+      const far = mix(rock, grass, 0.4);
       const haze = k === 1 ? pal.sky : pal.skyLow;
       const back = ctx.createLinearGradient(0, y, 0, y + h);
-      back.addColorStop(0, mix(rock, haze, 0.86 - k * 0.06));
-      back.addColorStop(1, mix(rock, haze, 0.62 - k * 0.06));
+      back.addColorStop(0, mix(far, haze, 0.82 - k * 0.06));
+      back.addColorStop(1, mix(far, haze, 0.56 - k * 0.06));
       ctx.fillStyle = back;
       ctx.fill();
+      // A lit crest line: without it a hazy silhouette is just a wash.
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const u = i / N;
+        const v = mean + lift
+          + relief * (noise1(u * 2.3 + k * 11, seed + 40 + k)
+            + noise1(u * 5.7 + k * 5, seed + 44 + k) * 0.45);
+        ctx.lineTo(x + w * u, y + h * (1 - clamp01(v)));
+      }
+      ctx.strokeStyle = hexA(mix(far, ROCK_LIGHT, 0.5), 0.5 - k * 0.2);
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
     }
   }
 
@@ -2159,10 +2184,10 @@ export function rockSample(
       // Grain size is the difference between a mudstone and a conglomerate, so
       // the beds are deliberately not all the same grade.
       const coarse = 0.15 + 0.85 * hash21(j, seed + 2);
-      for (let k = 0; k < 190; k++) {
+      for (let k = 0; k < 300; k++) {
         const gx = x + (hash21(k * 1.7, seed + j) - 0.5) * r * 2.6;
         const gy = y0 + hash21(k * 2.9, seed + j * 3) * (y1 - y0);
-        const gr = r * 0.012 * (1 + coarse * 2.6) * (0.5 + hash21(k, j));
+        const gr = r * 0.0055 * (1 + coarse * 2.4) * (0.5 + hash21(k, j));
         const gg = ctx.createRadialGradient(
           gx + KEY.x * gr, gy + KEY.y * gr, 0, gx, gy, gr,
         );
@@ -2621,8 +2646,8 @@ export function quakeWaves(
         const a = (i / 200) * TAU;
         // The kink is a fraction of the front's own radius, so a young front
         // is a gentle wave rather than a cog.
-        const wob = Math.sin(a * 14 + k * 1.7 + j * Math.PI)
-          * Math.min(r * 0.032, rr * 0.055);
+        const wob = Math.sin(a * 9 + k * 1.7 + j * Math.PI)
+          * Math.min(r * 0.028, rr * 0.05);
         const qx = x + Math.cos(a) * (rr + wob);
         const qy = y + Math.sin(a) * (rr + wob);
         if (i === 0) ctx.moveTo(qx, qy); else ctx.lineTo(qx, qy);
@@ -2638,20 +2663,20 @@ export function quakeWaves(
   const beat = Math.pow(Math.max(0, Math.sin((t * rate % 1) * Math.PI)), 3);
   ctx.save();
   if (pal.dark) ctx.globalCompositeOperation = "lighter";
-  const fg = ctx.createRadialGradient(x, y, 0, x, y, r * 0.22);
+  const fg = ctx.createRadialGradient(x, y, 0, x, y, r * 0.3);
   fg.addColorStop(0, hexA("#fff4cf", 0.95));
-  fg.addColorStop(0.3, hexA(pCol, 0.6));
+  fg.addColorStop(0.25, hexA(pCol, 0.7));
   fg.addColorStop(1, hexA(pCol, 0));
   ctx.fillStyle = fg;
   ctx.beginPath();
-  ctx.arc(x, y, r * 0.22, 0, TAU);
+  ctx.arc(x, y, r * 0.3, 0, TAU);
   ctx.fill();
   ctx.restore();
-  ctx.strokeStyle = hexA(pCol, 0.85);
-  ctx.lineWidth = Math.max(1.6, r * 0.014);
+  ctx.strokeStyle = hexA(pCol, 0.9);
+  ctx.lineWidth = Math.max(2, r * 0.02);
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * TAU + 0.2;
-    const l = r * (0.06 + 0.07 * beat);
+    const l = r * (0.1 + 0.09 * beat);
     ctx.beginPath();
     ctx.moveTo(x + Math.cos(a) * r * 0.05, y + Math.sin(a) * r * 0.05);
     ctx.lineTo(x + Math.cos(a) * (r * 0.05 + l), y + Math.sin(a) * (r * 0.05 + l));
@@ -2659,7 +2684,7 @@ export function quakeWaves(
   }
   ctx.fillStyle = "#fff8e0";
   ctx.beginPath();
-  ctx.arc(x, y, Math.max(2.5, r * 0.028), 0, TAU);
+  ctx.arc(x, y, Math.max(3, r * 0.042), 0, TAU);
   ctx.fill();
   ctx.strokeStyle = hexA(ROCK_SHADE, 0.7);
   ctx.lineWidth = 1.2;
