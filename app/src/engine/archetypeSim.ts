@@ -24,6 +24,22 @@ import { arcGauge, glow, hexA, isDarkTheme, vignette } from "@ui/scene";
 
 const PAD = 28;
 
+/**
+ * Last rendered canvas size per simulation.
+ *
+ * Pointer input arrives in CSS pixels, but hit tests are far clearer written
+ * against a 0-1 stage. Only the renderer knows the canvas size, so it records
+ * it here and the model normalises against it. Keyed by simulation id, since
+ * several may be alive at once.
+ */
+const stageSize = new Map<string, { w: number; h: number }>();
+
+function normalise(specId: string, x: number, y: number) {
+  const s = stageSize.get(specId);
+  if (!s || !s.w || !s.h) return null;
+  return { nx: x / s.w, ny: y / s.h };
+}
+
 /* ------------------------------------------------------------------ *
  * Model
  * ------------------------------------------------------------------ */
@@ -61,10 +77,13 @@ function makeModel(spec: ArchetypeSpec): SimModel<ArchetypeState> {
 
 function handleInput(spec: ArchetypeSpec, s: ArchetypeState, input: SimInput) {
   if (input.type !== "pointerdown") return;
+  const n = normalise(spec.id, input.x, input.y);
+  if (!n) return;
+  const { nx, ny } = n;
 
   if (spec.kind === "sort" && spec.categories && spec.specimens) {
     // The bins run along the bottom; a click lands the current specimen.
-    const bin = binAt(spec, input.x, input.y);
+    const bin = binAt(spec, nx, ny);
     if (!bin) return;
     const cur = spec.specimens[s.index % spec.specimens.length];
     const right = cur.category === bin;
@@ -85,8 +104,10 @@ function handleInput(spec: ArchetypeSpec, s: ArchetypeState, input: SimInput) {
     // Nearest labelled part wins the click.
     const parts = spec.specimens[0].parts!;
     let best = "", bestD = Infinity;
+    // Part positions are stored relative to the specimen centre, so compare in
+    // the same space the renderer places them in.
     for (const p of parts) {
-      const d = Math.hypot(p.at[0] - input.x, p.at[1] - input.y);
+      const d = Math.hypot((0.44 + p.at[0] * 0.3) - nx, (0.5 + p.at[1] * 0.3) - ny);
       if (d < bestD) { bestD = d; best = p.id; }
     }
     if (bestD < 0.22) {
@@ -215,6 +236,7 @@ function makeRender(spec: ArchetypeSpec) {
   return (rc: RenderContext<ArchetypeState>) => {
     const { ctx, width, height, theme, state, overlays, params, band } = rc;
     const dark = isDarkTheme(theme);
+    stageSize.set(spec.id, { w: width, h: height });
 
     depthWash(ctx, width, height, theme);
     bokeh(ctx, width, height, theme.accent, 7, 11);
