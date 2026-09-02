@@ -12,7 +12,8 @@ import {
   barMagnet, battery, beaker, bulb, burner, cart, clampStand, flask, spring, testTube,
 } from "@ui/labware";
 import { arcGauge, beginLabels, glow, hexA, isDarkTheme, vignette } from "@ui/scene";
-import { begin3D, can3D, end3D, place3D } from "@ui/render3d";
+import { planet } from "@ui/space";
+import { can3D, draw3D, moleculeGeometry } from "@ui/render3d";
 import type { Subject3D } from "@ui/render3d";
 
 /**
@@ -167,19 +168,10 @@ function binAt(spec: ArchetypeSpec, x: number, y: number): string | null {
  * buried under a specimen.
  * ------------------------------------------------------------------ */
 
-/** True while the current frame is compositing a 3D layer. */
+/** True while the current frame has a 3D layer available. */
 let use3D = false;
 /** Counts specimens within a frame so they do not all turn in lockstep. */
 let placed3D = 0;
-/**
- * Which composite pass is running.
- *
- * Pass 1 lays the ground the specimens stand on — their pool of tone and their
- * contact shadow — and is followed by the WebGL blit. Pass 2 puts the flat
- * furniture back on top. Ground drawn in pass 2 would land *over* the specimen
- * and grey it out, so it is drawn once, in pass 1 only.
- */
-let pass3D: 1 | 2 = 1;
 
 /** Map a piece of `Art` onto a 3D subject, or null to keep the 2D drawing. */
 function subject3DFor(a: Art, theme: { accent: string }): Subject3D | null {
@@ -190,6 +182,11 @@ function subject3DFor(a: Art, theme: { accent: string }): Subject3D | null {
     case "glassware":
       return { kind: "glassware", which: a.which, level: a.level, color: a.color };
     case "sphere": return { kind: "sphere", color: a.color ?? theme.accent };
+    case "molecule": return { kind: "molecule", formula: a.formula };
+    case "atom": return { kind: "atom", protons: a.protons, neutrons: a.neutrons, electrons: a.electrons };
+    case "dna": return { kind: "dna" };
+    case "planet": return { kind: "planet", color: a.color, rings: a.rings, atmosphere: a.atmosphere };
+    case "apparatus": return { kind: "apparatus", which: a.which };
     default: return null;
   }
 }
@@ -207,11 +204,6 @@ function drawSpecimen(
   // microbes, glassware and spheres do. Apparatus, landforms and bodies stay
   // on the 2D kit, which for those subjects is the better drawing.
   const sub3d = use3D ? subject3DFor(a, theme) : null;
-
-  // Pass 2 only repairs the flat furniture that the WebGL blit covered. A 3D
-  // specimen is already on the canvas; drawing anything for it now would land
-  // in front of it.
-  if (sub3d && pass3D === 2) return;
 
   if (sub3d) {
     // The specimen well.
@@ -258,12 +250,18 @@ function drawSpecimen(
     // Each specimen turns at its own phase, so a tray of eight reads as eight
     // separate objects rather than one object stamped eight times.
     const phase = placed3D++ * 1.7;
-    place3D(sub3d, x, y, size * 2.05, t, rc.width, rc.height, {
-      spin: t * 0.32 + phase,
-      tilt: -0.26 + Math.sin(t * 0.21 + phase) * 0.07,
-      depth: placed3D,
+    const drawn = draw3D(ctx, sub3d, x, y, size * 2.4, t, theme, {
+      themeKey: isDarkTheme(theme) ? "dark" : "light",
+      // A standing three-quarter yaw, so a subject is never caught exactly
+      // face-on, where a box looks like a rectangle and a cart looks flat.
+      spin: 0.68 + t * 0.22 + phase,
+      // Tipped so the eye is a little above the subject, the angle a specimen
+      // is naturally held at for examination.
+      tilt: 0.24 + Math.sin(t * 0.21 + phase) * 0.06,
     });
-    return;
+    // If the 3D draw failed for any reason, fall through to the 2D artwork
+    // rather than leaving an empty stage.
+    if (drawn) return;
   }
 
   switch (a.art) {
@@ -334,6 +332,94 @@ function drawSpecimen(
       organelleDot(ctx, x, y, (a.radius ?? 0.5) * size, a.color ?? accent);
       if (a.glow) glow(ctx, x, y, size * (a.glow + 0.6), a.color ?? accent, 0.5);
       break;
+    case "molecule": {
+      // Ball and stick, at the real bond angles. A molecule drawn with the
+      // wrong shape teaches the wrong chemistry: water is bent at 104.5° and
+      // that bend is the reason water does almost everything it does.
+      const g = moleculeGeometry(a.formula);
+      const CPK: Record<string, { c: string; r: number }> = {
+        H: { c: "#f2f2f6", r: 0.28 }, C: { c: "#4a4a58", r: 0.42 },
+        N: { c: "#4a63f0", r: 0.4 }, O: { c: "#e0483f", r: 0.38 },
+        S: { c: "#e6c53c", r: 0.5 }, P: { c: "#ff8f2e", r: 0.5 },
+        Na: { c: "#ab5cf2", r: 0.6 }, Cl: { c: "#4fd04f", r: 0.5 },
+      };
+      const k = size * 0.62;
+      const rot = t * 0.4;
+      const at = (i: number) => {
+        const [px, py, pz] = g.atoms[i].pos;
+        const cx = px * Math.cos(rot) + pz * Math.sin(rot);
+        return { x: x + cx * k, y: y - py * k, z: -px * Math.sin(rot) + pz * Math.cos(rot) };
+      };
+      for (const [i, j] of g.bonds) {
+        const p = at(i), q2 = at(j);
+        ctx.strokeStyle = hexA(theme.inkSoft, 0.75);
+        ctx.lineWidth = size * 0.13;
+        ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q2.x, q2.y); ctx.stroke();
+        ctx.strokeStyle = hexA("#ffffff", 0.4);
+        ctx.lineWidth = size * 0.05;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q2.x, q2.y); ctx.stroke();
+      }
+      // Painter's algorithm: far atoms first, so the front ones overlap them.
+      const order = g.atoms.map((_, i) => i).sort((p, q2) => at(p).z - at(q2).z);
+      for (const i of order) {
+        const spec = CPK[g.atoms[i].el] ?? { c: accent, r: 0.4 };
+        const pos = at(i);
+        organelleDot(ctx, pos.x, pos.y, spec.r * k * 0.62, spec.c);
+      }
+      break;
+    }
+    case "atom": {
+      // Shell model: a packed nucleus with electrons running real orbits.
+      const shells = [2, 8, 8, 18];
+      let left = a.electrons;
+      const nucR = size * 0.3;
+      for (let i = 0; i < 12 && i < a.protons + a.neutrons; i++) {
+        const ang = i * 2.399, rr = nucR * 0.5 * Math.sqrt(i / 4);
+        organelleDot(
+          ctx, x + Math.cos(ang) * rr, y + Math.sin(ang) * rr, nucR * 0.34,
+          i < a.protons ? "#e0455a" : "#8a92a8",
+        );
+      }
+      for (let sIdx = 0; sIdx < shells.length && left > 0; sIdx++) {
+        const n = Math.min(left, shells[sIdx]);
+        left -= n;
+        const rr = size * (0.55 + sIdx * 0.28);
+        ctx.strokeStyle = hexA(theme.inkSoft, 0.3);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(x, y, rr, rr * 0.42, sIdx * 0.7, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let e = 0; e < n; e++) {
+          const ang = t * (1.4 - sIdx * 0.25) + (e / n) * Math.PI * 2;
+          const ex = Math.cos(ang) * rr, ey = Math.sin(ang) * rr * 0.42;
+          const ca = Math.cos(sIdx * 0.7), sa = Math.sin(sIdx * 0.7);
+          organelleDot(ctx, x + ex * ca - ey * sa, y + ex * sa + ey * ca, size * 0.07, "#5fd8ff");
+        }
+      }
+      break;
+    }
+    case "dna": {
+      // Two antiparallel strands with base pairs between them.
+      const h = size * 1.9, w = size * 0.55;
+      for (let i = 0; i <= 40; i++) {
+        const p = i / 40;
+        const ang = p * Math.PI * 6 + t * 0.7;
+        const ax = x + Math.cos(ang) * w, bx = x - Math.cos(ang) * w;
+        const yy = y - h / 2 + p * h;
+        if (i % 3 === 0) {
+          ctx.strokeStyle = hexA(i % 6 === 0 ? "#4aa3d8" : "#e0708a", 0.85);
+          ctx.lineWidth = size * 0.055;
+          ctx.beginPath(); ctx.moveTo(ax, yy); ctx.lineTo(bx, yy); ctx.stroke();
+        }
+        organelleDot(ctx, ax, yy, size * 0.055, Math.sin(ang) > 0 ? "#c98bff" : "#7b4bb0");
+        organelleDot(ctx, bx, yy, size * 0.055, Math.sin(ang) > 0 ? "#7b4bb0" : "#c98bff");
+      }
+      break;
+    }
+    case "planet":
+      planet(ctx, x, y, size * 0.85, a.color, t * 0.2, { t });
+      break;
     default: {
       // Fallback: a lit disc so a spec is never invisible while being written.
       organelleDot(ctx, x, y, size * 0.5, accent);
@@ -354,35 +440,21 @@ function makeRender(spec: ArchetypeSpec) {
     depthWash(ctx, width, height, theme);
     bokeh(ctx, width, height, theme.accent, 7, 11);
 
-    // Open the 3D layer. `can3D` is false on a machine without WebGL and the
-    // whole simulation then runs on the 2D kit exactly as it always has.
-    use3D = can3D() && begin3D(width, height, theme, `${dark ? "d" : "l"}:${theme.accent}`);
+    // 3D is on when the browser has WebGL at all. `draw3D` composites each
+    // subject at the point the 2D drawing would have happened, so the layering
+    // the renderers already establish keeps working untouched.
+    use3D = can3D();
     placed3D = 0;
 
-    const layout = () => {
-      beginLabels(ctx);
-      switch (spec.kind) {
-        case "sort": renderSort(rc, spec); break;
-        case "explore":
-        case "assemble": renderExplore(rc, spec); break;
-        case "investigate": renderInvestigate(rc, spec); break;
-        case "process":
-        case "trace": renderProcess(rc, spec); break;
-        case "compare": renderCompare(rc, spec); break;
-      }
-    };
-
-    pass3D = 1;
-    layout();
-    if (use3D) {
-      end3D(ctx, width, height);
-      pass3D = 2;
-      // Second pass: the same furniture and the same text, now above the
-      // specimens. Nothing is recomputed differently, so the two passes agree
-      // pixel for pixel and only the layering changes.
-      placed3D = 0;
-      layout();
-      use3D = false;
+    beginLabels(ctx);
+    switch (spec.kind) {
+      case "sort": renderSort(rc, spec); break;
+      case "explore":
+      case "assemble": renderExplore(rc, spec); break;
+      case "investigate": renderInvestigate(rc, spec); break;
+      case "process":
+      case "trace": renderProcess(rc, spec); break;
+      case "compare": renderCompare(rc, spec); break;
     }
 
     // A correct or wrong answer flashes the whole stage briefly, so feedback

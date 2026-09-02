@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { ThemeColors } from "@engine/types";
 import { isDarkTheme } from "./scene";
 
@@ -87,26 +88,44 @@ export function webglAvailable(): boolean {
  * This is what makes a rendered object look photographed rather than computed.
  */
 function studioLights(scene: THREE.Scene, dark: boolean) {
-  const key = new THREE.DirectionalLight(0xffffff, dark ? 2.4 : 2.1);
-  key.position.set(-4, 5, 4);
+  // An environment map, which is what separates a render from a shaded
+  // diagram. Metal has no diffuse colour of its own — it is *only* what it
+  // reflects — so a metallic material with nothing to reflect renders black,
+  // and clearcoat and transmission have nothing to pick up either. A small
+  // procedural studio room fixes all three at once.
+  const r = getRenderer();
+  if (r) {
+    const pmrem = new THREE.PMREMGenerator(r.renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    // Kept deliberately low. The room is there so metal has something to
+    // reflect, not to light the subject: turn it up and every colour washes
+    // toward the white of the room.
+    scene.environmentIntensity = dark ? 0.16 : 0.24;
+    pmrem.dispose();
+  }
+
+  const key = new THREE.DirectionalLight(0xfff6ea, dark ? 1.7 : 1.45);
+  // Lower than a classic key. High and frontal blows out every upward face,
+  // and a cart or a bench has a large upward face.
+  key.position.set(-4.2, 3.1, 5.4);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
   key.shadow.camera.near = 0.5;
   key.shadow.camera.far = 40;
   scene.add(key);
 
-  const fill = new THREE.DirectionalLight(dark ? 0x7f92c8 : 0xc4d4ff, dark ? 0.42 : 0.5);
+  const fill = new THREE.DirectionalLight(dark ? 0x7f92c8 : 0xc4d4ff, dark ? 0.34 : 0.38);
   fill.position.set(4, 1, 2);
   scene.add(fill);
 
   const rim = new THREE.DirectionalLight(dark ? 0xc79ad8 : 0xffffff, dark ? 1.4 : 0.9);
-  rim.position.set(0, 2, -5);
+  rim.position.set(1.5, 2.4, -5);
   scene.add(rim);
 
   // The hemisphere light is ambient: generous with it and every subject drifts
   // toward the colour of the room rather than its own.
   scene.add(new THREE.HemisphereLight(
-    dark ? 0x352a44 : 0xece4fb, dark ? 0x0d0913 : 0xb9a8cc, dark ? 0.55 : 0.6,
+    dark ? 0x352a44 : 0xece4fb, dark ? 0x0d0913 : 0xb9a8cc, dark ? 0.4 : 0.4,
   ));
 }
 
@@ -190,8 +209,8 @@ export function tissueMaterial(color: string, opts: { opacity?: number; glossy?:
     // look like flesh rather than painted plastic.
     transmission: 0.16,
     thickness: 1.2,
-    clearcoat: 0.62,
-    clearcoatRoughness: 0.28,
+    clearcoat: 0.4,
+    clearcoatRoughness: 0.3,
     // Sheen keeps its hue: white sheen is what greys a saturated subject.
     sheen: 0.55,
     sheenColor: c.clone().lerp(new THREE.Color(0xffffff), 0.22),
@@ -809,4 +828,237 @@ export function buildDNA(scene: THREE.Scene, turns = 3): THREE.Group {
   }
   scene.add(g);
   return g;
+}
+
+/* ------------------------------------------------------------------ *
+ * Apparatus
+ *
+ * The physics kit, as geometry. A spring drawn in 2D has to fake the way the
+ * wire passes behind the coil; in 3D it simply does, and a student can see
+ * that a spring is a wire wound round a cylinder rather than a zigzag line.
+ * The same is true of a filament lamp: the coil inside the glass is the point,
+ * and it is only visible because the glass is genuinely transmissive.
+ * ------------------------------------------------------------------ */
+
+export type Apparatus3D =
+  | "spring" | "cart" | "stand" | "bulb" | "battery" | "magnet" | "burner";
+
+/** A helix of wire, wound as a real tube rather than drawn as a line. */
+function helixTube(coils: number, radius: number, length: number, wire: number): THREE.TubeGeometry {
+  const pts: THREE.Vector3[] = [];
+  const N = Math.max(80, coils * 32);
+  for (let i = 0; i <= N; i++) {
+    const p = i / N;
+    const a = p * coils * Math.PI * 2;
+    pts.push(new THREE.Vector3(-length / 2 + p * length, Math.cos(a) * radius, Math.sin(a) * radius));
+  }
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), N * 2, wire, 10, false);
+}
+
+/**
+ * Build one piece of laboratory or physics apparatus.
+ *
+ * Returns a `tick` where the apparatus has something that moves on its own —
+ * a flame that flickers, a wheel that turns — so the caller does not have to
+ * know which pieces are animated.
+ */
+export function buildApparatus(
+  scene: THREE.Scene, which: Apparatus3D, theme: ThemeColors,
+): { group: THREE.Group; tick?: (t: number) => void } {
+  const g = new THREE.Group();
+  let tick: ((t: number) => void) | undefined;
+  const steel = () => metalMaterial("#b3aabf", 0.28);
+  const dark = isDarkTheme(theme);
+
+  switch (which) {
+    case "spring": {
+      const coil = new THREE.Mesh(helixTube(9, 0.6, 3.4, 0.11), metalMaterial("#c6bdd2", 0.22));
+      coil.castShadow = true;
+      g.add(coil);
+      for (const sx of [-1, 1]) {
+        const hook = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.1, 12, 28, Math.PI * 1.5), steel());
+        hook.position.set(sx * 2.1, 0, 0);
+        hook.rotation.y = Math.PI / 2;
+        g.add(hook);
+      }
+      break;
+    }
+    case "cart": {
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(3, 0.9, 1.6),
+        new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color(theme.accent), roughness: 0.38, metalness: 0.05,
+          clearcoat: 0.3, clearcoatRoughness: 0.34,
+        }),
+      );
+      body.position.y = 0.75;
+      body.castShadow = true;
+      g.add(body);
+      const wheels: THREE.Mesh[] = [];
+      const wheelGeom = new THREE.CylinderGeometry(0.45, 0.45, 0.22, 28);
+      for (const wx of [-0.95, 0.95]) {
+        for (const wz of [-0.82, 0.82]) {
+          // Rubber, not metal: a tyre with metalness on it renders as a
+          // black mirror and reads as a hole in the cart.
+          const w = new THREE.Mesh(wheelGeom, new THREE.MeshStandardMaterial({
+            color: new THREE.Color("#4a4356"), roughness: 0.82, metalness: 0,
+          }));
+          w.position.set(wx, 0.45, wz);
+          w.rotation.x = Math.PI / 2;
+          w.castShadow = true;
+          g.add(w);
+          wheels.push(w);
+          const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.26, 18), steel());
+          hub.position.copy(w.position);
+          hub.rotation.x = Math.PI / 2;
+          g.add(hub);
+        }
+      }
+      // Axles, so the wheels are attached to something.
+      for (const wx of [-0.95, 0.95]) {
+        const ax = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.8, 12), steel());
+        ax.position.set(wx, 0.45, 0);
+        ax.rotation.x = Math.PI / 2;
+        g.add(ax);
+      }
+      tick = (t) => { for (const w of wheels) w.rotation.y = t * 3; };
+      break;
+    }
+    case "stand": {
+      const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.34, 1.5), metalMaterial("#5d5468", 0.4));
+      base.position.y = 0.17;
+      base.castShadow = true;
+      g.add(base);
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 4.6, 24), steel());
+      rod.position.set(-0.7, 2.4, 0);
+      rod.castShadow = true;
+      g.add(rod);
+      const boss = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), metalMaterial("#8d8499", 0.3));
+      boss.position.set(-0.7, 3.4, 0);
+      g.add(boss);
+      const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.6, 16), steel());
+      jaw.position.set(0.1, 3.4, 0);
+      jaw.rotation.z = Math.PI / 2;
+      g.add(jaw);
+      break;
+    }
+    case "bulb": {
+      const glass = new THREE.Mesh(
+        new THREE.SphereGeometry(1.15, 48, 36),
+        new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color("#fff3d0"), transparent: true, opacity: 0.24,
+          roughness: 0.03, transmission: 0.95, thickness: 0.4, ior: 1.5,
+          clearcoat: 1, clearcoatRoughness: 0.02,
+        }),
+      );
+      glass.renderOrder = 3;
+      g.add(glass);
+      // The double coil is the whole point of looking inside a lamp.
+      const filament = new THREE.Mesh(
+        helixTube(11, 0.14, 1.1, 0.035),
+        new THREE.MeshStandardMaterial({
+          color: new THREE.Color("#ffdc8a"), emissive: new THREE.Color("#ffb43c"),
+          emissiveIntensity: 3.2, roughness: 0.4,
+        }),
+      );
+      g.add(filament);
+      const halo = new THREE.Mesh(
+        new THREE.SphereGeometry(1.5, 32, 24),
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color("#ffca62"), transparent: true, opacity: 0.16,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide,
+        }),
+      );
+      g.add(halo);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.5, 0.8, 28), metalMaterial("#a08a4e", 0.35));
+      cap.position.y = -1.35;
+      g.add(cap);
+      tick = (t) => {
+        const b = 0.6 + 0.4 * Math.sin(t * 1.4);
+        (filament.material as THREE.MeshStandardMaterial).emissiveIntensity = 1.4 + b * 3;
+        (halo.material as THREE.MeshBasicMaterial).opacity = 0.08 + b * 0.16;
+      };
+      break;
+    }
+    case "battery": {
+      const barrel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.7, 0.7, 2.6, 40),
+        new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color(theme.accent), roughness: 0.4, metalness: 0.1,
+          clearcoat: 0.3, clearcoatRoughness: 0.3,
+        }),
+      );
+      barrel.rotation.z = Math.PI / 2;
+      barrel.castShadow = true;
+      g.add(barrel);
+      for (const [sx, r] of [[-1, 0.72], [1, 0.72]] as const) {
+        const crimp = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.22, 40), metalMaterial("#c6bdd2", 0.3));
+        crimp.position.x = sx * 1.24;
+        crimp.rotation.z = Math.PI / 2;
+        g.add(crimp);
+      }
+      const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.28, 24), metalMaterial("#ded4e8", 0.22));
+      stud.position.x = 1.48;
+      stud.rotation.z = Math.PI / 2;
+      g.add(stud);
+      break;
+    }
+    case "magnet": {
+      for (const [sx, col] of [[-1, "#e0473f"], [1, "#3a7ede"]] as const) {
+        const half = new THREE.Mesh(
+          new THREE.BoxGeometry(1.5, 0.8, 0.55),
+          new THREE.MeshPhysicalMaterial({
+            color: new THREE.Color(col), roughness: 0.34, metalness: 0.2,
+            clearcoat: 0.35, clearcoatRoughness: 0.3,
+          }),
+        );
+        half.position.x = sx * 0.75;
+        half.castShadow = true;
+        g.add(half);
+      }
+      break;
+    }
+    case "burner": {
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 1.1, 0.34, 36), metalMaterial("#4d4557", 0.42));
+      base.castShadow = true;
+      g.add(base);
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 2.4, 28), steel());
+      barrel.position.y = 1.35;
+      barrel.castShadow = true;
+      g.add(barrel);
+      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.5, 28), metalMaterial("#8d8499", 0.34));
+      collar.position.y = 0.6;
+      g.add(collar);
+      // Premixed gas burns as a pale outer mantle around a sharp inner cone.
+      const mantle = new THREE.Mesh(
+        new THREE.ConeGeometry(0.42, 2.2, 28, 1, true),
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color("#6ea0f2"), transparent: true, opacity: 0.4,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+        }),
+      );
+      mantle.position.y = 3.6;
+      g.add(mantle);
+      const cone = new THREE.Mesh(
+        new THREE.ConeGeometry(0.2, 1.05, 24),
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color("#2f5fd0"), transparent: true, opacity: 0.72,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        }),
+      );
+      cone.position.y = 3.05;
+      g.add(cone);
+      tick = (t) => {
+        const f = 1 + Math.sin(t * 11) * 0.06 + Math.sin(t * 17.3) * 0.035;
+        mantle.scale.set(1, f, 1);
+        mantle.position.y = 2.55 + 1.1 * f;
+        cone.scale.set(1, 1 + (f - 1) * 0.4, 1);
+      };
+      break;
+    }
+  }
+
+  void dark;
+  scene.add(g);
+  return { group: g, tick };
 }

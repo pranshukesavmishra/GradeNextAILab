@@ -37,6 +37,10 @@ export type Art =
   | { art: "glassware"; which: "beaker" | "flask" | "testTube"; level?: number; color?: string; bubbles?: number; precipitate?: number }
   | { art: "apparatus"; which: "spring" | "cart" | "stand" | "bulb" | "battery" | "magnet" | "burner" }
   | { art: "sphere"; color?: string; radius?: number; glow?: number }
+  | { art: "molecule"; formula: string }
+  | { art: "atom"; protons: number; neutrons: number; electrons: number }
+  | { art: "dna" }
+  | { art: "planet"; color: string; rings?: boolean; atmosphere?: string }
   | { art: "body"; which: string }
   | { art: "landform"; which: string }
   | { art: "icon"; glyph: string };
