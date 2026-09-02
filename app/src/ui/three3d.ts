@@ -52,12 +52,26 @@ function getRenderer(): { renderer: THREE.WebGLRenderer; canvas: HTMLCanvasEleme
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    // ACES rolls highlights off beautifully but desaturates as it does, and the
+    // brief is vivid colour, so the exposure sits a little under 1 and the
+    // materials carry their own colour floor rather than relying on key light.
+    renderer.toneMappingExposure = 1.0;
     shared = { renderer, canvas };
     return shared;
   } catch {
     return null;   // No WebGL: callers fall back to their 2D path.
   }
+}
+
+/**
+ * The one renderer, for callers that composite several subjects themselves.
+ *
+ * `render3d.ts` draws a whole stage of subjects in a single pass and needs the
+ * renderer directly rather than through a `Scene3D`. Everything else should
+ * use `createScene`.
+ */
+export function sharedRenderer(): THREE.WebGLRenderer | null {
+  return getRenderer()?.renderer ?? null;
 }
 
 export function webglAvailable(): boolean {
@@ -81,7 +95,7 @@ function studioLights(scene: THREE.Scene, dark: boolean) {
   key.shadow.camera.far = 40;
   scene.add(key);
 
-  const fill = new THREE.DirectionalLight(dark ? 0x8fa8d8 : 0xd8e4ff, dark ? 0.5 : 0.7);
+  const fill = new THREE.DirectionalLight(dark ? 0x7f92c8 : 0xc4d4ff, dark ? 0.42 : 0.5);
   fill.position.set(4, 1, 2);
   scene.add(fill);
 
@@ -89,8 +103,10 @@ function studioLights(scene: THREE.Scene, dark: boolean) {
   rim.position.set(0, 2, -5);
   scene.add(rim);
 
+  // The hemisphere light is ambient: generous with it and every subject drifts
+  // toward the colour of the room rather than its own.
   scene.add(new THREE.HemisphereLight(
-    dark ? 0x352a44 : 0xf2ecff, dark ? 0x0d0913 : 0xcfc2dd, dark ? 0.7 : 0.9,
+    dark ? 0x352a44 : 0xece4fb, dark ? 0x0d0913 : 0xb9a8cc, dark ? 0.55 : 0.6,
   ));
 }
 
@@ -156,21 +172,55 @@ export function createScene(theme: ThemeColors, opts: { distance?: number } = {}
 
 /** Wet, translucent biological tissue: membranes, organs, cytoplasm. */
 export function tissueMaterial(color: string, opts: { opacity?: number; glossy?: number } = {}) {
+  const c = new THREE.Color(color);
+  // A colour floor. Tone mapping plus a bright fill light wash a mid-tone
+  // toward grey, and a grey cell is exactly the complaint this whole effort
+  // exists to answer. A little self-emission in the subject's own hue keeps
+  // the colour saturated in shadow without making it look like it glows.
+  const floor = c.clone().multiplyScalar(0.9);
   return new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(color),
+    color: c,
     transparent: (opts.opacity ?? 1) < 1,
     opacity: opts.opacity ?? 1,
-    roughness: 0.42 - (opts.glossy ?? 0) * 0.3,
+    roughness: 0.34 - (opts.glossy ?? 0) * 0.26,
     metalness: 0,
+    emissive: floor,
+    emissiveIntensity: 0.16,
     // Light entering the surface and scattering back out is what makes flesh
     // look like flesh rather than painted plastic.
-    transmission: 0.18,
+    transmission: 0.16,
     thickness: 1.2,
-    clearcoat: 0.5,
-    clearcoatRoughness: 0.35,
-    sheen: 0.4,
-    sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.5),
+    clearcoat: 0.62,
+    clearcoatRoughness: 0.28,
+    // Sheen keeps its hue: white sheen is what greys a saturated subject.
+    sheen: 0.55,
+    sheenColor: c.clone().lerp(new THREE.Color(0xffffff), 0.22),
+    sheenRoughness: 0.5,
   });
+}
+
+/**
+ * A saturated rim shell.
+ *
+ * Rendering the *inside* of a slightly larger copy of a shape, additively,
+ * puts a bright edge exactly where the surface turns away from the viewer —
+ * the fresnel falloff a real translucent body shows. It is the single cheapest
+ * thing that stops a 3D subject reading as a pale grey ball.
+ */
+export function rimShell(radius: number, color: string, strength = 0.55): THREE.Mesh {
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 48, 36),
+    new THREE.MeshBasicMaterial({
+      color: new THREE.Color(color),
+      transparent: true,
+      opacity: strength,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+  );
+  m.renderOrder = 3;
+  return m;
 }
 
 /** Laboratory glass: highly transmissive with real refraction. */
@@ -224,20 +274,45 @@ export function buildCell(
   const g = new THREE.Group();
   const R = opts.radius ?? 2.4;
 
+  // The cytosol: a dense, saturated interior so the organelles are seen
+  // suspended *in* something rather than floating in front of the page.
+  const cytosol = new THREE.Mesh(
+    new THREE.SphereGeometry(R * 0.985, 48, 36),
+    new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color("#7c47b8"), transparent: true, opacity: 0.3,
+      roughness: 0.5, transmission: 0.55, thickness: R * 1.6,
+      emissive: new THREE.Color("#5e2f96"), emissiveIntensity: 0.3,
+      depthWrite: false,
+    }),
+  );
+  cytosol.renderOrder = 1;
+  g.add(cytosol);
+
   const shell = new THREE.Mesh(
     new THREE.SphereGeometry(R, 64, 48),
-    tissueMaterial("#8e5bc4", { opacity: 0.3, glossy: 0.7 }),
+    tissueMaterial("#8e5bc4", { opacity: 0.42, glossy: 0.7 }),
   );
   shell.renderOrder = 2;
   g.add(shell);
+  // Fresnel rim: the bright violet edge a wet membrane shows where it turns
+  // away from the eye. Without it the cell has no silhouette against a pale
+  // background and the whole subject looks washed out.
+  g.add(rimShell(R * 1.012, "#c98bff", 0.42));
 
   if (opts.plant) {
     const wall = new THREE.Mesh(
       new THREE.BoxGeometry(R * 2.1, R * 2.1, R * 2.1),
-      tissueMaterial("#6fae5a", { opacity: 0.16 }),
+      tissueMaterial("#6fae5a", { opacity: 0.26 }),
     );
-    wall.renderOrder = 3;
+    wall.renderOrder = 4;
     g.add(wall);
+    // Cellulose is fibrous, and the fibres are what makes the wall stiff.
+    const edges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(R * 2.1, R * 2.1, R * 2.1)),
+      new THREE.LineBasicMaterial({ color: new THREE.Color("#4e9440"), transparent: true, opacity: 0.85 }),
+    );
+    edges.renderOrder = 5;
+    g.add(edges);
   }
 
   const nuc = new THREE.Mesh(
@@ -418,4 +493,320 @@ export function buildParticles(
       mesh.instanceMatrix.needsUpdate = true;
     },
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Specimen builders — one per Art kind the archetype engine understands
+ *
+ * These exist so a simulation written as content gets a real 3D subject with
+ * no extra work. The archetype engine maps an `art` descriptor onto one of
+ * these, which is what lets a catalogue of hundreds be three-dimensional
+ * without hundreds of separate 3D scenes being authored by hand.
+ * ------------------------------------------------------------------ */
+
+/** A single organelle, large, for topics that study one structure closely. */
+export function buildOrganelle(scene: THREE.Scene, which: string): THREE.Group {
+  const g = new THREE.Group();
+  switch (which) {
+    case "nucleus": {
+      const n = new THREE.Mesh(
+        new THREE.SphereGeometry(1.6, 64, 48), tissueMaterial("#5c2a86", { glossy: 0.5 }),
+      );
+      n.castShadow = true;
+      g.add(n);
+      const nl = new THREE.Mesh(
+        new THREE.SphereGeometry(0.55, 32, 24), tissueMaterial("#3d1a5c"),
+      );
+      nl.position.set(0.3, 0.15, 0.5);
+      g.add(nl);
+      // Pores read as a real double envelope rather than a painted ring.
+      const pore = new THREE.TorusGeometry(0.11, 0.04, 8, 16);
+      for (let i = 0; i < 22; i++) {
+        const a = i * 2.39, b = Math.acos(1 - 2 * ((i + 0.5) / 22));
+        const p = new THREE.Mesh(pore, tissueMaterial("#7b4aa8"));
+        p.position.setFromSphericalCoords(1.6, b, a);
+        p.lookAt(0, 0, 0);
+        g.add(p);
+      }
+      break;
+    }
+    case "mitochondrion": {
+      const outer = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.7, 1.8, 12, 32),
+        tissueMaterial("#e0708a", { opacity: 0.55, glossy: 0.5 }),
+      );
+      outer.rotation.z = Math.PI / 2;
+      outer.castShadow = true;
+      g.add(outer);
+      // The cristae are the organelle's whole point: folding is what creates
+      // the surface area that makes it the cell's power plant.
+      const crista = new THREE.TorusGeometry(0.5, 0.07, 8, 24, Math.PI * 1.2);
+      for (let i = 0; i < 9; i++) {
+        const c = new THREE.Mesh(crista, tissueMaterial("#c04a68"));
+        c.position.x = -1.1 + i * 0.28;
+        c.rotation.set(Math.PI / 2, 0, i % 2 ? 0.5 : -0.5);
+        g.add(c);
+      }
+      break;
+    }
+    case "chloroplast": {
+      const outer = new THREE.Mesh(
+        new THREE.SphereGeometry(1.3, 48, 36),
+        tissueMaterial("#3fae62", { opacity: 0.5, glossy: 0.4 }),
+      );
+      outer.scale.set(1, 0.6, 0.8);
+      outer.castShadow = true;
+      g.add(outer);
+      // Grana: stacks of thylakoid discs, the sites that catch the light.
+      const disc = new THREE.CylinderGeometry(0.26, 0.26, 0.07, 24);
+      for (let s = 0; s < 4; s++) {
+        for (let d = 0; d < 5; d++) {
+          const m = new THREE.Mesh(disc, tissueMaterial("#1f7a3c"));
+          m.position.set(-0.6 + s * 0.42, -0.16 + d * 0.09, (s % 2) * 0.2 - 0.1);
+          g.add(m);
+        }
+      }
+      break;
+    }
+    case "reticulum": {
+      // Folded sheets, studded with ribosomes where it is rough.
+      for (let i = 0; i < 6; i++) {
+        const sheet = new THREE.Mesh(
+          new THREE.TorusGeometry(0.9 - i * 0.06, 0.05, 8, 48, Math.PI * 1.4),
+          tissueMaterial("#7b6be0", { glossy: 0.4 }),
+        );
+        sheet.position.y = -0.5 + i * 0.2;
+        sheet.rotation.set(Math.PI / 2.2, i * 0.3, 0);
+        g.add(sheet);
+      }
+      const rib = new THREE.SphereGeometry(0.055, 10, 8);
+      for (let i = 0; i < 40; i++) {
+        const r = new THREE.Mesh(rib, tissueMaterial("#4b3aa8"));
+        const a = i * 0.61;
+        r.position.set(Math.cos(a) * 0.85, -0.5 + (i % 6) * 0.2, Math.sin(a) * 0.85);
+        g.add(r);
+      }
+      break;
+    }
+    case "golgi": {
+      for (let i = 0; i < 5; i++) {
+        const c = new THREE.Mesh(
+          new THREE.TorusGeometry(0.8 - i * 0.09, 0.07, 8, 40, Math.PI * 1.1),
+          tissueMaterial("#4aa3d8", { glossy: 0.5 }),
+        );
+        c.position.y = -0.35 + i * 0.18;
+        c.rotation.set(Math.PI / 2, 0, 0.2);
+        g.add(c);
+      }
+      const ves = new THREE.SphereGeometry(0.12, 16, 12);
+      for (let i = 0; i < 6; i++) {
+        const v = new THREE.Mesh(ves, tissueMaterial("#6cc3f0", { glossy: 0.8 }));
+        v.position.set(0.9 + i * 0.16, 0.4 - i * 0.14, 0.2);
+        g.add(v);
+      }
+      break;
+    }
+    default: {
+      const v = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 48, 36), tissueMaterial("#43b6e8", { glossy: 0.8 }),
+      );
+      v.castShadow = true;
+      g.add(v);
+    }
+  }
+  scene.add(g);
+  return g;
+}
+
+/** A virus or a bacterium. */
+export function buildMicrobe(scene: THREE.Scene, which: "virus" | "bacterium"): THREE.Group {
+  const g = new THREE.Group();
+  if (which === "virus") {
+    const capsid = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1, 1),   // faceted, as a real capsid is
+      tissueMaterial("#9a4fc9", { glossy: 0.6 }),
+    );
+    capsid.castShadow = true;
+    g.add(capsid);
+    const spikeGeom = new THREE.ConeGeometry(0.09, 0.42, 12);
+    const knob = new THREE.SphereGeometry(0.13, 14, 10);
+    for (let i = 0; i < 34; i++) {
+      const a = i * 2.399, b = Math.acos(1 - 2 * ((i + 0.5) / 34));
+      const dir = new THREE.Vector3().setFromSphericalCoords(1, b, a);
+      const s = new THREE.Mesh(spikeGeom, tissueMaterial("#7a35a8"));
+      s.position.copy(dir.clone().multiplyScalar(1.16));
+      s.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      g.add(s);
+      const k = new THREE.Mesh(knob, tissueMaterial("#c07ae0", { glossy: 0.7 }));
+      k.position.copy(dir.clone().multiplyScalar(1.42));
+      g.add(k);
+    }
+  } else {
+    const body = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.5, 1.6, 12, 32),
+      tissueMaterial("#9a4fc9", { glossy: 0.5 }),
+    );
+    body.rotation.z = Math.PI / 2;
+    body.castShadow = true;
+    g.add(body);
+    // Flagella as tubes following a helix, so they read as whipping tails.
+    for (let f = -1; f <= 1; f++) {
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 24; i++) {
+        const p = i / 24;
+        pts.push(new THREE.Vector3(-1.4 - p * 1.5, Math.sin(p * 8) * 0.22 * p, f * 0.22 + Math.cos(p * 8) * 0.22 * p));
+      }
+      const tail = new THREE.Mesh(
+        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.035, 8, false),
+        tissueMaterial("#b06ad8"),
+      );
+      g.add(tail);
+    }
+  }
+  scene.add(g);
+  return g;
+}
+
+/** Laboratory glassware with a liquid that has a real surface. */
+export function buildGlassware(
+  scene: THREE.Scene,
+  which: "beaker" | "flask" | "testTube",
+  opts: { level?: number; color?: string } = {},
+): THREE.Group {
+  const g = new THREE.Group();
+  const level = Math.max(0, Math.min(1, opts.level ?? 0.55));
+  const liquidColor = opts.color ?? "#8e5bc4";
+
+  if (which === "flask") {
+    const body = new THREE.Mesh(new THREE.ConeGeometry(1.1, 1.8, 48, 1, true), glassMaterial());
+    body.position.y = -0.2;
+    g.add(body);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 1, 32, 1, true), glassMaterial());
+    neck.position.y = 1.1;
+    g.add(neck);
+    if (level > 0.02) {
+      const lh = 1.6 * level;
+      const liq = new THREE.Mesh(
+        new THREE.ConeGeometry(1.02 * level + 0.1, lh, 48),
+        tissueMaterial(liquidColor, { opacity: 0.85, glossy: 0.9 }),
+      );
+      liq.position.y = -1.1 + lh / 2;
+      g.add(liq);
+    }
+  } else {
+    const r = which === "testTube" ? 0.42 : 1;
+    const h = which === "testTube" ? 2.6 : 2;
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 48, 1, true), glassMaterial());
+    g.add(body);
+    const base = new THREE.Mesh(new THREE.CircleGeometry(r, 48), glassMaterial());
+    base.rotation.x = -Math.PI / 2;
+    base.position.y = -h / 2;
+    g.add(base);
+    if (level > 0.02) {
+      const lh = (h - 0.1) * level;
+      const liq = new THREE.Mesh(
+        new THREE.CylinderGeometry(r * 0.96, r * 0.96, lh, 48),
+        tissueMaterial(liquidColor, { opacity: 0.88, glossy: 0.9 }),
+      );
+      liq.position.y = -h / 2 + lh / 2 + 0.05;
+      liq.castShadow = true;
+      g.add(liq);
+    }
+  }
+  scene.add(g);
+  return g;
+}
+
+/** An atom: nucleus of nucleons with electrons on visible shells. */
+export function buildAtom(
+  scene: THREE.Scene, protons: number, neutrons: number, electrons: number,
+): { group: THREE.Group; tick: (t: number) => void } {
+  const g = new THREE.Group();
+
+  const pGeom = new THREE.SphereGeometry(0.2, 20, 16);
+  const total = Math.max(1, protons + neutrons);
+  for (let i = 0; i < total; i++) {
+    const isP = i < protons;
+    const m = new THREE.Mesh(pGeom, tissueMaterial(isP ? "#e0455a" : "#8a92a8", { glossy: 0.6 }));
+    // Fibonacci packing keeps the nucleus dense and evenly filled.
+    const a = i * 2.399, rr = 0.26 * Math.cbrt(i + 1);
+    const b = Math.acos(1 - 2 * ((i + 0.5) / total));
+    m.position.setFromSphericalCoords(rr, b, a);
+    m.castShadow = true;
+    g.add(m);
+  }
+
+  const shells = [2, 8, 18, 32];
+  const orbiters: { mesh: THREE.Mesh; r: number; speed: number; tilt: number; phase: number }[] = [];
+  let left = electrons;
+  shells.forEach((cap, si) => {
+    if (left <= 0) return;
+    const n = Math.min(cap, left);
+    left -= n;
+    const R = 1.5 + si * 0.9;
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(R, 0.012, 8, 96),
+      new THREE.MeshBasicMaterial({ color: 0x9d7ac0, transparent: true, opacity: 0.35 }),
+    );
+    ring.rotation.set(Math.PI / 2 + si * 0.4, si * 0.6, 0);
+    g.add(ring);
+    for (let i = 0; i < n; i++) {
+      const e = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 16, 12), emissiveMaterial("#4fc3f7", 1.4),
+      );
+      g.add(e);
+      orbiters.push({ mesh: e, r: R, speed: 0.9 - si * 0.16, tilt: si * 0.4, phase: (i / n) * Math.PI * 2 });
+    }
+  });
+
+  scene.add(g);
+  return {
+    group: g,
+    tick(t) {
+      for (const o of orbiters) {
+        const a = t * o.speed + o.phase;
+        o.mesh.position.set(
+          Math.cos(a) * o.r,
+          Math.sin(a) * o.r * Math.sin(o.tilt),
+          Math.sin(a) * o.r * Math.cos(o.tilt),
+        );
+      }
+    },
+  };
+}
+
+/** A double helix with base-pair rungs. */
+export function buildDNA(scene: THREE.Scene, turns = 3): THREE.Group {
+  const g = new THREE.Group();
+  const H = 6, R = 0.8;
+  const strand = (offset: number, color: string) => {
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 120; i++) {
+      const p = i / 120, a = p * turns * Math.PI * 2 + offset;
+      pts.push(new THREE.Vector3(Math.cos(a) * R, -H / 2 + p * H, Math.sin(a) * R));
+    }
+    return new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 160, 0.13, 12, false),
+      tissueMaterial(color, { glossy: 0.6 }),
+    );
+  };
+  g.add(strand(0, "#8e5bc4"));
+  g.add(strand(Math.PI, "#4aa3d8"));
+
+  const BASES = ["#e0455a", "#3fae62", "#f0a83c", "#4fc3f7"];
+  for (let i = 0; i <= 34; i++) {
+    const p = i / 34, a = p * turns * Math.PI * 2;
+    const y = -H / 2 + p * H;
+    const A = new THREE.Vector3(Math.cos(a) * R, y, Math.sin(a) * R);
+    const B = new THREE.Vector3(Math.cos(a + Math.PI) * R, y, Math.sin(a + Math.PI) * R);
+    const rung = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, A.distanceTo(B), 12),
+      tissueMaterial(BASES[i % 4], { glossy: 0.5 }),
+    );
+    rung.position.copy(A.clone().add(B).multiplyScalar(0.5));
+    rung.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize());
+    g.add(rung);
+  }
+  scene.add(g);
+  return g;
 }

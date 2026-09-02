@@ -290,7 +290,13 @@ async function main() {
     return 2;
   }
 
-  const browser = await chromium.launch({ executablePath: CHROME });
+  // Software GL. Headless Chromium has no GPU, so without this every
+  // simulation silently takes the 2D fallback and the 3D layer — which is now
+  // most of what a student looks at — would never be checked at all.
+  const browser = await chromium.launch({
+    executablePath: CHROME,
+    args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox"],
+  });
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   await context.route("**/*", (route) => {
     const host = new URL(route.request().url()).hostname;

@@ -2,7 +2,7 @@ import type { Readout, RenderContext, SimInput, SimManifest, SimModel } from "./
 import { q } from "./units";
 import {
   facts, initState, overlaysOf, paramsOf,
-  type ArchetypeSpec, type ArchetypeState, type Specimen,
+  type ArchetypeSpec, type ArchetypeState, type Art, type Specimen,
 } from "./archetype";
 import {
   bacterium, bokeh, callout, chloroplast, depthWash, golgi, membrane,
@@ -12,6 +12,8 @@ import {
   barMagnet, battery, beaker, bulb, burner, cart, clampStand, flask, spring, testTube,
 } from "@ui/labware";
 import { arcGauge, beginLabels, glow, hexA, isDarkTheme, vignette } from "@ui/scene";
+import { begin3D, can3D, end3D, place3D } from "@ui/render3d";
+import type { Subject3D } from "@ui/render3d";
 
 /**
  * The archetype renderer.
@@ -150,6 +152,48 @@ function binAt(spec: ArchetypeSpec, x: number, y: number): string | null {
  * Specimen art
  * ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ *
+ * The 3D pass
+ *
+ * Specimens that have real geometry behind them are drawn as geometry: lit,
+ * shaded, occluding themselves, turning slowly so a student can see they are
+ * solid. Everything else — apparatus, landforms, bodies — stays on the 2D kit,
+ * which for those subjects is already the better drawing.
+ *
+ * The stage is composited in two passes. The first lays out the scene and
+ * registers where each 3D specimen goes; the WebGL layer is then blitted over
+ * it; the second pass redraws the frame's flat furniture — bins, trays,
+ * captions, leaders, readouts — on top, so text stays crisp and never ends up
+ * buried under a specimen.
+ * ------------------------------------------------------------------ */
+
+/** True while the current frame is compositing a 3D layer. */
+let use3D = false;
+/** Counts specimens within a frame so they do not all turn in lockstep. */
+let placed3D = 0;
+/**
+ * Which composite pass is running.
+ *
+ * Pass 1 lays the ground the specimens stand on — their pool of tone and their
+ * contact shadow — and is followed by the WebGL blit. Pass 2 puts the flat
+ * furniture back on top. Ground drawn in pass 2 would land *over* the specimen
+ * and grey it out, so it is drawn once, in pass 1 only.
+ */
+let pass3D: 1 | 2 = 1;
+
+/** Map a piece of `Art` onto a 3D subject, or null to keep the 2D drawing. */
+function subject3DFor(a: Art, theme: { accent: string }): Subject3D | null {
+  switch (a.art) {
+    case "cell": return { kind: "cell", plant: a.plant };
+    case "organelle": return { kind: "organelle", which: a.which };
+    case "microbe": return { kind: "microbe", which: a.which };
+    case "glassware":
+      return { kind: "glassware", which: a.which, level: a.level, color: a.color };
+    case "sphere": return { kind: "sphere", color: a.color ?? theme.accent };
+    default: return null;
+  }
+}
+
 function drawSpecimen(
   rc: RenderContext<ArchetypeState>, sp: Specimen,
   x: number, y: number, size: number,
@@ -159,17 +203,68 @@ function drawSpecimen(
   const a = sp.art;
   const accent = theme.accent;
 
-  // Contact shadow under the specimen so it sits on the surface.
+  // Does this specimen have real geometry behind it? Cells, organelles,
+  // microbes, glassware and spheres do. Apparatus, landforms and bodies stay
+  // on the 2D kit, which for those subjects is the better drawing.
+  const sub3d = use3D ? subject3DFor(a, theme) : null;
+
+  // Pass 2 only repairs the flat furniture that the WebGL blit covered. A 3D
+  // specimen is already on the canvas; drawing anything for it now would land
+  // in front of it.
+  if (sub3d && pass3D === 2) return;
+
+  if (sub3d) {
+    // The specimen well.
+    //
+    // A saturated subject on a pale ground looks bleached — the eye judges
+    // colour against what surrounds it, and pale lavender surrounds everything
+    // here. Photographers solve this with a sweep: the subject sits in its own
+    // pool of deeper tone and its colour and rim light immediately read as
+    // vivid. The pool is local to the subject, so captions and leaders outside
+    // it keep the light ground they need to stay legible.
+    ctx.save();
+    const wr = size * 1.4;
+    const deep = theme.sci["cell"] ?? theme.accent;
+    const well = ctx.createRadialGradient(x, y + size * 0.1, size * 0.2, x, y + size * 0.1, wr);
+    well.addColorStop(0, hexA(deep, isDarkTheme(theme) ? 0.32 : 0.2));
+    well.addColorStop(0.55, hexA(deep, isDarkTheme(theme) ? 0.18 : 0.09));
+    well.addColorStop(1, hexA(deep, 0));
+    ctx.fillStyle = well;
+    ctx.beginPath();
+    ctx.arc(x, y + size * 0.1, wr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Contact shadow. A shadow wider than its subject and evenly grey reads as a
+  // smudge and makes the subject look pasted on; a real one is tight, darkest
+  // directly beneath, and carries the colour of the surface it falls on.
+  const sy = y + size * (sub3d ? 1.0 : 0.86);
+  const sw = size * (sub3d ? 0.46 : 0.72);
+  const shadowInk = sub3d ? (theme.sci["cell"] ?? theme.ink) : theme.inkSoft;
   ctx.save();
-  ctx.globalAlpha = 0.22;
-  const sg = ctx.createRadialGradient(x, y + size * 0.86, 0, x, y + size * 0.86, size * 0.72);
-  sg.addColorStop(0, "rgba(0,0,0,0.8)");
-  sg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.globalAlpha = sub3d ? 0.4 : 0.22;
+  const sg = ctx.createRadialGradient(x, sy, 0, x, sy, sw);
+  sg.addColorStop(0, hexA(shadowInk, 0.9));
+  sg.addColorStop(0.4, hexA(shadowInk, 0.34));
+  sg.addColorStop(1, hexA(shadowInk, 0));
   ctx.fillStyle = sg;
   ctx.beginPath();
-  ctx.ellipse(x, y + size * 0.86, size * 0.72, size * 0.17, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, sy, sw, sw * 0.2, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+
+  if (sub3d) {
+    // Each specimen turns at its own phase, so a tray of eight reads as eight
+    // separate objects rather than one object stamped eight times.
+    const phase = placed3D++ * 1.7;
+    place3D(sub3d, x, y, size * 2.05, t, rc.width, rc.height, {
+      spin: t * 0.32 + phase,
+      tilt: -0.26 + Math.sin(t * 0.21 + phase) * 0.07,
+      depth: placed3D,
+    });
+    return;
+  }
 
   switch (a.art) {
     case "cell": {
@@ -256,18 +351,38 @@ function makeRender(spec: ArchetypeSpec) {
     const dark = isDarkTheme(theme);
     stageSize.set(spec.id, { w: width, h: height });
 
-    beginLabels(ctx);
     depthWash(ctx, width, height, theme);
     bokeh(ctx, width, height, theme.accent, 7, 11);
 
-    switch (spec.kind) {
-      case "sort": renderSort(rc, spec); break;
-      case "explore":
-      case "assemble": renderExplore(rc, spec); break;
-      case "investigate": renderInvestigate(rc, spec); break;
-      case "process":
-      case "trace": renderProcess(rc, spec); break;
-      case "compare": renderCompare(rc, spec); break;
+    // Open the 3D layer. `can3D` is false on a machine without WebGL and the
+    // whole simulation then runs on the 2D kit exactly as it always has.
+    use3D = can3D() && begin3D(width, height, theme, `${dark ? "d" : "l"}:${theme.accent}`);
+    placed3D = 0;
+
+    const layout = () => {
+      beginLabels(ctx);
+      switch (spec.kind) {
+        case "sort": renderSort(rc, spec); break;
+        case "explore":
+        case "assemble": renderExplore(rc, spec); break;
+        case "investigate": renderInvestigate(rc, spec); break;
+        case "process":
+        case "trace": renderProcess(rc, spec); break;
+        case "compare": renderCompare(rc, spec); break;
+      }
+    };
+
+    pass3D = 1;
+    layout();
+    if (use3D) {
+      end3D(ctx, width, height);
+      pass3D = 2;
+      // Second pass: the same furniture and the same text, now above the
+      // specimens. Nothing is recomputed differently, so the two passes agree
+      // pixel for pixel and only the layering changes.
+      placed3D = 0;
+      layout();
+      use3D = false;
     }
 
     // A correct or wrong answer flashes the whole stage briefly, so feedback

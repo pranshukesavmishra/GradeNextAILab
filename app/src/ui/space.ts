@@ -281,13 +281,16 @@ export function planet(
     // The lit limb, brightest where the sun grazes it and fading round the
     // curve. Drawn in segments so it dies away instead of ending as a hoop.
     ctx.globalCompositeOperation = "lighter";
-    const segs = 46;
+    // Butt caps and abutting angles: with round caps every joint double-exposes
+    // and the limb turns into a row of beads.
+    ctx.lineCap = "butt";
+    const segs = 64;
     for (let i = 0; i < segs; i++) {
       const a0 = sunAngle - Math.PI * 0.72 + (Math.PI * 1.44 * i) / segs;
       const a1 = sunAngle - Math.PI * 0.72 + (Math.PI * 1.44 * (i + 1)) / segs;
       const f = Math.pow(Math.cos(((i / segs) - 0.5) * Math.PI), 1.6);
       ctx.beginPath();
-      ctx.arc(x, y, r * 0.985, a0, a1 + 0.01);
+      ctx.arc(x, y, r * 0.985, a0, a1);
       ctx.strokeStyle = hexA(mix(acol, "#ffffff", 0.45), 0.38 * atm * f);
       ctx.lineWidth = Math.max(1.2, r * 0.03);
       ctx.stroke();
@@ -517,9 +520,10 @@ export function starBody(
   // Corona: a broad halo plus streamers that breathe. Additive, because that is
   // how overlapping light actually behaves.
   const halo = ctx.createRadialGradient(x, y, r * 0.85, x, y, r * 3.4);
-  halo.addColorStop(0, hexA(col, 0.5));
-  halo.addColorStop(0.22, hexA(col, 0.17));
-  halo.addColorStop(0.6, hexA(col, 0.05));
+  halo.addColorStop(0, hexA(col, 0.6));
+  halo.addColorStop(0.15, hexA(col, 0.3));
+  halo.addColorStop(0.35, hexA(col, 0.12));
+  halo.addColorStop(0.65, hexA(col, 0.04));
   halo.addColorStop(1, hexA(col, 0));
   ctx.fillStyle = halo;
   ctx.beginPath();
@@ -529,16 +533,16 @@ export function starBody(
   // Streamers. Faint, many, and fading to nothing at the tip: a corona is a
   // thin haze that happens to have structure, not a crown of spikes.
   ctx.lineCap = "round";
-  for (let i = 0; i < 40; i++) {
-    const a = (i / 40) * Math.PI * 2 + hash(i * 5) * 0.55;
-    const len = r * (1.1 + hash(i * 9) * 1.05)
+  for (let i = 0; i < 64; i++) {
+    const a = (i / 64) * Math.PI * 2 + hash(i * 5) * 0.7;
+    const len = r * (1.06 + hash(i * 9) * 1.35)
       * (0.9 + 0.1 * Math.sin(t * 0.7 + i * 1.3));
     const x0 = x + Math.cos(a) * r * 1.02, y0 = y + Math.sin(a) * r * 1.02;
     const x1 = x + Math.cos(a) * len, y1 = y + Math.sin(a) * len;
     const g = ctx.createLinearGradient(x0, y0, x1, y1);
     g.addColorStop(0, hexA(col, 0));
-    g.addColorStop(0.12, hexA(col, 0.045));
-    g.addColorStop(0.5, hexA(col, 0.018));
+    g.addColorStop(0.12, hexA(col, 0.018));
+    g.addColorStop(0.5, hexA(col, 0.008));
     g.addColorStop(1, hexA(col, 0));
     ctx.strokeStyle = g;
     ctx.lineWidth = r * (0.14 + hash(i * 3) * 0.2);
@@ -629,19 +633,25 @@ export function starBody(
     // eyelashes rather than as magnetic structure.
     const a = (i / 3) * Math.PI * 2 + hash(i * 41 + 6) * 0.7 + t * 0.05;
     const arc = 0.3 + hash(i * 43) * 0.25;
-    const h = r * (0.1 + hash(i * 47) * 0.12) * (0.7 + 0.3 * Math.sin(t * 0.8 + i));
+    const h = r * (0.05 + hash(i * 47) * 0.07) * (0.7 + 0.3 * Math.sin(t * 0.8 + i));
     const p0 = { x: x + Math.cos(a) * r * 0.98, y: y + Math.sin(a) * r * 0.98 };
     const p1 = { x: x + Math.cos(a + arc) * r * 0.98, y: y + Math.sin(a + arc) * r * 0.98 };
     const mxp = x + Math.cos(a + arc / 2) * (r + h);
     const myp = y + Math.sin(a + arc / 2) * (r + h);
+    // Fading at both feet, so a loop reads as gas following a field line rather
+    // than as a wire handle stuck on the side of the star.
+    const pg = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+    pg.addColorStop(0, hexA(mix(col, "#ff5a2a", 0.5), 0));
+    pg.addColorStop(0.5, hexA(mix(col, "#ff5a2a", 0.5), 0.2));
+    pg.addColorStop(1, hexA(mix(col, "#ff5a2a", 0.5), 0));
     ctx.beginPath();
     ctx.moveTo(p0.x, p0.y);
     ctx.quadraticCurveTo(mxp, myp, p1.x, p1.y);
-    ctx.strokeStyle = hexA(mix(col, "#ff5a2a", 0.5), 0.32);
-    ctx.lineWidth = Math.max(1.2, r * 0.03);
+    ctx.strokeStyle = pg;
+    ctx.lineWidth = Math.max(1.4, r * 0.032);
     ctx.stroke();
-    ctx.strokeStyle = hexA(mix(col, "#ffffff", 0.5), 0.22);
-    ctx.lineWidth = Math.max(0.6, r * 0.011);
+    ctx.strokeStyle = pg;
+    ctx.lineWidth = Math.max(0.6, r * 0.012);
     ctx.stroke();
   }
   ctx.restore();

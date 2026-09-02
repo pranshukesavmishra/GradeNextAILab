@@ -538,8 +538,10 @@ function fossilPath(ctx: CanvasRenderingContext2D, s: number, kind: FossilKind) 
   ctx.beginPath();
   if (kind === "ammonite") {
     // A logarithmic spiral, which is the actual growth law of the shell.
+    // Two and a half whorls of a logarithmic spiral, which is the growth law
+    // the animal actually followed.
     for (let i = 0; i <= 70; i++) {
-      const a = -i * 0.09 * TAU * 0.16 * 6;
+      const a = -i * 0.224;
       const r = s * 0.1 * Math.exp(0.0295 * i);
       const px = Math.cos(a) * r, py = Math.sin(a) * r;
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
@@ -980,7 +982,7 @@ export function plateSection(
     }
     const coneH = h * 0.2;
     const coneBase = py(P.top(U_ARC)) + h * 0.012;
-    coneBody(ctx, px(U_ARC), coneBase, w * 0.23, coneH, 0.3, t, pal);
+    coneBody(ctx, px(U_ARC), coneBase, w * 0.23, coneH, 0.3, pal);
     ctx.save();
     ctx.beginPath();
     ctx.rect(x, y, w, coneBase - coneH * 0.9);
@@ -1143,7 +1145,6 @@ function drawSlab(
     ctx.arc(qx, qy, Math.max(1.2, h * 0.006), 0, TAU);
     ctx.fill();
   }
-  void P;
 }
 
 /** A strike-slip fault zone: crushed rock, and earthquakes on the plane itself. */
@@ -1390,7 +1391,7 @@ export function volcano(
   magmaBody(ctx, x, chamberY, w * 0.34, h * 0.19, 0.45 + a * 0.55, t, pal);
 
   // The cone itself.
-  coneBody(ctx, x, baseY, w, h, a, t, pal);
+  coneBody(ctx, x, baseY, w, h, a, pal);
 
   // Crater lava and the column above it.
   const rimY = baseY - h;
@@ -1424,7 +1425,7 @@ export function volcano(
 function coneBody(
   ctx: CanvasRenderingContext2D,
   x: number, baseY: number, w: number, h: number,
-  a: number, t: number, pal: GeoPalette,
+  a: number, pal: GeoPalette,
 ) {
   const half = w / 2;
   const RIM = 0.17, SHAPE = 1.55;
@@ -1563,7 +1564,6 @@ function coneBody(
   ctx.strokeStyle = hexA(ROCK_SHADE, 0.6);
   ctx.lineWidth = Math.max(1.4, h * 0.012);
   ctx.stroke();
-  void t;
   ctx.restore();
 }
 
