@@ -64,6 +64,17 @@ const LIFT_IT_AND_HOLD: ArchetypeSpec = {
     x: "height", y: "storedEnergyJ",
     xLabel: "Height above the bench (m)", yLabel: "Stored energy (J)",
   },
+  /*
+   * The stand is the ruler. It grows with the height slider so the clamp
+   * really is further off the bench, and the drop keeps the foot of the stand
+   * planted while the top of it rises: without that compensation the whole
+   * thing would grow about its middle and sink into the bench as it got
+   * taller.
+   */
+  drive: ({ v }) => {
+    const s = 0.65 + (v.height / 12) * 0.55;
+    return { scale: s, offset: [0, -1.2 * (s - 1)], spin: 0.5 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -112,6 +123,18 @@ const STRETCH_AND_STORE: ArchetypeSpec = {
     x: "extension", y: "storedEnergyJ",
     xLabel: "Extension (m)", yLabel: "Stored energy (J)",
   },
+  /*
+   * The spring is drawn along the extension: at its natural length it sits
+   * short and tight, and at 0.4 m it is drawn half as long again. It is held
+   * nearly side-on so the stretch happens across the screen where the eye can
+   * measure it, and it stops turning once it is stretched, the way a spring
+   * held under tension does.
+   */
+  drive: ({ v }) => ({
+    scale: 0.78 + v.extension * 1.7,
+    spin: 0.12,
+    tilt: 0.2,
+  }),
 };
 
 /* ---------------------------------------------------------------- *
@@ -185,6 +208,29 @@ const TEN_CENTIMETRES_MORE: ArchetypeSpec = {
   specimens: [
     { id: "spring", name: "Spring, k = 150 N/m", art: { art: "apparatus", which: "spring" } },
   ],
+  variables: [
+    { key: "extension", label: "How far the spring is pulled out (m)", min: 0, max: 0.4, step: 0.01, default: 0.2 },
+  ],
+  // The same spring the stages walk through, but under the student's hand:
+  // E = half x 150 x x squared, the pull is F = 150 x, and the price of the
+  // next 10 cm is half x 150 x ((x + 0.1) squared - x squared), which grows
+  // every time because the force you are pulling against has grown.
+  measure: (v) => ({
+    storedEnergyJ: 0.5 * 150 * v.extension * v.extension,
+    pullForceN: 150 * v.extension,
+    nextTenCentimetresCostJ:
+      0.5 * 150 * ((v.extension + 0.1) * (v.extension + 0.1) - v.extension * v.extension),
+    lastTenCentimetresCostJ:
+      v.extension < 0.1 ? 0.5 * 150 * v.extension * v.extension
+        : 0.5 * 150 * (v.extension * v.extension - (v.extension - 0.1) * (v.extension - 0.1)),
+  }),
+  // The spring on the bench is drawn at the extension being discussed, so the
+  // stage rail and the picture move together.
+  drive: ({ v }) => ({
+    scale: 0.78 + v.extension * 1.7,
+    spin: 0.12,
+    tilt: 0.2,
+  }),
   // Half k x squared at 0.1 m intervals: 0.75, 3.00, 6.75 and 12.00 J. The
   // steps between them are 0.75, 2.25, 3.75 and 5.25 J, rising by 1.50 J each
   // time because the force you are pulling against has itself risen by 15 N.

@@ -115,7 +115,7 @@ const STUCK_THEN_SLIPPING: ArchetypeSpec = {
     "Magnitude 8 is twice as big as magnitude 4",
     "A transform boundary makes no landforms because nothing is created or destroyed",
   ],
-  specimens: [{ id: "fault", name: "Transform fault", art: { art: "landform", which: "transform" } }],
+  specimens: [{ id: "shock", name: "The shock it sends out", art: { art: "landform", which: "quake" } }],
   variables: [
     { key: "length", label: "Rupture length (km)", min: 10, max: 500, step: 5, default: 100 },
     { key: "depth", label: "Rupture depth (km)", min: 5, max: 20, step: 1, default: 12 },
@@ -142,6 +142,17 @@ const STUCK_THEN_SLIPPING: ArchetypeSpec = {
     x: "length", y: "momentMagnitude",
     xLabel: "Rupture length (km)", yLabel: "Moment magnitude",
   },
+  /**
+   * The picture is the wave field the rupture sends out, and the area over
+   * which an earthquake is felt climbs steeply with magnitude: a magnitude 5
+   * is felt across a county, a magnitude 8 across a continent. The drawn radius
+   * is taken linearly in magnitude, which is already a logarithm of the energy,
+   * so a slider that trebles the rupture length visibly widens the field
+   * without running off the stage.
+   */
+  drive: ({ f }) => ({
+    scale: Math.max(0.3, Math.min(1.4, 0.3 + 0.19 * (f.momentMagnitude - 5))),
+  }),
 };
 
 /* E5.4 — Why the hazards are all in the same places. */
@@ -162,7 +173,7 @@ const WHY_HERE: ArchetypeSpec = {
     "Earthquakes can happen equally anywhere",
     "The warning time before an earthquake comes from predicting it",
   ],
-  specimens: [{ id: "epicentre", name: "Seismic waves", art: { art: "landform", which: "quake" } }],
+  specimens: [{ id: "fault", name: "Transform fault", art: { art: "landform", which: "transform" } }],
   stages: [
     { name: "Convection", at: 0, caption: "Mantle rock creeping at about 5 cm a year drags the plates with it." },
     { name: "Locked", at: 0.2, caption: "Friction holds the fault while the rock either side bends. Strain stores at 3.4 cm a year." },

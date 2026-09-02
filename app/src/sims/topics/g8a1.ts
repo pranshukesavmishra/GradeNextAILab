@@ -53,6 +53,24 @@ const AROUND_THE_BLOCK: ArchetypeSpec = {
     { name: "Home", at: 1,
       caption: "80 m south, back at the corner. Distance 400 m, displacement 0 m." },
   ],
+  /*
+   * The walker actually walks the block. The stage rail advances at 0.096 of
+   * the loop per second at the default speed, so one lap takes 10.42 s, and
+   * the four legs are driven from the same clock. The sides are drawn 0.72 to
+   * 0.48 of the specimen size, the true 120:80 ratio of the block, and the
+   * cart turns through a right angle at each corner. When the lap closes the
+   * cart is back exactly where it started: displacement zero, on screen.
+   */
+  drive: ({ t }) => {
+    const p = (t / 10.4167) % 1;
+    const leg = p * 4;
+    const k = leg % 1;
+    const X = 0.36, Y = 0.24;
+    if (leg < 1) return { offset: [-X + 2 * X * k, Y], spin: 0.68 };
+    if (leg < 2) return { offset: [X, Y - 2 * Y * k], spin: 0.68 + Math.PI / 2 };
+    if (leg < 3) return { offset: [X - 2 * X * k, -Y], spin: 0.68 };
+    return { offset: [-X, -Y + 2 * Y * k], spin: 0.68 + Math.PI / 2 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -118,6 +136,28 @@ const SIZE_OR_ARROW: ArchetypeSpec = {
       art: { art: "planet", color: "#3f7fd0", atmosphere: "#9fd8ff" },
     },
   ],
+  /*
+   * The motion is the answer. A speed has no settled direction, so the car
+   * shuttles, the nitrogen molecule jitters at random and the sound spreads
+   * outwards in every direction at once. A velocity has one, so the airliner
+   * runs straight, the lift climbs, and the Earth keeps turning its direction
+   * through a circle at a steady 29.8 km/s. A student can sort these from the
+   * movement alone before reading a word.
+   */
+  drive: ({ t, specimen }) => {
+    switch (specimen.id) {
+      case "speedo": return { offset: [0.14 * Math.sin(t * 1.6), 0] };
+      case "molecule":
+        return { offset: [0.1 * Math.sin(t * 7.3), 0.1 * Math.sin(t * 5.1 + 1.2)] };
+      case "sound": {
+        const k = (t * 0.9) % 1;
+        return { scale: 1 + 0.2 * k, glow: 1 - k };
+      }
+      case "plane": return { offset: [-0.13 + 0.26 * ((t * 0.5) % 1), 0], spin: 0.68 };
+      case "lift": return { offset: [0, 0.13 - 0.26 * ((t * 0.25) % 1)], spin: 0.68 };
+      default: return { offset: [0.13 * Math.cos(t * 0.5), 0.13 * Math.sin(t * 0.5)] };
+    }
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -158,6 +198,22 @@ const SLOPE_IS_SPEED: ArchetypeSpec = {
     distanceM: Math.abs(v.velocity) * v.time,
   }),
   plot: { x: "time", y: "positionM", xLabel: "Time (s)", yLabel: "Position (m)" },
+  /*
+   * The cart stands on the same track the graph plots. Its offset is the
+   * position itself, at a fixed 60 m per unit of specimen size, so moving the
+   * time slider slides the cart exactly as the live point slides along the
+   * line. Reverse the velocity and the cart turns round and comes back: a
+   * negative gradient is a cart returning towards the origin, which is the
+   * one thing a position-time graph is most often misread about.
+   */
+  drive: ({ f, t }) => {
+    // Where the slider says it is, at a fixed 60 m to one specimen width.
+    const at = Math.max(-0.62, Math.min(0.62, f.positionM / 60));
+    // Plus a short repeating creep in the direction it is travelling, so a
+    // negative gradient is visibly a cart heading back towards the origin.
+    const way = f.gradientMs === 0 ? 0 : f.gradientMs > 0 ? 1 : -1;
+    return { offset: [at + way * 0.07 * ((t * 0.5) % 1), 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -183,13 +239,13 @@ const WHO_IS_MOVING: ArchetypeSpec = {
   ],
   specimens: [
     {
-      id: "platform", name: "Measured from the platform",
-      because: "Walker at 31.5 m/s: the train's 30 plus her own 1.5.",
+      id: "platform", name: "From the platform: the train",
+      because: "The walker goes by at 31.5 m/s: the train's 30 plus her 1.5.",
       art: { art: "apparatus", which: "cart" },
     },
     {
-      id: "carriage", name: "Measured from the seat opposite",
-      because: "The same walker at 1.5 m/s, and the platform at 30 m/s back.",
+      id: "carriage", name: "From the seat: only the walker",
+      because: "The same walker, now 1.5 m/s. Both readings are right.",
       art: { art: "sphere", color: "#e08a4a", radius: 0.44 },
     },
   ],
@@ -206,6 +262,20 @@ const WHO_IS_MOVING: ArchetypeSpec = {
     platformFromTrainMs: -v.train,
     trainFromWalkerMs: -v.walk,
   }),
+  /*
+   * Each panel moves at the speed its own observer measures, on the same
+   * scale: 30 m of track to one specimen width. From the platform the walker
+   * sweeps past at 31.5 m/s and crosses in about a second; from the seat the
+   * same walker drifts at 1.5 m/s and takes twenty. Set the train to zero and
+   * the two panels move identically, which is the point of a frame.
+   */
+  drive: ({ v, index, t }) => {
+    const speed = index === 0 ? v.train + v.walk : v.walk;
+    if (speed === 0) return { offset: [0, 0], spin: 0.68 };
+    const lap = (t * speed) / 30;
+    const k = ((lap % 1) + 1) % 1;
+    return { offset: [-0.5 + k, 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -236,13 +306,19 @@ const WHOLE_JOURNEY: ArchetypeSpec = {
     { name: "Town", at: 0.75, caption: "6 000 m by bus in 900 s. Running total 6 400 m in 1 320 s." },
     { name: "School", at: 1, caption: "7 000 m in 1 770 s, so the average speed is 3.95 m/s." },
   ],
+  /*
+   * The path is the journey's own distance-time graph. Across is time, from
+   * 0 to 1 770 s; up is distance, from 0 to 7 000 m. The flat step is the
+   * wait, where time keeps running and distance does not, and the steep climb
+   * is the bus. The straight line from the first marker to the last would
+   * have the gradient 3.95 m/s, which is what an average speed is.
+   */
   route: [
-    { at: [0.1, 0.58], name: "Home", note: "0 m, 0 s. The clock starts." },
-    { at: [0.26, 0.36], name: "Walk to the stop", note: "400 m in 300 s: 1.33 m/s." },
-    { at: [0.42, 0.55], name: "Waiting", note: "120 s, 0 m. Still part of the journey." },
-    { at: [0.6, 0.32], name: "Bus ride", note: "6 000 m in 900 s: 6.67 m/s." },
-    { at: [0.76, 0.56], name: "Walk to school", note: "600 m in 450 s: 1.33 m/s." },
-    { at: [0.9, 0.38], name: "Whole journey", note: "7 000 m / 1 770 s = 3.95 m/s, not 3.11." },
+    { at: [0.09, 0.62], name: "Home", note: "0 m at 0 s. The clock starts." },
+    { at: [0.23, 0.58], name: "Walk to the stop", note: "400 m in 300 s: 1.33 m/s." },
+    { at: [0.29, 0.58], name: "Waiting", note: "120 s, 0 m. The clock keeps running." },
+    { at: [0.74, 0.29], name: "Bus ride", note: "6 000 m in 900 s: 6.67 m/s." },
+    { at: [0.91, 0.24], name: "School", note: "7 000 m in 1 770 s: 3.95 m/s, not 3.11." },
   ],
 };
 

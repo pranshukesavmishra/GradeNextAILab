@@ -44,7 +44,7 @@ const SLOW_COOL_BIG_CRYSTALS: ArchetypeSpec = {
     "Big crystals mean the magma was hotter",
     "Igneous rock always comes out of a volcano",
   ],
-  specimens: [{ id: "body", name: "Magma body", art: { art: "landform", which: "volcano" } }],
+  specimens: [{ id: "melt", name: "The rock it becomes", art: { art: "sphere", color: "#2e333b", radius: 0.46 } }],
   variables: [
     { key: "thickness", label: "Thickness of the magma body (m)", min: 0.5, max: 5000, step: 0.5, default: 100 },
     { key: "depth", label: "Depth it cools at (km)", min: 0, max: 30, step: 0.5, default: 5 },
@@ -69,6 +69,25 @@ const SLOW_COOL_BIG_CRYSTALS: ArchetypeSpec = {
   plot: {
     x: "thickness", y: "coolingYears",
     xLabel: "Thickness of the body (m)", yLabel: "Time to solidify (years)",
+  },
+  /**
+   * The sample on the bench is the rock this melt turns into, and it has to
+   * change when the slider does. The colour steps at the texture boundaries a
+   * geologist actually uses: glass if it froze inside a year, dark aphanitic
+   * basalt inside a century, medium grained inside ten thousand years, pale
+   * coarse granite beyond that. Crystals grow while the melt is still liquid,
+   * and diffusion-limited growth goes as the square root of time; four orders
+   * of magnitude of grain size will not fit on a stage, so the drawn size
+   * follows the logarithm of the cooling time instead, which keeps the order
+   * right even though it compresses the ratio.
+   */
+  drive: ({ f }) => {
+    const yrs = f.coolingYears;
+    return {
+      color: yrs < 1 ? "#14161c" : yrs < 100 ? "#2e333b" : yrs < 1e4 ? "#8a6f63" : "#caa79b",
+      scale: 0.5 + 0.11 * Math.min(10, Math.max(0, Math.log10(yrs + 1) + 2)),
+      glow: yrs < 1 ? 1 : yrs < 100 ? 0.35 : 0,
+    };
   },
 };
 

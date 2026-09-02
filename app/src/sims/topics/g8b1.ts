@@ -17,7 +17,23 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * enters twice, so doubling it quadruples the energy. Every figure quoted here
  * comes out of that equation with g = 9.81 N/kg where a height is involved,
  * and can be checked on paper in a line of working.
+ *
+ * Every one of them is driven: the trolley crosses the bench at the speed the
+ * slider says, and the ball rolls at the speed the slider says. A student can
+ * see the difference between 2 m/s and 6 m/s before reading a single number.
  */
+
+/**
+ * A 0-1 sawtooth that advances at `rate` cycles per second.
+ *
+ * Apparatus that should be travelling is drawn crossing its own patch of
+ * bench, and the crossing rate is tied to the speed under test, so a slider
+ * change is visible in the movement itself and not only in the readout.
+ */
+function sweep(t: number, rate: number): number {
+  const p = (t * rate) % 1;
+  return p < 0 ? p + 1 : p;
+}
 
 /* ---------------------------------------------------------------- *
  * B1.1 — Kinetic energy and mass
@@ -67,6 +83,18 @@ const LOAD_THE_TROLLEY: ArchetypeSpec = {
     x: "mass", y: "kineticEnergyJ",
     xLabel: "Mass (kg)", yLabel: "Kinetic energy (J)",
   },
+  /*
+   * The trolley is the readout. It crosses its patch of bench at a rate tied
+   * to the speed slider, so the speed is something you watch rather than read,
+   * and it grows with the cube root of the mass, because a load three times
+   * heavier is only 1.44 times wider. The yaw is held at a three-quarter view
+   * so the movement reads as travel rather than as spin.
+   */
+  drive: ({ v, t }) => ({
+    scale: Math.cbrt(v.mass / 2),
+    offset: [(sweep(t, 0.13 * v.speed) - 0.5) * 0.9, 0],
+    spin: 0.62,
+  }),
 };
 
 /* ---------------------------------------------------------------- *
@@ -115,6 +143,18 @@ const ROLL_IT_FASTER: ArchetypeSpec = {
     x: "speed", y: "kineticEnergyJ",
     xLabel: "Speed (m/s)", yLabel: "Kinetic energy (J)",
   },
+  /*
+   * A rolling ball turns once for every circumference it travels, so the spin
+   * rate is tied to the speed: at 12 m/s it is visibly spinning, at 1 m/s it
+   * barely turns, and it crosses the lane in the same proportion. The drawn
+   * size follows the cube root of the mass, since a ball of the same material
+   * at twice the mass is only 1.26 times as wide.
+   */
+  drive: ({ v, t }) => ({
+    scale: Math.cbrt(v.mass / 6.35),
+    offset: [(sweep(t, 0.09 * v.speed) - 0.5) * 0.9, 0],
+    spin: t * v.speed * 0.32,
+  }),
 };
 
 /* ---------------------------------------------------------------- *
@@ -142,6 +182,26 @@ const ONE_FOUR_NINE: ArchetypeSpec = {
     { id: "trolley", name: "The same 2 kg trolley, five times",
       art: { art: "apparatus", which: "cart" } },
   ],
+  variables: [
+    { key: "speed", label: "Speed of the trolley (m/s)", min: 1, max: 5, step: 1, default: 2 },
+  ],
+  // With a 2 kg trolley the arithmetic is as clean as it ever gets. E = half x
+  // 2 x v squared = v squared, so the energy in joules is the square of the
+  // speed in m/s, and the extra energy for one more metre per second is
+  // v squared minus (v - 1) squared, which is 2 v - 1: the odd numbers.
+  measure: (v) => ({
+    kineticEnergyJ: 0.5 * 2 * v.speed * v.speed,
+    energyAtOneMetrePerSecondJ: 1,
+    stepFromPreviousJ: 2 * v.speed - 1,
+    timesTheFirstReading: v.speed * v.speed,
+  }),
+  // The trolley crosses the bench at the speed being discussed, so 5 m/s
+  // plainly takes a fifth of the time 1 m/s does while the caption explains
+  // that it carries twenty five times the energy.
+  drive: ({ v, t }) => ({
+    offset: [(sweep(t, 0.15 * v.speed) - 0.5) * 0.9, 0],
+    spin: 0.62,
+  }),
   // With a 2 kg trolley the arithmetic is as clean as it ever gets: E = v
   // squared exactly, so the readings are the square numbers and the gaps
   // between them are the odd numbers.
@@ -184,20 +244,21 @@ const READING_THE_CURVE: ArchetypeSpec = {
     {
       id: "curve", name: "Kinetic energy of a 2 kg trolley",
       art: { art: "apparatus", which: "cart" },
-      // The labels are placed along the true shape of E = v squared, rising
-      // to the right and steepening as they go, so the layout of the callouts
-      // is itself the graph.
+      // The anchor dots are placed along the true shape of E = v squared,
+      // rising to the right and steepening as they go, so the five points a
+      // student clicks lie on the curve they are reading. Notes are kept to a
+      // line: the pill that holds one is a single unwrapped line of text.
       parts: [
         { id: "p2", name: "2 m/s reads 4 J", at: [-0.44, 0.36],
-          note: "Half of 2 x 2 x 2 is 4 J. Low and flat: down here a metre per second more hardly costs anything." },
+          note: "Flat down here. Cheap." },
         { id: "p4", name: "4 m/s reads 16 J", at: [-0.22, 0.24],
-          note: "Twice the speed of the first point, four times the energy. The 12 J gap is already three times the first reading." },
+          note: "Twice as fast, 4 times." },
         { id: "p6", name: "6 m/s reads 36 J", at: [0.0, 0.02],
-          note: "Not halfway up, even though 6 m/s is a little over half of 10. Energy runs ahead of speed the whole way." },
+          note: "Over half the speed, a third of the height." },
         { id: "p8", name: "8 m/s reads 64 J", at: [0.22, -0.24],
-          note: "The 8 to 6 step cost 28 J on its own, more than the whole graph up to 5 m/s. This is the part of the curve that hurts." },
+          note: "That one step cost 28 J, seven whole first points." },
         { id: "p10", name: "10 m/s reads 100 J", at: [0.44, -0.46],
-          note: "Five times the speed of the first point and twenty five times its energy. Nothing here levels off: the curve only ever steepens." },
+          note: "5 times the speed, 25 times the energy. It never flattens." },
       ],
     },
   ],
@@ -226,13 +287,13 @@ const THIRTY_AND_SIXTY: ArchetypeSpec = {
   ],
   specimens: [
     {
-      id: "slow", name: "1 200 kg car at 30 km/h",
-      because: "30 km/h is 8.33 m/s, so the car carries half x 1200 x 8.33 x 8.33 = 41 667 J. Crushed over half a metre of bonnet that is 83 kN of average force and 7.1 g of deceleration.",
+      id: "slow", name: "1 200 kg car, held at 30 km/h",
+      because: "8.33 m/s. Half x 1200 x 8.33 x 8.33 = 41 667 J.",
       art: { art: "apparatus", which: "cart" },
     },
     {
-      id: "fast", name: "The same car at 60 km/h",
-      because: "16.67 m/s gives 166 667 J: four times the energy for twice the speed. Over the same half metre that is 333 kN and 28.3 g, and the structure has to soak up all of it.",
+      id: "fast", name: "The same car at the speed you set",
+      because: "At 60 km/h: 166 667 J. Twice the speed, four times the crash.",
       art: { art: "apparatus", which: "cart" },
     },
   ],
@@ -252,8 +313,20 @@ const THIRTY_AND_SIXTY: ArchetypeSpec = {
       kineticEnergyJ: ke,
       averageForceN: ke / v.crushM,
       decelerationG: (ms * ms) / (2 * v.crushM * 9.81),
-      energyAtHalfSpeedJ: ke / 4,
+      energyAtThirtyKmhJ: 0.5 * 1200 * (30 / 3.6) * (30 / 3.6),
+      timesTheThirtyKmhCrash: (v.speedKmh / 30) * (v.speedKmh / 30),
     };
+  },
+  /*
+   * The left-hand car is pinned at 30 km/h and the right-hand one runs at
+   * whatever the slider says, both crossing their own half of the stage at a
+   * rate proportional to their speed. Set the slider to 60 and the second car
+   * plainly covers the ground in half the time, while the readout says it is
+   * carrying four times the energy: the point of the whole comparison.
+   */
+  drive: ({ v, t, index }) => {
+    const ms = index === 0 ? 30 / 3.6 : v.speedKmh / 3.6;
+    return { offset: [(sweep(t, 0.05 * ms) - 0.5) * 0.7, 0], spin: 0.62 };
   },
 };
 

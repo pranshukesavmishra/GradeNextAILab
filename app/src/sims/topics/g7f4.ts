@@ -165,6 +165,19 @@ const WHAT_DO_YOU_VALUE: ArchetypeSpec = {
     x: "safetyWeight", y: "isolatedMinusBraced",
     xLabel: "Weight given to safety (%)", yLabel: "Isolation score minus braced-frame score",
   },
+  /*
+   * The scoring weight is an opinion and changes nothing on the ground, so the
+   * shaking on the bench answers only to the site: raise SD1 and the wave field
+   * grows and the bench moves harder. That separation is deliberate. A scoring
+   * matrix cannot make an earthquake smaller.
+   */
+  drive: ({ v, f, t }) => {
+    const amp = Math.min(0.16, f.accelBracedG * 0.13);
+    return {
+      scale: 0.7 + v.sd1 * 0.75,
+      offset: [Math.sin(t * 7.5) * amp, Math.sin(t * 11.3) * amp * 0.4],
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -190,16 +203,70 @@ const SAME_TABLE_TWO_RUNS: ArchetypeSpec = {
   ],
   specimens: [
     {
-      id: "braced", name: "Braced frame: 0.92 g at the roof",
-      because: "It stood. Nothing on the shelves did: 0.92 g throws objects.",
-      art: { art: "apparatus", which: "cart" },
+      id: "braced", name: "Braced frame: 2.5 times the table",
+      because: "It stands. The shelves do not: 1.00 g throws loose objects.",
+      art: { art: "apparatus", which: "stand" },
     },
     {
-      id: "isolated", name: "Isolated: 0.19 g at the roof",
-      because: "One fifth the acceleration, paid for with 249 mm of slide.",
+      id: "isolated", name: "Isolated: 0.4 times the table",
+      because: "A sixth of the acceleration, paid for with 249 mm of slide.",
       art: { art: "apparatus", which: "spring" },
     },
   ],
+  variables: [
+    { key: "tableG", label: "Peak table acceleration (g)", min: 0.05, max: 1, step: 0.05, default: 0.4 },
+  ],
+  /*
+   * Both models take the same table run, and both results come off the same
+   * spectrum. A 5 per cent damped structure on rock amplifies the peak ground
+   * acceleration by about 2.5 at short periods, the classic Newmark and Hall
+   * value, and the plateau falls away as 1/T past the corner at 0.6 s.
+   *
+   *   braced   T = 0.35 s, 5 per cent damping    roof = 2.5 x table
+   *   isolated T = 2.50 s, 20 per cent damping   roof = 2.5 x 0.24 / 1.5 = 0.4 x table
+   *
+   * At the 0.4 g design run that is 1.00 g against 0.16 g, and the isolators
+   * travel 249 mm. Both numbers matter: the first is what the room feels, the
+   * second is what the moat must allow. Past a 0.64 g table the travel exceeds
+   * a 400 mm moat and the isolated model runs out of room.
+   */
+  measure: (v) => {
+    const saShort = 2.5 * v.tableG;
+    const Ts = 0.6;
+    const sa = (T: number) => (T <= Ts ? saShort : (saShort * Ts) / T);
+    const isolatedSa = sa(2.5) / 1.5;
+    const travelMm = ((sa(2.5) * 9.81 * 6.25) / (4 * Math.PI * Math.PI) / 1.5) * 1000;
+    return {
+      roofBracedG: sa(0.35),
+      roofIsolatedG: isolatedSa,
+      isolatorTravelMm: travelMm,
+      timesQuieter: sa(0.35) / isolatedSa,
+      contentsThrown: sa(0.35) > 0.5 ? 1 : 0,
+      moatExceeded: travelMm > 400 ? 1 : 0,
+    };
+  },
+  /*
+   * The two models are shaken side by side at their own periods: the braced
+   * frame buzzes at nearly 3 Hz, the isolated one sways once every 2.5 seconds.
+   * When the room passes 0.5 g the braced model leans over and stops, which is
+   * the moment its contents become the hazard; when the travel passes 400 mm
+   * the isolated model parks against the moat wall and stops for its own reason.
+   */
+  drive: ({ f, t, index }) => {
+    if (index === 0) {
+      const amp = Math.min(0.26, f.roofBracedG * 0.2);
+      return {
+        offset: [f.contentsThrown ? amp : Math.sin(t * 2 * Math.PI * 2.86) * amp, 0],
+        tilt: f.contentsThrown ? 0.55 : 0.24,
+        rate: f.contentsThrown ? 0 : 1,
+      };
+    }
+    const amp = Math.min(0.4, f.isolatorTravelMm / 800);
+    return {
+      offset: [f.moatExceeded ? amp : Math.sin(t * 2 * Math.PI * 0.4) * amp, 0],
+      rate: f.moatExceeded ? 0 : 1,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -294,7 +361,7 @@ const MAKING_THE_CASE: ArchetypeSpec = {
     },
     {
       name: "The evidence", at: 0.25,
-      caption: "Roof acceleration 0.19 g against 0.92 g, from the same shake-table run.",
+      caption: "Roof acceleration 0.16 g against 1.00 g, from the same shake-table run.",
     },
     {
       name: "The reasoning", at: 0.5,

@@ -26,7 +26,7 @@ import type { ArchetypeSpec } from "@engine/archetype";
 const SOIL_OR_AIR: ArchetypeSpec = {
   id: "g7c2-soil-or-air",
   title: "Soil, or Air?",
-  tagline: "Ask anyone where a tree's mass comes from. Then weigh the soil.",
+  tagline: "Set the share you think the soil supplied, and see what that would mean.",
   kind: "compare",
   subject: "biology",
   bands: ["6-8"],
@@ -34,7 +34,7 @@ const SOIL_OR_AIR: ArchetypeSpec = {
   standards: { ngss: ["MS-LS1-6"] },
   learningGoals: [
     "State the common claim that a plant's mass comes from the soil.",
-    "Recognise that almost all of a plant's dry mass is built from carbon dioxide and water.",
+    "Compare the mass the soil could supply with the mass a tree actually gains.",
   ],
   misconceptions: [
     "A tree is made of soil that has been sucked up through the roots",
@@ -42,18 +42,57 @@ const SOIL_OR_AIR: ArchetypeSpec = {
   ],
   specimens: [
     {
-      id: "soil", name: "The usual answer: the soil",
+      id: "soil", name: "The soil's share",
       because:
         "A 20 tonne oak, and no 20 tonne hole in the ground beneath it.",
       art: { art: "sphere", color: "#6f4b2c", radius: 0.5 },
     },
     {
-      id: "air", name: "The measured answer: the air",
+      id: "air", name: "The air and water's share",
       because:
         "A tonne of dry wood is 1.65 tonnes of CO2, taken from the sky.",
       art: { art: "molecule", formula: "CO2" },
     },
   ],
+  variables: [
+    { key: "soilSharePercent", label: "Share of the wood you think came from soil (%)", min: 0, max: 100, step: 0.1, default: 0.1 },
+    { key: "dryWoodKg", label: "Dry wood built (kg)", min: 100, max: 2000, step: 10, default: 1000 },
+  ],
+  /*
+   * The student sets the hypothesis and the two piles answer it.
+   *
+   * Van Helmont's own figures put the soil's real share at 0.057 kg in 74.45,
+   * which is 0.077 per cent. Dry wood is about 45 per cent carbon, and carbon
+   * is 12.011 of carbon dioxide's 44.009, so each kilogram of wood needs
+   * 1.649 kg of carbon dioxide - which is why the air's pile can never be
+   * small.
+   */
+  measure: (v) => {
+    const soilKg = (v.dryWoodKg * v.soilSharePercent) / 100;
+    const airAndWaterKg = v.dryWoodKg - soilKg;
+    return {
+      soilKg,
+      airAndWaterKg,
+      carbonDioxideNeededKg: airAndWaterKg * 0.45 * (44.009 / 12.011),
+      soilHoleLitres: soilKg / 1.3,
+      vanHelmontSharePercent: 0.077,
+    };
+  },
+  /*
+   * Mass goes as the cube of the width, so each pile is drawn at the cube root
+   * of its mass against a 500 kg reference. Set the share to Van Helmont's
+   * measured 0.1 per cent and the soil collapses to a pea beside a full-sized
+   * carbon dioxide molecule; drag it to 100 and the positions swap. Above one
+   * per cent the soil turns red: his balance rules that out.
+   */
+  drive: ({ f, index }) => {
+    const mass = index === 0 ? f.soilKg : f.airAndWaterKg;
+    const scale = Math.cbrt(Math.max(1e-4, mass / 500));
+    if (index === 0) {
+      return { scale, color: f.soilKg / (f.soilKg + f.airAndWaterKg) > 0.01 ? "#b03a2e" : "#6f4b2c" };
+    }
+    return { scale };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -118,7 +157,7 @@ const FIVE_YEAR_WILLOW: ArchetypeSpec = {
 const FIFTY_SEVEN_GRAMS: ArchetypeSpec = {
   id: "g7c2-fifty-seven-grams",
   title: "Fifty-Seven Grams Against Seventy-Four Kilograms",
-  tagline: "Put the two measurements next to each other and work out what share the soil could explain.",
+  tagline: "If the soil really did build the tree, how much of the pot would be left?",
   kind: "investigate",
   subject: "biology",
   bands: ["6-8"],
@@ -134,8 +173,8 @@ const FIFTY_SEVEN_GRAMS: ArchetypeSpec = {
   ],
   specimens: [
     {
-      id: "rain", name: "The rainwater added, and nothing else",
-      art: { art: "glassware", which: "flask", level: 0.55, color: "#7fb3d5" },
+      id: "pot", name: "Van Helmont's pot: 90.72 kg of dried earth",
+      art: { art: "glassware", which: "flask", level: 0.62, color: "#8a6a45", precipitate: 0.9 },
     },
   ],
   variables: [
@@ -143,33 +182,57 @@ const FIFTY_SEVEN_GRAMS: ArchetypeSpec = {
     { key: "soilLossG", label: "Mass the dried soil lost (g)", min: 0, max: 500, step: 1, default: 57 },
   ],
   /**
-   * Straight arithmetic on the two measurements, and one step further.
+   * Two accounts of the same pot, side by side.
    *
-   * Fresh willow wood is about half water, so the dry mass gained is half the
-   * measured gain. Dry wood is about 45 per cent carbon by mass, and carbon is
-   * 12.011 of carbon dioxide's 44.009, so every gram of carbon fixed came from
-   * 3.664 g of carbon dioxide. Air is 0.042 per cent carbon dioxide by volume,
-   * and at 20 C a mole of gas fills 24.06 dm3, so the volume of ordinary air
-   * the tree had to draw on follows directly.
+   * The counterfactual: if every kilogram the tree gained had come out of the
+   * 90.72 kg of earth, the pot would be lighter by exactly that much, and past
+   * 90.72 kg there would be no earth left at all.
+   *
+   * The measurement: the earth was dried and weighed twice, and it lost 57 g.
+   * That is 0.077 per cent of the tree's 74.45 kg gain, or one part in 1306.
+   *
+   * One step further: fresh willow is about half water, so the dry mass gained
+   * is half the measured gain, and dry wood is about 45 per cent carbon. Carbon
+   * is 12.011 of carbon dioxide's 44.009, so each gram of carbon came from
+   * 3.664 g of CO2. Air is 0.042 per cent carbon dioxide and a mole of gas
+   * fills 24.06 dm3 at 20 C, which fixes the volume of air the tree drew on.
    */
   measure: (v) => {
     const soilKg = v.soilLossG / 1000;
     const dryMassKg = v.treeGainKg * 0.5;
-    const carbonKg = dryMassKg * 0.45;
-    const carbonDioxideKg = carbonKg * (44.009 / 12.011);
+    const carbonDioxideKg = dryMassKg * 0.45 * (44.009 / 12.011);
     const carbonDioxideM3 = (carbonDioxideKg / 44.009) * 24.06;
     return {
       soilShareOfGainPercent: (soilKg / v.treeGainKg) * 100,
       onePartIn: soilKg > 0 ? v.treeGainKg / soilKg : 0,
-      massFromElsewhereKg: v.treeGainKg - soilKg,
+      soilLeftIfSourceKg: Math.max(0, 90.72 - v.treeGainKg),
+      soilLeftMeasuredKg: 90.72 - soilKg,
       dryMassKg,
       carbonDioxideUsedKg: carbonDioxideKg,
       airDrawnOnM3: carbonDioxideM3 / 0.00042,
     };
   },
   plot: {
-    x: "treeGainKg", y: "soilShareOfGainPercent",
-    xLabel: "Mass the tree gained (kg)", yLabel: "Share the soil could explain (%)",
+    x: "treeGainKg", y: "soilLeftIfSourceKg",
+    xLabel: "Mass the tree gained (kg)", yLabel: "Earth left in the pot, if soil were the source (kg)",
+  },
+  /*
+   * The pot is the readout, and it is showing the claim rather than the fact.
+   * Raise the tree's gain and the earth drains away in proportion; at 90.72 kg
+   * the pot is bare and pale and stops turning, because on this hypothesis
+   * there is nothing left to take. The measured pot, by contrast, went from
+   * 90.720 to 90.663 kg, which is why the slider has to be dragged so far to
+   * make anything happen at all.
+   */
+  drive: ({ f }) => {
+    const left = f.soilLeftIfSourceKg / 90.72;
+    const empty = left <= 0.005;
+    return {
+      level: 0.62 * left,
+      precipitate: 0.9 * left,
+      color: empty ? "#cbbb9a" : "#8a6a45",
+      rate: empty ? 0 : 1,
+    };
   },
 };
 

@@ -1,5 +1,6 @@
 import type {
-  AnySim, GradeBand, ParamValues, RenderContext, SimManifest, Subject,
+  AnySim, ChallengeDefinition, GradeBand, LabDefinition, ParamValues,
+  RenderContext, SimManifest, Subject,
 } from "./types";
 
 /**
@@ -179,6 +180,209 @@ export interface ArchetypeSpec {
 
   labs?: SimManifest["labs"];
   challenges?: SimManifest["challenges"];
+}
+
+/* ------------------------------------------------------------------ *
+ * Guided labs, generated from the specification
+ *
+ * A simulation with sliders and a graph is apparatus. It becomes an experiment
+ * when a student is asked a question, made to commit to a prediction before
+ * they touch anything, and then held to measuring, recording and concluding.
+ * Writing that by hand for every subtopic would cost more than the simulations
+ * themselves, and most of it is mechanical: the question is the plot's axes,
+ * the prediction is the shape of the response, the measurement is the range of
+ * the control, and the conclusion is the relationship.
+ *
+ * So it is derived. The engine samples the specification's own `measure` across
+ * the control's range, works out what actually happens, and builds the lab from
+ * that — which means the answer key is computed from the science rather than
+ * transcribed, and cannot drift away from it. A specification that wants a
+ * bespoke lab simply supplies one and this stands aside.
+ * ------------------------------------------------------------------ */
+
+type Shape = "rises" | "falls" | "peaks" | "dips" | "flat";
+
+/** Sample `measure` across one control and say what the response does. */
+function responseShape(
+  spec: ArchetypeSpec, xKey: string, yKey: string,
+): { shape: Shape; lo: number; hi: number; min: number; max: number } {
+  const xs = spec.variables?.find((v) => v.key === xKey);
+  const base: Record<string, number> = {};
+  for (const v of spec.variables ?? []) base[v.key] = v.default;
+  const N = 12;
+  const ys: number[] = [];
+  for (let i = 0; i <= N; i++) {
+    const x = (xs?.min ?? 0) + ((xs?.max ?? 1) - (xs?.min ?? 0)) * (i / N);
+    const out = spec.measure?.({ ...base, [xKey]: x }) ?? {};
+    const y = Number(out[yKey]);
+    ys.push(Number.isFinite(y) ? y : 0);
+  }
+  const lo = ys[0], hi = ys[ys.length - 1];
+  const min = Math.min(...ys), max = Math.max(...ys);
+  const span = max - min;
+  // Flat means flat relative to the values themselves, not to zero: a change
+  // of 0.001 in a quantity of order 1000 is not a trend a student can see.
+  const scale = Math.max(Math.abs(max), Math.abs(min), 1e-9);
+  if (span / scale < 0.02) return { shape: "flat", lo, hi, min, max };
+  const iMax = ys.indexOf(max), iMin = ys.indexOf(min);
+  if (iMax > 1 && iMax < N - 1 && max - Math.max(lo, hi) > span * 0.15) {
+    return { shape: "peaks", lo, hi, min, max };
+  }
+  if (iMin > 1 && iMin < N - 1 && Math.min(lo, hi) - min > span * 0.15) {
+    return { shape: "dips", lo, hi, min, max };
+  }
+  return { shape: hi >= lo ? "rises" : "falls", lo, hi, min, max };
+}
+
+const SHAPE_TEXT: Record<Shape, string> = {
+  rises: "It goes up the whole way",
+  falls: "It goes down the whole way",
+  peaks: "It rises, then falls again",
+  dips: "It falls, then rises again",
+  flat: "It barely changes",
+};
+
+function tidy(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  const a = Math.abs(n);
+  if (a >= 1000) return n.toFixed(0);
+  if (a >= 10) return n.toFixed(1);
+  if (a >= 1) return n.toFixed(2);
+  return n.toPrecision(3);
+}
+
+/**
+ * Build the guided lab a specification implies.
+ *
+ * Returns null when there is nothing to investigate — no controls, no
+ * measurement, or nothing plotted — rather than manufacturing a lab about
+ * nothing.
+ */
+export function autoLab(spec: ArchetypeSpec): LabDefinition | null {
+  if (!spec.measure || !spec.variables?.length || !spec.plot) return null;
+  const { x: xKey, y: yKey, xLabel, yLabel } = spec.plot;
+  const xv = spec.variables.find((v) => v.key === xKey);
+  if (!xv) return null;
+
+  const r = responseShape(spec, xKey, yKey);
+  if (r.shape === "flat") return null;
+
+  const options: Shape[] = ["rises", "falls", "peaks", "dips"];
+  const correct = options.indexOf(r.shape);
+  const unit = xv.unit ? ` ${xv.unit}` : "";
+  const setup: ParamValues = {};
+  for (const v of spec.variables) setup[v.key] = v.default;
+  setup[xKey] = xv.min;
+
+  const span = xv.max - xv.min;
+  const near = (a: number, b: number) => Math.abs(a - b) <= Math.max(xv.step, span * 0.02);
+
+  return {
+    id: `${spec.id}-lab`,
+    title: `Investigate: ${yLabel}`,
+    question: `How does ${yLabel.toLowerCase()} change when you change ${xLabel.toLowerCase()}?`,
+    bands: spec.bands,
+    minutes: 12,
+    standards: spec.standards?.ngss,
+    setup,
+    steps: [
+      {
+        id: "question", phase: "question",
+        title: "The question",
+        instruction: `You are going to change ${xLabel.toLowerCase()} and watch ${yLabel.toLowerCase()}. Everything else stays as it is — that is what makes this a fair test.`,
+      },
+      {
+        id: "predict", phase: "hypothesis",
+        title: "Commit to a prediction",
+        instruction: "Decide before you touch anything. Being wrong here is worth more than being right later.",
+        predict: {
+          prompt: `As ${xLabel.toLowerCase()} goes from ${tidy(xv.min)} to ${tidy(xv.max)}${unit}, what does ${yLabel.toLowerCase()} do?`,
+          options: options.map((o) => SHAPE_TEXT[o]),
+          correct: correct < 0 ? 0 : correct,
+          reveal: `${SHAPE_TEXT[r.shape]}: ${tidy(r.lo)} at ${tidy(xv.min)}${unit} and ${tidy(r.hi)} at ${tidy(xv.max)}${unit}, ranging between ${tidy(r.min)} and ${tidy(r.max)}.`,
+        },
+        hints: spec.misconceptions?.slice(0, 2).map((m) => `Some people think: ${m}. Does the apparatus agree?`),
+      },
+      {
+        id: "setup", phase: "setup",
+        title: "Start at the bottom",
+        instruction: `Set ${xLabel.toLowerCase()} to its lowest value, ${tidy(xv.min)}${unit}.`,
+        check: {
+          describe: `${xLabel} is at ${tidy(xv.min)}${unit}`,
+          test: (val) => near(Number(val.params[xKey] ?? xv.default), xv.min),
+        },
+      },
+      {
+        id: "measure", phase: "measure",
+        title: "Work up the range",
+        instruction: `Step ${xLabel.toLowerCase()} up and record a reading each time. Five readings spread across the range is enough to see the pattern.`,
+        requireData: 5,
+        check: {
+          describe: "Five readings, spread across the range",
+          test: (val) => {
+            if (val.data.length < 5) return false;
+            const xsSeen = val.data.map((d) => d.values[xKey]).filter(Number.isFinite);
+            if (xsSeen.length < 5) return false;
+            return (Math.max(...xsSeen) - Math.min(...xsSeen)) >= span * 0.6;
+          },
+        },
+        hints: ["Readings bunched at one end cannot show a trend — spread them out."],
+      },
+      {
+        id: "analyze", phase: "analyze",
+        title: "Read the graph",
+        instruction: `Look at the shape of the line, not just its ends. Where is it steep, and where does it flatten off?`,
+        write: {
+          prompt: `Describe the shape of the relationship between ${xLabel.toLowerCase()} and ${yLabel.toLowerCase()}.`,
+          placeholder: "As one goes up, the other …",
+        },
+      },
+      {
+        id: "conclude", phase: "conclude",
+        title: "Say what you found",
+        instruction: spec.learningGoals[0] ?? "State what the experiment showed.",
+        write: {
+          prompt: "What does this tell you, and what would you test next?",
+          placeholder: "I found that … Next I would change …",
+        },
+      },
+    ],
+  };
+}
+
+/**
+ * Build the challenge a specification implies: hit a target the apparatus can
+ * actually reach, set at three quarters of the range the controls can produce.
+ */
+export function autoChallenge(spec: ArchetypeSpec): ChallengeDefinition | null {
+  if (!spec.measure || !spec.variables?.length || !spec.plot) return null;
+  const { x: xKey, y: yKey, yLabel } = spec.plot;
+  const r = responseShape(spec, xKey, yKey);
+  if (r.shape === "flat") return null;
+
+  const target = r.min + (r.max - r.min) * 0.75;
+  const tight = r.min + (r.max - r.min) * 0.9;
+  const setup: ParamValues = {};
+  for (const v of spec.variables) setup[v.key] = v.default;
+
+  const reach = (limit: number) => (val: { facts: Record<string, number | boolean | string> }) => {
+    const y = Number(val.facts[yKey]);
+    return Number.isFinite(y) && y >= limit;
+  };
+
+  return {
+    id: `${spec.id}-challenge`,
+    title: `Reach ${tidy(target)}`,
+    brief: `Set the controls so that ${yLabel.toLowerCase()} reaches at least ${tidy(target)}.`,
+    bands: spec.bands,
+    setup,
+    goal: { describe: `${yLabel} of at least ${tidy(target)}`, test: reach(target) },
+    stars: {
+      two: { describe: `${yLabel} of at least ${tidy(tight)}`, test: reach(tight) },
+      three: { describe: `${yLabel} of at least ${tidy(r.max * 0.99)}`, test: reach(r.max * 0.99) },
+    },
+    hints: ["Look at your graph: which end of the control pushed the reading the way you want?"],
+  };
 }
 
 /* ------------------------------------------------------------------ *

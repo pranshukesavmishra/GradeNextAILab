@@ -82,6 +82,17 @@ const SHRINK_IT_PROPERLY: ArchetypeSpec = {
     x: "storeys", y: "periodS",
     xLabel: "Storeys in the real building", yLabel: "Natural period (s)",
   },
+  /*
+   * The model on the bench is the model being specified: it stands as tall as
+   * the scaling says, against a 1.6 m reference, and it sways at its own model
+   * frequency. Make the real building taller and the model slows down; shrink
+   * the model further and it speeds up, which is the whole of Froude scaling
+   * shown rather than asserted.
+   */
+  drive: ({ f, t }) => ({
+    scale: Math.max(0.4, Math.min(1.8, f.modelHeightM / 1.6)),
+    offset: [Math.sin(t * 2 * Math.PI * f.modelFrequencyHz) * 0.16, 0],
+  }),
 };
 
 /* ---------------------------------------------------------------- *
@@ -143,6 +154,22 @@ const FIND_THE_PEAK: ArchetypeSpec = {
     x: "driveHz", y: "magnification",
     xLabel: "Table frequency (Hz)", yLabel: "Sway divided by table movement",
   },
+  /*
+   * The model on the table swings at whatever frequency the table is set to,
+   * and as far as the magnification says: a few millimetres at 1 Hz, fifty at
+   * 4.8 Hz. Wind the damping down to 2 per cent and the peak reaches 125 mm,
+   * past the 60 mm of travel the rig has, so the model slams into its stop and
+   * the run is over: on a real table that is where the test is aborted.
+   */
+  drive: ({ v, f, t }) => {
+    const amp = Math.min(0.42, f.roofSwayMm / 120);
+    const hitsStop = f.roofSwayMm > 60;
+    return {
+      offset: [hitsStop ? amp : Math.sin(t * 2 * Math.PI * v.driveHz) * amp, 0],
+      rate: hitsStop ? 0 : 1,
+      tilt: hitsStop ? 0.5 : 0.24,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -168,16 +195,58 @@ const ROUND_ONE_ROUND_TWO: ArchetypeSpec = {
   ],
   specimens: [
     {
-      id: "round1", name: "Round 1: bare frame, 50 mm of sway",
-      because: "At resonance, 5 per cent damping magnifies the table ten times.",
+      id: "round1", name: "Round 1: bare frame, 5 per cent damping",
+      because: "At 4.8 Hz it magnifies the table ten times: 50 mm of sway.",
       art: { art: "apparatus", which: "stand" },
     },
     {
-      id: "round2", name: "Round 2: one damper, 12.5 mm",
-      because: "Same table, same 4.8 Hz. Damping of 20 per cent gives 2.5 times.",
+      id: "round2", name: "Round 2: one damper, 20 per cent",
+      because: "Same table, same sweep. Magnification 2.5, so 12.5 mm.",
       art: { art: "apparatus", which: "battery" },
     },
   ],
+  variables: [
+    { key: "driveHz", label: "Table frequency (Hz)", min: 0.2, max: 9, step: 0.1, default: 4.8 },
+  ],
+  /*
+   * One control, swept over both rounds at once, which is what makes it a
+   * comparison rather than two anecdotes. Both models have the 4.76 Hz natural
+   * frequency of the 1:10 school; the only change between rounds is damping,
+   * 5 per cent against 20, fed through the same magnification formula:
+   *
+   *   DMF = 1 / sqrt((1 - r^2)^2 + (2 z r)^2)
+   *
+   * Away from 4.8 Hz the two are almost indistinguishable, which is the honest
+   * result: the damper earns its money in one narrow band and nowhere else.
+   */
+  measure: (v) => {
+    const r = v.driveHz / 4.76;
+    const dmf = (z: number) => 1 / Math.sqrt(Math.pow(1 - r * r, 2) + Math.pow(2 * z * r, 2));
+    const one = dmf(0.05), two = dmf(0.2);
+    return {
+      frequencyRatio: r,
+      round1SwayMm: 5 * one,
+      round2SwayMm: 5 * two,
+      timesBetter: one / two,
+      round1HitsStop: 5 * one > 60 ? 1 : 0,
+    };
+  },
+  /*
+   * Both models are shaken at the table frequency, each as far as its own
+   * magnification allows. Sweep up to 4.8 Hz and the bare frame runs away while
+   * the damped one barely notices; past 60 mm the bare frame is against its
+   * stop and freezes there, which is the failure the second round was for.
+   */
+  drive: ({ v, f, t, index }) => {
+    const swayMm = index === 0 ? f.round1SwayMm : f.round2SwayMm;
+    const amp = Math.min(0.4, swayMm / 130);
+    const stopped = index === 0 && f.round1HitsStop === 1;
+    return {
+      offset: [stopped ? amp : Math.sin(t * 2 * Math.PI * v.driveHz) * amp, 0],
+      rate: stopped ? 0 : 1,
+      tilt: stopped ? 0.5 : 0.24,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *

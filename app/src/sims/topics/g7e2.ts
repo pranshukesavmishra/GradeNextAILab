@@ -70,6 +70,22 @@ const BREAK_IT_SMALLER: ArchetypeSpec = {
     x: "halvings", y: "totalAreaCm2",
     xLabel: "Times every edge is halved", yLabel: "Total surface area (square cm)",
   },
+  /**
+   * The block on the bench is one of the fragments, so it has to shrink as the
+   * slider splits it. Eight halvings is a 256-fold reduction, which would leave
+   * nothing to look at, so the drawn size follows the square root of the true
+   * edge length: the order is right and every step is still visible. Once the
+   * frost pressure passes the roughly 15 MPa tensile strength of the rock, the
+   * sample shudders — that is the failure state, and it is the whole point of
+   * the freeze-thaw slider.
+   */
+  drive: ({ v, f, t }) => {
+    const splitting = f.frostPressureMPa > 15;
+    return {
+      scale: 0.3 + 0.7 * Math.pow(0.5, v.halvings / 2),
+      ...(splitting ? { offset: [Math.sin(t * 21) * 0.04, 0] as [number, number] } : {}),
+    };
+  },
 };
 
 /* E2.2 — Chemical weathering: rain takes the rock apart mineral by mineral. */
@@ -209,6 +225,24 @@ const HOW_FAR_BEFORE_IT_SETTLES: ArchetypeSpec = {
   plot: {
     x: "grain", y: "carriedKm",
     xLabel: "Grain diameter (mm)", yLabel: "Distance carried before it lands (km)",
+  },
+  /**
+   * Pour the column and wait an hour. Whether it clears is decided entirely by
+   * Stokes' law: a grain settles the full depth in that hour if its settling
+   * speed times 3 600 seconds exceeds the depth. Coarse sand drops out and the
+   * water goes pale; clay is still fully suspended and the water stays the
+   * colour of a river in flood. The bubble count tracks the current, because a
+   * faster current is what keeps the load up in the first place.
+   */
+  drive: ({ v, f }) => {
+    const settled = Math.min(1, (f.settlingSpeedMmPerS / 1000) * 3600 / v.depth);
+    const murk = 1 - settled;
+    return {
+      level: 0.3 + 0.65 * (v.depth / 20),
+      color: murk > 0.6 ? "#5d4d33" : murk > 0.2 ? "#8a7550" : "#cbb27e",
+      precipitate: 0.15 + 0.75 * murk,
+      bubbles: Math.min(1, v.current / 2),
+    };
   },
 };
 

@@ -40,8 +40,8 @@ const TEN_TIMES_RARER: ArchetypeSpec = {
     "Small earthquakes release enough energy to prevent a big one",
   ],
   specimens: [
-    { id: "trench", name: "A trench across the fault: one dark layer for each past rupture",
-      art: { art: "landform", which: "strata" } },
+    { id: "patch", name: "The patch of fault that has to break, drawn to scale",
+      art: { art: "sphere", color: "#e0a04a", radius: 0.44, glow: 0.35 } },
   ],
   variables: [
     { key: "magnitude", label: "Magnitude of interest", min: 4, max: 9, step: 0.1, default: 6 },
@@ -61,6 +61,10 @@ const TEN_TIMES_RARER: ArchetypeSpec = {
    */
   measure: (v) => {
     const perYear = 150 * Math.pow(10, -v.bValue * (v.magnitude - 6));
+    // Circular crack model with a 3 MPa stress drop: the moment is exactly
+    // 10^(1.5M + 9.1) N m and the rupture radius is (7 M0 / 16 dsigma)^(1/3),
+    // so a magnitude 6 patch is 5.7 km across and a magnitude 8 is 57 km.
+    const momentNm = Math.pow(10, 1.5 * v.magnitude + 9.1);
     return {
       eventsPerYear: perYear,
       log10EventsPerYear: Math.log10(perYear),
@@ -68,11 +72,27 @@ const TEN_TIMES_RARER: ArchetypeSpec = {
       chanceIn30YearsPercent: 100 * (1 - Math.exp(-perYear * 30)),
       energyPerEventJ: Math.pow(10, 1.5 * v.magnitude + 4.8),
       equivalentM5sPerEvent: Math.pow(10, 1.5 * (v.magnitude - 5)),
+      ruptureRadiusKm: Math.cbrt((7 * momentNm) / (16 * 3.0e6)) / 1000,
     };
   },
   plot: {
     x: "magnitude", y: "log10EventsPerYear",
     xLabel: "Magnitude", yLabel: "log10 of events per year worldwide",
+  },
+  /*
+   * The patch on the bench is the fault area that has to break, and it is drawn
+   * at its real relative size: radius, not energy, so a magnitude 7 patch is
+   * about three times the width of a magnitude 6 and not thirty. It is clamped
+   * at both ends so a magnitude 9 still fits on the bench, and it brightens as
+   * the released energy climbs.
+   */
+  drive: ({ f }) => {
+    const km = f.ruptureRadiusKm;
+    return {
+      scale: Math.max(0.3, Math.min(2.6, km / 9)),
+      color: km > 40 ? "#c23b2e" : km > 10 ? "#e07536" : "#e8c65c",
+      glow: Math.min(1, km / 30),
+    };
   },
 };
 
@@ -128,6 +148,23 @@ const THE_HUNDRED_YEAR: ArchetypeSpec = {
   plot: {
     x: "years", y: "chanceOverWindowPercent",
     xLabel: "Years you live there", yLabel: "Chance of at least one flood (%)",
+  },
+  /*
+   * The gauge fills with the risk being taken, not with today's river: the
+   * water level is the chance of at least one exceedance over the whole stay.
+   * It runs blue while that stays under a quarter, ambers past the 26 per cent
+   * that a hundred-year flood carries over a thirty-year mortgage, and turns
+   * red past even odds. Silt settles out once the chance passes a half, and the
+   * bubbles count the floods expected rather than merely possible.
+   */
+  drive: ({ f }) => {
+    const risk = f.chanceOverWindowPercent / 100;
+    return {
+      level: 0.08 + 0.84 * risk,
+      color: risk >= 0.5 ? "#c0392b" : risk >= 0.26 ? "#d98a2b" : "#2f86c4",
+      bubbles: Math.min(1, f.expectedFloods / 3),
+      precipitate: risk >= 0.5 ? Math.min(0.55, (risk - 0.5) * 1.1) : 0,
+    };
   },
 };
 
@@ -202,6 +239,26 @@ const WHICH_ZONE: ArchetypeSpec = {
       art: { art: "landform", which: "strata" },
     },
   ],
+  /*
+   * Every core shakes by the amount the attenuation relation gives for its own
+   * distance, with the bay mud carrying the two-and-a-half-fold soft-soil
+   * amplification on top. The saturated sand does something the others do not:
+   * it fizzes and settles, because at 0.24 g the grains float apart and the
+   * ground behaves like a liquid.
+   */
+  drive: ({ t, index }) => {
+    // 0.58 g at 400 m amplified 2.5 times, then 0.24, 0.12, 0.075, 0.016, 0.0086.
+    const shaking = [1.46, 0.24, 0.12, 0.098, 0.016, 0.0086][index] ?? 0.05;
+    const amp = Math.min(0.15, shaking * 0.12);
+    const liquefies = index === 1;
+    return {
+      offset: [
+        Math.sin(t * 11.2) * amp,
+        (liquefies ? 0.05 : 0) + Math.sin(t * 15.1) * amp * 0.35,
+      ],
+      ...(liquefies ? { bubbles: 0.85, level: 0.5 } : {}),
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *

@@ -101,19 +101,35 @@ const PER_KILOGRAM: ArchetypeSpec = {
       art: { art: "molecule", formula: "CH4" } },
   ],
   variables: [
-    { key: "mass", label: "Mass of fuel burned (kg)", min: 1, max: 1000, step: 1, default: 100 },
+    { key: "energy", label: "Energy the job needs (MJ)", min: 100, max: 30000, step: 100, default: 3000 },
   ],
   // Higher heating values and the standard emission factors: bituminous coal
-  // 30 MJ/kg and 94.6 g CO2 per MJ, methane 55 MJ/kg and 56.1 g CO2 per MJ. Per
-  // unit of energy delivered, gas releases 59 per cent of the carbon dioxide
-  // coal does — better, and nowhere near zero.
+  // 30 MJ/kg and 94.6 g CO2 per MJ, methane 55 MJ/kg and 56.1 g CO2 per MJ. Fix
+  // the job rather than the fuel and both differences show at once: gas needs
+  // 45 per cent less mass, and releases 59 per cent of the carbon dioxide, for
+  // exactly the same megajoules delivered.
   measure: (v) => ({
-    coalEnergyMJ: COAL_MJ_PER_KG * v.mass,
-    gasEnergyMJ: METHANE_MJ_PER_KG * v.mass,
-    coalCO2Kg: COAL_MJ_PER_KG * v.mass * COAL_CO2_PER_MJ,
-    gasCO2Kg: METHANE_MJ_PER_KG * v.mass * GAS_CO2_PER_MJ,
-    gasCO2PerMJAsPercentOfCoal: (GAS_CO2_PER_MJ / COAL_CO2_PER_MJ) * 100,
+    coalMassKg: v.energy / COAL_MJ_PER_KG,
+    gasMassKg: v.energy / METHANE_MJ_PER_KG,
+    coalCO2Kg: v.energy * COAL_CO2_PER_MJ,
+    gasCO2Kg: v.energy * GAS_CO2_PER_MJ,
+    gasCO2AsPercentOfCoal: (GAS_CO2_PER_MJ / COAL_CO2_PER_MJ) * 100,
   }),
+  /**
+   * Both fuels are drawn as the amount you would have to burn for the job, so
+   * the two piles are never the same size: mass is a volume, and volume goes as
+   * the cube of a length, so each specimen is scaled by the cube root of the
+   * mass it needs. At 3 000 MJ that is 100 kg of coal against 55 kg of gas, and
+   * the coal is drawn 22 per cent wider — the correct ratio, not an emphasis.
+   * The coal also warms toward ember red as the carbon dioxide it releases
+   * climbs past a tonne.
+   */
+  drive: ({ f, index }) => index === 0
+    ? {
+        scale: Math.cbrt(f.coalMassKg / 300),
+        color: f.coalCO2Kg > 1000 ? "#4a1a10" : f.coalCO2Kg > 400 ? "#2a1512" : "#101014",
+      }
+    : { scale: Math.cbrt(f.gasMassKg / 300) },
 };
 
 /* E6.3 — Groundwater, and how slowly it actually moves. */
@@ -134,7 +150,10 @@ const HOW_FAST_DOES_IT_FLOW: ArchetypeSpec = {
     "Groundwater flows in underground rivers and caves",
     "Pumping a well simply refills from the rain that fell last week",
   ],
-  specimens: [{ id: "aquifer", name: "Layered aquifer", art: { art: "landform", which: "strata" } }],
+  specimens: [{
+    id: "aquifer", name: "Aquifer column",
+    art: { art: "glassware", which: "beaker", level: 0.55, color: "#4a86b8", precipitate: 0.7 },
+  }],
   variables: [
     { key: "conductivity", label: "Hydraulic conductivity (m per day)", min: 0.1, max: 50, step: 0.1, default: 10 },
     { key: "gradient", label: "Water-table slope (m per m)", min: 0.001, max: 0.05, step: 0.001, default: 0.005 },
@@ -160,6 +179,20 @@ const HOW_FAST_DOES_IT_FLOW: ArchetypeSpec = {
     x: "conductivity", y: "metresPerYear",
     xLabel: "Hydraulic conductivity (m per day)", yLabel: "Distance travelled in a year (m)",
   },
+  /**
+   * The column is a jar of the aquifer material with water in its pores, so it
+   * has to answer all three sliders. Porosity is literally how much of the jar
+   * is water, so it sets the level and the amount of grain packed below it.
+   * Conductivity sets how clean the material is: gravel and clean sand run
+   * clear, silt runs cloudy. The bubbles are the flow itself — at 0.2 m a day
+   * almost nothing moves, and at 25 m a day the column is visibly running.
+   */
+  drive: ({ v, f }) => ({
+    level: 0.3 + 0.6 * (v.porosity / 0.45),
+    precipitate: 1 - v.porosity,
+    color: v.conductivity > 20 ? "#4a86b8" : v.conductivity > 3 ? "#6f8a92" : "#6b6350",
+    bubbles: Math.min(1, f.seepageSpeedMPerDay / 4),
+  }),
 };
 
 /* E6.4 — What "nonrenewable" actually means: a rate, not a quantity. */

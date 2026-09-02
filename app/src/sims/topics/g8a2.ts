@@ -54,6 +54,21 @@ const HOW_QUICKLY_CHANGED: ArchetypeSpec = {
     accelerationG: (v.endSpeed - v.startSpeed) / v.time / 9.81,
   }),
   plot: { x: "time", y: "accelerationMs2", xLabel: "Time taken (s)", yLabel: "Acceleration (m/s2)" },
+  /*
+   * The cart runs the change for real, over and over. Its position through the
+   * run is u t + half a t squared, mapped onto the track so the whole run just
+   * fits, which means the shape of the motion is what changes: from rest it
+   * creeps then flies, and from a rolling start it barely gathers pace at all.
+   * The run itself takes exactly the seconds the slider asks for, so a 2 s
+   * change and a 20 s change look as different as they are.
+   */
+  drive: ({ v, f, t }) => {
+    const period = v.time + 1.4;
+    const tau = Math.min(v.time, t % period);
+    const s = v.startSpeed * tau + 0.5 * f.accelerationMs2 * tau * tau;
+    const total = f.distanceM;
+    return { offset: [-0.55 + 1.1 * (total > 0 ? s / total : 0), 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -92,6 +107,18 @@ const SLOPE_AND_AREA: ArchetypeSpec = {
     averageVelocityMs: v.initialSpeed + 0.5 * v.acceleration * v.time,
   }),
   plot: { x: "time", y: "velocityMs", xLabel: "Time (s)", yLabel: "Velocity (m/s)" },
+  /*
+   * The ball stands where the area under the graph puts it: 80 m of travel to
+   * one specimen width. Slide the time along and the ball moves exactly as
+   * fast as the line is high, and it rolls through the angle its travel would
+   * turn a 0.11 m ball. Push the acceleration negative far enough and the area
+   * starts shrinking again: the ball comes back, which is what a velocity-time
+   * line dropping below the axis means.
+   */
+  drive: ({ f }) => ({
+    offset: [Math.max(-0.6, Math.min(0.6, f.areaUnderGraphM / 80)), 0],
+    spin: f.areaUnderGraphM * 0.09,
+  }),
 };
 
 /* ---------------------------------------------------------------- *

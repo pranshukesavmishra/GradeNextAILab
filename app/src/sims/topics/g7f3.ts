@@ -117,15 +117,58 @@ const PULL_AND_FENCE: ArchetypeSpec = {
   specimens: [
     {
       id: "criterion", name: "Criterion: how far each storey leans",
-      because: "Smaller is better. 60 mm beats 90 mm, and 40 mm beats both.",
+      because: "A scale. Less is better, all the way down, and it freezes past 60 mm.",
       art: { art: "apparatus", which: "spring" },
     },
     {
-      id: "constraint", name: "Constraint: one summer, and the budget",
-      because: "Not a scale. Cross the line and the design is out, however good.",
-      art: { art: "glassware", which: "beaker", level: 0.86, color: "#4aa06a" },
+      id: "constraint", name: "Constraint: the budget",
+      because: "A fence. Under the line or out of the running, however good.",
+      art: { art: "glassware", which: "beaker", level: 0.55, color: "#4aa06a" },
     },
   ],
+  variables: [
+    { key: "lean", label: "Lean allowed per storey (mm)", min: 20, max: 120, step: 5, default: 60 },
+  ],
+  /*
+   * One slider, two completely different responses, which is the whole point.
+   *
+   * A school is Risk Category III, so ASCE 7 allows 1.5 per cent of the storey
+   * height: 60 mm on a 4 m storey. Halving the lean needs roughly double the
+   * lateral stiffness, and in a braced frame stiffness runs with the area of
+   * steel in the braces, so the bracing cost is taken as inversely proportional
+   * to the lean and indexed to 1.0 at the 60 mm design. The budget is 1.6 of
+   * those units, which fences the design off below 37.5 mm.
+   */
+  measure: (v) => ({
+    leanMm: v.lean,
+    driftPercent: (v.lean / 4000) * 100,
+    costIndex: 60 / v.lean,
+    budgetIndex: 1.6,
+    meetsDriftLimit: v.lean <= 60 ? 1 : 0,
+    withinBudget: 60 / v.lean <= 1.6 ? 1 : 0,
+    allowedDesign: v.lean <= 60 && 60 / v.lean <= 1.6 ? 1 : 0,
+  }),
+  /*
+   * The spring is the criterion: it leans further as the number grows, and it
+   * stops dead once the design breaks the code limit. The beaker is the
+   * constraint: it fills with the cost and goes red at the brim, because a
+   * constraint has no better and worse, only inside and outside.
+   */
+  drive: ({ f, index }) => {
+    if (index === 0) {
+      return {
+        offset: [f.leanMm / 500, 0],
+        scale: 0.75 + f.leanMm / 240,
+        rate: f.meetsDriftLimit ? 1 : 0,
+      };
+    }
+    const over = f.costIndex > f.budgetIndex;
+    return {
+      level: Math.min(0.97, (f.costIndex / f.budgetIndex) * 0.62),
+      color: over ? "#c0392b" : "#4aa06a",
+      bubbles: over ? 0.9 : 0,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -256,6 +299,22 @@ const SOFTER_BUT_WIDER: ArchetypeSpec = {
   plot: {
     x: "period", y: "displacementMm",
     xLabel: "Period on its bearings (s)", yLabel: "Sideways travel to allow (mm)",
+  },
+  /*
+   * The school rides on the bench at its own period, and it slides exactly as
+   * far as the spectrum says: a stiff 0.4 s building shivers a few millimetres,
+   * a 2.5 s isolated one swings 373 mm at a lazy once every two and a half
+   * seconds. Take it past a 500 mm moat and it parks hard against the wall and
+   * stops, because a moat that is too narrow is not isolation at all.
+   */
+  drive: ({ v, f, t }) => {
+    const amp = Math.min(0.5, f.displacementMm / 800);
+    const hitsMoat = f.displacementMm > 500;
+    const w = (2 * Math.PI) / v.period;
+    return {
+      offset: [hitsMoat ? amp : Math.sin(t * w) * amp, 0],
+      rate: hitsMoat ? 0 : 1,
+    };
   },
 };
 

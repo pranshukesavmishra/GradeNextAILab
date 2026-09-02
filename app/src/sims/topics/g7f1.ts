@@ -88,6 +88,32 @@ const WHAT_DRIVES_IT: ArchetypeSpec = {
       art: { art: "landform", which: "sedimentary" },
     },
   ],
+  /*
+   * Each specimen moves the way its hazard moves, so the jar shows the driving
+   * process and not only a picture of the aftermath. The rupture shakes at
+   * about 2 Hz for its fifteen seconds; the creeping fault inches along and
+   * then snaps back; the volcano swells before the flank lets go; the landslide
+   * crosses the stage in one run and the bluff waits, and waits, and drops.
+   */
+  drive: ({ t, index }) => {
+    const cycle = (period: number) => (t % period) / period;
+    if (index === 0) return { offset: [Math.sin(t * 12.6) * 0.09, Math.sin(t * 17.3) * 0.035] };
+    if (index === 1) {
+      const p = cycle(8);
+      return { offset: [p < 0.86 ? p * 0.06 : 0.14, 0] };
+    }
+    if (index === 2) {
+      const p = cycle(10);
+      return { scale: p < 0.8 ? 1 + p * 0.2 : 0.94, offset: [0, p < 0.8 ? 0 : 0.05] };
+    }
+    if (index === 3) return { scale: 1 + 0.07 * Math.sin(t * 3.2) };
+    if (index === 4) {
+      const p = cycle(6);
+      return { offset: [p * 0.22, p * 0.1] };
+    }
+    const p = cycle(12);
+    return { offset: [0, p < 0.9 ? 0 : (p - 0.9) * 1.6] };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -334,6 +360,21 @@ const HOW_FAR_HOW_LONG: ArchetypeSpec = {
   plot: {
     x: "distance", y: "pgaG",
     xLabel: "Distance to the fault (km)", yLabel: "Peak ground acceleration (g)",
+  },
+  /*
+   * The instrument is the readout. Its swing is the peak acceleration itself,
+   * scaled so that 0.6 g fills the bench, and it swings near 1.4 Hz, which is
+   * where the S waves of a moderate earthquake carry most of their energy.
+   * Walk the seismometer out to 150 km and the trace all but stops, which is
+   * the same thing the falling curve on the graph is saying.
+   */
+  drive: ({ f, t }) => {
+    const amp = Math.min(0.3, f.pgaG * 0.5);
+    const w = 2 * Math.PI * 1.4;
+    return {
+      offset: [Math.sin(t * w) * amp, Math.sin(t * w * 1.7 + 0.6) * amp * 0.3],
+      tilt: 0.24 + Math.sin(t * w * 0.9) * amp * 0.9,
+    };
   },
 };
 

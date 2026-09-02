@@ -94,6 +94,16 @@ const MILLIMETRES_ADD_UP: ArchetypeSpec = {
     x: "rate", y: "millionYears",
     xLabel: "Rate (mm per year)", yLabel: "Time needed (million years)",
   },
+  /**
+   * The range on the bench is the range being asked for, so it grows with the
+   * height slider and the ground line stays put beneath it. Drawing it in true
+   * proportion to a 100 m hill would leave Everest off the top of the stage, so
+   * the scale is compressed: 100 m draws at 0.55 and 9 000 m at 1.10.
+   */
+  drive: ({ v }) => {
+    const scale = 0.55 + 0.55 * (v.height / 9000);
+    return { scale, offset: [0, 0.7 * (1 - scale)] };
+  },
 };
 
 /* E3.3 — Building an explanation out of a stack of beds. */
@@ -177,6 +187,12 @@ const SLOW_THEN_SUDDEN: ArchetypeSpec = {
   ],
 };
 
+/**
+ * Real long dimension of each ZOOM_OUT specimen, in metres, in the order the
+ * specimens are listed. It is what `drive` draws them at.
+ */
+const ZOOM_SIZES_M = [0.003, 0.008, 0.04, 40, 80, 30000, 446000, 1.0e7, 1.6e7];
+
 /* E3.5 — Choosing the right scale to look at. */
 const ZOOM_OUT: ArchetypeSpec = {
   id: "g7e3-zoom-out",
@@ -230,6 +246,17 @@ const ZOOM_OUT: ArchetypeSpec = {
       because: "The magnetic stripes either side match across the whole length. No outcrop could ever show you that.",
       art: { art: "landform", which: "seafloor" } },
   ],
+  /**
+   * The whole subtopic is scale, so the specimens are not all drawn the same
+   * size: each one is drawn at its own place on a logarithmic ladder running
+   * from a 3 mm crystal to a 16 000 km ridge. Ten decades cannot be shown in
+   * true proportion on a stage — the crystal would be a thousandth of a pixel —
+   * so the drawn size follows the logarithm of the real one, which keeps the
+   * order and the spacing honest.
+   */
+  drive: ({ index }) => ({
+    scale: 0.52 + 0.55 * ((Math.log10(ZOOM_SIZES_M[index] ?? 1) + 2.6) / 9.9),
+  }),
 };
 
 export const g7e3OneMorningInMay = buildSim(ONE_MORNING_IN_MAY);

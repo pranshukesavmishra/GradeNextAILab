@@ -164,29 +164,31 @@ const INSIDE_A_CHLOROPLAST: ArchetypeSpec = {
     {
       id: "chloroplast", name: "Chloroplast",
       art: { art: "organelle", which: "chloroplast" },
+      // Anchors sit on the organelle itself, not in the space around it: a
+      // leader line that points at nothing is worse than no leader at all.
       parts: [
         {
-          id: "envelope", name: "Double envelope", at: [-0.72, -0.26],
+          id: "envelope", name: "Double envelope", at: [-0.33, -0.09],
           note: "Two membranes, 5 to 10 micrometres end to end.",
         },
         {
-          id: "thylakoid", name: "Thylakoid", at: [-0.16, -0.46],
+          id: "thylakoid", name: "Thylakoid", at: [-0.10, -0.09],
           note: "A flattened disc. Chlorophyll sits in its membrane.",
         },
         {
-          id: "granum", name: "Granum", at: [0.42, -0.32],
+          id: "granum", name: "Granum", at: [0.02, -0.15],
           note: "A stack of 10 to 100 thylakoids; 40 to 60 stacks in all.",
         },
         {
-          id: "stroma", name: "Stroma", at: [0.06, 0.44],
+          id: "stroma", name: "Stroma", at: [0.19, 0.10],
           note: "Fluid where rubisco fixes CO2 into sugar.",
         },
         {
-          id: "chlorophyll", name: "Chlorophyll", at: [0.68, 0.16],
+          id: "chlorophyll", name: "Chlorophyll", at: [0.31, -0.02],
           note: "Absorbs 430 nm and 662 nm, reflects 550 nm. Hence green.",
         },
         {
-          id: "dna", name: "Its own DNA", at: [-0.56, 0.36],
+          id: "dna", name: "Its own DNA", at: [-0.19, 0.14],
           note: "A circular genome of about 120 000 base pairs.",
         },
       ],
@@ -312,6 +314,24 @@ const COUNTING_BUBBLES: ArchetypeSpec = {
   plot: {
     x: "lampDistanceCm", y: "bubblesPerMinute",
     xLabel: "Lamp distance (cm)", yLabel: "Bubbles per minute",
+  },
+  /*
+   * The tube is the readout. Bubbles are drawn at the rate the model computes,
+   * one for one, so pulling the lamp back visibly thins the stream: the count
+   * on screen is the count a student would tally.
+   *
+   * Past 35 C rubisco denatures, and by about 43 C the weed is finished: it
+   * bleaches from green to olive and stops moving altogether. That is the
+   * failure state, and it is why "hotter is better" is wrong.
+   */
+  drive: ({ f }) => {
+    const dying = f.temperatureFactor < 0.15;
+    return {
+      bubbles: Math.min(60, f.bubblesPerMinute),
+      color: dying ? "#8f8a5a" : "#4f9e5c",
+      level: dying ? 0.72 : 0.78,
+      rate: dying ? 0 : 1,
+    };
   },
 };
 

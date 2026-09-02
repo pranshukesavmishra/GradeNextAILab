@@ -150,6 +150,19 @@ const STRIPES_AND_AGES: ArchetypeSpec = {
     x: "distance", y: "ageMillionYears",
     xLabel: "Distance from the ridge (km)", yLabel: "Age of the seafloor (million years)",
   },
+  /**
+   * Two things have to answer the sliders. Raise the spreading rate and each
+   * polarity chron occupies more distance, so the stripe pattern is drawn
+   * wider — that is the whole reason a fast ridge like the East Pacific Rise
+   * has broad stripes and the slow Mid-Atlantic has narrow ones. Move out from
+   * the ridge and the floor sinks, because cooling lithosphere contracts: the
+   * panel drops through the frame by the depth the Parsons and Sclater law
+   * predicts, 2 500 m at the crest and about 4 700 m at 40 million years.
+   */
+  drive: ({ v, f }) => ({
+    scale: 0.7 + 0.5 * (v.halfRate / 8),
+    offset: [0, Math.min(0.42, (f.seafloorDepthM - 2500) / 9000)],
+  }),
 };
 
 /* E4.4 — Plate motion, measured directly. */

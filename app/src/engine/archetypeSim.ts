@@ -1,7 +1,7 @@
 import type { Readout, RenderContext, SimInput, SimManifest, SimModel, ThemeColors } from "./types";
 import { q } from "./units";
 import {
-  facts, initState, overlaysOf, paramsOf,
+  autoChallenge, autoLab, facts, initState, overlaysOf, paramsOf,
   type ArchetypeSpec, type ArchetypeState, type Art, type DriveResult, type Specimen,
 } from "./archetype";
 import {
@@ -1031,8 +1031,12 @@ export function buildSim(spec: ArchetypeSpec): SimManifest<ArchetypeState> {
     overlays: overlaysOf(spec),
     model: makeModel(spec),
     render: makeRender(spec),
-    ...(spec.labs ? { labs: spec.labs } : {}),
-    ...(spec.challenges ? { challenges: spec.challenges } : {}),
+    // A specification that writes its own lab keeps it; everything else gets
+    // the one its own science implies, so a simulation with controls and a
+    // graph arrives as an experiment rather than as apparatus.
+    labs: spec.labs ?? [autoLab(spec)].filter((l): l is NonNullable<typeof l> => l !== null),
+    challenges: spec.challenges
+      ?? [autoChallenge(spec)].filter((c): c is NonNullable<typeof c> => c !== null),
   };
 }
 
