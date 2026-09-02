@@ -93,7 +93,12 @@ function ensureScene(theme: ThemeColors, key: string): boolean {
   if (!camera) {
     // The subject is normalised to a unit sphere, so a frustum a little wider
     // than that frames it exactly, whatever it is.
-    camera = new THREE.OrthographicCamera(-1.06, 1.06, 1.06, -1.06, -50, 50);
+    // Exactly the normalised subject, plus a hair. Subjects are scaled by
+    // their bounding-sphere radius, which is rotation-invariant, so a frustum
+    // of one unit frames any subject at any angle and crops none of them. A
+    // tighter frustum makes a subject bigger and then cuts its corners off,
+    // which reads as a broken drawing rather than a close-up.
+    camera = new THREE.OrthographicCamera(-1.02, 1.02, 1.02, -1.02, -50, 50);
     camera.position.set(0, 0, 10);
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();

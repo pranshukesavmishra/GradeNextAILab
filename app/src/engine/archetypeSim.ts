@@ -429,7 +429,13 @@ function drawSpecimen(
     // Each specimen turns at its own phase, so a tray of eight reads as eight
     // separate objects rather than one object stamped eight times.
     const phase = placed3D++ * 1.7;
-    const drawn = draw3D(ctx, sub3d, x, y, size * 2.4, t, theme, {
+    // Keep the whole subject on the stage. Layouts place a specimen by its
+    // centre and assume a footprint; a subject that overruns simply loses its
+    // edge off the side of the canvas, which reads as a broken drawing.
+    const halfW = size * 1.03;
+    const sx3 = clamp(x, Math.min(halfW + 6, rc.width / 2), Math.max(rc.width - halfW - 6, rc.width / 2));
+    const sy3 = clamp(y, Math.min(halfW + 6, rc.height / 2), Math.max(rc.height - halfW - 6, rc.height / 2));
+    const drawn = draw3D(ctx, sub3d, sx3, sy3, size * 2.05, t, theme, {
       themeKey: isDarkTheme(theme) ? "dark" : "light",
       reflect: true,
       // A standing three-quarter yaw, so a subject is never caught exactly
@@ -850,17 +856,29 @@ function renderInvestigate(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpe
   const sp = spec.specimens?.[0];
   const half = width * 0.5;
 
-  if (sp) drawSpecimen(rc, sp, half * 0.5, height * 0.5, Math.min(half * 0.8, height * 0.66) * 0.5, spec, 0);
+  // The apparatus sits in the left half, clear of both the edge and the plot.
+  // Sizing it to the half-width alone let a wide subject run off the side.
+  const apSize = Math.min(half * 0.66, height * 0.58) * 0.5;
+  const apX = Math.max(PAD + apSize * 1.1, half * 0.5);
+  if (sp) drawSpecimen(rc, sp, apX, height * 0.54, apSize, spec, 0);
 
   if (!spec.measure || !spec.plot || !spec.variables) return;
   const v: Record<string, number> = {};
   for (const varr of spec.variables) v[varr.key] = Number(params[varr.key] ?? varr.default);
   const m = spec.measure(v);
 
-  // A live gauge of the headline measurement, beside the apparatus.
-  const gy = height * 0.24;
-  arcGauge(ctx, half * 0.5, gy, Math.min(half, height) * 0.1,
-    clamp01(m[spec.plot.y] / (Math.abs(m[spec.plot.y]) + 40)), theme.accent, theme);
+  // A live gauge of the headline measurement, beside the apparatus. An arc
+  // with no number on it is decoration; the number is the measurement.
+  const yNow = Number(m[spec.plot.y]);
+  const gy = height * 0.16;
+  arcGauge(
+    ctx, apX, gy, Math.min(half, height) * 0.11,
+    clamp01(Math.abs(yNow) / (Math.abs(yNow) + 40)), theme.accent, theme,
+    Number.isFinite(yNow) ? formatValue(yNow) : "—",
+    // The gauge is small; a full axis title under it spills either side, so it
+    // carries the unit if there is one and nothing if there is not.
+    { sub: (spec.plot.yLabel.match(/\(([^)]+)\)/) ?? [])[1] ?? "" },
+  );
 
   // The plot: sweep the x variable across its range and draw the true curve.
   const px = half + PAD, py = height * 0.18;
@@ -885,13 +903,14 @@ function renderInvestigate(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpe
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  const sx = (x: number) => px + 34 + ((x - xv.min) / (xv.max - xv.min)) * (pw - 48);
+  const GUT = 62;   // room for the rotated axis title and the tick values
+  const sx = (x: number) => px + GUT + ((x - xv.min) / (xv.max - xv.min)) * (pw - GUT - 18);
   const sy = (y: number) => py + ph - 30 - ((y - lo) / (hi - lo)) * (ph - 48);
 
   ctx.strokeStyle = hexA(theme.grid, 1);
   for (let i = 0; i <= 4; i++) {
     const yy = py + 18 + ((ph - 48) * i) / 4;
-    ctx.beginPath(); ctx.moveTo(px + 34, yy); ctx.lineTo(px + pw - 14, yy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px + GUT, yy); ctx.lineTo(px + pw - 14, yy); ctx.stroke();
   }
 
   ctx.beginPath();
@@ -907,12 +926,30 @@ function renderInvestigate(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpe
   // The live point.
   organelleDot(ctx, sx(v[xv.key]), sy(m[spec.plot.y]), 6, theme.sci["force"] ?? theme.accent);
 
+  // Tick values. A graph with named axes and no numbers on them cannot be read
+  // off, and reading a value off the graph is half of what a graph is for.
+  ctx.fillStyle = theme.inkSoft;
+  ctx.font = '500 10px ui-monospace, "SF Mono", monospace';
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i <= 4; i++) {
+    const val = hi - ((hi - lo) * i) / 4;
+    ctx.fillText(formatValue(val), px + GUT - 6, py + 18 + ((ph - 48) * i) / 4);
+  }
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  for (const [frac, align] of [[0, "left"], [0.5, "center"], [1, "right"]] as const) {
+    ctx.textAlign = align;
+    ctx.fillText(formatValue(xv.min + (xv.max - xv.min) * frac),
+      sx(xv.min + (xv.max - xv.min) * frac), py + ph - 20);
+  }
+
   ctx.fillStyle = theme.inkSoft;
   ctx.font = '600 12px "Source Sans 3", system-ui, sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(spec.plot.xLabel, px + pw / 2, py + ph - 8);
+  ctx.fillText(spec.plot.xLabel, px + pw / 2, py + ph - 6);
   ctx.save();
-  ctx.translate(px + 14, py + ph / 2);
+  ctx.translate(px + 15, py + ph / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.fillText(spec.plot.yLabel, 0, 0);
   ctx.restore();
@@ -1234,6 +1271,19 @@ function roundRect(
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+/** A number a student can read: no raw floats, no exponent soup. */
+function formatValue(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  const a = Math.abs(n);
+  if (a === 0) return "0";
+  if (a >= 1e6 || a < 1e-3) return n.toExponential(1).replace("e+", "e");
+  if (a >= 1000) return n.toFixed(0);
+  if (a >= 100) return n.toFixed(0);
+  if (a >= 10) return n.toFixed(1);
+  if (a >= 1) return n.toFixed(2);
+  return n.toFixed(3);
 }
 
 function clamp(v: number, lo: number, hi: number) {

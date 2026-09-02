@@ -119,8 +119,14 @@ export class SimRunner {
       if (this.inputQueue.length) this.tick(0);
       return false;
     }
-    const scaled = Math.min(realSeconds, MAX_FRAME_SECONDS) * this.speed * (this.manifest.timeScale ?? 1);
-    this.accumulator += scaled;
+    // Clamped at both ends. A caller that hands over a negative delta — a
+    // clock that stepped backwards, a frame timestamp older than the moment
+    // the loop started — would otherwise drive the accumulator negative, and
+    // from there it never again reaches a single tick: the simulation sits at
+    // zero seconds and looks, correctly, broken.
+    const step = Math.max(0, Math.min(realSeconds, MAX_FRAME_SECONDS));
+    const scaled = step * this.speed * (this.manifest.timeScale ?? 1);
+    this.accumulator = Math.max(0, this.accumulator + scaled);
 
     let ran = false;
     // Cap ticks per frame so fast-forward never blocks the main thread.

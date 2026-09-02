@@ -110,9 +110,16 @@ export function useSim(opts: UseSimOptions): SimHandle {
     let last = performance.now();
     let mounted = true;
 
-    const tick = (now: number) => {
+    const tick = () => {
       if (!mounted) return;
-      const delta = (now - last) / 1000;
+      // Measured from `performance.now()`, never from the timestamp the frame
+      // callback is handed. Those two can disagree — the first frame after a
+      // slow start-up arrives carrying a timestamp from before the loop was
+      // set up — and a negative delta drives the runner's accumulator deeply
+      // negative, after which it never reaches one tick and the simulation
+      // stays frozen at zero seconds for as long as the page is open.
+      const now = performance.now();
+      const delta = Math.max(0, (now - last) / 1000);
       last = now;
       const ran = runner.advance(delta);
 
