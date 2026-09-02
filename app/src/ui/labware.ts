@@ -686,7 +686,14 @@ export interface LiquidSpec {
   /** 0-1 of the vessel's usable height. */
   level: number;
   color: string;
-  /** Rising bubbles, for a boiling or reacting liquid. */
+  /**
+   * Rising bubbles, for a boiling or reacting liquid.
+   *
+   * A count when it is 1 or more. A value between 0 and 1 is read as an
+   * intensity instead and scaled to a count, because that is how half the
+   * catalogue was already written and `bubbles: 0.25` silently rounding to
+   * nothing is a worse answer than either reading.
+   */
   bubbles?: number;
   /** Suspended solid settling at the bottom. */
   precipitate?: number;
@@ -813,7 +820,9 @@ function drawLiquid(
   }
 
   if (spec.bubbles) {
-    const n = Math.round(spec.bubbles);
+    const n = spec.bubbles <= 1
+      ? Math.max(1, Math.round(spec.bubbles * 26))
+      : Math.round(spec.bubbles);
     for (let i = 0; i < n; i++) {
       const seed = hash1(i * 2.13);
       const speed = 0.32 + seed * 0.5;

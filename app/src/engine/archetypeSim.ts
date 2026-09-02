@@ -279,7 +279,12 @@ function subject3DFor(a: Art, theme: { accent: string }): Subject3D | null {
     case "organelle": return { kind: "organelle", which: a.which };
     case "microbe": return { kind: "microbe", which: a.which };
     case "glassware":
-      return { kind: "glassware", which: a.which, level: a.level, color: a.color };
+      return {
+        kind: "glassware", which: a.which, level: a.level, color: a.color,
+        // The 2D kit reads a fraction as an intensity; the 3D builder wants a
+        // count, so the same spec means the same thing in both.
+        bubbles: a.bubbles === undefined ? 0 : a.bubbles <= 1 ? a.bubbles * 26 : a.bubbles,
+      };
     case "sphere": return { kind: "sphere", color: a.color ?? theme.accent };
     case "molecule": return { kind: "molecule", formula: a.formula };
     case "atom": return { kind: "atom", protons: a.protons, neutrons: a.neutrons, electrons: a.electrons };
@@ -876,6 +881,45 @@ function renderProcess(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
   }
 }
 
+/**
+ * Draw centred text, wrapped to a width, and return the height it used.
+ *
+ * A single `fillText` with a sentence in it does not stop at the edge of its
+ * column: in a two-panel comparison the two captions run into each other and
+ * the result is two sentences printed on top of one another, which is
+ * unreadable in a way that looks like a rendering fault rather than a layout
+ * one. Everything that prints a sentence goes through here.
+ */
+function wrappedText(
+  ctx: CanvasRenderingContext2D, text: string,
+  cx: number, y: number, maxWidth: number, lineHeight: number, maxLines = 4,
+): number {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let line = "";
+  let truncated = false;
+  for (let i = 0; i < words.length; i++) {
+    const test = line ? `${line} ${words[i]}` : words[i];
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = words[i];
+      if (lines.length === maxLines) { truncated = true; line = ""; break; }
+    } else line = test;
+  }
+  if (lines.length < maxLines && line) lines.push(line);
+  // Say that something was cut. A sentence that simply stops mid-clause looks
+  // like a bug; an ellipsis looks like an editor's decision.
+  if (truncated && lines.length) {
+    let last = lines[lines.length - 1];
+    while (last.length > 1 && ctx.measureText(`${last} …`).width > maxWidth) {
+      last = last.replace(/\s*\S+$/, "");
+    }
+    lines[lines.length - 1] = `${last} …`;
+  }
+  lines.forEach((l, i) => ctx.fillText(l, cx, y + i * lineHeight));
+  return lines.length * lineHeight;
+}
+
 function renderCompare(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
   const { ctx, width, height, theme, params } = rc;
   const sps = spec.specimens ?? [];
@@ -904,11 +948,14 @@ function renderCompare(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
     ctx.fillStyle = theme.ink;
     ctx.font = '700 17px "Bricolage Grotesque", system-ui, sans-serif';
     ctx.textAlign = "center";
-    ctx.fillText(sp.name, cx, height * 0.86);
+    // Each caption stays inside its own column, with a gutter between them.
+    const colW = (cols === 1 ? width * 0.7 : width / 2) - PAD * 2;
+    let ty = height * 0.86;
+    ty += wrappedText(ctx, sp.name, cx, ty, colW, 20, 2);
     if (sp.because) {
       ctx.font = '500 13px "Source Sans 3", system-ui, sans-serif';
       ctx.fillStyle = theme.inkSoft;
-      ctx.fillText(sp.because, cx, height * 0.9);
+      wrappedText(ctx, sp.because, cx, ty + 2, colW, 16, 3);
     }
     ctx.restore();
   }

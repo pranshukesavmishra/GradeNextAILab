@@ -38,7 +38,7 @@ export type Subject3D =
   | { kind: "cell"; plant?: boolean }
   | { kind: "organelle"; which: string }
   | { kind: "microbe"; which: "virus" | "bacterium" }
-  | { kind: "glassware"; which: "beaker" | "flask" | "testTube"; level?: number; color?: string }
+  | { kind: "glassware"; which: "beaker" | "flask" | "testTube"; level?: number; color?: string; bubbles?: number }
   | { kind: "sphere"; color: string }
   | { kind: "planet"; color: string; rings?: boolean; atmosphere?: string }
   | { kind: "atom"; protons: number; neutrons: number; electrons: number }
@@ -106,7 +106,7 @@ function subjectKey(s: Subject3D): string {
     case "cell": return `cell:${s.plant ? "plant" : "animal"}`;
     case "organelle": return `org:${s.which}`;
     case "microbe": return `mic:${s.which}`;
-    case "glassware": return `gl:${s.which}:${Math.round((s.level ?? 0.55) * 20)}:${s.color ?? ""}`;
+    case "glassware": return `gl:${s.which}:${Math.round((s.level ?? 0.55) * 20)}:${s.color ?? ""}:${Math.round(s.bubbles ?? 0)}`;
     case "sphere": return `sph:${s.color}`;
     case "planet": return `pl:${s.color}:${s.rings ? 1 : 0}:${s.atmosphere ?? ""}`;
     case "atom": return `at:${s.protons}:${s.neutrons}:${s.electrons}`;
@@ -191,7 +191,9 @@ function build(scene: THREE.Scene, s: Subject3D, theme: ThemeColors): Entry {
     case "cell": inner = buildCell(scene, { plant: s.plant }); break;
     case "organelle": inner = buildOrganelle(scene, s.which); break;
     case "microbe": inner = buildMicrobe(scene, s.which); break;
-    case "glassware": inner = buildGlassware(scene, s.which, { level: s.level, color: s.color }); break;
+    case "glassware":
+      inner = buildGlassware(scene, s.which, { level: s.level, color: s.color, bubbles: s.bubbles });
+      break;
     case "planet": inner = buildPlanet(scene, 2, s.color, { rings: s.rings, atmosphere: s.atmosphere }); break;
     case "dna": inner = buildDNA(scene, 3); break;
     case "atom": {

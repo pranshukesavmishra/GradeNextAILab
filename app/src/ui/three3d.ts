@@ -690,48 +690,171 @@ export function buildMicrobe(scene: THREE.Scene, which: "virus" | "bacterium"): 
 export function buildGlassware(
   scene: THREE.Scene,
   which: "beaker" | "flask" | "testTube",
-  opts: { level?: number; color?: string } = {},
+  opts: { level?: number; color?: string; bubbles?: number } = {},
 ): THREE.Group {
   const g = new THREE.Group();
   const level = Math.max(0, Math.min(1, opts.level ?? 0.55));
   const liquidColor = opts.color ?? "#8e5bc4";
 
+  /**
+   * A wall of glass, drawn as three surfaces rather than one.
+   *
+   * Real laboratory glass is nearly invisible in the middle and obvious at the
+   * silhouette, because that is where the line of sight passes through many
+   * millimetres of it. A single transmissive shell gives the first half and
+   * none of the second, and the vessel then disappears against a pale
+   * background. Adding an inward-facing shell puts a bright edge exactly on
+   * the silhouette, and a thin outward tint gives the wall a body.
+   */
+  const wall = (geom: THREE.BufferGeometry, order: number): THREE.Group => {
+    const grp = new THREE.Group();
+    const outer = new THREE.Mesh(geom, glassMaterial());
+    outer.renderOrder = order + 1;
+    grp.add(outer);
+    const edge = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
+      color: new THREE.Color("#cfe8fb"), transparent: true, opacity: 0.3,
+      side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    edge.renderOrder = order;
+    grp.add(edge);
+    const body = new THREE.Mesh(geom, new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color("#cfe6f7"), transparent: true, opacity: 0.16,
+      roughness: 0.06, metalness: 0, side: THREE.DoubleSide,
+      clearcoat: 1, clearcoatRoughness: 0.03, depthWrite: false,
+    }));
+    body.renderOrder = order + 2;
+    grp.add(body);
+    return grp;
+  };
+
+  /** The liquid: saturated, self-lit a little, and never a pastel. */
+  const liquidMaterial = () => new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(liquidColor),
+    // Opaque on purpose. A transmissive liquid inside a transmissive vessel
+    // ends up sorted behind the glass's own highlights and reads as white:
+    // the solution is the subject here, and it has to be the strongest colour
+    // on the stage, not the weakest.
+    transparent: false,
+    roughness: 0.14,
+    metalness: 0,
+    emissive: new THREE.Color(liquidColor),
+    emissiveIntensity: 0.2,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.07,
+  });
+
+  /** The rolled rim every real piece of glassware is finished with. */
+  const rim = (r: number, y: number) => {
+    const m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.055, 12, 56), glassMaterial("#eaf6ff"));
+    m.rotation.x = Math.PI / 2;
+    m.position.y = y;
+    m.renderOrder = 6;
+    g.add(m);
+  };
+
+  /** The meniscus: liquid climbs the wall it wets, and it is always concave. */
+  const meniscus = (r: number, y: number) => {
+    const m = new THREE.Mesh(new THREE.RingGeometry(r * 0.62, r, 48), new THREE.MeshBasicMaterial({
+      color: new THREE.Color(liquidColor), transparent: true, opacity: 0.55,
+      side: THREE.DoubleSide, depthWrite: false,
+    }));
+    m.rotation.x = -Math.PI / 2;
+    m.position.y = y;
+    m.renderOrder = 9;
+    g.add(m);
+  };
+
+  /** Bubbles, for a liquid that is boiling or giving off a gas. */
+  const bubbles = (r: number, base: number, top: number, n: number) => {
+    if (n <= 0) return;
+    const geom = new THREE.SphereGeometry(r * 0.07, 12, 10);
+    const mat = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color("#ffffff"), transparent: true, opacity: 0.5,
+      roughness: 0.02, transmission: 0.9, thickness: 0.1, ior: 1.1,
+    });
+    for (let i = 0; i < n; i++) {
+      const a = i * 2.399, rr = r * 0.72 * Math.sqrt(((i * 7) % 11) / 11);
+      const b = new THREE.Mesh(geom, mat);
+      b.position.set(Math.cos(a) * rr, base + (top - base) * (((i * 5) % 9) / 9), Math.sin(a) * rr);
+      b.scale.setScalar(0.7 + (((i * 3) % 7) / 7) * 0.9);
+      g.add(b);
+    }
+  };
+
   if (which === "flask") {
-    const body = new THREE.Mesh(new THREE.ConeGeometry(1.1, 1.8, 48, 1, true), glassMaterial());
-    body.position.y = -0.2;
-    g.add(body);
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 1, 32, 1, true), glassMaterial());
-    neck.position.y = 1.1;
+    // A conical flask: sloping body, straight neck, flat foot.
+    const R = 1.15, H = 1.75, NECK = 0.26;
+    g.add(wall(new THREE.ConeGeometry(R, H, 56, 1, true), 1));
+    g.children[g.children.length - 1].position.y = -0.25;
+    const neck = wall(new THREE.CylinderGeometry(NECK, NECK, 1.05, 36, 1, true), 4);
+    neck.position.y = 1.15;
     g.add(neck);
+    const foot = new THREE.Mesh(new THREE.CircleGeometry(R, 56), glassMaterial());
+    foot.rotation.x = -Math.PI / 2;
+    foot.position.y = -1.125;
+    g.add(foot);
+    rim(NECK + 0.03, 1.66);
+
     if (level > 0.02) {
-      const lh = 1.6 * level;
+      // A conical flask is widest at the foot, so its contents are a frustum
+      // that follows the wall: full radius at the bottom, narrowing as it
+      // rises. Drawing it as a plain cone leaves a ring of empty glass round
+      // the liquid and makes a full flask look nearly empty.
+      const lh = H * 0.94 * level;
+      const rTop = R * (1 - lh / H) * 0.97;
       const liq = new THREE.Mesh(
-        new THREE.ConeGeometry(1.02 * level + 0.1, lh, 48),
-        tissueMaterial(liquidColor, { opacity: 0.85, glossy: 0.9 }),
+        new THREE.CylinderGeometry(rTop, R * 0.97, lh, 56), liquidMaterial(),
       );
-      liq.position.y = -1.1 + lh / 2;
+      liq.position.y = -1.115 + lh / 2;
+      liq.castShadow = true;
+      liq.renderOrder = 8;
       g.add(liq);
+      meniscus(rTop, -1.115 + lh);
+      bubbles(rTop, -1.05, -1.115 + lh, Math.round(opts.bubbles ?? 0));
     }
   } else {
-    const r = which === "testTube" ? 0.42 : 1;
-    const h = which === "testTube" ? 2.6 : 2;
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 48, 1, true), glassMaterial());
-    g.add(body);
-    const base = new THREE.Mesh(new THREE.CircleGeometry(r, 48), glassMaterial());
-    base.rotation.x = -Math.PI / 2;
-    base.position.y = -h / 2;
-    g.add(base);
-    if (level > 0.02) {
-      const lh = (h - 0.1) * level;
-      const liq = new THREE.Mesh(
-        new THREE.CylinderGeometry(r * 0.96, r * 0.96, lh, 48),
-        tissueMaterial(liquidColor, { opacity: 0.88, glossy: 0.9 }),
+    const r = which === "testTube" ? 0.46 : 1.05;
+    const h = which === "testTube" ? 2.7 : 2.05;
+    g.add(wall(new THREE.CylinderGeometry(r, r, h, 56, 1, true), 1));
+
+    if (which === "testTube") {
+      // A test tube is closed with a hemisphere, not a disc.
+      const base = new THREE.Mesh(
+        new THREE.SphereGeometry(r, 40, 20, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+        glassMaterial(),
       );
-      liq.position.y = -h / 2 + lh / 2 + 0.05;
+      base.position.y = -h / 2;
+      g.add(base);
+    } else {
+      const base = new THREE.Mesh(new THREE.CircleGeometry(r, 56), glassMaterial());
+      base.rotation.x = -Math.PI / 2;
+      base.position.y = -h / 2;
+      g.add(base);
+      // A beaker's spout is what tells it apart from a jar.
+      const spout = new THREE.Mesh(
+        new THREE.TorusGeometry(r * 0.3, 0.05, 10, 24, Math.PI),
+        glassMaterial("#eaf6ff"),
+      );
+      spout.position.set(r * 0.86, h / 2 - 0.04, 0);
+      spout.rotation.set(Math.PI / 2, 0, -0.5);
+      g.add(spout);
+    }
+    rim(r + 0.03, h / 2 - 0.02);
+
+    if (level > 0.02) {
+      const lh = (h - 0.12) * level;
+      const liq = new THREE.Mesh(
+        new THREE.CylinderGeometry(r * 0.965, r * 0.965, lh, 56), liquidMaterial(),
+      );
+      liq.position.y = -h / 2 + lh / 2 + 0.06;
       liq.castShadow = true;
+      liq.renderOrder = 8;
       g.add(liq);
+      meniscus(r * 0.965, -h / 2 + lh + 0.06);
+      bubbles(r * 0.9, -h / 2 + 0.1, -h / 2 + lh, Math.round(opts.bubbles ?? 0));
     }
   }
+
   scene.add(g);
   return g;
 }
