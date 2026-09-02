@@ -56,6 +56,43 @@ These stay on the 2D kit, which for them is the better drawing:
 Read `app/src/engine/archetype.ts` for the full interface — `variables`,
 `measure`, `plot`, `stages`, `route`, `labs`, `challenges`.
 
+## `drive` — the picture has to answer the controls
+
+**Every `investigate` and every `compare` simulation must have a `drive`.** So
+must anything else where the apparatus could visibly respond.
+
+Without it a simulation is a photograph standing next to a calculator: the
+slider moves, the readout changes, the graph draws a point — and the thing on
+the bench sits there. That is not an experiment, and it is the single most
+common way a simulation in this catalogue fails.
+
+```ts
+drive: ({ v, f, t, specimen, index }) => ({
+  level: f.volume / 250,          // glassware fills as the reaction runs
+  color: f.pH < 7 ? "#e0483f" : "#4a63f0",
+  bubbles: f.rate,                // 0-1 intensity, or a count above 1
+  scale: Math.cbrt(f.relativeVolume),   // the cell swells
+  offset: [f.displacement / 4, 0],      // the cart moves
+  glow: f.power / 60,             // the lamp brightens
+  rate: f.burst ? 0 : 1,          // freeze it when it has broken
+  spin, tilt, precipitate,
+}),
+```
+
+`v` is the live control values, `f` is everything `measure` returned. It runs
+every frame, so keep it cheap and allocate nothing you do not need.
+
+Two rules that matter:
+
+- **Scale by the right power.** Volume goes as the cube of the radius, so a
+  cell at 1.65× its volume is 1.18× as wide. Drawing it 1.65× as wide teaches
+  the wrong lesson.
+- **Show the failure state.** If the model has a threshold — bursting, boiling,
+  melting, breaking, saturating — cross it visibly: change the colour, stop the
+  motion, add the precipitate.
+
+Read `g6b2.ts`'s `MEMBRANE` spec for a worked example.
+
 ## Science
 
 `measure` must return textbook-checkable values from real constants and real

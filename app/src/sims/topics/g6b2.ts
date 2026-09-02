@@ -62,6 +62,23 @@ const MEMBRANE: ArchetypeSpec = {
     x: "outside", y: "relativeVolume",
     xLabel: "Solute outside (mOsm/L)", yLabel: "Cell volume (x normal)",
   },
+  /*
+   * The cell is the readout. Volume goes as the cube of the radius, so the
+   * drawn size is the cube root of the relative volume — a cell at 1.65 times
+   * its volume is only 1.18 times as wide, and drawing it 1.65 times as wide
+   * would teach the wrong lesson about how much water it has taken in.
+   * Past the haemolysis threshold it flushes pale and stops turning: it has
+   * burst.
+   */
+  drive: ({ f }) => {
+    const burst = f.relativeVolume >= 1.65;
+    return {
+      scale: Math.cbrt(Math.max(0.2, f.relativeVolume)),
+      color: burst ? "#e0708a" : undefined,
+      rate: burst ? 0 : 1,
+      glow: burst ? 0.8 : 0,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *

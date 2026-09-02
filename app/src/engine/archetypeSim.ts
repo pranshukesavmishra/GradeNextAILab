@@ -2,7 +2,7 @@ import type { Readout, RenderContext, SimInput, SimManifest, SimModel, ThemeColo
 import { q } from "./units";
 import {
   facts, initState, overlaysOf, paramsOf,
-  type ArchetypeSpec, type ArchetypeState, type Art, type Specimen,
+  type ArchetypeSpec, type ArchetypeState, type Art, type DriveResult, type Specimen,
 } from "./archetype";
 import {
   bacterium, bokeh, callout, chloroplast, golgi, membrane,
@@ -272,6 +272,47 @@ let use3D = false;
 /** Counts specimens within a frame so they do not all turn in lockstep. */
 let placed3D = 0;
 
+/** Gather the live values and ask the spec what the apparatus should look like. */
+function driveOf(
+  rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec, sp: Specimen, index: number,
+) {
+  const v: Record<string, number> = {};
+  for (const varr of spec.variables ?? []) {
+    v[varr.key] = Number(rc.params[varr.key] ?? varr.default);
+  }
+  const f: Record<string, number> = {};
+  if (spec.measure && spec.variables) {
+    for (const [k, val] of Object.entries(spec.measure(v))) {
+      if (Number.isFinite(val)) f[k] = val;
+    }
+  }
+  try {
+    return spec.drive?.({ v, f, t: rc.state.t, specimen: sp, index });
+  } catch {
+    return undefined;   // A bad `drive` must not stop the stage drawing.
+  }
+}
+
+/** Fold the driven overrides into the art description for this frame. */
+function applyDrive(art: Art, d: DriveResult): Art {
+  switch (art.art) {
+    case "glassware":
+      return {
+        ...art,
+        level: d.level ?? art.level,
+        color: d.color ?? art.color,
+        bubbles: d.bubbles ?? art.bubbles,
+        precipitate: d.precipitate ?? art.precipitate,
+      };
+    case "sphere":
+      return { ...art, color: d.color ?? art.color, glow: d.glow ?? art.glow };
+    case "planet":
+      return { ...art, color: d.color ?? art.color };
+    default:
+      return art;
+  }
+}
+
 /** Map a piece of `Art` onto a 3D subject, or null to keep the 2D drawing. */
 function subject3DFor(a: Art, theme: { accent: string }): Subject3D | null {
   switch (a.art) {
@@ -297,12 +338,20 @@ function subject3DFor(a: Art, theme: { accent: string }): Subject3D | null {
 
 function drawSpecimen(
   rc: RenderContext<ArchetypeState>, sp: Specimen,
-  x: number, y: number, size: number,
+  x0: number, y0: number, size0: number, spec?: ArchetypeSpec, index = 0,
 ) {
   const { ctx, theme, state } = rc;
   const t = state.t;
-  const a = sp.art;
   const accent = theme.accent;
+
+  // Ask the specification how the picture should answer the controls. Without
+  // this the apparatus is a photograph standing next to a calculator: the
+  // sliders move, the readouts change, and the thing on the bench does not.
+  const d = spec?.drive ? driveOf(rc, spec, sp, index) : undefined;
+  const a = d ? applyDrive(sp.art, d) : sp.art;
+  const size = size0 * (d?.scale ?? 1);
+  const x = x0 + (d?.offset ? d.offset[0] * size0 : 0);
+  const y = y0 + (d?.offset ? d.offset[1] * size0 : 0);
 
   // Does this specimen have real geometry behind it? Cells, organelles,
   // microbes, glassware and spheres do. Apparatus, landforms and bodies stay
@@ -359,10 +408,10 @@ function drawSpecimen(
       reflect: true,
       // A standing three-quarter yaw, so a subject is never caught exactly
       // face-on, where a box looks like a rectangle and a cart looks flat.
-      spin: 0.68 + t * 0.22 + phase,
+      spin: d?.spin ?? (0.68 + t * (d?.rate ?? 1) * 0.22 + phase),
       // Tipped so the eye is a little above the subject, the angle a specimen
       // is naturally held at for examination.
-      tilt: 0.24 + Math.sin(t * 0.21 + phase) * 0.06,
+      tilt: d?.tilt ?? (0.24 + Math.sin(t * 0.21 + phase) * 0.06),
     });
     // If the 3D draw failed for any reason, fall through to the 2D artwork
     // rather than leaving an empty stage.
@@ -657,7 +706,8 @@ function renderSort(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
   specimenJar(ctx, width / 2 - jw / 2, PAD * 1.5, jw, jh, theme,
     `SPECIMEN ${(state.index % specimens.length) + 1}`,
     (cx, cy, cw, ch) =>
-      drawSpecimen(rc, cur, cx + cw / 2, cy + ch * 0.5, Math.min(cw, ch) * 0.5));
+      drawSpecimen(rc, cur, cx + cw / 2, cy + ch * 0.5, Math.min(cw, ch) * 0.5, spec,
+        state.index % specimens.length));
 
   if (overlays.labels) {
     callout(ctx, width / 2 + jw * 0.34, PAD * 1.5 + jh * 0.42,
@@ -707,7 +757,7 @@ function renderExplore(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
   const cx = width * 0.44, cy = height * 0.5;
   const size = Math.min(width * 0.46, height * 0.78) * 0.5;
 
-  drawSpecimen(rc, sp, cx, cy, size);
+  drawSpecimen(rc, sp, cx, cy, size, spec, 0);
 
   if (overlays.labels && sp.parts) {
     sp.parts.forEach((p, i) => {
@@ -739,7 +789,7 @@ function renderInvestigate(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpe
   const sp = spec.specimens?.[0];
   const half = width * 0.5;
 
-  if (sp) drawSpecimen(rc, sp, half * 0.5, height * 0.5, Math.min(half * 0.8, height * 0.66) * 0.5);
+  if (sp) drawSpecimen(rc, sp, half * 0.5, height * 0.5, Math.min(half * 0.8, height * 0.66) * 0.5, spec, 0);
 
   if (!spec.measure || !spec.plot || !spec.variables) return;
   const v: Record<string, number> = {};
@@ -812,7 +862,7 @@ function renderProcess(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
   const { ctx, width, height, theme, state, overlays } = rc;
   const stages = spec.stages ?? [];
   const sp = spec.specimens?.[0];
-  if (sp) drawSpecimen(rc, sp, width * 0.5, height * 0.4, Math.min(width * 0.5, height * 0.62) * 0.5);
+  if (sp) drawSpecimen(rc, sp, width * 0.5, height * 0.4, Math.min(width * 0.5, height * 0.62) * 0.5, spec, 0);
 
   if (spec.kind === "trace" && spec.route?.length) {
     // The travelling marker and its path through named places.
@@ -943,7 +993,7 @@ function renderCompare(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
     const sp = sps[i];
     if (!sp) continue;
     const cx = width * (cols === 1 ? 0.5 : i === 0 ? 0.27 : 0.73);
-    drawSpecimen(rc, sp, cx, height * 0.46, size);
+    drawSpecimen(rc, sp, cx, height * 0.46, size, spec, i);
     ctx.save();
     ctx.fillStyle = theme.ink;
     ctx.font = '700 17px "Bricolage Grotesque", system-ui, sans-serif';

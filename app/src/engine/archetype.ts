@@ -48,6 +48,49 @@ export type Art =
   | { art: "habitat"; which: string }
   | { art: "icon"; glyph: string };
 
+/** What `drive` is told. */
+export interface DriveInput {
+  /** Live control values, defaults filled in. */
+  v: Record<string, number>;
+  /** Everything `measure` returned, plus the run's own counters. */
+  f: Record<string, number>;
+  /** Seconds since the simulation started. */
+  t: number;
+  /** Which specimen is being drawn, for a spec that shows several. */
+  specimen: Specimen;
+  /** Index of that specimen in `specimens`. */
+  index: number;
+}
+
+/**
+ * What `drive` may change about the drawing.
+ *
+ * Every field is optional and every one is a *visual* quantity, not a physical
+ * one: the physics stays in `measure`, and this only says how to show it.
+ */
+export interface DriveResult {
+  /** 0-1 fill for glassware. */
+  level?: number;
+  /** Override the specimen's colour — a solution changing, a body heating. */
+  color?: string;
+  /** Bubble intensity 0-1, or a count above 1. */
+  bubbles?: number;
+  /** Suspended solid, 0-1. */
+  precipitate?: number;
+  /** Multiplies the drawn size: a cell swelling, a balloon inflating. */
+  scale?: number;
+  /** Radians about the vertical. Overrides the default slow turn. */
+  spin?: number;
+  /** Radians toward the viewer. */
+  tilt?: number;
+  /** Shifts the specimen, in multiples of its own size. */
+  offset?: [number, number];
+  /** 0-1 emitted light, for anything hot, lit or excited. */
+  glow?: number;
+  /** 0-1 how fast the subject's own animation runs. 0 freezes it. */
+  rate?: number;
+}
+
 export interface Specimen {
   id: string;
   name: string;
@@ -106,6 +149,22 @@ export interface ArchetypeSpec {
   measure?: (v: Record<string, number>) => Record<string, number>;
   /** Which measured quantity is plotted against which variable. */
   plot?: { x: string; y: string; yLabel: string; xLabel: string };
+
+  /**
+   * How the picture answers the controls.
+   *
+   * Without this a specimen is a photograph: the sliders move, the readouts
+   * change, the graph draws — and the thing on the bench sits there. That is
+   * an illustration next to a calculator, not an experiment. `drive` closes
+   * the loop: given the live variable values and everything `measure`
+   * returned, it says what the apparatus should now look like. Raise the
+   * liquid, boil it, swell the cell, move the cart, brighten the lamp.
+   *
+   * It is called every frame with the current values, so it must be cheap and
+   * must not allocate anything it does not need. Returning nothing leaves the
+   * specimen exactly as its `art` describes it.
+   */
+  drive?: (input: DriveInput) => DriveResult;
 
   /** process / trace */
   stages?: Stage[];
