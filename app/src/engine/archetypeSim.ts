@@ -123,6 +123,32 @@ function makeModel(spec: ArchetypeSpec): SimModel<ArchetypeState> {
 }
 
 function handleInput(spec: ArchetypeSpec, s: ArchetypeState, input: SimInput) {
+  // Dragging turns the specimen. This runs before anything else claims the
+  // pointer, and a drag that never moves far enough falls through to the tap
+  // handling below, so turning the thing round costs the student nothing.
+  if (input.type === "pointerdown") {
+    s.dragFrom = { x: input.x, y: input.y };
+  } else if (input.type === "pointermove" && s.dragFrom) {
+    const dx = input.x - s.dragFrom.x;
+    const dy = input.y - s.dragFrom.y;
+    if (Math.abs(dx) + Math.abs(dy) > 2) {
+      const size = stageSize.get(spec.id);
+      const span = Math.max(200, Math.min(size?.w ?? 800, size?.h ?? 600));
+      // A drag across the stage is one full turn, which is the rate that makes
+      // a specimen feel attached to the finger rather than geared to it.
+      s.orbitYaw += (dx / span) * Math.PI * 2;
+      s.orbitPitch = clamp(s.orbitPitch - (dy / span) * Math.PI * 1.2, -1.2, 1.2);
+      s.orbited = true;
+      s.dragFrom = { x: input.x, y: input.y };
+    }
+    return;
+  } else if (input.type === "pointerup") {
+    const from = s.dragFrom;
+    s.dragFrom = null;
+    // A pointer that travelled is a turn, not a tap: do not also answer with it.
+    if (from && Math.hypot(input.x - from.x, input.y - from.y) > 6) return;
+  }
+
   if (input.type !== "pointerdown") return;
   const n = normalise(spec.id, input.x, input.y);
   if (!n) return;
@@ -408,10 +434,14 @@ function drawSpecimen(
       reflect: true,
       // A standing three-quarter yaw, so a subject is never caught exactly
       // face-on, where a box looks like a rectangle and a cart looks flat.
-      spin: d?.spin ?? (0.68 + t * (d?.rate ?? 1) * 0.22 + phase),
+      // Once the student has turned it themselves the idle rotation stops:
+      // it is now their view of it, and taking it back would be rude.
+      spin: (d?.spin ?? (state.orbited ? 0.68 : 0.68 + t * (d?.rate ?? 1) * 0.22 + phase))
+        + state.orbitYaw,
       // Tipped so the eye is a little above the subject, the angle a specimen
       // is naturally held at for examination.
-      tilt: d?.tilt ?? (0.24 + Math.sin(t * 0.21 + phase) * 0.06),
+      tilt: (d?.tilt ?? (state.orbited ? 0.24 : 0.24 + Math.sin(t * 0.21 + phase) * 0.06))
+        + state.orbitPitch,
     });
     // If the 3D draw failed for any reason, fall through to the 2D artwork
     // rather than leaving an empty stage.
@@ -760,19 +790,39 @@ function renderExplore(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
   drawSpecimen(rc, sp, cx, cy, size, spec, 0);
 
   if (overlays.labels && sp.parts) {
-    sp.parts.forEach((p, i) => {
+    // Labels sit beside the part they name, not in a column at the edge of the
+    // stage. Anchoring every label to the far edge sent leaders right across
+    // the artwork and let them cross each other, so a student had to trace a
+    // line rather than simply look. Each label is placed radially outward from
+    // the specimen's centre, which is the direction a real diagram would take
+    // it, and `labelBox` inside the callout nudges any two that collide.
+    const parts = [...sp.parts].sort((a, b) => a.at[1] - b.at[1]);
+    const gap = size * 0.5;
+    for (const p of parts) {
       const px = cx + p.at[0] * size * 2;
       const py = cy + p.at[1] * size * 2;
       const right = p.at[0] >= 0;
-      const lx = right ? width - PAD : PAD;
-      const ly = height * 0.2 + i * ((height * 0.62) / Math.max(1, sp.parts!.length - 1));
+      // Push out along the part's own direction, so a label never crosses the
+      // specimen to reach its own anchor.
+      const dx = p.at[0], dy = p.at[1];
+      const len = Math.hypot(dx, dy) || 1;
+      // Keep the whole pill on stage, not just its anchor: a left-side pill
+      // grows leftward from `lx`, so it needs its own width of margin.
+      const est = Math.min(240, width * 0.24) + 30;
+      const lx = clamp(
+        px + (dx / len) * gap + (right ? 26 : -26),
+        right ? PAD : PAD + est,
+        right ? width - PAD - est : width - PAD,
+      );
+      const ly = clamp(py + (dy / len) * gap * 0.6, PAD + 24, height - PAD - 24);
       const on = state.selected === p.id;
       callout(ctx, px, py, lx, ly, p.name, theme, {
-        side: right ? "left" : "right",
+        side: right ? "right" : "left",
         ...(on ? { sub: p.note } : {}),
         accent: on ? theme.accent : theme.inkSoft,
+        maxWidth: Math.min(240, width * 0.24),
       });
-    });
+    }
   }
 
   if (spec.kind === "assemble") {
@@ -1057,6 +1107,10 @@ function roundRect(
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+function clamp(v: number, lo: number, hi: number) {
+  return v < lo ? lo : v > hi ? hi : v;
 }
 
 function clamp01(v: number) { return Number.isFinite(v) ? (v < 0 ? 0 : v > 1 ? 1 : v) : 0; }

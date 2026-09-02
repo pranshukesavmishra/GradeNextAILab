@@ -411,6 +411,21 @@ export interface ArchetypeState {
   showB: boolean;
   lastRight: boolean;
   flash: number;
+  /**
+   * How far the student has turned the specimen, in radians.
+   *
+   * A three-dimensional thing you cannot turn is a photograph of a
+   * three-dimensional thing. Dragging the stage orbits the specimen, and the
+   * moment a student does it the object stops being a picture: the far side of
+   * a cell, the back of a cart, the shape of a molecule seen down its own axis
+   * are all things you can only learn by moving your head.
+   */
+  orbitYaw: number;
+  orbitPitch: number;
+  /** Whether the student has turned it, which stops the idle rotation. */
+  orbited: boolean;
+  /** Pointer position when the current drag started, in stage pixels. */
+  dragFrom: { x: number; y: number } | null;
 }
 
 export function initState(spec: ArchetypeSpec): ArchetypeState {
@@ -419,6 +434,7 @@ export function initState(spec: ArchetypeSpec): ArchetypeState {
     selected: spec.specimens?.[0]?.parts?.[0]?.id ?? "",
     built: [], progress: 0, playing: spec.kind === "process" || spec.kind === "trace",
     samples: [], showB: false, lastRight: false, flash: 0,
+    orbitYaw: 0, orbitPitch: 0, orbited: false, dragFrom: null,
   };
 }
 

@@ -621,7 +621,7 @@ export function callout(
   ctx: CanvasRenderingContext2D,
   fromX: number, fromY: number, toX: number, toY: number,
   text: string, theme: ThemeColors,
-  opts: { sub?: string; side?: "left" | "right"; accent?: string } = {},
+  opts: { sub?: string; side?: "left" | "right"; accent?: string; maxWidth?: number } = {},
 ) {
   const accent = opts.accent ?? theme.accent;
   const side = opts.side ?? (toX < fromX ? "left" : "right");
@@ -636,16 +636,40 @@ export function callout(
   ctx.lineWidth = 1.4;
   ctx.stroke();
 
-  // Pill
+  // Pill.
+  //
+  // The note under a label is a sentence, and a pill sized to hold a whole
+  // sentence on one line is as wide as the stage — it stops being a label and
+  // becomes a banner across the artwork. So it is capped and wrapped.
+  const cap = Math.max(140, opts.maxWidth ?? 260);
   ctx.font = '700 13px "Bricolage Grotesque", system-ui, sans-serif';
-  const tw = ctx.measureText(text).width;
-  let sw = 0;
+  const tw = Math.min(ctx.measureText(text).width, cap);
+  const subLines: string[] = [];
   if (opts.sub) {
     ctx.font = '500 11px "Source Sans 3", system-ui, sans-serif';
-    sw = ctx.measureText(opts.sub).width;
+    let line = "";
+    let cut = false;
+    const words = opts.sub.split(/\s+/);
+    for (let i = 0; i < words.length; i++) {
+      const test = line ? `${line} ${words[i]}` : words[i];
+      if (ctx.measureText(test).width > cap && line) {
+        subLines.push(line);
+        line = words[i];
+        if (subLines.length === 3) { cut = true; line = ""; break; }
+      } else line = test;
+    }
+    if (line) subLines.push(line);
+    if (cut && subLines.length) {
+      let last = subLines[subLines.length - 1];
+      while (last.length > 1 && ctx.measureText(`${last} …`).width > cap) {
+        last = last.replace(/\s*\S+$/, "");
+      }
+      subLines[subLines.length - 1] = `${last} …`;
+    }
   }
-  const pw = Math.max(tw, sw) + 22;
-  const ph = opts.sub ? 40 : 27;
+  const sw = subLines.reduce((m, l) => Math.max(m, ctx.measureText(l).width), 0);
+  const pw = Math.min(cap, Math.max(tw, sw)) + 22;
+  const ph = subLines.length ? 22 + subLines.length * 14 : 27;
   const px = side === "left" ? toX - pw : toX;
   // Claim the pill's rectangle so a second callout is nudged clear instead of
   // being drawn on top of this one.
@@ -681,11 +705,11 @@ export function callout(
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#ffffff";
   ctx.font = '700 13px "Bricolage Grotesque", system-ui, sans-serif';
-  ctx.fillText(text, px + pw / 2, py + (opts.sub ? 14 : ph / 2));
-  if (opts.sub) {
+  ctx.fillText(text, px + pw / 2, py + (subLines.length ? 15 : ph / 2));
+  if (subLines.length) {
     ctx.font = '500 11px "Source Sans 3", system-ui, sans-serif';
     ctx.fillStyle = hexA("#ffffff", 0.82);
-    ctx.fillText(opts.sub, px + pw / 2, py + 29);
+    subLines.forEach((l, i) => ctx.fillText(l, px + pw / 2, py + 30 + i * 14));
   }
   ctx.restore();
 }
