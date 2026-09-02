@@ -12,7 +12,31 @@ import {
   barMagnet, battery, beaker, bulb, burner, cart, clampStand, flask, spring, testTube,
 } from "@ui/labware";
 import { arcGauge, beginLabels, glow, hexA, isDarkTheme, vignette } from "@ui/scene";
+import { guarded } from "@ui/ctxGuard";
 import { planet } from "@ui/space";
+import { boneOrJoint, humanFigure, neuron, organ, vessel } from "@ui/anatomy";
+import type { JointKind, OrganKind, VesselKind } from "@ui/anatomy";
+import { creature, habitat, plant } from "@ui/fauna";
+import type { CreatureKind, HabitatKind, PlantKind } from "@ui/fauna";
+import {
+  plateSection, quakeWaves, rockSample, seafloorStripes, strataColumn, terrain, volcano,
+} from "@ui/geo";
+import type { PlateBoundary } from "@ui/geo";
+
+/**
+ * A default sedimentary sequence, for a `landform` specimen that asks for
+ * strata without naming the beds. Youngest at the top, as in the field.
+ */
+const DEFAULT_STRATA = [
+  { name: "Sandstone", color: "#d9b06a", thicknessFrac: 1.1, fossils: 2 },
+  { name: "Shale", color: "#6b6f7d", thicknessFrac: 0.8, fossils: 3 },
+  { name: "Limestone", color: "#cfc6b0", thicknessFrac: 1.0, fossils: 4 },
+  { name: "Conglomerate", color: "#9c7a5c", thicknessFrac: 0.7 },
+  { name: "Basalt", color: "#3b3a44", thicknessFrac: 1.2 },
+];
+
+/** A ridge-and-valley profile, for a `landform` specimen that just says land. */
+const RIDGE_PROFILE = [0.28, 0.42, 0.66, 0.55, 0.78, 0.62, 0.4, 0.5, 0.34];
 import { can3D, draw3D, moleculeGeometry } from "@ui/render3d";
 import type { Subject3D } from "@ui/render3d";
 
@@ -340,6 +364,10 @@ function drawSpecimen(
     if (drawn) return;
   }
 
+  // Every art routine runs inside the guard: one unbalanced `save()` in one of
+  // them would otherwise leave a clip behind and blank everything drawn after
+  // it, with the symptom appearing nowhere near the cause.
+  guarded(ctx, `art:${a.art}`, () => {
   switch (a.art) {
     case "cell": {
       membrane(ctx, x, y, size, BIO.cytoplasm, { t, wobble: 0.02, scatter: 0.95 });
@@ -496,11 +524,72 @@ function drawSpecimen(
     case "planet":
       planet(ctx, x, y, size * 0.85, a.color, t * 0.2, { t });
       break;
+    case "body": {
+      // Body parts come from the anatomy kit, which draws real proportions and
+      // real structure. A student meeting a heart should meet a heart.
+      const w = a.which;
+      const beat = 0.5 + 0.5 * Math.sin(t * 2.2);
+      if (w === "figure" || w === "body") {
+        humanFigure(ctx, x, y - size, size * 2.2, theme);
+      } else if (w === "neuron") {
+        neuron(ctx, x, y, size * 1.8, theme, { signal: (t * 0.4) % 1, target: true });
+      } else if (w === "artery" || w === "vein" || w === "capillary" || w === "vessel") {
+        vessel(
+          ctx,
+          [{ x: x - size * 1.2, y }, { x: x - size * 0.4, y: y - size * 0.2 },
+           { x: x + size * 0.4, y: y + size * 0.18 }, { x: x + size * 1.2, y }],
+          size * 0.34, (w === "vessel" ? "artery" : w) as VesselKind, theme,
+          { flow: (t * 0.35) % 1, branches: 2, cells: 7 },
+        );
+      } else if (w === "elbow" || w === "knee" || w === "spine" || w === "bone" || w === "joint") {
+        boneOrJoint(ctx, x, y, size * 1.7,
+          (w === "bone" || w === "joint" ? "elbow" : w) as JointKind, theme);
+      } else {
+        organ(ctx, x, y, size * 1.5, w as OrganKind, theme, { pulse: beat });
+      }
+      break;
+    }
+    case "landform": {
+      const w = a.which;
+      const half = size * 1.25;
+      if (w === "volcano") {
+        volcano(ctx, x, y + size * 0.9, half * 2, size * 1.7, 0.6, t, theme);
+      } else if (w === "strata" || w === "layers" || w === "column") {
+        strataColumn(ctx, x - half, y - size, half * 2, size * 2, DEFAULT_STRATA, { seed: 17 });
+      } else if (w === "divergent" || w === "convergent-oc" || w === "convergent-cc" || w === "transform") {
+        plateSection(ctx, x - half, y - size * 0.8, half * 2, size * 1.6, w as PlateBoundary, t, theme);
+      } else if (w === "plates" || w === "subduction") {
+        plateSection(ctx, x - half, y - size * 0.8, half * 2, size * 1.6, "convergent-oc", t, theme);
+      } else if (w === "rift") {
+        plateSection(ctx, x - half, y - size * 0.8, half * 2, size * 1.6, "divergent", t, theme);
+      } else if (w === "seafloor") {
+        seafloorStripes(ctx, x - half, y - size * 0.6, half * 2, size * 1.2, t, theme);
+      } else if (w === "quake" || w === "waves") {
+        quakeWaves(ctx, x, y, size * 1.3, t, theme);
+      } else if (w === "igneous" || w === "sedimentary" || w === "metamorphic") {
+        rockSample(ctx, x, y, size * 0.95, w, theme);
+      } else {
+        terrain(ctx, x - half, y - size * 0.7, half * 2, size * 1.4, RIDGE_PROFILE, { theme, seed: 5 });
+      }
+      break;
+    }
+    case "creature":
+      creature(ctx, x, y, size * 1.5, a.which as CreatureKind, a.facing ?? 1, theme,
+        { motion: (t * 0.6) % 1 });
+      break;
+    case "flora":
+      plant(ctx, x, y + size * 0.7, size * 1.7, a.which as PlantKind, theme,
+        { health: 1, sway: (t * 0.25) % 1 });
+      break;
+    case "habitat":
+      habitat(ctx, x - size * 1.4, y - size, size * 2.8, size * 2, a.which as HabitatKind, theme, t);
+      break;
     default: {
       // Fallback: a lit disc so a spec is never invisible while being written.
       organelleDot(ctx, x, y, size * 0.5, accent);
     }
   }
+  });
 }
 
 /* ------------------------------------------------------------------ *

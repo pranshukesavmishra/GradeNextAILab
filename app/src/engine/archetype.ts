@@ -43,6 +43,9 @@ export type Art =
   | { art: "planet"; color: string; rings?: boolean; atmosphere?: string }
   | { art: "body"; which: string }
   | { art: "landform"; which: string }
+  | { art: "creature"; which: string; facing?: number }
+  | { art: "flora"; which: string }
+  | { art: "habitat"; which: string }
   | { art: "icon"; glyph: string };
 
 export interface Specimen {
