@@ -5,3 +5,5 @@ dist
 
 # TypeScript incremental build cache — regenerated on every build.
 *.tsbuildinfo
+dist-main
+_shot3d.mjs

@@ -1,11 +1,11 @@
-import type { Readout, RenderContext, SimInput, SimManifest, SimModel } from "./types";
+import type { Readout, RenderContext, SimInput, SimManifest, SimModel, ThemeColors } from "./types";
 import { q } from "./units";
 import {
   facts, initState, overlaysOf, paramsOf,
   type ArchetypeSpec, type ArchetypeState, type Art, type Specimen,
 } from "./archetype";
 import {
-  bacterium, bokeh, callout, chloroplast, depthWash, golgi, membrane,
+  bacterium, bokeh, callout, chloroplast, golgi, membrane,
   mitochondrion, nucleus, organelleDot, reticulum, specimenJar, virus,
 } from "@ui/labware-bridge";
 import {
@@ -168,6 +168,81 @@ function binAt(spec: ArchetypeSpec, x: number, y: number): string | null {
  * buried under a specimen.
  * ------------------------------------------------------------------ */
 
+/**
+ * The studio sweep the whole catalogue stands on.
+ *
+ * A flat fill is paper, and a subject on paper is a diagram. A sweep — a
+ * seamless backdrop curving down into a floor, lit from one side — is what a
+ * photographer puts behind a product, and it is the cheapest thing that makes
+ * a rendered subject look photographed. The horizon sits below the middle so
+ * the subject has room above it, the light pool is centred on where the
+ * subject will be, and the floor keeps a sheen so a contact shadow has
+ * something to fall on.
+ *
+ * It stays light in the light theme on purpose: captions, leaders and readouts
+ * are drawn in dark ink over the top of it, and a dramatic dark backdrop would
+ * cost more in legibility than it gains in atmosphere.
+ */
+function studioSweep(
+  ctx: CanvasRenderingContext2D, w: number, h: number, theme: ThemeColors,
+) {
+  const dark = isDarkTheme(theme);
+  const horizon = h * 0.62;
+  ctx.save();
+
+  const wall = ctx.createLinearGradient(0, 0, 0, h);
+  if (dark) {
+    wall.addColorStop(0, "#120c1c");
+    wall.addColorStop(0.34, "#231633");
+    wall.addColorStop(0.62, "#2b1c3e");
+    wall.addColorStop(0.66, "#1d1329");
+    wall.addColorStop(1, "#0c0813");
+  } else {
+    wall.addColorStop(0, "#e4d7f4");
+    wall.addColorStop(0.3, "#f4ecfd");
+    wall.addColorStop(0.6, "#fdfbff");
+    wall.addColorStop(0.66, "#f3ebfa");
+    wall.addColorStop(1, "#e0d2f0");
+  }
+  ctx.fillStyle = wall;
+  ctx.fillRect(0, 0, w, h);
+
+  // The pool of key light, centred where the subject will stand.
+  const pool = ctx.createRadialGradient(
+    w * 0.46, h * 0.4, 0, w * 0.5, h * 0.46, Math.max(w, h) * 0.62,
+  );
+  pool.addColorStop(0, hexA("#ffffff", dark ? 0.14 : 0.9));
+  pool.addColorStop(0.45, hexA("#ffffff", dark ? 0.05 : 0.34));
+  pool.addColorStop(1, hexA("#ffffff", 0));
+  ctx.fillStyle = pool;
+  ctx.fillRect(0, 0, w, h);
+
+  // Where the backdrop meets the floor: a soft crease, never a hard line.
+  const crease = ctx.createLinearGradient(0, horizon - h * 0.06, 0, horizon + h * 0.09);
+  crease.addColorStop(0, hexA(theme.accent, 0));
+  crease.addColorStop(0.45, hexA(theme.accent, dark ? 0.16 : 0.07));
+  crease.addColorStop(1, hexA(theme.accent, 0));
+  ctx.fillStyle = crease;
+  ctx.fillRect(0, horizon - h * 0.06, w, h * 0.15);
+
+  // Floor sheen: a wide, shallow reflection of the light pool, so a contact
+  // shadow lands on a surface rather than on nothing.
+  const sheen = ctx.createRadialGradient(
+    w * 0.5, horizon + h * 0.2, 0, w * 0.5, horizon + h * 0.2, w * 0.55,
+  );
+  sheen.addColorStop(0, hexA("#ffffff", dark ? 0.07 : 0.5));
+  sheen.addColorStop(1, hexA("#ffffff", 0));
+  ctx.save();
+  ctx.translate(0, horizon + h * 0.2);
+  ctx.scale(1, 0.34);
+  ctx.translate(0, -(horizon + h * 0.2));
+  ctx.fillStyle = sheen;
+  ctx.fillRect(0, 0, w, h * 2);
+  ctx.restore();
+
+  ctx.restore();
+}
+
 /** True while the current frame has a 3D layer available. */
 let use3D = false;
 /** Counts specimens within a frame so they do not all turn in lockstep. */
@@ -252,6 +327,7 @@ function drawSpecimen(
     const phase = placed3D++ * 1.7;
     const drawn = draw3D(ctx, sub3d, x, y, size * 2.4, t, theme, {
       themeKey: isDarkTheme(theme) ? "dark" : "light",
+      reflect: true,
       // A standing three-quarter yaw, so a subject is never caught exactly
       // face-on, where a box looks like a rectangle and a cart looks flat.
       spin: 0.68 + t * 0.22 + phase,
@@ -437,7 +513,7 @@ function makeRender(spec: ArchetypeSpec) {
     const dark = isDarkTheme(theme);
     stageSize.set(spec.id, { w: width, h: height });
 
-    depthWash(ctx, width, height, theme);
+    studioSweep(ctx, width, height, theme);
     bokeh(ctx, width, height, theme.accent, 7, 11);
 
     // 3D is on when the browser has WebGL at all. `draw3D` composites each

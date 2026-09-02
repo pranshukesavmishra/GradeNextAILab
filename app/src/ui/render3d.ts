@@ -49,6 +49,8 @@ export type Subject3D =
 export interface Draw3DOptions {
   /** Identifies the palette, so a theme switch rebuilds the lights. */
   themeKey?: string;
+  /** Lay a fading mirror image beneath the subject, as on a polished bench. */
+  reflect?: boolean;
   /** Turn about the vertical axis, radians. Drives the "turn it round" reading. */
   spin?: number;
   /** Tip toward the viewer, radians. Defaults to a three-quarter view. */
@@ -294,9 +296,55 @@ export function draw3D(
   r.render(scene, camera);
 
   try {
+    if (opts.reflect !== false) drawReflection(ctx, r.domElement, x, y, size, px);
     ctx.drawImage(r.domElement, x - size / 2, y - size / 2, size, size);
   } catch {
     return false;   // A tainted or zero-size canvas must not take the sim down.
   }
   return true;
+}
+
+let mirror: HTMLCanvasElement | null = null;
+
+/**
+ * The mirror image beneath a subject.
+ *
+ * Product photographers stand things on a polished sweep because the
+ * reflection is what tells the eye the object is *on* something — without it a
+ * rendered subject floats, and floating reads as clip art. It is flipped,
+ * squashed toward the horizon and faded out within about half its own height,
+ * which is roughly what a semi-gloss bench actually returns.
+ */
+function drawReflection(
+  ctx: CanvasRenderingContext2D, src: HTMLCanvasElement,
+  x: number, y: number, size: number, px: number,
+) {
+  if (typeof document === "undefined") return;
+  if (!mirror) mirror = document.createElement("canvas");
+  const m = mirror;
+  if (m.width !== px || m.height !== px) { m.width = px; m.height = px; }
+  const mc = m.getContext("2d");
+  if (!mc) return;
+
+  mc.clearRect(0, 0, px, px);
+  mc.save();
+  mc.translate(0, px);
+  mc.scale(1, -1);
+  mc.drawImage(src, 0, 0, px, px);
+  mc.restore();
+
+  // Fade it out with the distance from the contact point.
+  mc.globalCompositeOperation = "destination-in";
+  const g = mc.createLinearGradient(0, 0, 0, px);
+  g.addColorStop(0, "rgba(0,0,0,0.42)");
+  g.addColorStop(0.42, "rgba(0,0,0,0.08)");
+  g.addColorStop(0.7, "rgba(0,0,0,0)");
+  mc.fillStyle = g;
+  mc.fillRect(0, 0, px, px);
+  mc.globalCompositeOperation = "source-over";
+
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.drawImage(m, x - size / 2, y + size * 0.5 - size * 0.03, size, size * 0.5);
+  ctx.restore();
 }
