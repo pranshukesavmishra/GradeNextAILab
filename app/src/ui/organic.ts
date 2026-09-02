@@ -539,7 +539,9 @@ export function specimenJar(
   ctx.stroke();
 
   if (label) {
-    ctx.font = `700 ${Math.max(10, w * 0.1)}px "Bricolage Grotesque", system-ui, sans-serif`;
+    // Sized to the collar, not to the jar. A label taller than the band it
+    // sits on spills white text onto a light background and loses its top half.
+    ctx.font = `700 ${Math.max(9, Math.min(w * 0.1, collar * 0.6))}px "Bricolage Grotesque", system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#ffffff";

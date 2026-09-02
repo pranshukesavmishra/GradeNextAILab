@@ -731,17 +731,28 @@ function renderSort(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
 
   // The specimen, presented large in a jar so it reads as "under examination".
   const binTop = height * 0.7;
-  const jh = Math.min(binTop - PAD * 2.2, height * 0.6);
-  const jw = Math.min(width * 0.42, jh * 0.86);
-  specimenJar(ctx, width / 2 - jw / 2, PAD * 1.5, jw, jh, theme,
+  const jh = Math.min(binTop - PAD * 3.4, height * 0.56);
+  // The jar was a narrow column in a wide stage, so the specimen inside it was
+  // small and the stage was mostly empty. It fills the space it is given now.
+  const jw = Math.min(width * 0.5, jh * 1.15);
+  specimenJar(ctx, width / 2 - jw / 2, PAD * 1.7, jw, jh, theme,
     `SPECIMEN ${(state.index % specimens.length) + 1}`,
     (cx, cy, cw, ch) =>
-      drawSpecimen(rc, cur, cx + cw / 2, cy + ch * 0.5, Math.min(cw, ch) * 0.5, spec,
+      drawSpecimen(rc, cur, cx + cw / 2, cy + ch * 0.5, Math.min(cw, ch) * 0.52, spec,
         state.index % specimens.length));
 
   if (overlays.labels) {
-    callout(ctx, width / 2 + jw * 0.34, PAD * 1.5 + jh * 0.42,
-      width - PAD, height * 0.26, cur.name, theme, { side: "left" });
+    // The specimen's name belongs under the jar, where a museum label goes.
+    // It used to be a pill at the far right of the stage on a leader that
+    // crossed the whole width, which made the student's eye travel for no
+    // reason at all.
+    ctx.save();
+    ctx.font = '700 17px "Bricolage Grotesque", system-ui, sans-serif';
+    ctx.fillStyle = theme.ink;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    wrappedText(ctx, cur.name, width / 2, PAD * 1.7 + jh + 26, jw * 1.6, 20, 2);
+    ctx.restore();
   }
 
   // Bins
@@ -915,34 +926,7 @@ function renderProcess(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
   if (sp) drawSpecimen(rc, sp, width * 0.5, height * 0.4, Math.min(width * 0.5, height * 0.62) * 0.5, spec, 0);
 
   if (spec.kind === "trace" && spec.route?.length) {
-    // The travelling marker and its path through named places.
-    const r = spec.route;
-    ctx.save();
-    ctx.strokeStyle = hexA(theme.accent, 0.45);
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    r.forEach((p, i) => {
-      const x = p.at[0] * width, y = p.at[1] * height;
-      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-    });
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-
-    const f = state.progress * (r.length - 1);
-    const i0 = Math.floor(f), i1 = Math.min(r.length - 1, i0 + 1), k = f - i0;
-    const mx = (r[i0].at[0] + (r[i1].at[0] - r[i0].at[0]) * k) * width;
-    const my = (r[i0].at[1] + (r[i1].at[1] - r[i0].at[1]) * k) * height;
-    r.forEach((p) => {
-      organelleDot(ctx, p.at[0] * width, p.at[1] * height, 7, theme.inkSoft);
-    });
-    glow(ctx, mx, my, 26, theme.accent, 0.6);
-    organelleDot(ctx, mx, my, 10, theme.accent);
-    if (overlays.labels) {
-      callout(ctx, mx, my, width * 0.82, height * 0.16, r[i1].name, theme,
-        { side: "left", sub: r[i1].note });
-    }
+    drawRoute(rc, spec.route, state.progress, overlays.labels !== false);
   }
 
   // Stage rail along the bottom.
@@ -966,9 +950,10 @@ function renderProcess(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
       organelleDot(ctx, x, railY, active ? 9 : 6, active ? theme.accent : theme.inkSoft);
       ctx.fillStyle = active ? theme.ink : theme.inkSoft;
       ctx.font = `${active ? 700 : 500} 12px "Source Sans 3", system-ui, sans-serif`;
-      ctx.textAlign = "center";
+      // The first and last labels are centred on the ends of the rail, so
+      // centring their text runs it off the stage. They align inward instead.
+      ctx.textAlign = i === 0 ? "left" : i === stages.length - 1 ? "right" : "center";
       ctx.fillText(st.name, x, railY + 24);
-      void i;
     });
 
     const cur = stages.reduce((a, b) =>
@@ -1018,6 +1003,148 @@ function wrappedText(
   }
   lines.forEach((l, i) => ctx.fillText(l, cx, y + i * lineHeight));
   return lines.length * lineHeight;
+}
+
+/**
+ * A route through a system, drawn as a system.
+ *
+ * The first version of this was a dashed zigzag between grey dots, which is a
+ * diagram of a route rather than a picture of one: nothing about it said blood
+ * vessel, gut, food chain or water cycle, and the thing being traced was a dot
+ * among identical dots. What a student needs to see is a conduit with
+ * something travelling along it, arriving somewhere named, and going on.
+ *
+ * So the path is a smooth vessel with a lumen and a wall, the stations are
+ * chambers set into it, and the traced parcel runs along with followers behind
+ * it so the direction of flow is never in doubt.
+ */
+function drawRoute(
+  rc: RenderContext<ArchetypeState>,
+  route: { at: [number, number]; name: string; note: string }[],
+  progress: number, showLabels: boolean,
+) {
+  const { ctx, width, height, theme } = rc;
+  const dark = isDarkTheme(theme);
+  const pts = route.map((p) => ({ x: p.at[0] * width, y: p.at[1] * height }));
+  if (pts.length < 2) return;
+
+  // Catmull-Rom through the stations, sampled. A route drawn with straight
+  // segments has corners, and nothing in a body or a food web has corners.
+  const path: { x: number; y: number }[] = [];
+  const at = (i: number) => pts[Math.max(0, Math.min(pts.length - 1, i))];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2);
+    for (let k = 0; k < 24; k++) {
+      const t = k / 24, t2 = t * t, t3 = t2 * t;
+      path.push({
+        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+      });
+    }
+  }
+  path.push(pts[pts.length - 1]);
+
+  const trace = () => {
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+  };
+
+  const W = Math.max(16, Math.min(width, height) * 0.05);
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  // Wall, lumen, and the highlight along the top of the tube.
+  trace();
+  ctx.strokeStyle = hexA(dark ? "#000000" : theme.ink, 0.22);
+  ctx.lineWidth = W + 6;
+  ctx.stroke();
+  trace();
+  const wall = ctx.createLinearGradient(0, 0, 0, height);
+  wall.addColorStop(0, mixHexLocal(theme.accent, "#ffffff", dark ? 0.15 : 0.5));
+  wall.addColorStop(1, mixHexLocal(theme.accent, "#000000", 0.35));
+  ctx.strokeStyle = wall;
+  ctx.lineWidth = W;
+  ctx.stroke();
+  trace();
+  ctx.strokeStyle = hexA(dark ? "#1a1226" : "#f6f1fb", 0.9);
+  ctx.lineWidth = W * 0.58;
+  ctx.stroke();
+  trace();
+  ctx.strokeStyle = hexA("#ffffff", dark ? 0.16 : 0.6);
+  ctx.lineWidth = W * 0.14;
+  ctx.stroke();
+
+  // Stations: a chamber set into the tube, named, with the reached ones lit.
+  const reached = progress * (pts.length - 1);
+  pts.forEach((p, i) => {
+    const on = i <= reached + 0.5;
+    const r = W * (on ? 0.85 : 0.7);
+    const g = ctx.createRadialGradient(p.x - r * 0.35, p.y - r * 0.4, 0, p.x, p.y, r);
+    g.addColorStop(0, on ? mixHexLocal(theme.accent, "#ffffff", 0.72) : (dark ? "#3b3348" : "#e8e0f2"));
+    g.addColorStop(0.6, on ? theme.accent : (dark ? "#2a2436" : "#cfc3de"));
+    g.addColorStop(1, on ? mixHexLocal(theme.accent, "#000000", 0.4) : (dark ? "#181322" : "#a99cbb"));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexA("#ffffff", on ? 0.75 : 0.35);
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    if (showLabels) {
+      ctx.font = `${on ? 700 : 500} 11px "Source Sans 3", system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const ly = p.y + r + 12;
+      ctx.fillStyle = hexA(dark ? "#000000" : "#ffffff", 0.7);
+      const w = ctx.measureText(route[i].name).width + 10;
+      roundRect(ctx, p.x - w / 2, ly - 8, w, 16, 8);
+      ctx.fill();
+      ctx.fillStyle = on ? theme.ink : theme.inkSoft;
+      ctx.fillText(route[i].name, p.x, ly);
+    }
+  });
+
+  // The parcel, with followers behind it so the flow has a direction.
+  const posAt = (u: number) => {
+    const f = Math.max(0, Math.min(1, u)) * (path.length - 1);
+    const i0 = Math.floor(f), i1 = Math.min(path.length - 1, i0 + 1), k = f - i0;
+    return { x: path[i0].x + (path[i1].x - path[i0].x) * k, y: path[i0].y + (path[i1].y - path[i0].y) * k };
+  };
+  for (let i = 6; i >= 1; i--) {
+    const q = posAt(progress - i * 0.022);
+    organelleDot(ctx, q.x, q.y, W * 0.16 * (1 - i * 0.1), hexA(theme.accent, 0.5));
+  }
+  const m = posAt(progress);
+  glow(ctx, m.x, m.y, W * 1.5, theme.accent, 0.7);
+  organelleDot(ctx, m.x, m.y, W * 0.3, mixHexLocal(theme.accent, "#ffffff", 0.4));
+  ctx.restore();
+
+  // The note for the station the parcel is arriving at, set beside it.
+  if (showLabels) {
+    const idx = Math.min(pts.length - 1, Math.round(reached));
+    const st = pts[idx];
+    const right = st.x < width * 0.55;
+    callout(ctx, m.x, m.y,
+      clamp(st.x + (right ? W * 2 : -W * 2), PAD + 150, width - PAD - 150),
+      clamp(st.y - W * 2.6, PAD + 34, height - 150),
+      route[idx].name, theme,
+      { side: right ? "right" : "left", sub: route[idx].note, maxWidth: Math.min(230, width * 0.24) },
+    );
+  }
+}
+
+/** Blend two hex colours; local so this file owns no colour dependency. */
+function mixHexLocal(a: string, b: string, t: number): string {
+  const parse = (h: string) => {
+    let x = h.replace("#", "");
+    if (x.length === 3) x = x.split("").map((c) => c + c).join("");
+    return [0, 1, 2].map((i) => parseInt(x.slice(i * 2, i * 2 + 2), 16) || 0);
+  };
+  const A = parse(a), B = parse(b), k = clamp01(t);
+  const ch = (i: number) => Math.round(A[i] + (B[i] - A[i]) * k).toString(16).padStart(2, "0");
+  return `#${ch(0)}${ch(1)}${ch(2)}`;
 }
 
 function renderCompare(rc: RenderContext<ArchetypeState>, spec: ArchetypeSpec) {
