@@ -17,7 +17,38 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * kinetic energy and every joule of it is accounted for; the crumple zone
  * turns the same energy into a survivable force by spending it over a longer
  * distance, because work is force times distance and nothing else.
+ *
+ * Collisions are the one thing in physics nobody has trouble picturing, so the
+ * pictures do the work. The trolley crosses the second half of its run at
+ * visibly half the speed of the first half, which is what sharing 2.0 kg m/s
+ * between 2.0 kg looks like. The steel bearing comes back up to nine tenths of
+ * its drop and the clay does not come back at all. The sled crushes through
+ * the distance it is given and lies flat when that distance is too short.
  */
+
+/** A 0-1 sawtooth that runs once every `period` seconds. */
+function cycle(t: number, period: number): number {
+  const p = (t / period) % 1;
+  return p < 0 ? p + 1 : p;
+}
+
+/**
+ * One bounce of a ball, as a height above the floor in specimen widths.
+ *
+ * The drop is a parabola and so is the rebound, and the rebound reaches e
+ * squared of the drop because e is a ratio of speeds while height goes as
+ * speed squared. A ball with e = 0.95 comes back to 90 per cent of where it
+ * started; one with e = 0.14, which is what modelling clay measures, comes
+ * back two per cent and is, to the eye, simply lying there.
+ */
+function hop(k: number, amplitude: number, e: number): number {
+  if (k < 0.4) {
+    const u = k / 0.4;
+    return amplitude * (1 - u * u);                     // falling
+  }
+  const u = (k - 0.4) / 0.6;
+  return amplitude * e * e * 4 * u * (1 - u);           // the rebound
+}
 
 /* ---------------------------------------------------------------- *
  * B3.1 — Energy converted, not lost
@@ -61,6 +92,21 @@ const TWO_CARTS_ONE_CLICK: ArchetypeSpec = {
     { name: "The books balance", at: 1,
       caption: "1.00 J still moving plus 1.00 J spread into the pads, the air and the bench. Total 2.00 J, exactly what arrived." },
   ],
+  /*
+   * The run is the proof. Trolley A covers the first 2.0 m at 2.0 m/s, taking
+   * one second; from the click onwards the pair covers ground at 1.00 m/s,
+   * because 2.0 kg m/s of momentum shared between 2.0 kg can be nothing else.
+   * The second half of the journey is visibly half as quick as the first, and
+   * that halving of the speed is a quartering of the energy per kilogram —
+   * which, with twice the mass now moving, comes out as exactly half the
+   * kinetic energy. Watching it is worth more than being told it.
+   */
+  drive: ({ t }) => {
+    const k = cycle(t, 6) * 6;
+    // 2.0 m at 2.0 m/s, then the joined pair at 1.00 m/s, on 4.5 m of bench.
+    const s = k < 1 ? 2 * k : Math.min(4.5, 2 + (k - 1));
+    return { offset: [-0.5 + s / 4.5, 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -115,6 +161,26 @@ const STEEL_AND_CLAY: ArchetypeSpec = {
       energyConvertedJ: arrive - kept,
       percentKept: v.restitution * v.restitution * 100,
     };
+  },
+  /*
+   * Both balls are dropped from the height set and drawn on the same scale, so
+   * the drop itself answers the slider: 0.2 m is a short fumble and 3.0 m fills
+   * the panel. What happens next is the whole lesson. The steel bearing gets
+   * the bounciness the control is set to and comes back to h e squared. The
+   * clay is fixed at the e = 0.14 it actually measures, so it comes back two
+   * per cent, which is a ball lying on the floor; and it stays a few per cent
+   * smaller once it has landed, because the energy that did not come back went
+   * into a shape that is not going to un-squash itself.
+   */
+  drive: ({ v, t, index }) => {
+    const e = index === 0 ? v.restitution : 0.14;
+    const k = cycle(t, 2.8);
+    const amplitude = 0.9 * Math.min(1, v.dropHeight / 3);
+    const height = hop(k, amplitude, e);
+    // Squashed at the floor, and for the clay it stays squashed.
+    const landed = k > 0.4;
+    const squash = index === 1 && landed ? 0.9 : 1 - 0.08 * Math.max(0, 1 - height * 8);
+    return { offset: [0, 0.45 - height], scale: squash };
   },
 };
 
@@ -207,6 +273,33 @@ const BUY_YOURSELF_A_METRE: ArchetypeSpec = {
     x: "crush", y: "gForce",
     xLabel: "Crush distance (m)", yLabel: "Deceleration (g)",
   },
+  /*
+   * The sled runs the last 3 m in at the speed set and then crushes through
+   * exactly the distance the control allows, taking the real 2 d / v seconds
+   * to do it. At 0.60 m and 14 m/s that is 86 ms and 16.6 g, which a belted
+   * adult survives; drag the crush down to 0.05 m and the same 6 860 J is
+   * spent in 7 ms at 200 g, and the sled folds flat. Nothing has been added to
+   * or taken from the energy at any point on that slider. Only the distance
+   * over which it is spent has changed, and that is the entire trick.
+   */
+  drive: ({ v, f, t }) => {
+    const approach = 3 / v.speed;
+    const stop = (2 * v.crush) / v.speed;
+    const k = cycle(t, 3) * 3;
+    let at: number;
+    if (k < approach) at = (k / approach) * 0.6;
+    else {
+      const u = Math.min(stop, k - approach);
+      const s = v.speed * u - (v.speed / (2 * stop)) * u * u;
+      at = 0.6 + Math.min(0.38, s / 3.2);
+    }
+    // 30 g is about as much as a belted adult takes without lasting injury.
+    return {
+      offset: [-0.55 + 1.15 * at, 0],
+      tilt: 0.24 + 0.9 * Math.min(1, Math.max(0, f.gForce / 30 - 1)),
+      spin: 0.68,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -254,6 +347,40 @@ const KEPT_OR_CONVERTED: ArchetypeSpec = {
       because: "The glass cannot spring back, so the energy goes into breaking bonds along new surfaces, into flying fragments and into the crack you heard. None of it comes back up.",
       art: { art: "glassware", which: "testTube", level: 0.35, color: "#8fc7dd" } },
   ],
+  /*
+   * The evidence for this sort is what the thing does after it lands, so that
+   * is what is drawn. The superball comes back to four fifths of its drop and
+   * the bearings to nine tenths; nitrogen molecules never slow down at all,
+   * because there is nowhere for the energy to go. The putty lands, stays and
+   * is permanently flatter for it; the wagons couple and leave at half the
+   * speed that arrived; and the test tube reaches the floor, stops dead, tips
+   * over and empties, which is roughly as converted as a collision gets.
+   */
+  drive: ({ t, specimen }) => {
+    const k = cycle(t, 2.6);
+    switch (specimen.id) {
+      // Motion mostly survives: it comes back up nearly as far as it fell.
+      case "superball": return { offset: [0, 0.42 - hop(k, 0.72, 0.89)] };
+      case "bearings": return { offset: [0, 0.42 - hop(k, 0.72, 0.95)] };
+      case "molecules":
+        return { offset: [0.24 * Math.sin(t * 2.3), 0.2 * Math.sin(t * 3.1 + 1.1)] };
+      // Motion mostly converted: it arrives and it does not leave again.
+      case "putty":
+        return { offset: [0, 0.42 - hop(k, 0.72, 0.03)], scale: k > 0.4 ? 0.88 : 1 };
+      case "wagons": {
+        const s = k < 0.35 ? (k / 0.35) * 0.4 : 0.4 + (k - 0.35) * 0.3;
+        return { offset: [-0.3 + Math.min(0.6, s), 0], spin: 0.68 };
+      }
+      default: {
+        const down = hop(k, 0.72, 0);
+        return {
+          offset: [0, 0.42 - down],
+          tilt: k > 0.4 ? 1.2 : 0.24,
+          level: k > 0.4 ? 0 : 0.35,
+        };
+      }
+    }
+  },
 };
 
 export const g8b3TwoCartsOneClick = buildSim(TWO_CARTS_ONE_CLICK);

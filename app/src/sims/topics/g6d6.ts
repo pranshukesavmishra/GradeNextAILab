@@ -20,6 +20,27 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * humidity, which is exactly the Owens Valley that D6.4 sorts as desert.
  */
 
+/**
+ * Where the stage rail has got to, rebuilt from the clock.
+ *
+ * `drive` is handed elapsed time but not progress, and at the default Speed of
+ * 0.6 the engine advances progress by 0.096 a second, so this is the rail's own
+ * position and the air moves in step with the caption under it.
+ */
+const railPhase = (t: number) => (t * 0.096) % 1;
+
+/**
+ * Average annual rainfall at each of D6.4's six places, in millimetres.
+ *
+ * The published normals, and the only numbers that sort needs: Death Valley is
+ * the driest place in North America and Eureka, 900 km north of it and on the
+ * windward side of everything, collects seventeen times as much.
+ */
+const RAINFALL_MM: Record<string, number> = {
+  deathvalley: 60, barstow: 110, bishop: 130,
+  losangeles: 370, sacramento: 470, eureka: 1000,
+};
+
 /* D6.1 — Coastal versus inland temperature patterns. */
 const TWENTY_DEGREES_APART: ArchetypeSpec = {
   id: "g6d6-twenty-degrees-apart",
@@ -46,6 +67,50 @@ const TWENTY_DEGREES_APART: ArchetypeSpec = {
       because: "July high 35 C, January high 13 C: 22 degrees across the year, and 19 between a July afternoon and the following dawn.",
       art: { art: "habitat", which: "meadow" } },
   ],
+  variables: [
+    { key: "hourOfDay", label: "Hour of a July day", min: 0, max: 24, step: 0.5, default: 15 },
+    { key: "distanceInlandKm", label: "How far inland the second site is (km)", min: 0, max: 200, step: 5, default: 120 },
+  ],
+  /*
+   * A July day at both sites, as a daily temperature wave: mean plus half the
+   * range, peaking in mid-afternoon and bottoming at dawn, which is the shape
+   * every station record has. The sea holds the coast to a mean of 15.5 and a
+   * swing of 3.5 degrees either side. Moving inland the ocean's grip falls off
+   * roughly exponentially over about 70 km, so by 120 km the mean has climbed
+   * to 24.5 and the swing to 9.2 — San Francisco 12 to 19 degrees, Sacramento
+   * 15 to 34, on the same afternoon at the same latitude.
+   */
+  measure: (v) => {
+    const inlandShare = 1 - Math.exp(-v.distanceInlandKm / 70);
+    const wave = Math.sin(((v.hourOfDay - 9.5) / 24) * 2 * Math.PI);
+    const coast = 15.5 + 3.5 * wave;
+    const inland = 15.5 + 11 * inlandShare + (3.5 + 7 * inlandShare) * wave;
+    return {
+      coastTempC: coast,
+      inlandTempC: inland,
+      differenceC: inland - coast,
+      coastDailyRangeC: 7,
+      inlandDailyRangeC: 7 + 14 * inlandShare,
+    };
+  },
+  /*
+   * Both sites are drawn at the temperature the clock has put them at, and the
+   * inland one moves five times as far through the day. The valley lifts on its
+   * own heat haze and shimmers in the afternoon; the coast barely stirs, because
+   * the ocean beside it has eighty times the heat capacity of the ground and
+   * simply will not let it move.
+   */
+  drive: ({ f, index, t }) => {
+    const c = index === 0 ? f.coastTempC : f.inlandTempC;
+    const heat = Math.max(0, c - 10) / 30;
+    return {
+      scale: 0.92 + heat * 0.42,
+      offset: [
+        index === 1 ? 0.02 * heat * Math.sin(t * 17) : 0,
+        0.2 - heat * 0.5,
+      ],
+    };
+  },
 };
 
 /* D6.2 — The marine layer and coastal fog. */
@@ -66,7 +131,7 @@ const THE_GREY_LID: ArchetypeSpec = {
     "Fog is a cloud that has fallen out of the sky",
     "Coastal fog means it is about to rain",
   ],
-  specimens: [{ id: "layer", name: "The marine layer", art: { art: "habitat", which: "ocean" } }],
+  specimens: [{ id: "layer", name: "The marine layer", art: { art: "sphere", color: "#8fb6cc", radius: 0.46 } }],
   stages: [
     { name: "Cold water is brought up", at: 0,
       caption: "North-west winds along the coast push surface water offshore, and water from 100 m down rises to replace it: 11 degrees in July, when the air above the open Pacific is 17." },
@@ -81,6 +146,27 @@ const THE_GREY_LID: ArchetypeSpec = {
     { name: "Burn-off, and the redwoods", at: 1,
       caption: "Inland, the morning sun warms the air past its dew point and the droplets evaporate; on the coast it can stay grey all day. Coast redwoods comb droplets from the fog and take roughly a third of their summer water from the drip." },
   ],
+  /*
+   * The parcel of marine air is chilled from underneath and crosses its dew
+   * point in front of you. It starts clear at 17 degrees over the open Pacific,
+   * cools on 11 degree upwelled water, and at 12 degrees it saturates: that is
+   * the threshold, and past it the parcel goes fog-white and swells as the layer
+   * deepens to its 300 to 600 m lid. Then the valley pulls it ashore — it slides
+   * inland — and the morning sun burns it back to clear air. Nothing here rises
+   * and nothing cools adiabatically, which is the whole point of advection fog.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const tempC = u < 0.35 ? 17 - u * 14.3 : 12 - (u - 0.35) * 1.5;
+    const foggy = tempC <= 12 && u < 0.9;
+    return {
+      offset: [u > 0.7 ? (u - 0.7) * 2.2 : 0, 0.15 - Math.min(0.4, Math.max(0, u - 0.2))],
+      scale: foggy ? 0.95 + Math.min(0.35, (u - 0.3) * 0.9) : 0.9,
+      color: u > 0.9 ? "#7fb4d8" : foggy ? "#eef2f6" : "#8fb6cc",
+      glow: u > 0.9 ? 0.8 : 0,
+      rate: 0.2 + u * 1.8,
+    };
+  },
 };
 
 /* D6.3 — The Sierra Nevada and the rain shadow. */
@@ -101,7 +187,7 @@ const OVER_THE_SIERRA: ArchetypeSpec = {
     "Mountains block clouds like a wall",
     "Air that has crossed a mountain comes down at the temperature it went up at",
   ],
-  specimens: [{ id: "range", name: "The Sierra Nevada in cross-section", art: { art: "landform", which: "terrain" } }],
+  specimens: [{ id: "parcel", name: "The parcel of air crossing the crest", art: { art: "sphere", color: "#7fb4d8", radius: 0.44 } }],
   variables: [
     { key: "coastTempC", label: "Air temperature at the coast (degrees C)", min: 5, max: 30, step: 1, default: 15 },
     { key: "coastDewPointC", label: "Dew point at the coast (degrees C)", min: 0, max: 25, step: 1, default: 10 },
@@ -139,6 +225,33 @@ const OVER_THE_SIERRA: ArchetypeSpec = {
   plot: {
     x: "summitHeightM", y: "temperatureOnTheLeeSideC",
     xLabel: "Height of the crest (m)", yLabel: "Temperature down the lee side (degrees C)",
+  },
+  /*
+   * The parcel does the crossing, on a loop, and the four constants in the
+   * comment above decide what it looks like at every point. It climbs to the
+   * crest and drops down the lee side, so the whole shape of the rain shadow is
+   * one arc. It turns cloud-white the moment it passes the cloud base — 625 m
+   * up at the default settings, and rammed down to the ground if you close the
+   * dew point on the temperature — and it rains itself out over the crest. Down
+   * the far side there is no cloud left to evaporate, so it warms at the full
+   * 9.8 degrees a kilometre and arrives at the Owens Valley 11 degrees hotter
+   * than it left the coast, glowing a dry desert orange at 21 per cent humidity.
+   */
+  drive: ({ v, f, t }) => {
+    const u = (t % 16) / 16;
+    const climb = u < 0.5 ? u * 2 : (1 - u) * 2;
+    const heightM = climb * v.summitHeightM;
+    const cloudy = heightM >= f.cloudBaseHeightM && u < 0.55;
+    const parcelC = u < 0.5
+      ? f.temperatureOnTheCrestC + (v.coastTempC - f.temperatureOnTheCrestC) * (1 - climb)
+      : f.temperatureOnTheCrestC + (f.temperatureOnTheLeeSideC - f.temperatureOnTheCrestC) * (1 - climb);
+    return {
+      offset: [-0.9 + u * 1.8, 0.45 - climb * 0.95],
+      scale: 0.85 + climb * 0.28,
+      color: cloudy ? "#eef2f6" : parcelC > 22 ? "#e0a25c" : parcelC > 8 ? "#7fb4d8" : "#b8d4ea",
+      glow: cloudy ? 0.2 : Math.max(0, (parcelC - 18) / 20),
+      rate: 0.3 + climb * 2,
+    };
   },
 };
 
@@ -185,6 +298,17 @@ const HOW_DRY_IS_DRY: ArchetypeSpec = {
       because: "About 1 000 mm. It sits in the main North Pacific storm track with nothing between it and the ocean, and the fog on top of that keeps the redwoods behind it wet all summer.",
       art: { art: "habitat", which: "forest" } },
   ],
+  /*
+   * Each place is drawn at the size of its rainfall, which is the one number the
+   * sort is about. Rain is measured as a depth rather than a volume, so it is
+   * drawn in proportion rather than as a cube root: Eureka's 1 000 mm against
+   * Death Valley's 60 is a factor of seventeen, and the bands the categories use
+   * — 250 mm and 500 mm — fall visibly between the specimens rather than needing
+   * to be read off a label.
+   */
+  drive: ({ specimen }) => ({
+    scale: 0.55 + (RAINFALL_MM[specimen.id] ?? 300) / 1000 * 0.85,
+  }),
 };
 
 /* D6.5 — The Pacific's moderating influence. */
@@ -235,6 +359,22 @@ const THE_OCEANS_FLYWHEEL: ArchetypeSpec = {
     x: "mixedLayerDepthM", y: "energyForTheSeaMJPerM2",
     xLabel: "Depth the waves stir the sea to (m)", yLabel: "Energy needed (MJ per square metre)",
   },
+  /*
+   * The column of sea is drawn as deep as the waves have stirred it, because the
+   * depth is the flywheel: ten metres of mixed layer is a shallow, twitchy sea
+   * and 150 m is one that will not be moved. Volume goes as the cube of a
+   * length, but this column has a fixed square metre of surface and only its
+   * depth changes, so the drawn size follows the cube root of the depth — the
+   * honest way to show a thing that has grown in one direction only. At the
+   * default 50 m it takes 204 MJ to lift that square metre one degree, nine and
+   * a half days of summer sunshine, against two and three quarter hours for the
+   * land beside it.
+   */
+  drive: ({ v, f, t }) => ({
+    scale: Math.cbrt(v.mixedLayerDepthM / 50) * 1.05,
+    offset: [0, 0.12 * Math.sin(t * 0.6) * Math.min(1, 40 / v.mixedLayerDepthM)],
+    glow: Math.min(0.8, f.daysOfSunshineToWarmTheSea / 40),
+  }),
 };
 
 /* D6.6 — Putting California's weather together. */
@@ -255,6 +395,7 @@ const ONE_PARCEL_ACROSS_CALIFORNIA: ArchetypeSpec = {
     "California's regions have separate, unrelated weather",
     "The Sierra snowpack is separate from the state's water supply",
   ],
+  specimens: [{ id: "parcel", name: "The parcel of Pacific air being followed", art: { art: "sphere", color: "#5f9fc0", radius: 0.44 } }],
   stages: [
     { name: "Summer", at: 0,
       caption: "The Pacific High parks offshore at 1025 hPa, the storm track runs far to the north, and five months pass with almost no rain." },
@@ -281,6 +422,31 @@ const ONE_PARCEL_ACROSS_CALIFORNIA: ArchetypeSpec = {
     { at: [0.90, 0.50], name: "Down into the Owens Valley",
       note: "Descending 3 000 m warms this same air 29 degrees, from -3 to 26.4, and drops its relative humidity to 21 per cent. Bishop gets 130 mm a year. Nothing was taken from the parcel but its water, and the warmth it arrives with is the warmth the mountain crossing handed back." },
   ],
+  /*
+   * One parcel, and every rule in the topic happening to it in order. It leaves
+   * the California Current cool and moist at 17 degrees, fogs over on the coast
+   * where it crosses its 12 degree dew point, clears and warms coming down into
+   * the valley at 35, whitens into cloud and snow climbing the Sierra to -3 on
+   * the crest, and arrives in the Owens Valley at 26.4 degrees and 21 per cent
+   * humidity — a desert orange. It swells as it climbs and is squeezed as it
+   * descends, because pressure falls with height: the parcel is a fifth wider on
+   * the crest than it was at sea level, the cube root of the volume it gains.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const heightKm = u < 0.28 ? 0 : u < 0.45 ? (u - 0.28) * 3.5 : u < 0.62 ? 0.1
+      : u < 0.86 ? (u - 0.62) * 12.5 : Math.max(0, 3 - (u - 0.86) * 21);
+    const parcelC = 17 - 9.8 * Math.min(heightKm, 0.6) - 5 * Math.max(0, heightKm - 0.6)
+      + (u > 0.86 ? (u - 0.86) * 200 : 0);
+    const cloudy = heightKm > 0.6 || (u > 0.2 && u < 0.32);
+    return {
+      offset: [-0.9 + u * 1.8, 0.35 - Math.min(1, heightKm / 3) * 0.85],
+      scale: Math.cbrt(1 / (1 - 2.25577e-5 * heightKm * 1000) ** 5.25588) * 0.62 + 0.42,
+      color: cloudy ? "#eef2f6" : parcelC > 24 ? "#e0a25c" : parcelC > 14 ? "#5f9fc0" : "#b8d4ea",
+      glow: Math.max(0, (parcelC - 20) / 18),
+      rate: 0.3 + Math.min(2.5, heightKm),
+    };
+  },
 };
 
 export const g6d6TwentyDegreesApart = buildSim(TWENTY_DEGREES_APART);

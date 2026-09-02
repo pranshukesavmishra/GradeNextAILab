@@ -42,7 +42,10 @@ const DEGREE_HEATING_WEEKS: ArchetypeSpec = {
     "A degree of warming is too small to matter to a living thing",
   ],
   specimens: [
-    { id: "reef", name: "The reef, and the algae inside every polyp", art: { art: "habitat", which: "ocean" } },
+    {
+      id: "reef", name: "One coral head, and the algae inside every polyp",
+      art: { art: "sphere", color: "#c9603f", radius: 0.46 },
+    },
   ],
   variables: [
     { key: "hotSpotC", label: "Degrees above the summer maximum", min: 0, max: 4, step: 0.1, default: 1.5 },
@@ -68,6 +71,29 @@ const DEGREE_HEATING_WEEKS: ArchetypeSpec = {
     };
   },
   plot: { x: "weeks", y: "degreeHeatingWeeks", xLabel: "Weeks above the summer maximum", yLabel: "Degree heating weeks" },
+  /*
+   * The coral is the instrument, and it crosses NOAA's two thresholds in front
+   * of you. Its colour is not its own: it comes from the zooxanthellae living
+   * in the polyps, and heat stress makes the polyps expel them. Below 4 degree
+   * heating weeks the head keeps its brown-orange; at 4 it goes bone white,
+   * because what you are then seeing is the bare aragonite skeleton through
+   * clear tissue — and a white coral is starving, not dead, which is the
+   * misconception this simulation exists to break. At 8 it stops moving
+   * altogether and greys over as algae grow on the dead skeleton, and after
+   * that the reef needs 10 to 15 undisturbed years. Note also what happens
+   * below a 1 degree HotSpot: nothing at all, however many weeks you give it.
+   */
+  drive: ({ f }) => {
+    const dead = f.degreeHeatingWeeks >= 8;
+    const bleached = f.degreeHeatingWeeks >= 4;
+    const stress = Math.min(1, f.degreeHeatingWeeks / 8);
+    return {
+      color: dead ? "#8f8d84" : bleached ? "#f4efe4" : stress > 0.3 ? "#dd9464" : "#c9603f",
+      scale: 1 - 0.2 * stress,
+      glow: bleached && !dead ? 0.9 : 0.12,
+      rate: dead ? 0 : 1 - 0.7 * stress,
+    };
+  },
 };
 
 export const g6f5DegreeHeatingWeeks = buildSim(DEGREE_HEATING_WEEKS);
@@ -93,6 +119,48 @@ const A_MONTH_OF_FASTING: ArchetypeSpec = {
     "Animals are affected by warming only through heat itself",
     "If the food is still there, the population is fine",
   ],
+  variables: [
+    { key: "warmingC", label: "Global warming (degrees)", min: 0, max: 4, step: 0.1, default: 1.1 },
+  ],
+  /*
+   * Western Hudson Bay, measured. In the early 1980s the bay froze in
+   * mid-November and broke up in mid-July: about 244 days of ice, and 121
+   * ashore. Break-up has since moved about three weeks earlier and freeze-up
+   * one to two weeks later, which is roughly 30 days of ice lost for the 1.1
+   * degrees of warming so far — about 27 days a degree, and that is the rate
+   * used here. A fasting bear loses about 1 kg a day, so every degree costs it
+   * another 27 kg. Work on this population puts the limit of an adult's fast
+   * at around 180 days ashore, which this arithmetic reaches at about 2.2
+   * degrees. The seals are not gone. The platform to hunt them from is.
+   */
+  measure: (v) => {
+    const iceDays = Math.max(0, 244 - 27 * v.warmingC);
+    const fastDays = 365 - iceDays;
+    return {
+      daysOfSeaIce: iceDays,
+      daysAshoreFasting: fastDays,
+      massLostAshoreKg: fastDays,
+      pastTheSurvivableFast: fastDays >= 180 ? 1 : 0,
+    };
+  },
+  /*
+   * The left-hand bay is the 1980s and never changes: it is the reference the
+   * comparison is made against. The right-hand bay is the one your slider
+   * warms, and what shrinks in it is the ice platform — 244 days of it at zero,
+   * two-thirds of that at four degrees. Past a fast of 180 days the scene
+   * collapses and drops: that is the point at which an adult bear cannot make
+   * it to freeze-up, and this population has already fallen from about 1,200
+   * bears to about 600.
+   */
+  drive: ({ f, index }) => {
+    if (index === 0) return { scale: 1 };
+    const platform = f.daysOfSeaIce / 244;
+    const doomed = f.pastTheSurvivableFast > 0;
+    return {
+      scale: doomed ? 0.3 : 0.35 + 0.65 * platform,
+      offset: [0, doomed ? 0.5 : 0.3 * (1 - platform)],
+    };
+  },
   specimens: [
     {
       id: "y1980",
@@ -162,9 +230,25 @@ const COUNTING_THE_HEAT: ArchetypeSpec = {
       daysToMaturity: v.gddNeeded / daily,
       daysEarlier: v.gddNeeded / baseline - v.gddNeeded / daily,
       seasonShortenedPercent: (1 - baseline / daily) * 100,
+      // How far through its life the crop is on the hundredth day of the
+      // season, which is what a field actually looks like in mid-August.
+      progressByDayOneHundred: Math.min(1, (daily * 100) / v.gddNeeded),
     };
   },
   plot: { x: "warmingC", y: "daysToMaturity", xLabel: "Extra warming (C)", yLabel: "Days to maturity" },
+  /*
+   * The plant is drawn as it would stand on the hundredth day of the season,
+   * which is the only fair way to compare two crops that ripen on different
+   * dates. A season averaging 12 degrees delivers 2 degree days a day, so by
+   * day 100 the maize has collected 200 of the 1 400 it needs and is barely a
+   * seedling. At 20 degrees it is most of the way there; at 30 it finished
+   * three weeks ago. Warming does not make the plant bigger. It makes it
+   * finish sooner, with fewer days of grain fill behind it.
+   */
+  drive: ({ f }) => {
+    const scale = 0.25 + 0.75 * f.progressByDayOneHundred;
+    return { scale, offset: [0, 0.7 * (1 - scale)] };
+  },
 };
 
 export const g6f5CountingTheHeat = buildSim(COUNTING_THE_HEAT);
@@ -194,6 +278,46 @@ const MOVING_NORTH: ArchetypeSpec = {
   specimens: [
     { id: "comma", name: "Comma butterfly", art: { art: "creature", which: "butterfly" } },
   ],
+  variables: [
+    { key: "warmingC", label: "Global warming (degrees)", min: 0, max: 6, step: 0.1, default: 1.1 },
+  ],
+  /*
+   * The conversion, and where it runs out. Air cools about 6.5 degrees per
+   * kilometre of height, so one degree of warming is 1000 / 6.5 = 154 m
+   * uphill; across mid-latitude land the horizontal gradient works out at
+   * roughly 150 km of latitude per degree. The comma has followed the second
+   * of those about 220 km north since 1970, which is what 1.1 degrees buys.
+   *
+   * Then the arithmetic stops being kind. From the Thames to the north coast
+   * of Scotland is about 790 km, so somewhere past 5 degrees the range edge
+   * reaches the sea and the shift becomes a loss. A species on a mountaintop
+   * meets the same wall sooner: the American pika has already gone from about
+   * a third of the Great Basin sites where it was recorded.
+   */
+  measure: (v) => {
+    const kmPoleward = 150 * v.warmingC;
+    return {
+      kilometresPoleward: kmPoleward,
+      metresUphill: 154 * v.warmingC,
+      kilometresOfBritainLeft: Math.max(0, 790 - kmPoleward),
+      decadesAtSeventeenKmPerDecade: kmPoleward / 17,
+    };
+  },
+  /*
+   * The butterfly goes where the isotherm goes: north up the stage and a
+   * little smaller as it gets further away, 150 km for every degree. Push the
+   * warming past about 5.3 degrees and it reaches the top of the map with
+   * nowhere left to go, and it stops. That is the difference between a range
+   * shift and a range loss, and it is one slider apart.
+   */
+  drive: ({ f }) => {
+    const p = Math.min(1, f.kilometresPoleward / 790);
+    return {
+      offset: [0.35 * p, -0.9 * p],
+      scale: 1 - 0.45 * p,
+      rate: f.kilometresOfBritainLeft <= 0 ? 0 : 1,
+    };
+  },
   route: [
     {
       at: [0.10, 0.74], name: "1970: southern England",

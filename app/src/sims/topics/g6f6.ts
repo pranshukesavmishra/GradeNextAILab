@@ -266,6 +266,21 @@ const WHAT_MATTERS_MOST: ArchetypeSpec = {
     };
   },
   plot: { x: "carbonWeight", y: "windMinusGas", xLabel: "How much carbon matters", yLabel: "Wind score minus gas score" },
+  /*
+   * The lamp is the terawatt-hour, and it sits wherever the weights put it:
+   * left towards gas, right towards wind, by the margin between their scores.
+   * Care only about cost and land and it slides hard to the gas end, because
+   * a wind farm's site is a hundred square kilometres per terawatt-hour
+   * against gas's one. Turn the carbon weight up and it crosses over, because
+   * wind emits 11 grams of CO2-equivalent per kilowatt-hour against gas's 490.
+   * Nothing about the three technologies changed while it moved. Only what the
+   * person at the slider decided to care about, which is the whole subtopic.
+   */
+  drive: ({ f }) => ({
+    offset: [Math.max(-1, Math.min(1, f.windMinusGas / 25)), 0],
+    scale: 0.55 + 0.5 * (f.bestScore / 100),
+    tilt: 0.24 + f.windMinusGas / 90,
+  }),
 };
 
 export const g6f6WhatMattersMost = buildSim(WHAT_MATTERS_MOST);

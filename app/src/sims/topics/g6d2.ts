@@ -19,6 +19,31 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * the back of every textbook, computed here rather than quoted.
  */
 
+/**
+ * Where the stage rail has got to, rebuilt from the clock.
+ *
+ * `drive` is handed elapsed time but not progress, and at the default Speed of
+ * 0.6 the engine advances progress by 0.096 a second, so this is the rail's
+ * own position and the parcel of air climbs in step with its caption.
+ */
+const railPhase = (t: number) => (t * 0.096) % 1;
+
+/**
+ * Each gas's share of dry air, and its molar mass in kilograms per mole.
+ *
+ * Both are needed to draw D2.1 honestly: the share sets how much of the air a
+ * specimen is, and the molar mass sets how fast it is moving, since the
+ * root-mean-square speed is root(3RT/M) and nothing else.
+ */
+const AIR_GASES: Record<string, { share: number; molarMass: number }> = {
+  n2: { share: 0.7808, molarMass: 0.028 },
+  o2: { share: 0.2095, molarMass: 0.032 },
+  ar: { share: 0.0093, molarMass: 0.040 },
+  co2: { share: 0.00042, molarMass: 0.044 },
+  ch4: { share: 0.0000019, molarMass: 0.016 },
+  h2o: { share: 0.01, molarMass: 0.018 },
+};
+
 /* D2.1 — Composition of the atmosphere. */
 const WHAT_AIR_IS_MADE_OF: ArchetypeSpec = {
   id: "g6d2-what-air-is-made-of",
@@ -62,6 +87,24 @@ const WHAT_AIR_IS_MADE_OF: ArchetypeSpec = {
       because: "From almost nothing over Antarctica to 4 per cent over a tropical ocean. It is the only part of the air that condenses at everyday temperatures, and that is the whole reason there is weather.",
       art: { art: "molecule", formula: "H2O" } },
   ],
+  /*
+   * Two real quantities are drawn at once. Size is the share of the air the gas
+   * makes up, as a cube root because a share is a volume: nitrogen at 78 per
+   * cent is only 4.4 times as wide as argon at 0.93, not 84 times. Methane at
+   * two parts per million would come out a tenth of a pixel across, so the size
+   * is floored — that floor is the lesson, not a cheat, since the point of this
+   * sort is that a gas you cannot draw can still set the temperature of a
+   * planet. Speed is real and unfloored: root(3RT/M) at 15 degrees makes
+   * methane's molecules move at 674 m/s against argon's 425, because they are
+   * lighter, and the drawing turns at those speeds.
+   */
+  drive: ({ specimen }) => {
+    const g = AIR_GASES[specimen.id] ?? { share: 0.01, molarMass: 0.03 };
+    return {
+      scale: 0.55 + 0.62 * Math.cbrt(g.share),
+      rate: Math.sqrt((3 * 8.314 * 288.15) / g.molarMass) / 300,
+    };
+  },
 };
 
 /* D2.2 — Layers of the atmosphere. */
@@ -102,6 +145,15 @@ const FIVE_FLOORS_UP: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * Earth turns once in 24 hours and the terminator crosses the layers with it,
+   * which is why the thermosphere is a thousand degrees on the day side and the
+   * aurora is a night-side sight. The rotation here is slow and steady rather
+   * than the engine's default idle, so a student can hold a layer in view long
+   * enough to read its label, and the tilt is the 23.4 degrees of the real
+   * axis.
+   */
+  drive: ({ t }) => ({ spin: t * 0.13, tilt: 0.41 }),
 };
 
 /* D2.3 — Air pressure. */
@@ -122,7 +174,7 @@ const TEN_TONNES_ABOVE: ArchetypeSpec = {
     "Air has no weight",
     "Air pressure pushes only downwards",
   ],
-  specimens: [{ id: "column", name: "The air above one square metre", art: { art: "apparatus", which: "stand" } }],
+  specimens: [{ id: "flask", name: "A flask of water at 85 degrees, carried up the mountain", art: { art: "glassware", which: "flask", level: 0.55, color: "#7fa8c8" } }],
   variables: [
     { key: "altitudeM", label: "Altitude (m)", min: 0, max: 9000, step: 50, default: 0 },
     { key: "contactAreaCm2", label: "Area being pressed on (cm2)", min: 10, max: 2000, step: 10, default: 200 },
@@ -150,6 +202,27 @@ const TEN_TONNES_ABOVE: ArchetypeSpec = {
   plot: {
     x: "altitudeM", y: "pressureKPa",
     xLabel: "Altitude (m)", yLabel: "Air pressure (kPa)",
+  },
+  /*
+   * A flask of water at 85 degrees is the pressure gauge, and it is the one a
+   * student can believe. Boiling is not a temperature, it is the point where a
+   * liquid's vapour pressure matches the air pressing on it, so the Antoine
+   * equation drops the boiling point from 100 degrees at sea level to 85 at
+   * about 4 600 m and 70 at 9 000. Below that altitude the flask sits there;
+   * above it the same water at the same 85 degrees boils, harder the higher it
+   * goes, and boils itself away. Nothing was heated to make that happen — the
+   * air simply stopped pressing hard enough.
+   */
+  drive: ({ f }) => {
+    const overBoiling = 85 - f.waterBoilsAtC;
+    const boiling = overBoiling > 0;
+    return {
+      level: boiling ? 0.55 - Math.min(0.2, overBoiling / 75) : 0.55,
+      bubbles: boiling ? Math.min(1, 0.25 + overBoiling / 12) : Math.max(0, 0.1 + overBoiling / 60),
+      color: boiling ? "#eef2f8" : "#7fa8c8",
+      glow: boiling ? Math.min(0.9, overBoiling / 15) : 0,
+      rate: boiling ? 1 + overBoiling / 4 : 0.25,
+    };
   },
 };
 
@@ -198,6 +271,18 @@ const PICK_TWO_GET_THE_THIRD: ArchetypeSpec = {
     x: "temperatureC", y: "densityKgPerM3",
     xLabel: "Temperature (degrees C)", yLabel: "Density of the air (kg/m3)",
   },
+  /*
+   * A mole of gas is a fixed number of molecules, so the space they occupy is
+   * the whole story: 21.8 litres at 110 kPa and 15 degrees, 119.8 litres at
+   * 20 kPa and the same temperature. That is 5.5 times the volume, and volume
+   * goes as the cube of the width, so the parcel is drawn 1.76 times as wide —
+   * not 5.5. It also moves at the speed the temperature gives it, root(3RT/M)
+   * for nitrogen: 415 m/s at -60 degrees and 537 at 50.
+   */
+  drive: ({ v, f }) => ({
+    scale: Math.cbrt(f.litresPerMole / 22.41),
+    rate: Math.sqrt((3 * 8.314 * (v.temperatureC + 273.15)) / 0.028) / 300,
+  }),
 };
 
 /* D2.5 — Why warm air rises. */
@@ -218,7 +303,7 @@ const WHY_WARM_AIR_RISES: ArchetypeSpec = {
     "Heat itself rises",
     "Rising air cools because it meets colder air higher up",
   ],
-  specimens: [{ id: "burner", name: "Ground heated by the Sun", art: { art: "apparatus", which: "burner" } }],
+  specimens: [{ id: "parcel", name: "A cubic metre of air over the hot ground", art: { art: "sphere", color: "#e0906a", radius: 0.42 } }],
   stages: [
     { name: "The ground heats", at: 0,
       caption: "Dark asphalt reaches 50 degrees under a 25 degree sky. Air molecules touching it are knocked to higher speeds: conduction, and only in the first few millimetres." },
@@ -233,6 +318,33 @@ const WHY_WARM_AIR_RISES: ArchetypeSpec = {
     { name: "It stops where it matches", at: 1,
       caption: "The surrounding air cools at 6.5 degrees per kilometre on average. Where parcel and surroundings agree, the push is gone and the rise ends. Cooler air slides in underneath, and the loop is convection." },
   ],
+  /*
+   * The parcel does what the captions describe, and the size is the honest
+   * number rather than a flattering one. Climbing to 3 km takes the pressure
+   * from 1 013 to about 700 hPa while the parcel cools adiabatically from 35 to
+   * 5 degrees, and V goes as T over P, so the volume grows about 31 per cent —
+   * which, since volume goes as the cube of the width, is a parcel only 9 per
+   * cent wider. Expansion is small and buoyancy is not: that is exactly why a
+   * three per cent density difference can lift a cubic metre of air a
+   * kilometre. The colour is the parcel's own temperature, it turns cloud-white
+   * at the dew point where condensation hands back 2 450 kJ per kilogram, and
+   * it stops dead at the top, where its temperature matches the air outside and
+   * there is nothing left to push it.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const climbKm = u < 0.15 ? 0 : (u - 0.15) * 3.9;
+    const parcelC = 35 - 9.8 * Math.min(climbKm, 1.7) - 5 * Math.max(0, climbKm - 1.7);
+    const cloud = climbKm > 1.7;
+    const stalled = u > 0.93;
+    return {
+      offset: [0.1 * Math.sin(u * 7), 0.55 - Math.min(climbKm, 3) * 0.42],
+      scale: Math.cbrt(((parcelC + 273.15) / 308.15) / (1 - 0.0000225577 * climbKm * 1000) ** 5.25588),
+      color: cloud ? "#eef2f8" : parcelC > 28 ? "#e0722c" : parcelC > 18 ? "#e0906a" : "#9ec8e8",
+      glow: Math.max(0, (parcelC - 15) / 40),
+      rate: stalled ? 0 : cloud ? 2.6 : 0.4 + climbKm,
+    };
+  },
 };
 
 export const g6d2WhatAirIsMadeOf = buildSim(WHAT_AIR_IS_MADE_OF);

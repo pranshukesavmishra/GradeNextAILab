@@ -58,6 +58,22 @@ const HIERARCHY: ArchetypeSpec = {
       caption: "Eleven organ systems, working at once, make one living person.",
     },
   ],
+  /*
+   * Five rungs from 20 micrometres to 1.7 metres is a factor of about 85 000,
+   * so the subject grows by a constant factor per rung rather than a constant
+   * amount — the same shape a log scale has. And it beats the whole way up:
+   * 70 times a minute, the rate of the heart the cell belongs to, because the
+   * one thing every level here shares is that contraction.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const beat = Math.max(0, Math.sin(t * 7.33));
+    return {
+      scale: 0.34 * Math.pow(5.2, p) * (1 + 0.07 * beat * beat),
+      spin: 0.68 + t * 0.2,
+      tilt: 0.24,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -93,6 +109,30 @@ const SPECIALISATION: ArchetypeSpec = {
       art: { art: "sphere", color: "#c0392b", radius: 0.5 },
     },
   ],
+  /*
+   * Each side does the thing it kept and cannot do the thing it gave up.
+   *
+   * The unspecialised cell still divides: it grows to twice its volume, which
+   * is 1.26 times its width, and halves back. A red blood cell never will — it
+   * threw away the nucleus that would have told it how — so it never changes
+   * size at all. What it does instead is the job it was rebuilt for: it loads
+   * oxygen in the lungs and gives it up in the tissues, once a lap, and the
+   * colour swing between bright and dark red is that cargo arriving and going.
+   */
+  drive: ({ t, index }) => {
+    if (index === 0) {
+      const cycle = (t * 0.14) % 1;
+      const grown = cycle < 0.85 ? 1 + (cycle / 0.85) : 2 - (cycle - 0.85) / 0.15;
+      return { scale: Math.cbrt(grown), spin: 0.68 + t * 0.18 };
+    }
+    const lap = (t * 0.17) % 1;
+    const loaded = lap < 0.5;
+    return {
+      color: loaded ? "#d4463a" : "#7d2320",
+      scale: 1,
+      spin: 0.68 + t * 0.5,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -137,6 +177,21 @@ const TISSUE_PULL: ArchetypeSpec = {
   plot: {
     x: "area", y: "pullNewtons",
     xLabel: "Cross-section (cm2)", yLabel: "Pull (N)",
+  },
+  /*
+   * The control is an area, so the drawn width is the square root of it — a
+   * muscle of 20 square centimetres is 14 times as wide as one of 0.1, not 200
+   * times. It twitches at about 10 Hz throughout, the rate at which motor units
+   * are recruited in a steady hold, and the twitch is the same whether one
+   * fibre is pulling or fifty thousand: what changes is how much it lifts.
+   */
+  drive: ({ v, t }) => {
+    const twitch = 0.5 + 0.5 * Math.sin(t * 62.8);
+    return {
+      scale: Math.sqrt(v.area / 10) * (1 - 0.04 * twitch),
+      offset: [0, -0.05 * twitch],
+      spin: 0.68 + t * 0.16,
+    };
   },
 };
 
@@ -287,6 +342,25 @@ const DOWN_THE_LEVELS: ArchetypeSpec = {
     "The levels of organisation are separate topics rather than one system",
     "Food gives a cell energy without ever entering the cell",
   ],
+  specimens: [
+    { id: "glucose", name: "The glucose from the bread", art: { art: "sphere", color: "#e8c15a", radius: 0.45 } },
+  ],
+  /*
+   * The journey is a zoom, so the picture zooms. A person is 1.7 m, the small
+   * intestine 6 m of tube but 3 cm wide, its lining one cell thick, a muscle
+   * fibre 50 micrometres across and a mitochondrion 1 — six levels spanning a
+   * million-fold, so the drawn size falls by a constant factor at each stop
+   * rather than a constant amount. The glucose brightens as it goes, and is at
+   * its brightest at the mitochondrion, where its energy is finally released.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    return {
+      scale: 1.7 * Math.pow(0.12, p),
+      color: ["#c9a24a", "#d9b053", "#e8c15a", "#f2d066", "#ffe07a"][Math.min(4, Math.floor(p * 5))],
+      spin: 0.68 + t * (0.2 + p * 1.4),
+    };
+  },
   route: [
     {
       at: [0.1, 0.24], name: "The meal (organism)",

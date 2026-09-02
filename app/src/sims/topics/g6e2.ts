@@ -55,6 +55,22 @@ const SLANTING_SUNLIGHT: ArchetypeSpec = {
     };
   },
   plot: { x: "latitude", y: "noonSunlightWm2", xLabel: "Latitude (degrees)", yLabel: "Sunlight arriving (W per square metre)" },
+  /*
+   * The globe answers the slider by turning until you are looking down on the
+   * latitude you chose, so the beam that struck the equator head-on is now
+   * arriving edge-on. Its colour is what that ground actually absorbs: about
+   * 1 160 W per square metre at the equator under a dark surface, glaring
+   * orange, falling through blue to the near-white of a polar cap, where a
+   * hundred watts arrives and most of that reflects straight back off the snow.
+   */
+  drive: ({ v, f }) => ({
+    tilt: 0.22 + (v.latitude * Math.PI) / 180 * 0.85,
+    color: f.absorbedWm2 >= 900 ? "#e8a04a"
+      : f.absorbedWm2 >= 600 ? "#d8bd63"
+      : f.absorbedWm2 >= 300 ? "#4f92c8"
+      : f.absorbedWm2 >= 120 ? "#95bfdc"
+      : "#e4eff8",
+  }),
 };
 
 /* E2.2 — Circulation cells and prevailing winds. */
@@ -136,6 +152,22 @@ const THE_LONG_THROW: ArchetypeSpec = {
     };
   },
   plot: { x: "latitude", y: "sidewaysDriftKm", xLabel: "Latitude (degrees)", yLabel: "Sideways drift (km)" },
+  /*
+   * Nothing pushes the parcel: the ground turns out from under it. So the
+   * globe is what moves here. It slides west by the distance the throw ends up
+   * off course — 67 km in an hour at 45 degrees, and not a metre at the equator
+   * — while turning about the local vertical at 2 omega sin(latitude), which is
+   * zero on the equator and fastest over the pole. Set the latitude to 0 and
+   * the globe sits still: that is why hurricanes never form there.
+   */
+  drive: ({ v, f, t }) => {
+    const spinRate = Math.sin((v.latitude * Math.PI) / 180);
+    return {
+      offset: [-Math.min(0.95, f.sidewaysDriftKm / 120), 0],
+      tilt: 0.2 + (v.latitude * Math.PI) / 180 * 0.9,
+      spin: 0.68 + t * spinRate * 0.8,
+    };
+  },
 };
 
 /* E2.4 — Surface ocean currents. */
@@ -153,6 +185,49 @@ const AROUND_THE_GYRE: ArchetypeSpec = {
     "Explain how prevailing winds and the Earth's rotation together make a gyre turn.",
   ],
   misconceptions: ["Ocean currents are driven by the water pouring out of rivers"],
+  specimens: [{ id: "buoy", name: "Drifting buoy 4402", art: { art: "sphere", color: "#f0b84a", radius: 0.32 } }],
+  variables: [
+    { key: "years", label: "Years since release", min: 0, max: 12, step: 0.1, default: 0 },
+    { key: "drift", label: "Mean speed of the current (m/s)", min: 0.1, max: 0.8, step: 0.05, default: 0.3 },
+  ],
+  /*
+   * The six legs of the ring add to about 24 000 km, so at the 0.3 m/s a
+   * satellite-tracked drifter averages a full circuit takes 8.0e7 seconds, or
+   * 2.5 years. The same arithmetic gives the leg the route describes: 6 500 km
+   * of North Equatorial Current at 0.4 m/s is 1.6e7 seconds, about six months.
+   * The temperature is the water the buoy is sitting in, leg by leg: 18 degrees
+   * in the Canary Current, 28 in the Caribbean, 26 leaving Cape Hatteras, 14 by
+   * the time the drift has handed its heat to the air over Europe.
+   */
+  measure: (v) => {
+    const circuitYears = 24e6 / (v.drift * 3.156e7);
+    const laps = v.years / circuitYears;
+    const legTemp = [18, 26, 28, 27, 26, 14, 18];
+    return {
+      circuitYears,
+      lapsCompleted: laps,
+      kilometresTravelled: (v.drift * v.years * 3.156e7) / 1000,
+      seaTemperatureC: legTemp[Math.min(6, Math.floor((laps % 1) * 7))],
+    };
+  },
+  /*
+   * The buoy is where the years have put it. It rides the ring clockwise —
+   * south down the African coast, west across the tropics, north up the
+   * American seaboard, east again with the drift — and takes the colour of the
+   * water it is in, so you watch it heat up crossing the tropics and give that
+   * heat away on the way back to Europe. Two and a half years to a lap.
+   */
+  drive: ({ f }) => {
+    const a = 2 * Math.PI * (f.lapsCompleted % 1);
+    return {
+      offset: [Math.cos(a) * 1.55, 0.15 + Math.sin(a) * 0.8],
+      color: f.seaTemperatureC >= 27 ? "#e8654a"
+        : f.seaTemperatureC >= 24 ? "#e8994a"
+        : f.seaTemperatureC >= 17 ? "#4fae9a"
+        : "#5f9fd0",
+      glow: (f.seaTemperatureC - 10) / 22,
+    };
+  },
   stages: [
     { name: "Wind", at: 0, caption: "The trades push the surface water west near the equator, the westerlies push it east near 50 degrees." },
     { name: "Turning", at: 0.25, caption: "The Earth's spin bends every moving parcel to the right, so the two pushes close into one clockwise ring." },
@@ -218,6 +293,31 @@ const WHAT_MAKES_IT_SINK: ArchetypeSpec = {
     };
   },
   plot: { x: "temperature", y: "densityKgM3", xLabel: "Temperature (degrees)", yLabel: "Density (kg per cubic metre)" },
+  /*
+   * The beaker is a column of ocean and the parcel finds its own level in it.
+   * Heavier than the 1 027 kg of the surface and it settles to a thin, dark
+   * layer at the bottom; lighter and it floats high and pale. The salt it
+   * carries shows as suspended solid. Take it below its freezing point — which
+   * the salt itself has pushed down to -1.9 degrees for ordinary sea water —
+   * and it turns to ice: white, still, and about three per cent wider, because
+   * water expands roughly nine per cent by volume when it freezes.
+   */
+  drive: ({ v, f }) => {
+    const frozen = v.temperature <= f.freezingPointC;
+    const heavy = Math.max(-1, Math.min(1, f.heavierThanTheSurfaceKg / 10));
+    return {
+      level: 0.5 - heavy * 0.32,
+      scale: frozen ? 1.03 : 1,
+      rate: frozen ? 0 : 1,
+      precipitate: (v.salinity / 40) * 0.8,
+      bubbles: frozen ? 0 : Math.max(0, -heavy) * 0.6,
+      color: frozen ? "#eaf4fb"
+        : heavy > 0.45 ? "#15406e"
+        : heavy > 0.1 ? "#2b6da4"
+        : heavy > -0.15 ? "#3f9ad8"
+        : "#93d3ea",
+    };
+  },
 };
 
 /* E2.6 — Heat redistribution: one combined model. */
@@ -236,11 +336,51 @@ const MOVING_THE_SURPLUS: ArchetypeSpec = {
   ],
   misconceptions: ["The tropics keep getting hotter because they receive more sunlight"],
   specimens: [{ id: "globe", name: "The whole system", art: { art: "planet", color: "#3f7fbf", atmosphere: "#cfe3f5" } }],
+  variables: [
+    { key: "latitude", label: "Latitude (degrees)", min: 0, max: 90, step: 1, default: 0 },
+  ],
+  /*
+   * The zonal-mean net radiation, fitted as N = A * (cos 2phi - 1/3). The
+   * one-third is not a free choice: it is what makes the surplus and the
+   * deficit cancel over the whole sphere, which they must, and it puts the
+   * crossing at 35.3 degrees. A = 84 W per square metre is set by the observed
+   * peak transport, and it gives +56 W at the equator and -112 W at the poles.
+   * Integrating that imbalance from the equator outwards gives the energy that
+   * has to be carried across each latitude,
+   *   F(phi) = A * 2 * pi * R^2 * (2/3) * sin(phi) * cos^2(phi),
+   * which peaks at 5.5 petawatts near 35 degrees and returns to zero at the
+   * pole, where there is nothing left beyond to warm.
+   */
+  measure: (v) => {
+    const phi = (v.latitude * Math.PI) / 180;
+    const s = Math.sin(phi);
+    const netWm2 = 84 * (Math.cos(2 * phi) - 1 / 3);
+    return {
+      netWm2,
+      transportPW: (84 * 2 * Math.PI * 6.371e6 * 6.371e6 * (2 / 3) * s * (1 - s * s)) / 1e15,
+      surplus: netWm2 > 0 ? 1 : 0,
+    };
+  },
+  /*
+   * Turn the globe to a latitude and it takes that band's colour: the deep
+   * red of a tropical surplus, the balance point near 35 degrees, and the
+   * white of a polar deficit losing 112 W on every square metre. Nothing on
+   * this planet is running away with the heat, which is the puzzle the stages
+   * then answer.
+   */
+  drive: ({ v, f }) => ({
+    tilt: 0.2 + (v.latitude * Math.PI) / 180 * 0.9,
+    color: f.netWm2 >= 40 ? "#c9553a"
+      : f.netWm2 >= 15 ? "#d98f4c"
+      : f.netWm2 >= -15 ? "#c2bf94"
+      : f.netWm2 >= -60 ? "#5f9fd0"
+      : "#e2eef7",
+  }),
   stages: [
     { name: "Surplus", at: 0,
-      caption: "Between about 38 north and 38 south the Earth absorbs more sunlight than it radiates away: near 60 W on every square metre at the equator." },
+      caption: "Between about 35 north and 35 south the Earth absorbs more sunlight than it radiates away: about 56 W on every square metre at the equator." },
     { name: "Deficit", at: 0.2,
-      caption: "Poleward of 38 degrees it is the other way round, and at the poles the shortfall reaches about 100 W per square metre." },
+      caption: "Poleward of 35 degrees it is the other way round, and at the poles the shortfall reaches about 110 W per square metre." },
     { name: "The puzzle", at: 0.4,
       caption: "Yet the tropics are not warming year on year and the poles are not cooling. Something carries the surplus from one to the other." },
     { name: "The air", at: 0.6,
@@ -248,7 +388,7 @@ const MOVING_THE_SURPLUS: ArchetypeSpec = {
     { name: "The sea", at: 0.8,
       caption: "Within about 20 degrees of the equator the ocean carries most of it: the Gulf Stream and the Kuroshio are conveyor belts of warm surface water." },
     { name: "The peak", at: 1,
-      caption: "Near 35 degrees the combined transport peaks at about 5.5 petawatts, roughly 300 times all the power humanity uses. That is what keeps the poles liveable and the tropics from cooking." },
+      caption: "Near 35 degrees the combined transport peaks at about 5.5 petawatts, roughly 300 times all the power humanity uses. At the pole it is back to zero: there is nothing beyond it left to warm." },
   ],
 };
 

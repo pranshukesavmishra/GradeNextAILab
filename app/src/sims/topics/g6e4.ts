@@ -55,6 +55,26 @@ const HOW_MUCH_LIGHT: ArchetypeSpec = {
     };
   },
   plot: { x: "light", y: "netPhotosynthesis", xLabel: "Light (micromoles per square metre per second)", yLabel: "Net photosynthesis (micromoles CO2 per square metre per second)" },
+  /*
+   * The chloroplast is the readout twice over. Its size is the carbon the leaf
+   * is banking: below the compensation point, where respiration is eating more
+   * than the light can pay for, it is small and completely still, because a
+   * leaf in the dark is running backwards. Above about 200 micromoles it also
+   * slides sideways — the avoidance response, in which phototropin sends
+   * chloroplasts to the side walls of the cell so that they are edge-on to a
+   * light strong enough to damage them. That is the leaf protecting itself, and
+   * it is part of why the curve flattens instead of climbing for ever.
+   */
+  drive: ({ v, f }) => {
+    const work = Math.max(0, f.netPhotosynthesis) / 28;
+    const avoid = Math.max(0, Math.min(1, (v.light - 200) / 1400));
+    return {
+      scale: 0.6 + 0.55 * Math.min(1, work + 0.12),
+      offset: [avoid * 0.8, 0],
+      tilt: 0.24 + avoid * 0.55,
+      rate: f.netPhotosynthesis <= 0 ? 0 : 0.2 + f.grossPhotosynthesis / 22,
+    };
+  },
 };
 
 /* E4.2 — Testing an environmental factor. */
@@ -73,6 +93,43 @@ const ONE_THING_AT_A_TIME: ArchetypeSpec = {
   ],
   misconceptions: ["One plant in each condition is enough to show a difference"],
   specimens: [{ id: "pot", name: "Seedling in a pot", art: { art: "flora", which: "seedling" } }],
+  variables: [
+    { key: "nitrogen", label: "Nitrogen in the compost (mg per litre)", min: 0, max: 400, step: 10, default: 100 },
+    { key: "pots", label: "Pots in each group", min: 1, max: 40, step: 1, default: 20 },
+  ],
+  /*
+   * Two real relationships, and the experiment is the pair of them.
+   *
+   * Mitscherlich's law of diminishing returns, which agronomy has used since
+   * 1909: yield = A * (1 - e^(-cN)). A six-week radish plateaus near 3.2 g of
+   * dry mass and reaches half of that at about 76 mg of nitrogen per litre,
+   * so c = 1/110. Doubling the nitrogen from 100 to 200 adds 0.6 g; doubling
+   * again adds 0.2 g.
+   *
+   * And the reason for the second slider: pots vary, with a within-group
+   * standard deviation near 0.6 g, so the mean of n pots is uncertain by
+   * 0.6/sqrt(n), and the smallest difference two groups can honestly resolve
+   * is about 2.8 * s * sqrt(2/n) — the standard sample-size result for 80 per
+   * cent power at the 5 per cent level. Twenty pots a group resolves 0.53 g.
+   * One pot a group resolves 2.4 g, which is most of the effect there is.
+   */
+  measure: (v) => ({
+    dryMassG: 3.2 * (1 - Math.exp(-v.nitrogen / 110)),
+    standardErrorG: 0.6 / Math.sqrt(v.pots),
+    smallestTrustworthyDifferenceG: 2.8 * 0.6 * Math.sqrt(2 / v.pots),
+    plantsGrown: v.pots * 2,
+  }),
+  /*
+   * The pot answers the compost. Dry mass is mass, so the plant's height goes
+   * as its cube root: a radish given nothing is a third the size of one given
+   * plenty, not a four-hundredth of it. The base of the stem stays on the
+   * bench so the two are comparable by eye, which is the whole point of a
+   * controlled test.
+   */
+  drive: ({ f }) => {
+    const scale = 0.3 + 0.7 * Math.cbrt(f.dryMassG / 3.2);
+    return { scale, offset: [0, 0.7 * (1 - scale)] };
+  },
   stages: [
     { name: "Question", at: 0,
       caption: "Does doubling the nitrogen in the compost increase the dry mass of a radish after six weeks?" },
@@ -104,6 +161,38 @@ const SAME_POT_SAME_SUN: ArchetypeSpec = {
     "Justify holding the environment constant when testing for a genetic cause.",
   ],
   misconceptions: ["A small plant is always a badly fed plant"],
+  variables: [
+    { key: "gibberellin", label: "Gibberellin sprayed on the dwarf (micrograms per plant)", min: 0, max: 50, step: 1, default: 0 },
+  ],
+  /*
+   * Mendel's Le/le pair, and what Brian and Hemming did to it in 1955. The
+   * tall plant carries Le and makes its own active gibberellin, so it reaches
+   * about 2 m whatever you do to it. The dwarf carries le, cannot finish the
+   * hormone, and stops at about 0.4 m. Spray the missing hormone straight on
+   * and the dwarf elongates: a saturating dose-response that gets halfway to
+   * the tall phenotype at about 6 micrograms a plant and is nearly there by
+   * 50. The genes did not change. Only what reached the stem did.
+   */
+  measure: (v) => {
+    const dwarfHeightM = 0.4 + 1.6 * (v.gibberellin / (v.gibberellin + 6));
+    return {
+      tallHeightM: 2,
+      dwarfHeightM,
+      differenceM: 2 - dwarfHeightM,
+      dwarfPercentOfTall: (dwarfHeightM / 2) * 100,
+    };
+  },
+  /*
+   * The two plants stand on the same bench line so their heights can be read
+   * against each other. The tall one never moves: nothing on this slider
+   * touches it. The dwarf climbs from a fifth of its neighbour's height to
+   * nine-tenths of it as the hormone goes on, which is a gene's effect being
+   * undone by a chemical without the gene changing at all.
+   */
+  drive: ({ f, index }) => {
+    const scale = index === 0 ? 1 : f.dwarfHeightM / f.tallHeightM;
+    return { scale, offset: [0, 0.7 * (1 - scale)] };
+  },
   specimens: [
     { id: "tall", name: "Tall variety: about 2 m",
       because: "Makes the active form of the growth hormone gibberellin, so each stem section stretches before the next leaf.",
@@ -152,6 +241,18 @@ const SHORTEST_STAVE: ArchetypeSpec = {
     };
   },
   plot: { x: "water", y: "growthPercentOfPotential", xLabel: "Water supplied (% of need)", yLabel: "Growth (% of potential)" },
+  /*
+   * Growth is mass, so the seedling's height follows its cube root: a plant
+   * held to a tenth of its potential is still just under half as tall, which
+   * is why a starved crop looks disappointing rather than absent. Push the
+   * scarcest of the three up and the plant grows; push either of the other two
+   * up and nothing whatever happens on the bench, however much the readout for
+   * unused supply climbs. That is Liebig's law, seen rather than stated.
+   */
+  drive: ({ f }) => {
+    const scale = 0.22 + 0.78 * Math.cbrt(f.growthPercentOfPotential / 100);
+    return { scale, offset: [0, 0.7 * (1 - scale)] };
+  },
 };
 
 /* E4.5 — Separating genetic from environmental influence. */

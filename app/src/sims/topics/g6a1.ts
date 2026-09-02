@@ -127,6 +127,19 @@ const DRIVETRAIN: ArchetypeSpec = {
     };
   },
   plot: { x: "cadence", y: "speedKmh", xLabel: "Pedalling rate (rpm)", yLabel: "Road speed (km/h)" },
+  /*
+   * The bicycle is the readout. Its wheels turn at the wheel speed the gearing
+   * actually produces, and it crosses the stage at the road speed that follows
+   * from it — 240 wheel rpm and 8.4 m/s at the default gear. Both are the same
+   * numbers the panel prints, slowed by a fixed factor so the eye can follow
+   * them: a wheel really turning four times a second would only blur.
+   */
+  drive: ({ v, f, t }) => ({
+    spin: t * f.wheelRpm * 0.021,
+    offset: [((t * f.speedMs * 0.055) % 1) * 1.3 - 0.65, 0],
+    tilt: 0.2 + 0.06 * Math.sin(t * 0.8),
+    rate: v.cadence > 0 ? 1 : 0,
+  }),
 };
 
 /* A1.4 — Emergent properties. */
@@ -152,6 +165,46 @@ const EMERGENT: ArchetypeSpec = {
       because: "Temperature is the average energy of the crowd, pressure is their drumming on the glass, wetness is how they cling. All three appear only together.",
       art: { art: "glassware", which: "beaker", level: 0.62 } },
   ],
+  variables: [
+    { key: "tempC", label: "Temperature of the water", unit: "degrees C", min: 0, max: 100, step: 1, default: 20 },
+  ],
+  /*
+   * Kinetic theory. The root-mean-square speed of a molecule of molar mass M in
+   * a gas or liquid at temperature T is v = root(3RT/M), and its average
+   * translational energy is (3/2)kT. For water, M = 0.018 kg/mol, so at 20
+   * degrees a molecule averages 637 m/s and 6.07 zeptojoules — and neither
+   * number is a temperature. Temperature is what the whole crowd has.
+   */
+  measure: (v) => {
+    const tempK = v.tempC + 273.15;
+    return {
+      tempK,
+      rmsSpeed: Math.sqrt((3 * 8.314 * tempK) / 0.018),
+      energyZeptojoules: 1.5 * 1.380649e-23 * tempK * 1e21,
+      boiling: v.tempC >= 100 ? 1 : 0,
+    };
+  },
+  /*
+   * The two halves answer the same slider in different currencies, which is the
+   * whole lesson. The single molecule only moves faster — its colour never
+   * changes, because one molecule has no temperature to show. The glass gets
+   * hotter as a body: it reddens, and at 100 degrees it boils.
+   */
+  drive: ({ v, f, t, index }) => {
+    if (index === 0) {
+      const jitter = f.rmsSpeed / 700;
+      return {
+        offset: [Math.sin(t * 5.5 * jitter) * 0.42 * jitter, Math.cos(t * 7.1 * jitter) * 0.36 * jitter],
+        spin: t * 2.4 * jitter,
+      };
+    }
+    const hot = Math.min(4, Math.max(0, Math.round(v.tempC / 25)));
+    return {
+      color: ["#4a63f0", "#6e79dd", "#a06fae", "#cc5a72", "#e0483f"][hot],
+      bubbles: v.tempC >= 100 ? 1 : v.tempC >= 70 ? 0.35 : 0,
+      level: 0.62 - (v.tempC >= 100 ? 0.14 : 0),
+    };
+  },
 };
 
 /* A1.5 — Systems across scales, from a cell to a planet. */
@@ -184,6 +237,22 @@ const SCALE_LADDER: ArchetypeSpec = {
     { name: "Earth", at: 1,
       caption: "12 742 kilometres across. Rock, water, air and life, all one system." },
   ],
+  /*
+   * Climbing the ladder is zooming out, so the subject shrinks as the run goes
+   * on. Each rung is roughly a hundred times the one below it — 1 micrometre to
+   * 12 742 kilometres is 13 powers of ten in five steps — so the drawn size
+   * falls by a constant factor per rung rather than a constant amount, which is
+   * what a logarithmic ladder looks like. It also turns faster as it goes: a
+   * mitochondrion is a fixed lump, a planet is a spinning one.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    return {
+      scale: 1.7 * Math.pow(0.22, p),
+      spin: 0.5 + t * (0.14 + p * 0.9),
+      tilt: 0.24 + p * 0.16,
+    };
+  },
 };
 
 export const g6a1SystemOrHeap = buildSim(SYSTEM_OR_HEAP);

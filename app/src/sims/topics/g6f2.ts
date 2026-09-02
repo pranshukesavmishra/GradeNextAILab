@@ -100,6 +100,50 @@ const RINGS_AND_BANDS: ArchetypeSpec = {
     "A wide tree ring always means a warm year",
     "One tree, or one coral, is enough to know past climate",
   ],
+  variables: [
+    { key: "anomalyC", label: "How much warmer this year was than usual (degrees)", min: -3, max: 3, step: 0.1, default: 0 },
+  ],
+  /*
+   * Two archives, two different things being recorded, which is exactly why
+   * both are needed.
+   *
+   * The coral is a thermometer with a published calibration: strontium
+   * substitutes for calcium in aragonite less readily as the water warms, and
+   * Sr/Ca = 10.48 - 0.0619 * T in mmol per mol. A typical Porites growing at
+   * 26.6 degrees reads 8.83, and half a degree moves it by 0.031 — which is
+   * measurable, so the coral resolves sea temperature to about half a degree.
+   *
+   * The oak is not a thermometer. At a drought-limited site the ring follows
+   * the water balance, and a warmer year evaporates more: saturation vapour
+   * pressure rises about 7 per cent per degree, so warmth costs the tree
+   * water. Ring width responds roughly exponentially, and a sensitivity of
+   * 0.25 per degree about a mean of 1.8 mm reproduces the two- to fourfold
+   * swings real oak chronologies show. A warm year here makes a NARROW ring,
+   * which is the thing everyone gets wrong.
+   */
+  measure: (v) => ({
+    ringWidthMm: 1.8 * Math.exp(-0.25 * v.anomalyC),
+    coralSrCaMmolPerMol: 10.48 - 0.0619 * (26.6 + v.anomalyC),
+    seaTemperatureC: 26.6 + v.anomalyC,
+    coralResolutionC: 0.5,
+  }),
+  /*
+   * Push the year warm and the two recorders disagree on purpose: the oak
+   * shrinks, because warmth dried it out, while the coral warms in colour and
+   * grows a little faster. That is the lesson of the pair — one archive is
+   * never enough, and a wide ring is not a warm year.
+   */
+  drive: ({ v, f, index }) => {
+    if (index === 0) return { scale: Math.min(1.2, 0.32 + 1.09 * (f.ringWidthMm / 3.8)) };
+    return {
+      scale: 0.85 + 0.06 * v.anomalyC,
+      color: v.anomalyC >= 2 ? "#e8523f"
+        : v.anomalyC >= 0.7 ? "#e8846a"
+        : v.anomalyC >= -0.7 ? "#e0a08a"
+        : "#c9b0a8",
+      glow: Math.max(0, 0.2 + v.anomalyC * 0.15),
+    };
+  },
   specimens: [
     {
       id: "rings",
@@ -142,6 +186,45 @@ const THERMOMETER_RECORD: ArchetypeSpec = {
   specimens: [
     { id: "earth", name: "The globe, station by station", art: { art: "planet", color: "#2f6ea8", atmosphere: "#a8d4f0" } },
   ],
+  variables: [
+    { key: "year", label: "Year", min: 1850, max: 2030, step: 1, default: 2020 },
+  ],
+  /*
+   * A deliberately blunt two-segment description of the observed record,
+   * against the 1850 to 1900 baseline. Almost nothing happens to the global
+   * mean until 1970 — the early-century warming and the mid-century pause
+   * roughly cancel — and from 1970 the trend is a straight 0.2 degrees per
+   * decade. That reproduces the three numbers a student is asked to know:
+   * about 0.1 degrees by 1970, 1.1 degrees for the 2011 to 2020 decade, and
+   * 1.3 by 2030 if nothing changes. Individual years scatter about a quarter
+   * of a degree either side of it — 2023 came in at 1.45 — which is why a
+   * single year is never the evidence.
+   */
+  measure: (v) => {
+    const anomalyC = v.year <= 1970
+      ? (0.1 * (v.year - 1900)) / 70
+      : 0.1 + 0.02 * (v.year - 1970);
+    return {
+      anomalyC,
+      degreesPerDecade: v.year <= 1970 ? 0.014 : 0.2,
+      yearsOfGlobalRecord: Math.max(0, v.year - 1850),
+      energyIntoTheOceanPercent: 90,
+    };
+  },
+  /*
+   * The globe carries the anomaly the thermometers give it: the blue of the
+   * nineteenth-century record, greying through the twentieth, and the red of
+   * a planet 1.1 degrees warmer by the 2010s. Nothing here is an artist's
+   * impression — drag the year and the colour follows the same two-segment
+   * fit the readout is quoting.
+   */
+  drive: ({ f }) => ({
+    color: f.anomalyC >= 1.25 ? "#b03f28"
+      : f.anomalyC >= 0.8 ? "#c56a3d"
+      : f.anomalyC >= 0.35 ? "#94989c"
+      : f.anomalyC >= 0.05 ? "#4a7fa8"
+      : "#2f6ea8",
+  }),
   stages: [
     {
       name: "1659: one place", at: 0,
@@ -230,6 +313,23 @@ const RISING_WATER: ArchetypeSpec = {
     };
   },
   plot: { x: "landIceGt", y: "totalRiseCm", xLabel: "Land ice lost each year (Gt)", yLabel: "Sea level rise this century (cm)" },
+  /*
+   * The beaker is a stretch of coast rather than the whole ocean: 23 cm spread
+   * over 3 700 m of depth would be a hair's width and could not be drawn, but
+   * against a sea wall it is the whole question. The water climbs with the
+   * century's total, warms in colour as the top 700 m warm, and starts to fizz
+   * — warm water holds less dissolved gas, which is a real consequence and not
+   * decoration. Note which slider moves the level: 2 000 Gt of floating ice
+   * adds 1.5 mm, and 2 000 Gt of land ice adds 55 cm.
+   */
+  drive: ({ v, f }) => ({
+    level: 0.35 + 0.6 * Math.min(1, f.totalRiseCm / 80),
+    color: v.oceanWarmingC >= 1.1 ? "#5fc0b4"
+      : v.oceanWarmingC >= 0.6 ? "#43a8c4"
+      : v.oceanWarmingC >= 0.2 ? "#3d8fc4"
+      : "#2a72b0",
+    bubbles: Math.min(1, v.oceanWarmingC / 1.5) * 0.8,
+  }),
 };
 
 export const g6f2RisingWater = buildSim(RISING_WATER);
@@ -292,6 +392,22 @@ const KEELING_CURVE: ArchetypeSpec = {
     };
   },
   plot: { x: "year", y: "co2Ppm", xLabel: "Year", yLabel: "CO2 (ppm)" },
+  /*
+   * What is drawn is not the whole atmosphere's CO2 but the part of it people
+   * put there: the excess over the 280 ppm the air held in 1750. In 1958 that
+   * excess was 35 ppm and the molecule is small; by 2024 it is 145 ppm and by
+   * 2030 the fit puts it at 159. It climbs the stage as the years pass, which
+   * is the Keeling curve itself, and it vibrates harder the faster CO2 is
+   * being added — 0.8 ppm a year at the start of the record, 2.5 now.
+   */
+  drive: ({ f, t }) => {
+    const excess = Math.max(0, (f.co2Ppm - 280) / 160);
+    return {
+      scale: 0.35 + 0.75 * excess,
+      offset: [0, 0.35 - 0.7 * excess],
+      spin: 0.68 + t * (0.4 + f.growthPpmPerYear * 0.5),
+    };
+  },
 };
 
 export const g6f2KeelingCurve = buildSim(KEELING_CURVE);

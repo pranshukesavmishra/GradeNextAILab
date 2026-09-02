@@ -131,6 +131,23 @@ const THINNER_AIR: ArchetypeSpec = {
     };
   },
   plot: { x: "altitude", y: "pressureKPa", xLabel: "Height (m)", yLabel: "Air pressure (kPa)" },
+  /*
+   * The sphere is a fixed box of air carried up the mountain, drawn at the size
+   * the gas in it would occupy at the ground. Mass goes with pressure, so the
+   * drawn radius is the cube root of the pressure ratio: at 20 km the pressure
+   * is 5.4 per cent of sea level, which is 0.38 of the radius, not 0.054 of it.
+   * The colour follows the sky itself, which really does darken as you climb,
+   * because there is less air left above you to scatter the blue back down.
+   */
+  drive: ({ f }) => {
+    const ratio = f.pressureKPa / 101.325;
+    return {
+      scale: Math.cbrt(ratio),
+      color: ["#101a33", "#22355e", "#3d68a3", "#6ba3d8", "#8fc0ea"][
+        Math.max(0, Math.min(4, Math.round(ratio * 4)))
+      ],
+    };
+  },
 };
 
 /* A4.4 — The biosphere. */
@@ -156,6 +173,22 @@ const THIN_GREEN_FILM: ArchetypeSpec = {
       because: "About 90 g a year on 0.7 kg of living material. The same sunlight, under 250 mm of rain: water is the limit, not light.",
       art: { art: "sphere", color: "#d9c08a", radius: 0.5 } },
   ],
+  /*
+   * One year of new growth, running side by side. Whittaker's survey puts
+   * tropical rainforest at about 2 200 g of new dry matter per square metre per
+   * year and hot desert at about 90, a ratio of 24. Both piles build up as the
+   * year runs, and both are drawn by volume, so the forest's ends up the cube
+   * root of 24 — 2.9 times — as wide, not 24 times. That gap is the whole
+   * subtopic: the same sunlight falls on both squares.
+   */
+  drive: ({ t, index }) => {
+    const year = (t * 0.096) % 1;
+    const grams = index === 0 ? 2200 * year : 90 * year;
+    return {
+      scale: Math.max(0.06, Math.cbrt(grams / 2200) * 1.45),
+      spin: 0.68 + t * 0.18,
+    };
+  },
 };
 
 /* A4.5 — Interactions among Earth's four spheres. */
@@ -173,6 +206,26 @@ const ONE_MOLECULE: ArchetypeSpec = {
     "Explain that the spheres interact by exchanging matter and energy.",
   ],
   misconceptions: ["The four spheres are separate places that do not mix"],
+  specimens: [{ id: "h2o", name: "One water molecule", art: { art: "molecule", formula: "H2O" } }],
+  /*
+   * The same molecule the whole way round, which is the point of the subtopic.
+   * What changes is how fast it is moving and how much room it has: free in the
+   * air a water molecule averages 640 m/s, in liquid water it is jostling among
+   * its neighbours, and in deep groundwater it may not go anywhere for 10 000
+   * years. So it flies and spreads in the atmosphere leg, and crawls, packed
+   * tight, through the ocean and the rock.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    // Fast and roomy in the air (0.2-0.45), slowest in the geosphere (0.45-0.7).
+    const airborne = p > 0.15 && p < 0.45;
+    const inRock = p >= 0.45 && p < 0.7;
+    return {
+      scale: airborne ? 1.25 : inRock ? 0.72 : 0.95,
+      spin: t * (airborne ? 1.9 : inRock ? 0.06 : 0.45),
+      tilt: 0.24 + Math.sin(t * 0.5) * 0.1,
+    };
+  },
   stages: [
     { name: "Hydrosphere", at: 0, caption: "Starting point: the surface of a warm ocean." },
     { name: "Atmosphere", at: 0.2, caption: "Sunlight supplies the energy to evaporate it." },
@@ -228,6 +281,23 @@ const ERUPTION_MODEL: ArchetypeSpec = {
     { name: "Hydrosphere", at: 1,
       caption: "Typhoon rain washes ash off the slopes as lahars. The haze settles out by 1993, and the ash leaves rich soil behind." },
   ],
+  /*
+   * The globe carries the whole chain on its own face. It flares at the
+   * eruption, then greys over as 20 million tonnes of sulfur dioxide turn into
+   * a sulfate haze that reflects a tenth of the sunlight, then cools to the
+   * blue of the two years when the global average sat half a degree low, and
+   * finally clears by 1993. The swelling at the start is the ash column, and it
+   * is the only part of this that happened in a day.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const stage = Math.min(4, Math.floor(p * 5));
+    return {
+      color: ["#e0722c", "#c9b9a8", "#b9c6d2", "#8fb3d8", "#6f9ec4"][stage],
+      scale: p < 0.12 ? 1 + (0.12 - p) * 3.4 : 1 - p * 0.14,
+      spin: 0.4 + t * 0.22,
+    };
+  },
 };
 
 export const g6a4InsideTheGeosphere = buildSim(GEOSPHERE);

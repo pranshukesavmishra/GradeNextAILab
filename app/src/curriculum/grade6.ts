@@ -75,12 +75,12 @@ export const GRADE_6: GradeCurriculum = {
         {
           code: "B1", title: "Cells: the basic unit of life", standards: ["MS-LS1-1"],
           subtopics: [
-            { code: "B1.1", title: "Cell theory", sims: ["bio.cell"] },
-            { code: "B1.2", title: "Discovering cells", sims: ["bio.cell"] },
-            { code: "B1.3", title: "Living vs nonliving" },
-            { code: "B1.4", title: "Unicellular organisms", sims: ["bio.cell"] },
-            { code: "B1.5", title: "Multicellular organisms", sims: ["bio.cell"] },
-            { code: "B1.6", title: "Microscopic scale", sims: ["bio.cell"] },
+            { code: "B1.1", title: "Cell theory", sims: ["g6b1-cell-theory"] },
+            { code: "B1.2", title: "Discovering cells", sims: ["g6b1-first-look"] },
+            { code: "B1.3", title: "Living vs nonliving", sims: ["g6b1-living-test"] },
+            { code: "B1.4", title: "Unicellular organisms", sims: ["g6b1-one-or-many"] },
+            { code: "B1.5", title: "Multicellular organisms", sims: ["g6b1-many-small-cells"] },
+            { code: "B1.6", title: "Microscopic scale", sims: ["g6b1-how-small"] },
           ],
         },
         {

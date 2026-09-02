@@ -16,7 +16,31 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * at 13.4 m/s carries 938 kg m/s of momentum, and the force needed to remove
  * it is that momentum divided by the stopping time. Stretch 0.04 s to 0.12 s
  * and 23.5 kN becomes 7.8 kN.
+ *
+ * All five run. The sled arrives at the speed you set and rides down over the
+ * distance the stopping time buys it, so a 0.02 s stop is a wall and a 0.60 s
+ * stop is four metres of ride-down. Whenever the force crosses the 15 kN a
+ * braced adult survives, the design buckles over and shudders: the failure is
+ * not a red number on a panel, it is the thing on the bench giving way.
  */
+
+/** A 0-1 sawtooth that runs once every `period` seconds. */
+function cycle(t: number, period: number): number {
+  const p = (t / period) % 1;
+  return p < 0 ? p + 1 : p;
+}
+
+/**
+ * How far a design has buckled, as a tilt in radians.
+ *
+ * A criterion is only real if failing it is visible, so anything asked to hold
+ * more than it can leans over in proportion, and it is fully down by twice the
+ * limit. Below the limit it sits square, and the difference between passing
+ * and failing can be read across a room.
+ */
+function buckle(force: number, limit: number): number {
+  return 0.24 + 0.9 * Math.min(1, Math.max(0, force / limit - 1));
+}
 
 /* ---------------------------------------------------------------- *
  * A5.1 — Action-reaction pairs
@@ -81,6 +105,39 @@ const PARTNER_OR_NOT: ArchetypeSpec = {
       art: { art: "apparatus", which: "spring" },
     },
   ],
+  /*
+   * A Third Law pair puts one force on each of two bodies, so both of them
+   * answer: the struck ball leaves, the magnet and the steel close on each
+   * other, and the Earth swings round the barycentre it shares with the Moon
+   * rather than sitting still while the Moon goes round it. The other three
+   * are two forces on one body, and two forces on one body that are equal and
+   * opposite change nothing at all: the cart sits, the spring hangs, and the
+   * skydiver keeps the very same 55 m/s it already had. Watch what the body
+   * does, then decide.
+   */
+  drive: ({ t, specimen }) => {
+    switch (specimen.id) {
+      // One force each, on two different bodies. Both bodies respond.
+      case "bat": {
+        const k = cycle(t, 2.2);
+        return { offset: [-0.3 + 0.6 * Math.min(1, k * 3), 0] };
+      }
+      case "moon": {
+        const a = t * 0.7;
+        return { offset: [0.2 * Math.cos(a), 0.2 * Math.sin(a)] };
+      }
+      case "magnet": {
+        const k = cycle(t, 1.8);
+        return { offset: [-0.3 + 0.6 * k * k, 0], spin: 0.68 };
+      }
+      // Two forces, one body, adding to zero. The velocity it had is the
+      // velocity it keeps — which for the skydiver is 55 m/s, not zero.
+      case "skydiver":
+        return { offset: [0, -0.28 + 0.56 * cycle(t, 2.6)] };
+      default:
+        return { offset: [0, 0], spin: 0.68 };
+    }
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -136,6 +193,19 @@ const ONE_FORCE_EACH: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * The pair is not a diagram, it is a push, so the magnet is pushed. Brought
+   * up to its partner it is driven back out again, hard at first and then
+   * fading with distance, and it is released to be brought back and pushed
+   * again. Neither force comes first and neither one waits: the instant these
+   * two are near each other, both of them are moving.
+   */
+  drive: ({ t }) => {
+    const k = cycle(t, 3);
+    // Shoved out over the first fifth of the cycle, then eased back in.
+    const out = k < 0.2 ? Math.sqrt(k / 0.2) : 1 - (k - 0.2) / 0.8;
+    return { offset: [-0.06 + 0.24 * out, 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -172,6 +242,16 @@ const SO_NOTHING_MOVES: ArchetypeSpec = {
     { name: "It moves", at: 1,
       caption: "351 N on 700 kg gives 0.50 m/s2. The pair was never the thing stopping it." },
   ],
+  /*
+   * The answer to the title is that it moves, so it moves. Net 351 N on 700 kg
+   * is 0.50 m/s2, and half x 0.50 x t squared is 4.0 m in the first four
+   * seconds — slow, as a loaded cart should be, and unmistakably not stuck.
+   */
+  drive: ({ t }) => {
+    const tau = Math.min(cycle(t, 5.5) * 5.5, 4);
+    const s = 0.5 * 0.5 * tau * tau;
+    return { offset: [-0.5 + Math.min(1, s / 4), 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -195,11 +275,13 @@ const STRETCH_THE_STOP: ArchetypeSpec = {
     "A seatbelt works by being strong enough to hold you",
     "The force in a crash depends only on how fast you were going",
   ],
-  specimens: [{ id: "sled", name: "Crash test sled", art: { art: "apparatus", which: "cart" } }],
+  specimens: [
+    { id: "sled", name: "Crash test sled and dummy", art: { art: "apparatus", which: "cart" } },
+  ],
   variables: [
-    { key: "mass", label: "Occupant mass (kg)", min: 30, max: 90, step: 1, default: 70 },
-    { key: "speed", label: "Speed at impact (m/s)", min: 2, max: 20, step: 0.1, default: 13.4 },
     { key: "stopTime", label: "Time taken to stop (s)", min: 0.02, max: 0.6, step: 0.01, default: 0.15 },
+    { key: "speed", label: "Speed at impact (m/s)", min: 2, max: 20, step: 0.1, default: 13.4 },
+    { key: "mass", label: "Occupant mass (kg)", min: 30, max: 90, step: 1, default: 70 },
   ],
   // Impulse equals change of momentum: F t = m v, so F = m v / t. The momentum
   // is fixed by the crash; the stopping time is the only thing a designer can
@@ -213,6 +295,32 @@ const STRETCH_THE_STOP: ArchetypeSpec = {
     stoppingDistanceM: (v.speed * v.stopTime) / 2,
   }),
   plot: { x: "stopTime", y: "forceKN", xLabel: "Stopping time (s)", yLabel: "Force on the occupant (kN)" },
+  /*
+   * The sled runs the last 4 m in to the barrier at the speed set, then rides
+   * down over the distance the stopping time buys: average speed times time,
+   * which at 13.4 m/s and 0.15 s is 1.00 m. Wind the time down to 0.02 s and
+   * that ride-down is 13 cm — the sled simply stops against the wall, and at
+   * 46.9 kN it is more than three times the 15 kN a braced adult survives, so
+   * it buckles over. Wind it up to 0.60 s and there are 4 m of gentle
+   * ride-down at 1.6 kN. The dummy is drawn by the cube root of its mass: 90 kg
+   * of dummy is 1.4 times as wide as 30 kg, not three times.
+   */
+  drive: ({ v, f, t }) => {
+    const k = cycle(t, 3.2) * 3.2;
+    const approach = 4 / v.speed;                     // seconds of run-in
+    const scale = Math.cbrt(v.mass / 70);
+    let at: number;
+    if (k < approach) at = (k / approach) * 0.62;     // arriving
+    else {
+      const u = Math.min(v.stopTime, k - approach);
+      const s = v.speed * u - (v.speed / (2 * v.stopTime)) * u * u;
+      at = 0.62 + Math.min(0.36, s / 11);             // riding down into the wall
+    }
+    return {
+      scale, offset: [-0.55 + 1.15 * at, 0],
+      tilt: buckle(f.forceKN, 15), spin: 0.68,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -249,9 +357,9 @@ const AGAINST_THE_LIMIT: ArchetypeSpec = {
     },
   ],
   variables: [
-    { key: "mass", label: "Dummy mass (kg)", min: 30, max: 90, step: 1, default: 70 },
     { key: "speed", label: "Impact speed (m/s)", min: 2, max: 20, step: 0.1, default: 13.4 },
     { key: "limit", label: "Force criterion (kN)", min: 5, max: 30, step: 0.5, default: 15 },
+    { key: "mass", label: "Dummy mass (kg)", min: 30, max: 90, step: 1, default: 70 },
   ],
   // Both designs face the same momentum; only the stopping time differs, at a
   // measured 0.04 s for the rigid nose and 0.12 s for the crumple nose. The
@@ -265,6 +373,37 @@ const AGAINST_THE_LIMIT: ArchetypeSpec = {
       crumpleForceKN: crumple,
       rigidMarginPercent: ((v.limit - rigid) / v.limit) * 100,
       crumpleMarginPercent: ((v.limit - crumple) / v.limit) * 100,
+    };
+  },
+  /*
+   * Both noses take the same run at the barrier, and the only difference is
+   * what happens in the last few centimetres: 0.04 s of ride-down for the
+   * rigid one against 0.12 s for the crumple, which is three times the
+   * distance at any speed. Whichever nose is over the criterion leans over and
+   * shudders, so the score sheet and the bench agree. Raise the speed to 20
+   * m/s and both of them fail, which is the honest answer to "is this design
+   * safe": only up to the speed it was tested at.
+   */
+  drive: ({ v, f, t, index }) => {
+    const stopTime = index === 0 ? 0.04 : 0.12;
+    const force = index === 0 ? f.rigidForceKN : f.crumpleForceKN;
+    const k = cycle(t, 3) * 3;
+    const approach = 3 / v.speed;
+    let at: number;
+    if (k < approach) at = (k / approach) * 0.62;
+    else {
+      const u = Math.min(stopTime, k - approach);
+      const s = v.speed * u - (v.speed / (2 * stopTime)) * u * u;
+      at = 0.62 + Math.min(0.18, s / 6);
+    }
+    const over = force > v.limit;
+    // A design past its limit does not sit quietly: it rings.
+    const shake = over ? 0.02 * Math.sin(t * 47) : 0;
+    return {
+      scale: Math.cbrt(v.mass / 70),
+      offset: [-0.45 + at * 0.8 + shake, 0],
+      tilt: buckle(force, v.limit),
+      spin: 0.68,
     };
   },
 };

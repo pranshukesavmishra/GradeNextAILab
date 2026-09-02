@@ -122,6 +122,27 @@ const SWELL_THEM_UP: ArchetypeSpec = {
     x: "radiusPercent", y: "gapPm",
     xLabel: "Atoms drawn at (% of true size)", yLabel: "Gap along the bond (pm)",
   },
+  /*
+   * The molecule is drawn at the width the model gives it. Along one O-H bond
+   * that width is the oxygen's radius plus the bond plus the hydrogen's:
+   *
+   *   152 s + 95.72 + 120 s  picometres,  s the share of true size
+   *
+   * which is 123 pm with the atoms at a tenth of size and 422 pm at 120 per
+   * cent, against 177 pm at the 30 per cent this opens at. So the model grows
+   * by three and a half times across the control, and it grows the way a real
+   * space-filling model does: the bond length never moves, only the atoms.
+   * At 35.2 per cent the two spheres meet, the gap goes to zero and the sticks
+   * are gone for good, so past that point the model slows to a crawl -- there
+   * is nothing left between the balls to watch.
+   */
+  drive: ({ v, f }) => {
+    const s = v.radiusPercent / 100;
+    return {
+      scale: (95.72 + 272 * s) / 177.3,
+      rate: f.gapPm > 0 ? 1.1 : 0.25,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -218,6 +239,58 @@ const MELTING_TWO_WAYS: ArchetypeSpec = {
       art: { art: "molecule", formula: "CO2" },
     },
   ],
+  variables: [
+    {
+      key: "temperature", label: "Temperature", unit: "degrees C",
+      min: -200, max: 1000, step: 5, default: 20,
+    },
+  ],
+  /*
+   * One oven, two samples. Sodium chloride melts at 801 C and boils at
+   * 1 413 C; carbon dioxide does not melt at all at ordinary pressure but
+   * turns straight from solid to gas at -78.5 C. The typical particle speed
+   * goes as the square root of the absolute temperature, root(3RT/M), so
+   * warming from 293 K to 1 273 K speeds the particles up by 2.08 times and
+   * not by 4.3.
+   */
+  measure: (v) => {
+    const T = v.temperature + 273.15;
+    const speedFactor = Math.sqrt(Math.max(1, T) / 293.15);
+    return {
+      temperatureK: T,
+      saltPhase: v.temperature >= 1413 ? 2 : v.temperature >= 801 ? 1 : 0,
+      dryIcePhase: v.temperature >= -78.5 ? 2 : 0,
+      speedFactor,
+      saltRmsSpeedMs: Math.sqrt((3 * 8.314462 * Math.max(1, T)) / 0.05844),
+      dryIceRmsSpeedMs: Math.sqrt((3 * 8.314462 * Math.max(1, T)) / 0.04401),
+    };
+  },
+  /*
+   * Both samples answer the same oven and they answer it completely
+   * differently, which is the lesson. Below its melting point a sample only
+   * vibrates on the spot; molten, it flows; as a gas it flies apart. The
+   * particle speed drives the animation at the real root(T) rate, and the
+   * phase decides how far the sample is allowed to wander.
+   *
+   * The gas is drawn 1.6 times as wide and no more. One gram of dry ice at
+   * 1.56 g/cm3 becomes 545 cm3 of gas, which is 850 times the volume and 9.5
+   * times the width -- eight times off the edge of the stage. The number that
+   * matters is on the readout; the drawing shows the escape, not the scale.
+   */
+  drive: ({ f, t, index }) => {
+    const phase = index === 0 ? f.saltPhase : f.dryIcePhase;
+    const base = phase === 0 ? 0.22 : phase === 1 ? 1.0 : 2.6;
+    const sway = phase === 0 ? 0.012 : phase === 1 ? 0.07 : 0.3;
+    const ph = index * 1.7;
+    return {
+      rate: base * f.speedFactor,
+      scale: phase === 2 ? 1.6 : phase === 1 ? 1.05 : 1,
+      offset: [
+        Math.sin(t * (1.3 + base * 3) + ph) * sway,
+        Math.cos(t * (1.9 + base * 2.2) + ph) * sway * 0.8,
+      ],
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -244,6 +317,31 @@ const RIGHT_MODEL: ArchetypeSpec = {
   specimens: [
     { id: "water", name: "Water, drawn four ways", art: { art: "molecule", formula: "H2O" } },
   ],
+  // Named only so `drive` can read the speed the engine already publishes for a
+  // staged simulation; the stage position is 0.16 x speed x t.
+  variables: [
+    { key: "rate", label: "Speed", min: 0, max: 2, step: 0.1, default: 0.6 },
+  ],
+  /*
+   * The same molecule redrawn four times over, at the size each model gives
+   * it. A formula has no shape at all, so it is a token: small and still. Ball
+   * and stick is the reference. Space-filling is 1.75 times as wide, because
+   * water's van der Waals extent is 422 pm against the 177 pm of balls drawn
+   * at 30 per cent. A lattice diagram pulls back to fit many particles in, so
+   * one molecule shrinks and hurries. Nothing settles at the end, because
+   * none of the four is the right answer.
+   */
+  drive: ({ v, t }) => {
+    const p = (0.16 * v.rate * t) % 1;
+    const scaleAt = [0.45, 1.0, 1.75, 0.62, 1.0];
+    const rateAt = [0.05, 1.0, 0.5, 2.2, 1.0];
+    const i = Math.max(0, Math.min(3, Math.floor(p * 4)));
+    const k = p * 4 - i;
+    return {
+      scale: scaleAt[i] + (scaleAt[i + 1] - scaleAt[i]) * k,
+      rate: rateAt[i] + (rateAt[i + 1] - rateAt[i]) * k,
+    };
+  },
   stages: [
     {
       name: "How many atoms?", at: 0,

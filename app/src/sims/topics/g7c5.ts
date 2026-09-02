@@ -18,6 +18,12 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * same carbon simply keeps changing company.
  */
 
+/**
+ * Iodine on starch, from a full blue-black through to the plain orange-brown
+ * of the iodine solution itself. This is the readout of C5.2.
+ */
+const IODINE = ["#241f3d", "#3f2f57", "#6b4468", "#a86a52", "#c9913f"];
+
 /* ---------------------------------------------------------------- *
  * C5.1 — A carbon atom enters a plant
  * ---------------------------------------------------------------- */
@@ -84,8 +90,62 @@ const EATEN: ArchetypeSpec = {
     "An animal makes its own building material from nothing",
   ],
   specimens: [
-    { id: "gutcell", name: "Cell lining the gut", art: { art: "cell" } },
+    {
+      id: "digest", name: "Starch, amylase and iodine in one tube",
+      art: { art: "glassware", which: "testTube", level: 0.66, color: "#241f3d", precipitate: 0.7 },
+    },
   ],
+  variables: [
+    { key: "minutes", label: "Minutes since the amylase went in", min: 0, max: 20, step: 0.5, default: 0 },
+    { key: "temperatureC", label: "Temperature of the tube (C)", min: 5, max: 70, step: 1, default: 37 },
+  ],
+  /*
+   * The tube is the iodine test, run as a clock.
+   *
+   * Amylase cuts starch at random along the chain, so the fall is
+   * exponential: S = S0 e^(-kt), with k about 0.35 per minute for a school
+   * saliva preparation at 37 C, a half-life of two minutes. Being an enzyme
+   * it follows Q10 = 2 up to its optimum and then denatures: full activity to
+   * 45 C, nothing left by 55.
+   *
+   * Iodine is blue-black on whole starch, purple-brown on the half-cut
+   * dextrins, and its own orange-brown once nothing is left to stain. Nothing
+   * has been destroyed at that point: 2.00 g of starch becomes 2.11 g of
+   * maltose, because every bond broken takes in one water molecule. Every
+   * carbon atom that went in is still in the tube.
+   */
+  measure: (v) => {
+    const denature = v.temperatureC <= 45 ? 1 : Math.max(0, (55 - v.temperatureC) / 10);
+    const k = 0.35 * 2 ** ((v.temperatureC - 37) / 10) * denature;
+    const starchPercent = 100 * Math.exp(-k * v.minutes);
+    return {
+      decayConstantPerMin: k,
+      starchPercent,
+      maltosePercent: 100 - starchPercent,
+      halfLifeMinutes: k > 0 ? Math.LN2 / k : 0,
+      starchG: (2 * starchPercent) / 100,
+      maltoseG: (2.111 * (100 - starchPercent)) / 100,
+    };
+  },
+  /*
+   * The tube is the readout. Starch left holds the iodine blue-black; as the
+   * chains are cut it runs through purple to the plain orange-brown of iodine
+   * on nothing, and the cloudy starch suspension clears with it.
+   *
+   * Heat the tube past 55 C and the amylase is denatured: the clock now does
+   * nothing at all, and the tube stays blue-black however long it is left.
+   * That is the failure state, and it is what a control tube in boiling water
+   * is for.
+   */
+  drive: ({ f }) => {
+    const s = f.starchPercent;
+    const step = s > 60 ? 0 : s > 25 ? 1 : s > 8 ? 2 : s > 2 ? 3 : 4;
+    return {
+      color: IODINE[step],
+      precipitate: 0.15 + 0.6 * (s / 100),
+      rate: f.decayConstantPerMin > 0.001 ? 1 : 0,
+    };
+  },
   stages: [
     {
       name: "In the starch", at: 0,
@@ -241,7 +301,10 @@ const WHY_BOTH: ArchetypeSpec = {
     "A plant only needs light to stay alive",
   ],
   specimens: [
-    { id: "leaf", name: "One square metre of leaf", art: { art: "cell", plant: true } },
+    {
+      id: "bank", name: "The sugar one square metre of leaf banks in an hour",
+      art: { art: "glassware", which: "beaker", level: 0.3, color: "#4f9e5c" },
+    },
   ],
   variables: [
     { key: "lightPercent", label: "Light, as a share of full sun (%)", min: 0, max: 100, step: 1, default: 50 },
@@ -281,6 +344,25 @@ const WHY_BOTH: ArchetypeSpec = {
   plot: {
     x: "lightPercent", y: "netUptakeUmol",
     xLabel: "Light (% of full sun)", yLabel: "Net CO2 uptake (umol per m2 per s)",
+  },
+  /*
+   * The beaker is the leaf's account, and it only fills with what is left
+   * after respiration has been paid: 1.64 g of sugar per square metre per
+   * hour in full sun at 20 C, against nothing at all in the dark.
+   *
+   * Below the compensation point - 1.6 per cent of full sun at 20 C, and
+   * higher the warmer the leaf - the account is overdrawn. The beaker empties
+   * and turns brown, because the plant is now living on the store it built
+   * earlier, and a plant kept below that line starves in the light.
+   */
+  drive: ({ f }) => {
+    const banking = f.netUptakeUmol > 0;
+    return {
+      level: banking ? Math.min(0.86, 0.05 + f.sugarGPerM2PerHour * 0.42) : 0.04,
+      color: banking ? "#4f9e5c" : "#8a5a34",
+      bubbles: f.netUptakeUmol > 0.5 ? Math.min(34, f.netUptakeUmol * 2.2) : 0,
+      rate: banking ? 1 : 0,
+    };
   },
 };
 

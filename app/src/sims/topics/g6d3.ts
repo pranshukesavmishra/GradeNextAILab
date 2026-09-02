@@ -20,6 +20,18 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * 59 per cent humidity and a dew point of 11.6 degrees.
  */
 
+/**
+ * How fast each kind of precipitation actually falls, in metres per second.
+ *
+ * Measured terminal velocities: a 2 mm raindrop reaches about 6.5 m/s, drizzle
+ * a tenth of that, a snowflake barely 1 m/s because it is mostly air, and a
+ * large hailstone better than 30. D3.4 draws each one falling at its own speed,
+ * which is most of what tells them apart in the sky.
+ */
+const FALL_SPEED_MS: Record<string, number> = {
+  snow: 1, hail: 30, sleet: 8, rain: 6.5, drizzle: 0.8, freezing: 6.5,
+};
+
 /* D3.1 — Temperature. */
 const THREE_SCALES_ONE_BULB: ArchetypeSpec = {
   id: "g6d3-three-scales-one-bulb",
@@ -68,6 +80,25 @@ const THREE_SCALES_ONE_BULB: ArchetypeSpec = {
     x: "temperatureC", y: "fahrenheit",
     xLabel: "Temperature (degrees C)", yLabel: "The same temperature in Fahrenheit",
   },
+  /*
+   * The column moves, because a thermometer is nothing but a column that moves.
+   * The tube here is 200 mm of scale with the zero mark halfway up, so a
+   * standard bulb and bore — 1 mm per degree — puts 20 degrees a fifth of the
+   * way above the middle and -50 degrees near the bottom. Widen the bulb or
+   * narrow the bore and the same degree drives the liquid much further: 500 mm3
+   * behind a 0.1 mm bore gives 10.2 mm per degree and the column shoots off the
+   * end of the scale, which is the failure a real instrument maker has to design
+   * around. Off-scale is drawn as a flat grey bore with nothing to read.
+   */
+  drive: ({ f }) => {
+    const offScale = Math.abs(f.mercuryColumnAboveZeroMm) > 100;
+    return {
+      level: Math.max(0.02, Math.min(1, 0.5 + f.mercuryColumnAboveZeroMm / 200)),
+      color: offScale ? "#8d94a3" : "#c0392b",
+      glow: offScale ? 0.7 : 0,
+      rate: offScale ? 0 : 0.4,
+    };
+  },
 };
 
 /* D3.2 — Air pressure and the barometer. */
@@ -108,6 +139,19 @@ const A_COLUMN_OF_MERCURY: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * The mercury does not sit still, because the weather does not. A deep low of
+   * 950 hPa holds the column at 713 mm and a strong high of 1 050 hPa at 788,
+   * and a depression takes a couple of days to cross — so the barometer here
+   * walks that whole range while a student reads the labels. The tube is scaled
+   * to show 600 to 860 mm rather than 0 to 1 000, which is what a real
+   * instrument does too: a barometer that showed the empty bottom two thirds of
+   * its own tube would waste the only part anyone reads.
+   */
+  drive: ({ t }) => {
+    const mmHg = 750 + 38 * Math.sin(t * 0.16);
+    return { level: (mmHg - 600) / 260, color: "#9aa3b0", rate: 0.2 };
+  },
 };
 
 /* D3.3 — Humidity and dew point. */
@@ -159,6 +203,26 @@ const TWO_THERMOMETERS_ONE_WET: ArchetypeSpec = {
     x: "wetBulbC", y: "relativeHumidityPct",
     xLabel: "Wet bulb reading (degrees C)", yLabel: "Relative humidity (per cent)",
   },
+  /*
+   * The instrument fills to the humidity it is reading, so the column is the
+   * answer rather than an illustration beside it. The bubbling is the wet
+   * bulb's evaporation, which is the only reason the two thermometers ever
+   * disagree: a 25 degree depression dries hard and reads under one per cent
+   * humidity, and no depression at all means nothing is evaporating and the air
+   * is saturated. At saturation the run has crossed its threshold — the dew
+   * point has met the dry bulb, mist forms in the instrument, and the reading
+   * goes flat white, which is a fog and not a measurement.
+   */
+  drive: ({ f }) => {
+    const saturated = f.relativeHumidityPct > 98;
+    return {
+      level: Math.max(0.03, Math.min(1, f.relativeHumidityPct / 100)),
+      bubbles: Math.min(1, f.wetBulbDepressionC / 12),
+      precipitate: saturated ? 0.75 : 0,
+      color: saturated ? "#e8eef6" : f.relativeHumidityPct < 25 ? "#c9a24a" : "#79b4d8",
+      rate: 0.15 + f.wetBulbDepressionC / 6,
+    };
+  },
 };
 
 /* D3.4 — Precipitation. */
@@ -204,6 +268,22 @@ const WHAT_FALLS_AND_WHY: ArchetypeSpec = {
       because: "The same warm layer melts the snow, but the cold layer beneath is too shallow to refreeze the drop. It lands as liquid at below zero and turns to glaze ice the instant it touches anything.",
       art: { art: "glassware", which: "beaker", level: 0.3, color: "#79b4d8" } },
   ],
+  /*
+   * Everything here falls, and each one falls at the speed it really falls at.
+   * A snowflake is mostly trapped air and drifts down at about 1 m/s; a
+   * hailstone is solid ice and arrives at 30, which is why one is pleasant and
+   * the other dents cars. Drizzle hangs, rain drops, sleet rattles. The colours
+   * stay as they are, because the sorting question is what happened to the
+   * temperature on the way down, not what it looks like.
+   */
+  drive: ({ specimen, t }) => {
+    const speed = FALL_SPEED_MS[specimen.id] ?? 5;
+    const fall = ((t * speed) / 14) % 1;
+    return {
+      offset: [0.06 * Math.sin(t * 1.7 + speed), fall * 1.5 - 0.75],
+      rate: 0.2 + speed / 8,
+    };
+  },
 };
 
 /* D3.5 — Wind: speed and direction. */
@@ -247,7 +327,28 @@ const FOUR_TIMES_THE_SPEED: ArchetypeSpec = {
     forceOnTheSignN: 0.5 * 1.225 * v.windSpeedMs * v.windSpeedMs * v.signAreaM2,
     sameForceAsAMassOfKg: (0.5 * 1.225 * v.windSpeedMs * v.windSpeedMs * v.signAreaM2) / 9.81,
     powerCarriedThroughW: 0.5 * 1.225 * v.signAreaM2 * Math.pow(v.windSpeedMs, 3),
+    forceAtFourTimesTheSpeedN: 0.5 * 1.225 * Math.pow(Math.min(35, v.windSpeedMs * 4), 2) * v.signAreaM2,
   }),
+  /*
+   * The left-hand sign stands in the wind you set; the right-hand one stands in
+   * four times that wind, up to the 35 m/s the anemometer can read. Both bend by
+   * the force actually on them, and because dynamic pressure goes as the square
+   * of the speed, the right-hand sign is bent sixteen times as far — which is
+   * the whole title of the simulation, made visible rather than asserted. The
+   * area control widens both signs, and a sign twice the area is only 1.41
+   * times as wide, because area goes as the square of a length.
+   */
+  drive: ({ v, f, index, t }) => {
+    const force = index === 0 ? f.forceOnTheSignN : f.forceAtFourTimesTheSpeedN;
+    const speed = index === 0 ? v.windSpeedMs : Math.min(35, v.windSpeedMs * 4);
+    const bend = Math.min(1, force / 900);
+    return {
+      offset: [bend * 0.5 + 0.02 * bend * Math.sin(t * (3 + speed)), 0],
+      tilt: 0.24 + bend * 0.75,
+      scale: Math.min(1.7, Math.sqrt(v.signAreaM2 / 2)),
+      rate: 0.1 + speed / 5,
+    };
+  },
 };
 
 /* D3.6 — Reading a weather station together. */
@@ -288,6 +389,20 @@ const BUILD_THE_STATION: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * A station is a thing that runs, so this one runs: the mast swings round as
+   * the wind backs and veers, gusting and easing on the roughly half-minute
+   * cycle real surface wind has, and leaning into the stronger gusts. A student
+   * reading the anemometer label is watching the instrument the label is about.
+   */
+  drive: ({ t }) => {
+    const gust = 0.55 + 0.45 * Math.sin(t * 0.42) * Math.sin(t * 0.17);
+    return {
+      spin: 0.68 + Math.sin(t * 0.11) * 1.4,
+      tilt: 0.24 + gust * 0.12,
+      offset: [gust * 0.05, 0],
+    };
+  },
 };
 
 export const g6d3ThreeScalesOneBulb = buildSim(THREE_SCALES_ONE_BULB);

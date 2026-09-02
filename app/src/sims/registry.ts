@@ -18,7 +18,8 @@ import {
   g6a5ClaimEvidence, g6a5TwoThingsChanged,
 } from "./topics/g6a5";
 import {
-  g6b1CellTheory, g6b1FirstLook, g6b1OneOrMany, g6b1LivingTest, g6b1HowSmall,
+  g6b1CellTheory, g6b1FirstLook, g6b1LivingTest, g6b1OneOrMany, g6b1ManySmallCells,
+  g6b1HowSmall,
 } from "./topics/g6b1";
 import {
   g6b2Membrane, g6b2CellWall, g6b2Nucleus, g6b2Mitochondria, g6b2Chloroplasts, g6b2BuildACell,
@@ -285,6 +286,81 @@ import {
 import {
   g8b5BuildTheDropRig, g8b5RoundOne, g8b5WhatTheDataSaid, g8b5SafeOrSmall, g8b5TwoLayers,
 } from "./topics/g8b5";
+import {
+  g8c1WhoIsTouching, g8c1AcrossTheGap, g8c1DoesAnythingTouch, g8c1PushOrPull,
+  g8c1NothingInBetween,
+} from "./topics/g8c1";
+import {
+  g8c2WhereChargeLives, g8c2WhatToAsk, g8c2HalfTheGap, g8c2DoubleTheCharge,
+  g8c2ThirtyThreeMetres,
+} from "./topics/g8c2";
+import {
+  g8c3TwoEndsNeverOne, g8c3WhichOnesStick, g8c3TheNeedleTurns, g8c3MoreTurnsMorePull,
+  g8c3AMagnetThatBig,
+} from "./topics/g8c3";
+import {
+  g8c4CanItEverPush, g8c4MassAndDistance, g8c4NeverFeelIt, g8c4SameMassNewWeight,
+  g8c4FallingAndMissing,
+} from "./topics/g8c4";
+import {
+  g8c5HowFarItReaches, g8c5ReadingTheMap, g8c5EightyNinePercent, g8c5EightMinutes,
+  g8c5TwoFieldsOneLaw,
+} from "./topics/g8c5";
+import {
+  g8d1FourNumbers, g8d1HowFastItRuns, g8d1TwiceAsTall, g8d1AcrossOrAlong, g8d1FiveReadings,
+} from "./topics/g8d1";
+import {
+  g8d2ThreeDoors, g8d2HalfGetsThrough, g8d2UnderOneLamp, g8d2TheRisingCoin, g8d2TheBlackSheet,
+} from "./topics/g8d2";
+import {
+  g8d3OneNarrowBand, g8d3PutItInOrder, g8d3WhatEachDoes, g8d3AllTheSame, g8d3OnePhoton,
+} from "./topics/g8d3";
+import {
+  g8d4PumpTheAirOut, g8d4PitchAndPush, g8d4AirOrWater, g8d4CanYouHearIt, g8d4ThereAndBack,
+} from "./topics/g8d4";
+import {
+  g8d5TwoWaysToSayIt, g8d5TheCliffEdge, g8d5SevenForFour, g8d5CopperOrGlass, g8d5BuildTheLink,
+} from "./topics/g8d5";
+import {
+  g8e1NewToFull, g8e1BallAndLamp, g8e1TwoShadows, g8e1FiveDegreesOut, g8e1TideGauge,
+} from "./topics/g8e1";
+import {
+  g8e2DistanceOrTilt, g8e2AngleAndDaylight, g8e2NorthAndSouth, g8e2FourMarks, g8e2OnceAround,
+} from "./topics/g8e2";
+import {
+  g8e3FartherAndSlower, g8e3FastEnoughToMiss, g8e3WhoseGrip, g8e3RockOrIce, g8e3OurPlace,
+} from "./topics/g8e3";
+import {
+  g8e4OneAstronomicalUnit, g8e4SizeOrDistance, g8e4ShrinkTheSun, g8e4RockOrGas,
+  g8e4LayOutTheField,
+} from "./topics/g8e4";
+import {
+  g8e5OldestAtTheBottom, g8e5TheMissingChapter, g8e5OneGrainOfSand, g8e5MetresOfTime,
+  g8e5BuildTheCase,
+} from "./topics/g8e5";
+import {
+  g8e6WhichQuestion, g8e6HalfThenHalf, g8e6BracketTheBed, g8e6FourAndAHalf, g8e6CarbonADinosaur,
+} from "./topics/g8e6";
+import {
+  g8f1OneLetter, g8f1BetterWorseNeither, g8f1MostSayNothing, g8f1SourceOfVariation,
+  g8f1TraitToLetter,
+} from "./topics/g8f1";
+import {
+  g8f2BoneToRock, g8f2WhoCameFirst, g8f2FishWithAWrist, g8f2DatingTheBed, g8f2GapInTheRecord,
+} from "./topics/g8f2";
+import {
+  g8f3SameSixBones, g8f3JobOrAncestor, g8f3ChanceOrAncestry, g8f3SameWaist, g8f3BuildTheTree,
+} from "./topics/g8f3";
+import {
+  g8f4BreedersEquation, g8f4ManchesterMoths, g8f4WhoLeavesMore, g8f4PopulationNotYou,
+  g8f4BuildTheExplanation,
+} from "./topics/g8f4";
+import {
+  g8f5TeosinteToMaize, g8f5WhoChose, g8f5Technologies, g8f5AcrossGenerations, g8f5HardyWeinberg,
+} from "./topics/g8f5";
+import {
+  g8f6HowManyOfUs, g8f6OtherMultiplier, g8f6BuildTheArgument, g8f6SpeciesArea, g8f6WhichLever,
+} from "./topics/g8f6";
 /* TEMP-G7E-VERIFY-START */
 /* TEMP-G7E-VERIFY-END */
 import { circuitsSim } from "./physics/circuits";
@@ -386,8 +462,9 @@ export const SIMS: AnySim[] = [
   g6a5TwoThingsChanged,
   g6b1CellTheory,
   g6b1FirstLook,
-  g6b1OneOrMany,
   g6b1LivingTest,
+  g6b1OneOrMany,
+  g6b1ManySmallCells,
   g6b1HowSmall,
   g6b2Membrane,
   g6b2CellWall,
@@ -767,6 +844,116 @@ export const SIMS: AnySim[] = [
   g8b5WhatTheDataSaid,
   g8b5SafeOrSmall,
   g8b5TwoLayers,
+  g8c1WhoIsTouching,
+  g8c1AcrossTheGap,
+  g8c1DoesAnythingTouch,
+  g8c1PushOrPull,
+  g8c1NothingInBetween,
+  g8c2WhereChargeLives,
+  g8c2WhatToAsk,
+  g8c2HalfTheGap,
+  g8c2DoubleTheCharge,
+  g8c2ThirtyThreeMetres,
+  g8c3TwoEndsNeverOne,
+  g8c3WhichOnesStick,
+  g8c3TheNeedleTurns,
+  g8c3MoreTurnsMorePull,
+  g8c3AMagnetThatBig,
+  g8c4CanItEverPush,
+  g8c4MassAndDistance,
+  g8c4NeverFeelIt,
+  g8c4SameMassNewWeight,
+  g8c4FallingAndMissing,
+  g8c5HowFarItReaches,
+  g8c5ReadingTheMap,
+  g8c5EightyNinePercent,
+  g8c5EightMinutes,
+  g8c5TwoFieldsOneLaw,
+  g8d1FourNumbers,
+  g8d1HowFastItRuns,
+  g8d1TwiceAsTall,
+  g8d1AcrossOrAlong,
+  g8d1FiveReadings,
+  g8d2ThreeDoors,
+  g8d2HalfGetsThrough,
+  g8d2UnderOneLamp,
+  g8d2TheRisingCoin,
+  g8d2TheBlackSheet,
+  g8d3OneNarrowBand,
+  g8d3PutItInOrder,
+  g8d3WhatEachDoes,
+  g8d3AllTheSame,
+  g8d3OnePhoton,
+  g8d4PumpTheAirOut,
+  g8d4PitchAndPush,
+  g8d4AirOrWater,
+  g8d4CanYouHearIt,
+  g8d4ThereAndBack,
+  g8d5TwoWaysToSayIt,
+  g8d5TheCliffEdge,
+  g8d5SevenForFour,
+  g8d5CopperOrGlass,
+  g8d5BuildTheLink,
+  g8e1NewToFull,
+  g8e1BallAndLamp,
+  g8e1TwoShadows,
+  g8e1FiveDegreesOut,
+  g8e1TideGauge,
+  g8e2DistanceOrTilt,
+  g8e2AngleAndDaylight,
+  g8e2NorthAndSouth,
+  g8e2FourMarks,
+  g8e2OnceAround,
+  g8e3FartherAndSlower,
+  g8e3FastEnoughToMiss,
+  g8e3WhoseGrip,
+  g8e3RockOrIce,
+  g8e3OurPlace,
+  g8e4OneAstronomicalUnit,
+  g8e4SizeOrDistance,
+  g8e4ShrinkTheSun,
+  g8e4RockOrGas,
+  g8e4LayOutTheField,
+  g8e5OldestAtTheBottom,
+  g8e5TheMissingChapter,
+  g8e5OneGrainOfSand,
+  g8e5MetresOfTime,
+  g8e5BuildTheCase,
+  g8e6WhichQuestion,
+  g8e6HalfThenHalf,
+  g8e6BracketTheBed,
+  g8e6FourAndAHalf,
+  g8e6CarbonADinosaur,
+  g8f1OneLetter,
+  g8f1BetterWorseNeither,
+  g8f1MostSayNothing,
+  g8f1SourceOfVariation,
+  g8f1TraitToLetter,
+  g8f2BoneToRock,
+  g8f2WhoCameFirst,
+  g8f2FishWithAWrist,
+  g8f2DatingTheBed,
+  g8f2GapInTheRecord,
+  g8f3SameSixBones,
+  g8f3JobOrAncestor,
+  g8f3ChanceOrAncestry,
+  g8f3SameWaist,
+  g8f3BuildTheTree,
+  g8f4BreedersEquation,
+  g8f4ManchesterMoths,
+  g8f4WhoLeavesMore,
+  g8f4PopulationNotYou,
+  g8f4BuildTheExplanation,
+  g8f5TeosinteToMaize,
+  g8f5WhoChose,
+  g8f5Technologies,
+  g8f5AcrossGenerations,
+  g8f5HardyWeinberg,
+  g8f6HowManyOfUs,
+  g8f6OtherMultiplier,
+  g8f6BuildTheArgument,
+  g8f6SpeciesArea,
+  g8f6WhichLever,
   circuitsSim,
   collisionsSim,
   electricForceSim,

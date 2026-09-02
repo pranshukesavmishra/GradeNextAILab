@@ -81,6 +81,40 @@ const SEALED_OR_OPEN: ArchetypeSpec = {
       because: "Rain, leaves, insects, gases and heat all cross the edge, so matter and energy both move in and out.",
       art: { art: "glassware", which: "beaker", level: 0.6, bubbles: 2 } },
   ],
+  variables: [
+    { key: "dryDays", label: "Days without rain", unit: "days", min: 0, max: 45, step: 1, default: 0 },
+  ],
+  /*
+   * Open water in a hot dry spell loses about 5 mm of depth a day, so a pond
+   * 200 mm deep is gone in 40 days. The sealed bottle garden loses nothing at
+   * all: David Latimer's has been shut since 1972 and still holds every gram of
+   * water it started with, because water that evaporates inside it condenses
+   * inside it. Energy crosses both boundaries; matter crosses only one.
+   */
+  measure: (v) => {
+    const pondDepthMm = Math.max(0, 200 - 5 * v.dryDays);
+    return {
+      pondDepthMm,
+      pondWaterPercent: (pondDepthMm / 200) * 100,
+      sealedWaterPercent: 100,
+      pondDry: pondDepthMm <= 0 ? 1 : 0,
+    };
+  },
+  /*
+   * The same weather, two boundaries. The sealed bottle keeps its level however
+   * long the dry spell runs; the pond falls with it and finally empties, and
+   * what is left grows murkier as the same silt sits in less water.
+   */
+  drive: ({ f, index }) => {
+    if (index === 0) return { level: 0.35, color: "#3f7a4e", bubbles: 0 };
+    const left = f.pondDepthMm / 200;
+    const murk = Math.min(3, Math.round((1 - left) * 3));
+    return {
+      level: 0.6 * left,
+      color: ["#3f7fa8", "#4e7f7a", "#6e7a4e", "#7a6a3c"][murk],
+      bubbles: left > 0.5 ? 0.5 : 0,
+    };
+  },
 };
 
 /* A2.3 — Inputs and outputs. */
@@ -104,14 +138,32 @@ const IN_OUT: ArchetypeSpec = {
     { key: "outflow", label: "Water out (litres per minute)", min: 0, max: 20, step: 0.5, default: 5 },
     { key: "minutes", label: "Time (minutes)", min: 0, max: 60, step: 1, default: 10 },
   ],
-  // A tank of floor area 0.5 m2 starting with 200 L. One litre spread over
-  // 5 000 cm2 is 0.2 cm deep, so depth in centimetres is volume / 5.
+  // A tank of floor area 0.5 m2 and 1.2 m tall, so it holds 600 L and starts
+  // with 200 L. One litre spread over 5 000 cm2 is 0.2 cm deep, so depth in
+  // centimetres is volume / 5. Past 600 L the rest goes over the rim.
   measure: (v) => {
     const netFlow = v.inflow - v.outflow;
-    const volume = Math.max(0, 200 + netFlow * v.minutes);
-    return { netFlow, volumeLitres: volume, depthCm: volume / 5 };
+    const wanted = Math.max(0, 200 + netFlow * v.minutes);
+    const volume = Math.min(600, wanted);
+    return {
+      netFlow, volumeLitres: volume, depthCm: volume / 5,
+      spilledLitres: wanted - volume,
+      steady: Math.abs(netFlow) < 0.25 ? 1 : 0,
+    };
   },
   plot: { x: "inflow", y: "volumeLitres", xLabel: "Water in (L/min)", yLabel: "Water stored (L)" },
+  /*
+   * The tank is the store, so the tank is the readout. It fills to the fraction
+   * of its 600 L the sums actually leave in it, spills over the rim when the
+   * inflow has won, and stands empty when the drain has. It turns green the
+   * moment inflow and outflow match: a steady level with water pouring through
+   * it is the hardest idea in the topic and the easiest one to show.
+   */
+  drive: ({ v, f }) => ({
+    level: Math.min(1, f.volumeLitres / 600),
+    color: f.spilledLitres > 0 ? "#8fd0e8" : f.steady ? "#3f9a6a" : "#3f7fa8",
+    bubbles: f.spilledLitres > 0 ? 1 : Math.min(3, Math.round(v.inflow / 7)) * 0.25,
+  }),
 };
 
 /* A2.4 — Tracing matter and energy through a system. */
@@ -129,6 +181,26 @@ const FOLLOW_LUNCH: ArchetypeSpec = {
     "Account for energy that leaves a system as heat.",
   ],
   misconceptions: ["Energy is used up inside a system rather than passed on"],
+  specimens: [
+    { id: "store", name: "The lunch, as an energy store",
+      art: { art: "glassware", which: "beaker", level: 0.9, color: "#d8b25e" } },
+  ],
+  /*
+   * The beaker is the sandwich's 1 400 kJ. It empties as the run goes on,
+   * because energy that has crossed the boundary again is no longer in the
+   * store — it has not been destroyed, it has been passed on. Respiration is
+   * the middle of the run, so that is where the gas comes off, and the colour
+   * runs from food to heat because the quarter that does useful work ends up
+   * there in the end as well.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    return {
+      level: 0.9 * (1 - p),
+      color: ["#d8b25e", "#d88f47", "#cf6a3c", "#c04a36"][Math.min(3, Math.floor(p * 4))],
+      bubbles: p > 0.35 && p < 0.8 ? 0.75 : 0,
+    };
+  },
   stages: [
     { name: "Input", at: 0, caption: "About 1 400 kJ of chemical energy crosses the boundary as food." },
     { name: "Broken down", at: 0.25, caption: "Digestion cuts starch and fat into molecules small enough to absorb." },

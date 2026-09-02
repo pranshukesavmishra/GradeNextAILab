@@ -120,6 +120,22 @@ const IN_AND_OUT: ArchetypeSpec = {
     };
   },
   plot: { x: "albedo", y: "effectiveTempC", xLabel: "Fraction reflected", yLabel: "Balance temperature (C)" },
+  /*
+   * The planet takes the colour of the temperature the books balance at. At
+   * 1 361 W/m2 and an albedo of 0.30 that is 255 K, minus 18 degrees, and the
+   * blue of the Earth we know. Paint it brighter and it cools; past about
+   * minus 40 the water is all ice, the ice reflects still more, and the planet
+   * has gone to the white of a snowball, which is a state Earth really did
+   * fall into twice about 700 million years ago. Turn the sunlight up instead
+   * and it reddens.
+   */
+  drive: ({ f }) => ({
+    color: f.effectiveTempC >= 10 ? "#c85a3c"
+      : f.effectiveTempC >= -5 ? "#bd8a4a"
+      : f.effectiveTempC >= -26 ? "#2f6ea8"
+      : f.effectiveTempC >= -45 ? "#9fc6e0"
+      : "#f0f7fc",
+  }),
 };
 
 export const g6f1InAndOut = buildSim(IN_AND_OUT);
@@ -149,6 +165,46 @@ const BLANKET_OF_AIR: ArchetypeSpec = {
   specimens: [
     { id: "earth", name: "Earth and its atmosphere", art: { art: "planet", color: "#2f6ea8", atmosphere: "#a8d4f0" } },
   ],
+  variables: [
+    { key: "trapped", label: "Share of the outgoing infrared the air catches", min: 0, max: 1, step: 0.01, default: 0.77 },
+  ],
+  /*
+   * The one-layer grey atmosphere, the simplest model that gets the right
+   * answer. Space must still receive the 240 W/m2 that came in, which fixes the
+   * emission temperature at (240 / sigma)^(1/4) = 255 K. An atmosphere that
+   * absorbs a fraction e of the infrared from the ground and re-emits it both
+   * ways leaves the surface at
+   *   Ts = Te * (2 / (2 - e))^(1/4).
+   * Earth's air catches about 0.77 of it, which puts the surface at 288 K, or
+   * 15 degrees, radiating 389 W/m2 — the figures in the captions. Take the
+   * slider to zero and the surface sits at the bare 255 K, minus 18 degrees,
+   * with every ocean frozen. Take it to one and it reaches 30.
+   */
+  measure: (v) => {
+    const sigma = 5.670374419e-8;
+    const emissionK = Math.pow(240 / sigma, 0.25);
+    const surfaceK = emissionK * Math.pow(2 / (2 - v.trapped), 0.25);
+    return {
+      surfaceTempC: surfaceK - 273.15,
+      greenhouseEffectC: surfaceK - emissionK,
+      surfaceEmissionWm2: sigma * Math.pow(surfaceK, 4),
+      escapingToSpaceWm2: 240,
+    };
+  },
+  /*
+   * The planet is the thermometer. Let none of the infrared be caught and it
+   * goes to the white of a world whose oceans are ice at minus 18; catch the
+   * 0.77 the real air catches and it is the blue planet with liquid water on
+   * it; catch all of it and the surface reaches 30 degrees and the picture
+   * reddens. Thirty-three degrees of difference, drawn rather than asserted.
+   */
+  drive: ({ f }) => ({
+    color: f.surfaceTempC >= 26 ? "#c1442c"
+      : f.surfaceTempC >= 19 ? "#c07a3e"
+      : f.surfaceTempC >= 6 ? "#2f6ea8"
+      : f.surfaceTempC >= -8 ? "#9fc6e0"
+      : "#f0f7fc",
+  }),
   stages: [
     {
       name: "Sunlight arrives", at: 0,
@@ -200,6 +256,56 @@ const LOOPS_BOTH_WAYS: ArchetypeSpec = {
     "All feedbacks make things worse",
     "A positive feedback must run away without limit",
   ],
+  variables: [
+    { key: "warming", label: "Global warming so far (degrees)", min: 0, max: 5, step: 0.1, default: 1.1 },
+  ],
+  /*
+   * Both loops are measured, and both are drawn from real coefficients.
+   *
+   * The brake is the Planck response, and it is not fitted to anything: a body
+   * at 255 K sheds 4 * sigma * T^3 = 3.76 W/m2 more for every extra degree.
+   * The push is the ice-albedo feedback, about 0.35 W/m2 per degree. The brake
+   * is more than ten times the push, so the loop amplifies by 1 / (1 - 0.35 /
+   * 3.76) = 1.10 and does not run away: about a tenth more warming than there
+   * would otherwise be, not an explosion.
+   *
+   * And what the ice itself does: September Arctic sea ice falls by roughly 3
+   * million square kilometres for every degree of global warming, from the 6.5
+   * million of the 1980s. That puts the first ice-free September at about 2.2
+   * degrees, which is where the observed relationship points.
+   */
+  measure: (v) => ({
+    extraHeatingFromIceLossWm2: 0.35 * v.warming,
+    extraRadiationToSpaceWm2: 3.76 * v.warming,
+    amplificationFactor: 1 / (1 - 0.35 / 3.76),
+    septemberSeaIceMillionKm2: Math.max(0, 6.5 - 3 * v.warming),
+  }),
+  /*
+   * The left-hand specimen is the ice itself, drawn to area: sea ice is
+   * measured in square kilometres, so its width goes as the square root of
+   * what is left. It shrinks and pales towards the blue of open water, and at
+   * about 2.2 degrees it is gone — the whole September cap, and the picture
+   * shows a patch of ocean where it used to be. The right-hand planet is the
+   * brake, reddening as it radiates harder, which is the thing that keeps the
+   * left-hand loop from running away.
+   */
+  drive: ({ v, f, index }) => {
+    if (index === 0) {
+      const left = f.septemberSeaIceMillionKm2 / 6.5;
+      return {
+        scale: Math.max(0.14, Math.sqrt(left)),
+        color: left <= 0 ? "#1d5f92" : left < 0.4 ? "#a9cfe4" : "#e8f4fb",
+        glow: left * 0.4,
+        rate: left <= 0 ? 0 : 1,
+      };
+    }
+    return {
+      color: v.warming >= 3.5 ? "#a83322"
+        : v.warming >= 2 ? "#c2603a"
+        : v.warming >= 0.8 ? "#cf8a52"
+        : "#d8b98a",
+    };
+  },
   specimens: [
     {
       id: "ice",
@@ -240,6 +346,49 @@ const ONE_CARBON_ATOM: ArchetypeSpec = {
     "Carbon dioxide released today stays in the air forever",
     "The parts of the climate system can be studied one at a time without the others",
   ],
+  specimens: [{ id: "co2", name: "The molecule being followed", art: { art: "molecule", formula: "CO2" } }],
+  variables: [
+    { key: "years", label: "Years since it was released", min: 0, max: 1000, step: 5, default: 0 },
+  ],
+  /*
+   * The Bern impulse-response function, which is how the IPCC answers "how
+   * long does a puff of CO2 last?". The share of a pulse still in the air
+   * after t years is
+   *   0.2173 + 0.2240 e^(-t/394.4) + 0.2824 e^(-t/36.54) + 0.2763 e^(-t/4.304),
+   * four processes with four different speeds: fast mixing into the surface
+   * ocean, slower uptake by the biosphere, slower still by the deep ocean, and
+   * a fifth of it that essentially never comes back on any human timescale,
+   * because only rock weathering can take it and that runs over hundreds of
+   * thousands of years. Half of it goes in about thirty years. A fifth is
+   * still there in a thousand. Both halves of that sentence matter.
+   */
+  measure: (v) => {
+    const share = 0.2173
+      + 0.224 * Math.exp(-v.years / 394.4)
+      + 0.2824 * Math.exp(-v.years / 36.54)
+      + 0.2763 * Math.exp(-v.years / 4.304);
+    return {
+      percentStillInTheAir: share * 100,
+      tonnesLeftOfEveryThousand: share * 1000,
+      percentTakenBySeaAndLand: (1 - share) * 100,
+      yearsElapsed: v.years,
+    };
+  },
+  /*
+   * The molecule is the share of the pulse still airborne, so it is drawn
+   * smaller as the sea and the land take their part of it, and it sinks out of
+   * the air along the route while it does. It never disappears: a fifth of it
+   * is still on the stage at a thousand years, which is the point the students
+   * are meant to leave with.
+   */
+  drive: ({ f }) => {
+    const gone = 1 - f.percentStillInTheAir / 100;
+    return {
+      scale: 0.3 + 0.7 * (f.percentStillInTheAir / 100),
+      offset: [1.2 * gone, 0.55 * gone],
+      rate: 1 - 0.7 * gone,
+    };
+  },
   route: [
     {
       at: [0.10, 0.30], name: "In the air",

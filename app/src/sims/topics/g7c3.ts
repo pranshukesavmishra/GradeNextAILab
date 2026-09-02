@@ -21,6 +21,31 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * numbers are the arithmetic the whole topic rests on.
  */
 
+/**
+ * The two fluxes of one C3 leaf, in micromoles of CO2 per square metre per
+ * second, which is the unit a gas-exchange meter actually reports.
+ *
+ * Gross photosynthesis is a rectangular hyperbola in light, 20 I / (I + 400),
+ * with full sun at 2 000 micromoles of photons per square metre per second.
+ * Dark respiration is 1.5 at 20 C and, being enzyme-controlled, doubles for
+ * every 10 C rise. The two are equal at 32 micromoles of photons - 1.6 per
+ * cent of full sun, roughly deep twilight - and that is the compensation
+ * point C3.4 and C3.5 are both built around.
+ */
+function leafFluxes(lightPercent: number, temperatureC: number) {
+  const photonFlux = (lightPercent / 100) * 2000;
+  const gross = (20 * photonFlux) / (photonFlux + 400);
+  const respiration = 1.5 * 2 ** ((temperatureC - 20) / 10);
+  return { photonFlux, gross, respiration, net: gross - respiration };
+}
+
+/**
+ * Hydrogencarbonate indicator, from carbon dioxide rich to carbon dioxide
+ * poor: yellow, orange, the red of ordinary air, magenta, purple. These are
+ * the colours in the bottle, and they are the whole readout of C3.5.
+ */
+const INDICATOR = ["#d8c33a", "#d9903a", "#d1553f", "#b0518f", "#8e5bc4"];
+
 /* ---------------------------------------------------------------- *
  * C3.1 — Naming the inputs
  * ---------------------------------------------------------------- */
@@ -43,11 +68,14 @@ const HOW_MUCH_AIR: ArchetypeSpec = {
     "You only respire when you exercise",
   ],
   specimens: [
-    { id: "muscle", name: "Muscle cell, mid-effort", art: { art: "cell" } },
+    {
+      id: "spirometer", name: "Expired air, collected over water",
+      art: { art: "glassware", which: "beaker", level: 0.12, color: "#9fd0ea", bubbles: 6 },
+    },
   ],
   variables: [
-    { key: "massKg", label: "Body mass (kg)", min: 20, max: 120, step: 1, default: 60 },
     { key: "mets", label: "Effort (METs: 1 sitting, 4 brisk walk, 10 running)", min: 1, max: 16, step: 0.5, default: 1 },
+    { key: "massKg", label: "Body mass (kg)", min: 20, max: 120, step: 1, default: 60 },
   ],
   /**
    * All four constants here are ones a student can look up.
@@ -79,11 +107,32 @@ const HOW_MUCH_AIR: ArchetypeSpec = {
       glucoseGPerHour: energyKJPerHour / 15.559,
       airBreathedLPerMin: oxygenMlPerMin / 1000 / 0.049,
       carbonDioxideLPerHour: oxygenLPerHour,
+      oxygenMlPerKgPerMin: v.mets * 3.5,
     };
   },
   plot: {
     x: "mets", y: "oxygenLPerHour",
     xLabel: "Effort (METs)", yLabel: "Oxygen used (litres per hour)",
+  },
+  /*
+   * The collecting jar is the readout. Air breathed fills it in proportion to
+   * the volume the model computes - 4.3 litres a minute sitting still, 69 at
+   * 16 METs - so the jar answers the effort slider directly, and the bubble
+   * stream is the oxygen actually taken out of that air.
+   *
+   * Above 42 cm3 of oxygen per kilogram per minute, which is 12 METs and a
+   * fit adult's VO2 max, the demand is past what the lungs can supply. The
+   * jar flushes red and stops: that is the failure state, and it is why a
+   * person cannot simply keep raising the effort.
+   */
+  drive: ({ f }) => {
+    const beyondMax = f.oxygenMlPerKgPerMin > 42;
+    return {
+      level: Math.min(0.9, 0.06 + f.airBreathedLPerMin / 90),
+      bubbles: Math.max(1, Math.min(40, f.oxygenMlPerMin / 40)),
+      color: beyondMax ? "#d1553f" : "#9fd0ea",
+      rate: beyondMax ? 0 : 1,
+    };
   },
 };
 
@@ -241,6 +290,53 @@ const TWO_ORGANELLES: ArchetypeSpec = {
       art: { art: "organelle", which: "mitochondrion" },
     },
   ],
+  variables: [
+    { key: "lightPercent", label: "Light on the leaf, as a share of full sun (%)", min: 0, max: 100, step: 1, default: 30 },
+    { key: "temperatureC", label: "Leaf temperature (C)", min: 5, max: 40, step: 1, default: 20 },
+  ],
+  /*
+   * Both organelles are in the same leaf cell, so one pair of controls sets
+   * what each of them is doing. The chloroplast's traffic is gross
+   * photosynthesis and the mitochondrion's is respiration, both in
+   * micromoles of CO2 per square metre per second (see `leafFluxes`).
+   *
+   * In full sun at 20 C that is 16.7 against 1.5, so the chloroplast handles
+   * about eleven times the traffic. In the dark it handles none at all and
+   * the mitochondrion carries on unchanged - which is the whole answer to
+   * "plants photosynthesise by day and respire only by night".
+   */
+  measure: (v) => {
+    const { photonFlux, gross, respiration, net } = leafFluxes(v.lightPercent, v.temperatureC);
+    return {
+      photonFlux,
+      chloroplastFluxUmol: gross,
+      mitochondrionFluxUmol: respiration,
+      netUptakeUmol: net,
+      timesRespiration: gross / respiration,
+      compensationPercentOfFullSun: (100 * ((400 * respiration) / (20 - respiration))) / 2000,
+    };
+  },
+  /*
+   * Each organelle is drawn at the cube root of the carbon traffic it is
+   * handling, against the same 1.5 micromole reference, so equal sizes mean
+   * equal traffic - and equal traffic is exactly what the compensation point
+   * is. Cube root because the eye reads these as solids: eleven times the
+   * traffic is 2.2 times the width, not eleven times.
+   *
+   * Drag the light to zero and the chloroplast collapses to a speck and stops
+   * turning, while the mitochondrion beside it does not change at all. Warm
+   * the leaf instead and only the mitochondrion grows, doubling every 10 C.
+   */
+  drive: ({ f, index }) => {
+    if (index === 1) {
+      return { scale: Math.min(1.7, Math.cbrt(f.mitochondrionFluxUmol / 1.5)) };
+    }
+    const dark = f.chloroplastFluxUmol < 0.2;
+    return {
+      scale: Math.min(1.7, Math.cbrt(Math.max(0.015, f.chloroplastFluxUmol / 1.5))),
+      rate: dark ? 0 : 1,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -265,8 +361,49 @@ const A_LEAF_ALL_DAY: ArchetypeSpec = {
     "A plant in a bedroom takes away your oxygen",
   ],
   specimens: [
-    { id: "leafcell", name: "Leaf cell", art: { art: "cell", plant: true } },
+    {
+      id: "indicator", name: "Leaf discs in hydrogencarbonate indicator",
+      art: { art: "glassware", which: "testTube", level: 0.74, color: "#d1553f" },
+    },
   ],
+  variables: [
+    { key: "lightPercent", label: "Light on the tube, as a share of full sun (%)", min: 0, max: 100, step: 1, default: 40 },
+    { key: "temperatureC", label: "Water temperature (C)", min: 5, max: 40, step: 1, default: 20 },
+  ],
+  /*
+   * The tube is the standard classroom version of this: leaf discs sealed in
+   * hydrogencarbonate indicator, which is red in equilibrium with ordinary
+   * air. Take carbon dioxide out of the water and it goes magenta, then
+   * purple; put carbon dioxide in and it goes orange, then yellow. So the
+   * colour of the tube is the sign of the leaf's net exchange, measured the
+   * way a school actually measures it.
+   */
+  measure: (v) => {
+    const { photonFlux, gross, respiration, net } = leafFluxes(v.lightPercent, v.temperatureC);
+    return {
+      photonFlux,
+      grossPhotosynthesisUmol: gross,
+      respirationUmol: respiration,
+      netUptakeUmol: net,
+      sugarGPerM2PerHour: (net * 3600 * 1e-6 * 180.156) / 6,
+    };
+  },
+  /*
+   * Turn the light down and the tube goes yellow: the discs are still
+   * respiring, so carbon dioxide builds up, and the oxygen stream stops. Turn
+   * it up and the same discs strip the water of carbon dioxide and the tube
+   * goes purple, with a bubble stream of the oxygen the model says they are
+   * releasing. The colour crosses red - no net exchange either way - at the
+   * compensation point, 1.6 per cent of full sun at 20 C.
+   */
+  drive: ({ f }) => {
+    const net = f.netUptakeUmol;
+    const step = net <= -1 ? 0 : net <= -0.1 ? 1 : net < 0.1 ? 2 : net < 4 ? 3 : 4;
+    return {
+      color: INDICATOR[step],
+      bubbles: net > 0.5 ? Math.min(36, net * 2.2) : 0,
+    };
+  },
   /**
    * The numbers in these captions come from one standard C3 leaf model:
    * gross photosynthesis 20 x I / (I + 400) micromoles of CO2 per square metre

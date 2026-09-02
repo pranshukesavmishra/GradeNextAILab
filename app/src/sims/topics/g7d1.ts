@@ -20,6 +20,58 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * went 29, 1 350, 6 000, 42, none.
  */
 
+/**
+ * The St Matthew Island reindeer census: the five counts that were actually
+ * made, plus the two dates that bracket the end of the herd.
+ *
+ * 29 animals landed in August 1944. Counts followed in 1957 and 1963, the
+ * herd died over the winter of 1963-64, 42 were found in the summer of 1966,
+ * and none were left by the early 1980s.
+ */
+const ST_MATTHEW_CENSUS: [number, number][] = [
+  [1944, 29], [1957, 1350], [1963, 6000], [1964, 42], [1966, 42], [1980, 0], [1985, 0],
+];
+
+/** The herd between two counts: geometric while it is growing, straight while it is not. */
+function herdIn(year: number): number {
+  const c = ST_MATTHEW_CENSUS;
+  if (year <= c[0][0]) return c[0][1];
+  for (let i = 1; i < c.length; i++) {
+    if (year > c[i][0]) continue;
+    const [y0, n0] = c[i - 1], [y1, n1] = c[i];
+    const k = (year - y0) / (y1 - y0);
+    return n0 > 0 && n1 > 0 ? n0 * (n1 / n0) ** k : n0 + (n1 - n0) * k;
+  }
+  return c[c.length - 1][1];
+}
+
+/**
+ * Reindeer-years of grazing done by the end of a given year, integrating the
+ * same census curve. A geometric segment integrates to (N1 - N0) / r exactly;
+ * a straight one is a trapezium.
+ */
+function reindeerYears(year: number): number {
+  const c = ST_MATTHEW_CENSUS;
+  let total = 0;
+  for (let i = 1; i < c.length; i++) {
+    const [y0, n0] = c[i - 1];
+    const [y1, n1] = c[i];
+    if (year <= y0) break;
+    const end = Math.min(year, y1);
+    const nEnd = herdIn(end);
+    if (n0 > 0 && n1 > 0) {
+      const r = Math.log(n1 / n0) / (y1 - y0);
+      total += Math.abs(r) < 1e-9 ? n0 * (end - y0) : (nEnd - n0) / r;
+    } else {
+      total += ((n0 + nEnd) / 2) * (end - y0);
+    }
+  }
+  return total;
+}
+
+/** Lichen cover, deepest first. The island's colour is the whole readout of D1.3. */
+const LICHEN = ["#9a9384", "#9a9770", "#8e9a68", "#7d9a5c", "#6d9a52"];
+
 /* ---------------------------------------------------------------- *
  * D1.1 — Limiting resources
  * ---------------------------------------------------------------- */
@@ -101,13 +153,13 @@ const WHERE_IT_LEVELS: ArchetypeSpec = {
     "Carrying capacity is a fixed property of a species rather than of a place",
   ],
   specimens: [
-    { id: "forage", name: "The lichen mat that sets the ceiling", art: { art: "cell", plant: true } },
+    { id: "herd", name: "The herd, drawn to its number", art: { art: "sphere", color: "#6f8f52", radius: 0.5 } },
   ],
   variables: [
+    { key: "years", label: "Years since release", min: 0, max: 40, step: 0.5, default: 12 },
     { key: "start", label: "Animals released at the start", min: 5, max: 300, step: 1, default: 29 },
     { key: "rate", label: "Growth rate r (per year)", min: 0.05, max: 0.6, step: 0.01, default: 0.32 },
     { key: "capacity", label: "Carrying capacity K (animals)", min: 200, max: 6000, step: 50, default: 1600 },
-    { key: "years", label: "Years since release", min: 0, max: 40, step: 0.5, default: 12 },
   ],
   // The logistic curve, exactly: N(t) = K / (1 + ((K - N0)/N0) e^(-rt)).
   // Growth per year is r N (1 - N/K), which peaks at N = K/2 and is zero at
@@ -121,6 +173,26 @@ const WHERE_IT_LEVELS: ArchetypeSpec = {
     };
   },
   plot: { x: "years", y: "herdSize", xLabel: "Years since release", yLabel: "Herd size (animals)" },
+  /*
+   * The herd is drawn as a disc of animals, so its area is its number and its
+   * width is the square root of that: a herd at a quarter of the capacity is
+   * half as wide, not a quarter. Against the capacity as the full disc, the
+   * 29 released animals start at a seventh of the width.
+   *
+   * The disc turns while the herd is growing and stops dead when it is not.
+   * That is the point of the curve: growth is fastest at K/2 and exactly zero
+   * at K, so the last stretch of the slider adds almost nothing at all, and
+   * the herd sitting still at its ceiling is what carrying capacity looks
+   * like.
+   */
+  drive: ({ f, v }) => {
+    const stalled = f.growthThisYear < v.capacity * 0.002;
+    return {
+      scale: 1.35 * Math.max(0.1, Math.sqrt(f.herdSize / v.capacity)),
+      color: f.percentOfCapacity > 95 ? "#a8562f" : "#6f8f52",
+      rate: stalled ? 0 : 1,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -146,8 +218,54 @@ const ST_MATTHEW: ArchetypeSpec = {
   ],
   specimens: [
     { id: "island", name: "St Matthew Island, 332 square kilometres",
-      art: { art: "planet", color: "#8a9a76", atmosphere: "#d8e6dc" } },
+      art: { art: "planet", color: "#6d9a52", atmosphere: "#d8e6dc" } },
   ],
+  variables: [
+    { key: "year", label: "Year", min: 1944, max: 1985, step: 1, default: 1944 },
+  ],
+  /*
+   * The herd is read straight off the census - 29 in 1944, 1 350 in 1957,
+   * 6 000 in 1963, 42 in 1966, none by the 1980s - with geometric growth
+   * between counts, which is what a population with no predators does.
+   *
+   * The lichen is then arithmetic on top of it. The island is 332 square
+   * kilometres, 33 200 hectares, and an arctic lichen range carries roughly
+   * 1 000 kg per hectare of the mat a reindeer will actually eat: 33 200
+   * tonnes in all. A reindeer eats about 4.5 kg of dry lichen a day, 1.64
+   * tonnes a year, so multiplying that by the reindeer-years grazed gives
+   * what has been taken.
+   *
+   * Integrating the census curve, the herd had grazed 20 200 reindeer-years
+   * by the middle of 1962 - the whole mat - and the crash came the following
+   * winter. Lichen grows back at about 20 kg per hectare per year, so by 1985
+   * the island has recovered less than two fifths of what it lost. That is
+   * the difference between using a resource and destroying it.
+   */
+  measure: (v) => {
+    const herd = herdIn(v.year);
+    const grazedTonnes = reindeerYears(v.year) * 1.6425;
+    const regrownTonnes = v.year > 1966 ? (v.year - 1966) * 664 : 0;
+    const standingTonnes = Math.max(0, Math.min(33200, 33200 - grazedTonnes + regrownTonnes));
+    return {
+      herd,
+      reindeerPerSquareKm: herd / 332,
+      grazedTonnes,
+      standingLichenTonnes: standingTonnes,
+      lichenPercent: (100 * standingTonnes) / 33200,
+      lichenPerReindeerTonnes: herd > 0 ? standingTonnes / herd : 0,
+    };
+  },
+  /*
+   * The island is the readout. It starts deep lichen green, fades as the herd
+   * eats through the mat, and is bare rock and dead standing lichen by 1963 -
+   * a year before the die-off, which is exactly the order the argument needs.
+   * Drag on past 1966 and the green creeps back, slowly: this is the one
+   * place in the topic where a student can see that the capacity itself was
+   * destroyed rather than merely reached.
+   */
+  drive: ({ f }) => ({
+    color: LICHEN[Math.min(4, Math.max(0, Math.floor((f.lichenPercent / 100) * 4.999)))],
+  }),
   stages: [
     { name: "Aug 1944", at: 0,
       caption: "29 reindeer step ashore onto 332 square kilometres of untouched lichen. No wolves, no hunters, no competition." },
@@ -231,16 +349,69 @@ const SAME_FOOD_BOWL: ArchetypeSpec = {
   ],
   specimens: [
     {
-      id: "apart", name: "Kept apart, one species per tube",
-      because: "P. aurelia settles at 105 cells per 0.5 mL, P. caudatum at 64.",
-      art: { art: "glassware", which: "testTube", level: 0.72, color: "#4aa3d8" },
+      id: "apart", name: "Kept apart: P. aurelia in a tube of its own",
+      because: "Alone it settles at 105 cells per 0.5 mL. P. caudatum, alone in its own tube, settles at 64.",
+      art: { art: "glassware", which: "testTube", level: 0.1, color: "#4aa3d8" },
     },
     {
       id: "together", name: "Mixed, sharing one bacterial supply",
       because: "P. aurelia holds about 80. P. caudatum is gone by day 16.",
-      art: { art: "glassware", which: "flask", level: 0.62, color: "#8e5bc4", precipitate: 0.28 },
+      art: { art: "glassware", which: "flask", level: 0.1, color: "#8e5bc4", precipitate: 0.28 },
     },
   ],
+  variables: [
+    { key: "days", label: "Days since the tubes were seeded", min: 0, max: 24, step: 0.5, default: 0 },
+  ],
+  /*
+   * Gause's 1934 experiment, run as logistic curves fitted to his own counts,
+   * in cells per 0.5 cm3 of medium.
+   *
+   * Alone, P. aurelia grows at about 1.0 per day to a ceiling of 105 and
+   * P. caudatum at about 0.8 per day to 64. Together, on one daily ration of
+   * bacteria, aurelia gets to about 80 and caudatum is squeezed out: it grows
+   * normally for the first four days, while food is still free, and then
+   * falls away at about 0.3 per day once aurelia has taken the supply. By day
+   * 16 it is below two cells and by day 24 it is gone.
+   *
+   * That is competitive exclusion. Neither species attacks the other; they
+   * simply cannot both live on one limiting resource.
+   */
+  measure: (v) => {
+    const logistic = (k: number, r: number, t: number) => k / (1 + ((k - 2) / 2) * Math.exp(-r * t));
+    const aureliaAlone = logistic(105, 1.0, v.days);
+    const caudatumAlone = logistic(64, 0.8, v.days);
+    const aureliaMixed = logistic(80, 1.0, v.days);
+    const caudatumMixed = caudatumAlone * Math.exp(-0.3 * Math.max(0, v.days - 4));
+    const mixedTotal = aureliaMixed + caudatumMixed;
+    return {
+      aureliaAlone,
+      caudatumAlone,
+      aureliaMixed,
+      caudatumMixed,
+      mixedTotal,
+      caudatumShareOfMix: mixedTotal > 0 ? (100 * caudatumMixed) / mixedTotal : 0,
+      caudatumLostPercent: caudatumAlone > 0 ? 100 * (1 - caudatumMixed / caudatumAlone) : 0,
+    };
+  },
+  /*
+   * Both cultures fill as the days run, so the difference between them is a
+   * difference in what the same food supply can carry, not in how long they
+   * were left. The mixed flask also carries the colour of who is in it:
+   * violet while both species are present, and blue by the end, when only
+   * P. aurelia is left. That colour change is the extinction, and it happens
+   * while the flask itself is still filling.
+   */
+  drive: ({ f, index }) => {
+    if (index === 0) {
+      return { level: 0.08 + 0.72 * (f.aureliaAlone / 105) };
+    }
+    const share = f.caudatumShareOfMix;
+    return {
+      level: 0.08 + 0.72 * (f.mixedTotal / 105),
+      color: share > 30 ? "#8e5bc4" : share > 8 ? "#7268cc" : "#4aa3d8",
+      precipitate: 0.08 + 0.006 * share,
+    };
+  },
 };
 
 export const g7d1RunsOutFirst = buildSim(RUNS_OUT_FIRST);

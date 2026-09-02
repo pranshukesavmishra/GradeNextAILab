@@ -18,6 +18,15 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * metre of ground; at 70 degrees north on the same day it is about 220.
  */
 
+/**
+ * Where the stage rail has got to, rebuilt from the clock.
+ *
+ * `drive` is handed elapsed time but not progress, and at the default Speed of
+ * 0.6 the engine advances progress by 0.096 a second, so this is the rail's own
+ * position and the ground heats in step with the caption under it.
+ */
+const railPhase = (t: number) => (t * 0.096) % 1;
+
 /* D5.1 — Angle of sunlight and latitude. */
 const SPREAD_THIN: ArchetypeSpec = {
   id: "g6d5-spread-thin",
@@ -68,6 +77,25 @@ const SPREAD_THIN: ArchetypeSpec = {
     x: "latitudeDeg", y: "groundLevelWPerM2",
     xLabel: "Latitude (degrees)", yLabel: "Sunlight reaching the ground at noon (W/m2)",
   },
+  /*
+   * The globe is tipped to the angle the beam actually meets the ground at. The
+   * solar zenith angle is the latitude minus the declination, so the equator at
+   * an equinox is face-on to the Sun and 80 degrees north in midwinter is tipped
+   * more than a right angle away from it — which is why the beam spreads, and it
+   * is the whole of Lambert's cosine law shown as a tilt rather than stated as a
+   * formula. The colour is what is left arriving at the ground once the
+   * atmosphere has taken its cut: 953 W/m2 on the equator at noon, 75 at 80
+   * degrees north, and a night-blue nothing beyond the Arctic circle in winter.
+   */
+  drive: ({ v, f, t }) => {
+    const w = f.groundLevelWPerM2;
+    return {
+      tilt: Math.abs(v.latitudeDeg - v.declinationDeg) * (Math.PI / 180),
+      spin: t * 0.16,
+      color: w > 800 ? "#f6e6a8" : w > 500 ? "#9fbcd8" : w > 200 ? "#4a7fae" : "#25476f",
+      scale: 1,
+    };
+  },
 };
 
 /* D5.2 — Land versus water heating rates. */
@@ -113,6 +141,25 @@ const SAND_AND_SEA: ArchetypeSpec = {
     energyToWarmThatWaterOneDegreeJ: v.massKg * 4184,
     energyToWarmThatGroundOneDegreeJ: v.massKg * 830,
   }),
+  /*
+   * Two square metres of California given exactly the same joules, and the
+   * ground rises five times as far because it takes 830 J to warm a kilogram of
+   * it by a degree against water's 4 184. So the desert lifts on its own heat
+   * haze and shimmers, and the sea barely stirs: 4 184 J into a kilogram raises
+   * the ground 5.0 degrees and the water 1.0. Everything drawn here is that one
+   * ratio, which is also the reason the coast is cool in August and the valley
+   * is not.
+   */
+  drive: ({ f, index, t }) => {
+    const rise = index === 0 ? f.landTemperatureRiseC : f.waterTemperatureRiseC;
+    return {
+      scale: 1 + Math.min(0.45, rise / 110),
+      offset: [
+        index === 0 ? 0.02 * Math.min(1, rise / 20) * Math.sin(t * 17) : 0,
+        -Math.min(0.5, rise / 100),
+      ],
+    };
+  },
 };
 
 /* D5.3 — Altitude. */
@@ -133,7 +180,7 @@ const SIX_AND_A_HALF_PER_KILOMETRE: ArchetypeSpec = {
     "Mountain tops are cold because they are closer to the Sun",
     "The air is colder up high because there is less sunlight there",
   ],
-  specimens: [{ id: "range", name: "A mountain range in cross-section", art: { art: "landform", which: "terrain" } }],
+  specimens: [{ id: "thermo", name: "A thermometer carried up the mountain", art: { art: "glassware", which: "testTube", level: 0.6, color: "#c0392b" } }],
   variables: [
     { key: "altitudeM", label: "Altitude (m)", min: 0, max: 4500, step: 50, default: 3000 },
     { key: "seaLevelTempC", label: "Temperature at sea level (degrees C)", min: -10, max: 40, step: 1, default: 20 },
@@ -158,6 +205,26 @@ const SIX_AND_A_HALF_PER_KILOMETRE: ArchetypeSpec = {
   plot: {
     x: "altitudeM", y: "temperatureUpThereC",
     xLabel: "Altitude (m)", yLabel: "Air temperature (degrees C)",
+  },
+  /*
+   * The thermometer you carry up is the whole experiment, so it is what is
+   * drawn. The tube reads -30 to 45 degrees, and the column falls 6.5 degrees
+   * for every kilometre climbed: 20 degrees at the beach is 0.7 on the summit
+   * of Mount Whitney at 4 421 m. The threshold is the freezing level, and it is
+   * the one a forecaster reports every winter morning, because it decides which
+   * towns get rain and which get snow — cross it and the liquid goes ice-blue
+   * and stops moving.
+   */
+  drive: ({ f }) => {
+    const c = f.temperatureUpThereC;
+    const freezing = c <= 0;
+    return {
+      level: Math.max(0.02, Math.min(1, (c + 30) / 75)),
+      color: freezing ? "#8fc4e8" : c > 25 ? "#c0392b" : "#c96a4b",
+      precipitate: freezing ? 0.6 : 0,
+      glow: freezing ? 0.5 : 0,
+      rate: freezing ? 0 : 0.2 + c / 40,
+    };
   },
 };
 
@@ -224,7 +291,7 @@ const THE_AFTERNOON_LAG: ArchetypeSpec = {
     "It is hottest at noon because that is when the Sun is strongest",
     "The ground stops radiating heat once the Sun goes down",
   ],
-  specimens: [{ id: "ground", name: "One square metre of desert floor", art: { art: "habitat", which: "desert" } }],
+  specimens: [{ id: "ground", name: "One square metre of desert floor", art: { art: "sphere", color: "#cbb894", radius: 0.46 } }],
   stages: [
     { name: "Just before sunrise, 06:00", at: 0,
       caption: "The coldest moment of the whole day, 8 degrees. The ground has radiated all night with nothing arriving, and it keeps cooling right up until the Sun clears the horizon." },
@@ -239,6 +306,26 @@ const THE_AFTERNOON_LAG: ArchetypeSpec = {
     { name: "The small hours, 03:00", at: 1,
       caption: "Still falling. Cloud would return half that infrared and hold the drop to a few degrees; a dry desert sky returns almost none. The Mojave swings 20 degrees between afternoon and dawn, coastal San Francisco about 6." },
   ],
+  /*
+   * The ground goes round the clock, and it is the lag that is drawn. Sunlight
+   * peaks at solar noon, two fifths of the way along the rail, but the surface
+   * keeps warming for another three and a half hours because incoming still
+   * beats outgoing — so the brightest moment and the hottest moment are visibly
+   * not the same moment. The glow is the sunlight arriving and the colour is the
+   * ground's own temperature: 8 degrees before dawn, 30 in mid-afternoon, and
+   * still falling at three in the morning.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const sun = Math.max(0, Math.cos((u - 0.4) * Math.PI * 1.6));
+    const tempC = 19 + 11 * Math.sin((u - 0.75) * Math.PI * 2);
+    return {
+      glow: sun,
+      color: tempC > 26 ? "#e0722c" : tempC > 18 ? "#cbb894" : tempC > 12 ? "#9fa4b0" : "#6b7a90",
+      scale: 0.9 + sun * 0.22,
+      rate: 0.2 + Math.max(0, tempC - 8) / 10,
+    };
+  },
 };
 
 export const g6d5SpreadThin = buildSim(SPREAD_THIN);

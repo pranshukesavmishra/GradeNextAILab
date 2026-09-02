@@ -33,6 +33,38 @@ const HALF_FROM_EACH: ArchetypeSpec = {
   ],
   misconceptions: ["Offspring receive a blend of their parents' traits"],
   specimens: [{ id: "zygote", name: "From two cells to one", art: { art: "cell" } }],
+  variables: [
+    { key: "hours", label: "Hours since fertilisation", min: 0, max: 120, step: 1, default: 0 },
+  ],
+  /*
+   * Cleavage. For the first few days a human embryo divides roughly once a day
+   * and does not grow at all: it is sealed inside the zona pellucida, so the
+   * same 120 micrometres of egg is cut into more and more pieces. Total volume
+   * is fixed, so after d divisions there are 2^d cells and each one has 1/2^d
+   * of the volume — which makes it 1/2^d cubed-root of the width, 0.79 times
+   * narrower each day. Day four gives the 16-cell morula the textbooks show.
+   * Every one of those cells holds the same 46 chromosomes, 23 from each
+   * parent, which is the point of the whole sequence.
+   */
+  measure: (v) => {
+    const cells = Math.pow(2, Math.floor(v.hours / 24));
+    return {
+      cellsInTheEmbryo: cells,
+      cellDiameterUm: 120 / Math.cbrt(cells),
+      embryoDiameterUm: 120,
+      chromosomesInEveryCell: 46,
+    };
+  },
+  /*
+   * One cell of the embryo, drawn at its true relative width. It halves in
+   * volume every day and so shrinks by the cube root of two, not by half: the
+   * embryo is no bigger on day five than the egg was on day zero, and that is
+   * the thing students do not expect.
+   */
+  drive: ({ f }) => ({
+    scale: f.cellDiameterUm / 120,
+    rate: 0.5 + 1.2 / Math.cbrt(f.cellsInTheEmbryo),
+  }),
   stages: [
     { name: "Two parents", at: 0,
       caption: "Every body cell in either parent holds 46 chromosomes: 23 matched pairs, one member of each pair inherited from each of their own parents." },
@@ -86,6 +118,18 @@ const EIGHT_MILLION: ArchetypeSpec = {
     };
   },
   plot: { x: "pairs", y: "gameteCombinations", xLabel: "Chromosome pairs", yLabel: "Different gametes possible" },
+  /*
+   * The helix on the bench is the set being dealt. Its length follows the
+   * number of pairs directly — DNA is a thread, so twice the pairs is twice
+   * the thread, not twice the volume — and it turns faster the more ways the
+   * deal can come out: one pair is a coin toss, twenty-three pairs with three
+   * crossovers apiece is 2^92, a number with 28 digits in it.
+   */
+  drive: ({ v, f, t }) => ({
+    scale: 0.32 + 0.68 * (v.pairs / 23),
+    spin: 0.68 + t * (0.25 + Math.log2(f.gameteCombinations) / 40),
+    tilt: 0.2 + v.crossovers * 0.12,
+  }),
 };
 
 /* E5.3 — Asexual reproduction. */
@@ -144,6 +188,47 @@ const COPIED_LETTER_FOR_LETTER: ArchetypeSpec = {
     "Account for why asexual offspring are identical apart from rare copying errors.",
   ],
   misconceptions: ["Clones are identical because nothing about their DNA ever changes"],
+  specimens: [{ id: "loop", name: "The chromosome being copied", art: { art: "dna" } }],
+  variables: [
+    { key: "minutes", label: "Minutes since copying started", min: 0, max: 60, step: 1, default: 0 },
+    { key: "errors", label: "Surviving errors per billion bases", min: 0.1, max: 10, step: 0.1, default: 1 },
+  ],
+  /*
+   * An E. coli chromosome is 4.6 million base pairs. Copying starts at one
+   * origin and runs both ways round the loop at about 1 000 bases a second per
+   * fork, so two forks share the work and finish 4.6e6 bases in 2 300 seconds:
+   * 38 minutes, which is why a cell can divide faster than it can copy itself
+   * only by starting the next round early. Proofreading leaves about one error
+   * per billion bases, so a finished copy carries 4.6e6 / 1e9 = 0.0046 new
+   * changes — one cell in about two hundred. That trickle is the only raw
+   * material a clone has, and it is why "identical" is not quite true.
+   */
+  measure: (v) => {
+    const genomeBases = 4.6e6;
+    const copied = Math.min(genomeBases, 2000 * v.minutes * 60);
+    return {
+      basesCopied: copied,
+      percentCopied: (copied / genomeBases) * 100,
+      minutesToFinish: genomeBases / 2000 / 60,
+      newChangesPerCell: (genomeBases * v.errors) / 1e9,
+      cellsPerNewChange: 1e9 / (genomeBases * v.errors),
+    };
+  },
+  /*
+   * The loop is drawn as long as the DNA it now holds: a strand is a thread,
+   * so a chromosome half copied is half as long again, and a finished one is
+   * twice the thread it started as. It drifts to one end as it goes, which is
+   * where the finished copy has to be before the wall can close between them,
+   * and it stops turning the moment the last base is laid down.
+   */
+  drive: ({ f }) => {
+    const p = f.percentCopied / 100;
+    return {
+      scale: 1 + 0.55 * p,
+      offset: [0.5 * p, 0],
+      rate: p >= 1 ? 0 : 1,
+    };
+  },
   stages: [
     { name: "One loop", at: 0, caption: "A single circular chromosome, and no partner anywhere in the story." },
     { name: "Unzipped", at: 0.25, caption: "The strands separate. A pairs only with T, C only with G, so each half already specifies the other." },
@@ -182,6 +267,51 @@ const SPEED_OR_VARIETY: ArchetypeSpec = {
     "Explain why a species may use both, at different times of year.",
   ],
   misconceptions: ["Sexual reproduction is simply the more advanced strategy"],
+  variables: [
+    { key: "generations", label: "Generations", min: 0, max: 12, step: 1, default: 4 },
+    { key: "epidemic", label: "A new disease arrives (0 no, 1 yes)", min: 0, max: 1, step: 1, default: 0 },
+  ],
+  /*
+   * The twofold cost of sex, which is exact rather than estimated. Give both
+   * lines the same fecundity — a summer aphid leaves about 50 daughters — and
+   * the parthenogenetic line multiplies by 50 a generation while the sexual
+   * line multiplies by 25, because half of what it made were males and males
+   * bear nobody. After g generations the clone is ahead by exactly 2^g: four
+   * generations, sixteen times; twelve generations, 4 096 times.
+   *
+   * And the payment for it. A clone is one genotype, so a pathogen that can
+   * kill that genotype kills the line entire. Assume one aphid in twenty in a
+   * varied population happens to carry resistance to any given new disease:
+   * the sexual line loses 95 per cent and keeps going, and the clone loses
+   * everything. Speed, or variety, and this is the price of each.
+   */
+  measure: (v) => {
+    const clone = Math.pow(50, v.generations);
+    const sexual = Math.pow(25, v.generations);
+    const hit = v.epidemic >= 0.5;
+    return {
+      clonalAphids: hit ? 0 : clone,
+      sexualAphids: hit ? sexual * 0.05 : sexual,
+      cloneAheadByTimes: Math.pow(2, v.generations),
+      resistantShareOfTheSexualLine: 5,
+    };
+  },
+  /*
+   * Both colonies are drawn on a log scale, because a number that runs from
+   * one aphid to 2.4e20 of them cannot be drawn any other way and a student
+   * should be told so. The clone runs ahead of the sexual line the whole way
+   * — and then the disease arrives, and the June colony goes to nothing and
+   * stops moving while the October eggs, one in twenty of them resistant,
+   * carry on.
+   */
+  drive: ({ f, index }) => {
+    const n = index === 0 ? f.clonalAphids : f.sexualAphids;
+    if (n < 1) return { scale: 0.2, rate: 0, offset: [0, 0.45] };
+    return {
+      scale: Math.min(1.25, 0.34 + 0.05 * Math.log10(n)),
+      rate: index === 0 ? 1.6 : 0.8,
+    };
+  },
   specimens: [
     { id: "summer", name: "Aphids in June: asexual",
       because: "Daughters without mating, thousands in a fortnight, every one a copy. No mate to find and no half a genome thrown away.",

@@ -148,7 +148,7 @@ const SWING_AND_GRAPH: ArchetypeSpec = {
     "Read a relationship off a curve rather than from a single reading.",
   ],
   misconceptions: ["A heavier bob makes a pendulum swing faster"],
-  specimens: [{ id: "stand", name: "Pendulum on a clamp stand", art: { art: "apparatus", which: "stand" } }],
+  specimens: [{ id: "bob", name: "The bob on its string", art: { art: "sphere", color: "#8a92a8", radius: 0.42 } }],
   variables: [
     { key: "length", label: "String length (m)", min: 0.1, max: 2, step: 0.05, default: 1 },
     { key: "mass", label: "Mass of the bob (g)", min: 20, max: 500, step: 10, default: 100 },
@@ -165,6 +165,27 @@ const SWING_AND_GRAPH: ArchetypeSpec = {
     };
   },
   plot: { x: "length", y: "periodS", xLabel: "String length (m)", yLabel: "Time for one swing (s)" },
+  /*
+   * The bob swings at the period the panel prints — one full there-and-back
+   * every T seconds — on a true circular arc, so it rises slightly at each end
+   * exactly as a real pendulum does. Angle is held at 0.4 radians for every
+   * length, so the arc it sweeps grows with the string, and a 2 m pendulum is
+   * both slower and wider than a 0.1 m one.
+   *
+   * Mass is the control that proves itself. A heavier bob is drawn bigger by
+   * the cube root of its mass, because that is how a ball's width follows its
+   * mass, and it changes the swing not at all: 500 g keeps time with 20 g. The
+   * student can see the answer to the misconception rather than being told it.
+   */
+  drive: ({ v, f, t }) => {
+    const theta = 0.4 * Math.cos((2 * Math.PI * t) / f.periodS);
+    const arm = (1.05 * v.length) / (2 * 0.3894);
+    return {
+      offset: [arm * Math.sin(theta), -arm * (1 - Math.cos(theta))],
+      scale: Math.cbrt(v.mass / 100) * 0.85,
+      spin: 0.68,
+    };
+  },
 };
 
 /* A5.5 — Claim, evidence and reasoning. */
@@ -195,6 +216,21 @@ const CLAIM_EVIDENCE: ArchetypeSpec = {
     { name: "Check it", at: 1,
       caption: "What else could explain it? Repeat the runs, swap the thermometers, and see whether the order holds." },
   ],
+  /*
+   * The argument is about a cup of water cooling, so the cup cools while the
+   * argument is built: 80 degrees and steaming at the question, 68 by the time
+   * the evidence is quoted, room temperature by the time it is checked. The
+   * colours are the readings the evidence step actually cites, so the picture
+   * and the sentence never disagree.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    return {
+      level: 0.5,
+      color: ["#e0483f", "#d95f43", "#c07a58", "#8f8a86", "#6f86a8"][Math.min(4, Math.floor(p * 5))],
+      bubbles: p < 0.3 ? 0.6 : 0,
+    };
+  },
 };
 
 /* A5.6 — Designing an investigation of a system. */
@@ -237,6 +273,22 @@ const TWO_THINGS_CHANGED: ArchetypeSpec = {
     };
   },
   plot: { x: "thicknessMm", y: "dropC", xLabel: "Insulation thickness (mm)", yLabel: "Temperature drop (degrees C)" },
+  /*
+   * The beaker shows the temperature it has actually reached, on the scale a
+   * thermochromic strip uses: red above 70, through amber and grey, to blue at
+   * room temperature. It steams while it is above 80 and rolls when it reaches
+   * 100, which is what makes the trap visible — turn the starting temperature
+   * up and the drop gets bigger whatever the wool is doing, so two runs with
+   * different starts cannot be compared at all.
+   */
+  drive: ({ f }) => {
+    const band = Math.max(0, Math.min(5, Math.floor((f.finalTempC - 50) / 5)));
+    return {
+      level: 0.6,
+      color: ["#4a63f0", "#4a9ad8", "#59b3a0", "#c8a33f", "#d9743c", "#e0483f"][band],
+      bubbles: f.finalTempC >= 100 ? 1 : f.finalTempC >= 80 ? 0.45 : 0,
+    };
+  },
 };
 
 export const g6a5BeforeYouLight = buildSim(BENCH_SAFETY);

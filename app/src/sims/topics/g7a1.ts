@@ -83,6 +83,29 @@ const THREE_ARRANGEMENTS: ArchetypeSpec = {
       art: { art: "sphere", color: "#c9ccd4", radius: 0.34 },
     },
   ],
+  /*
+   * The samples are the readout, and what separates them is motion, not
+   * substance. A solid's particles only vibrate about fixed sites; a liquid's
+   * slide past one another; a gas's cross the container at around 480 m/s at
+   * room temperature. So each sample turns and wanders at the speed its own
+   * state allows, and the gases fizz while the solids sit. Nothing here
+   * changes what the particles are, which is the whole point of the topic.
+   */
+  drive: ({ specimen, index, t }) => {
+    const solid = specimen.category === "solid";
+    const gas = specimen.category === "gas";
+    const rate = solid ? 0.1 : gas ? 2.2 : 0.7;
+    const sway = solid ? 0.008 : gas ? 0.13 : 0.04;
+    const ph = index * 1.7;
+    return {
+      rate,
+      offset: [
+        Math.sin(t * (1.1 + rate * 2) + ph) * sway,
+        Math.cos(t * (0.83 + rate * 2.6) + ph) * sway * 0.7,
+      ],
+      ...(gas ? { bubbles: 0.9 } : solid ? { bubbles: 0 } : {}),
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -122,6 +145,63 @@ const WHEN_SPHERES_FAIL: ArchetypeSpec = {
       art: { art: "molecule", formula: "H2O" },
     },
   ],
+  variables: [
+    {
+      key: "current", label: "Current through the cell", unit: "mA",
+      min: 0, max: 500, step: 10, default: 0,
+    },
+  ],
+  /*
+   * Electrolysis of 0.100 g of acidified water for half an hour, by Faraday's
+   * laws. Charge Q = It, and one mole of electrons is 96 485 C, so
+   *
+   *   n(e-) = Q / 96485,   n(H2) = n(e-)/2,   n(O2) = n(e-)/4
+   *
+   * which is where the two-to-one volume ratio comes from: it is a count of
+   * electrons, not a guess. Volumes are at 24 000 cm3 per mole (room
+   * temperature and pressure). Splitting one mole of water takes two moles of
+   * electrons, so the 5.551 mmol in 0.100 g needs 11.10 mmol of them, which is
+   * 1 071 C. Half an hour at the full 500 mA delivers 900 C, so even flat out
+   * the cell gets through 84 per cent of the sample and no further.
+   */
+  measure: (v) => {
+    const electrons = (v.current * 1e-3 * 1800) / 96485;
+    const waterSplit = Math.min(5.551e-3, electrons / 2);
+    return {
+      hydrogenCm3: (electrons / 2) * 24000,
+      oxygenCm3: (electrons / 4) * 24000,
+      volumeRatio: 2,
+      waterSplitG: waterSplit * 18.015,
+      fractionSplit: waterSplit / 5.551e-3,
+    };
+  },
+  /*
+   * Both panels hold the same 0.100 g of water and take the same current, and
+   * the drawing is what separates the models. The H2O sample really is
+   * consumed, so it shrinks: volume goes as the cube of the width, so the
+   * drawn size is the cube root of the water that is left. The plain ball
+   * cannot shrink, because a ball with no parts has nothing to give off -- all
+   * it can offer is a warmer colour, and once more than half the water has
+   * gone it flushes grey and stops turning, which is the model failing in
+   * front of you rather than in a footnote.
+   */
+  drive: ({ v, f, t, index }) => {
+    const jitter = (v.current / 500) * 0.05;
+    if (index === 0) {
+      const dead = f.fractionSplit > 0.5;
+      const warm = ["#7fb3d5", "#8fa8d0", "#a79ec6", "#c096b6"];
+      return {
+        color: dead ? "#9aa0aa" : warm[Math.min(3, Math.floor(f.fractionSplit * 6))],
+        rate: dead ? 0 : 0.5 + v.current / 250,
+        offset: [Math.sin(t * 9) * jitter, Math.cos(t * 7.3) * jitter],
+      };
+    }
+    return {
+      scale: Math.cbrt(Math.max(0.05, 1 - f.fractionSplit)),
+      rate: 0.5 + v.current / 125,
+      offset: [Math.sin(t * 6.1) * jitter * 3, -f.fractionSplit * 0.35],
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -184,6 +264,28 @@ const JIGGLING_GRAIN: ArchetypeSpec = {
   plot: {
     x: "temperature", y: "rmsDisplacementUm",
     xLabel: "Water temperature (degrees C)", yLabel: "Typical wander (micrometres)",
+  },
+  /*
+   * The grain is the experiment, so it has to move. It is drawn at its true
+   * radius, clamped only so the smallest grain is still visible, and it
+   * wanders by the amount the Stokes-Einstein relation says it should: the
+   * amplitude is the measured rms displacement divided by the grain's own
+   * diameter, which is the only fair unit for it, and the step rate follows
+   * the diffusion coefficient. Because D goes as 1/r, a 3 micrometre grain in
+   * cold water is six times wider than a 0.5 micrometre one and sits almost
+   * perfectly still, while the smallest grain never stops.
+   */
+  drive: ({ v, f, t }) => {
+    const amp = Math.min(1.05, (f.rmsDisplacementUm / (2 * v.radius)) * 0.22);
+    const w = Math.min(3.4, 0.3 + f.diffusionUm2PerS * 0.7);
+    return {
+      scale: Math.max(0.35, Math.min(2.4, v.radius / 0.5)),
+      offset: [
+        (Math.sin(t * w) * 0.6 + Math.sin(t * w * 0.41 + 1.7) * 0.4) * amp,
+        (Math.cos(t * w * 0.73 + 0.6) * 0.5 + Math.cos(t * w * 1.37 + 2.9) * 0.3) * amp,
+      ],
+      rate: Math.min(2.6, 0.2 + f.diffusionUm2PerS * 0.5),
+    };
   },
 };
 
@@ -262,6 +364,16 @@ const DOWN_TO_THE_ATOM: ArchetypeSpec = {
     { id: "cu", name: "A copper atom", art: { art: "atom", protons: 29, neutrons: 34, electrons: 29 } },
   ],
   /*
+   * The engine already publishes a Speed control for a staged simulation.
+   * Naming it here as well changes nothing a student sees -- `paramsOf`
+   * rebuilds it with exactly these bounds -- but it puts the live value in
+   * front of `drive`, and the stage position is 0.16 x speed x t, so the
+   * picture can be kept in step with the rail along the bottom.
+   */
+  variables: [
+    { key: "rate", label: "Speed", min: 0, max: 2, step: 0.1, default: 0.6 },
+  ],
+  /*
    * Every count is a copper atom count: copper atoms sit 0.256 nm apart in the
    * metal, so dividing any length by 0.256 nm gives the number of atoms across
    * it. Copper-63 has 29 protons and 34 neutrons, so its nucleus is about
@@ -290,6 +402,22 @@ const DOWN_TO_THE_ATOM: ArchetypeSpec = {
       caption: "The nucleus: 27,000 times smaller across than the atom, holding 99.98% of its mass. Blow the atom up to a 100 m stadium and the nucleus is a 4 mm pea on the centre spot.",
     },
   ],
+  /*
+   * A zoom, and the atom is the thing being zoomed towards. Every stage is
+   * about a thousandfold step in, so the drawn size grows by equal amounts on
+   * a logarithmic scale: a speck at the grain of sand, filling the frame at
+   * the fourth stage, where the frame is one atom wide. The last stage steps
+   * in 27 000 times further to the nucleus, and there the atom is far larger
+   * than the view, so it swells straight past the edge of the frame. That is
+   * the lesson: you cannot get the nucleus and the atom into one picture.
+   */
+  drive: ({ v, t }) => {
+    const p = (0.16 * v.rate * t) % 1;
+    return {
+      scale: p <= 0.75 ? 0.16 + (p / 0.75) * 0.84 : 1 + ((p - 0.75) / 0.25) * 1.7,
+      rate: 0.4 + p * 1.6,
+    };
+  },
 };
 
 export const g7a1ThreeArrangements = buildSim(THREE_ARRANGEMENTS);

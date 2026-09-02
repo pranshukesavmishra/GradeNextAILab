@@ -20,6 +20,12 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * and came back within four years while the tree species did not.
  */
 
+/** A lake, from a summer bloom to the glass-clear water zebra mussels leave. */
+const LAKE_CLARITY = ["#4f8f5f", "#6fa878", "#93bd95", "#b3d2c5", "#cfe4ee"];
+
+/** Glacier Bay's ground, from raw grey till to black forest soil. */
+const SOIL = ["#c9c2b0", "#b0a48a", "#8f7a5c", "#6b5740", "#463a2b"];
+
 /* ---------------------------------------------------------------- *
  * D5.1 — Physical disruptions
  * ---------------------------------------------------------------- */
@@ -128,6 +134,27 @@ const MUSSEL_ARITHMETIC: ArchetypeSpec = {
     x: "density", y: "waterColumnTurnoversPerDay",
     xLabel: "Mussels per square metre", yLabel: "Times the water column is filtered per day",
   },
+  /*
+   * The sample flask is the readout, and what it shows is the plankton being
+   * taken out of the water: green and turbid over a bare bed, and glass clear
+   * once the bed can filter the whole column faster than once a day, which is
+   * where western Lake Erie went after 1988.
+   *
+   * Clear is not clean. Everything the flask has lost is food that used to
+   * feed the animals that fed the fish, and the light now reaching the bottom
+   * is what let the bottom weed and the toxic Microcystis mats take over. A
+   * student who reads the clear flask as a healthy lake has learned exactly
+   * the wrong thing from it, which is why the flask and the caption have to
+   * be read together.
+   */
+  drive: ({ f }) => {
+    const cleared = Math.min(1, f.waterColumnTurnoversPerDay / 1.5);
+    return {
+      color: LAKE_CLARITY[Math.min(4, Math.floor(cleared * 4.999))],
+      precipitate: 0.45 * (1 - cleared),
+      level: 0.5,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -163,6 +190,66 @@ const WHAT_TOOK_THE_COD: ArchetypeSpec = {
       art: { art: "sphere", color: "#a4dcf0", radius: 0.5, glow: 0.5 },
     },
   ],
+  variables: [
+    { key: "seals", label: "Harp seals off Newfoundland (millions)", min: 1, max: 7, step: 0.1, default: 5 },
+    { key: "codShareOfDiet", label: "Share of a seal's diet that is northern cod (%)", min: 0.5, max: 15, step: 0.5, default: 3 },
+    { key: "landingsKt", label: "The fishery's catch (thousand tonnes a year)", min: 0, max: 810, step: 10, default: 250 },
+  ],
+  /*
+   * Both claims, put in the same units - thousand tonnes of northern cod
+   * removed in a year - so that they can be weighed against each other
+   * instead of merely asserted.
+   *
+   * The fishery's side is a landings record: about 250 000 t a year through
+   * the 1980s, and 810 000 t at the 1968 peak.
+   *
+   * The seals' side is arithmetic. A harp seal eats roughly 1.2 t of fish a
+   * year, so a million seals eat 1 200 000 t of everything; the question is
+   * what share of that is northern cod. Stomach sampling puts it at a few per
+   * cent - they eat mostly capelin, sand lance and Arctic cod - and at 5
+   * million seals taking 3 per cent that is 180 000 t, which is the order the
+   * fisheries department's own estimates give.
+   *
+   * To match the fishery at its 1980s level the seals would have had to be
+   * taking over 4 per cent of their whole diet as northern cod; to match 1968
+   * they would have had to eat almost nothing else. And the timing still does
+   * not work: the seal herd grew steadily while the stock fell 99 per cent in
+   * a few years.
+   */
+  measure: (v) => {
+    const sealCodKt = 1200 * v.seals * (v.codShareOfDiet / 100);
+    const totalKt = sealCodKt + v.landingsKt;
+    return {
+      sealCodKt,
+      fisheryKt: v.landingsKt,
+      totalRemovedKt: totalKt,
+      fisherySharePercent: totalKt > 0 ? (100 * v.landingsKt) / totalKt : 0,
+      sealSharePercent: totalKt > 0 ? (100 * sealCodKt) / totalKt : 0,
+      percentOfPeakStockPerYear: (100 * totalKt) / 1600,
+    };
+  },
+  /*
+   * Each side is drawn to the cod it removes. The fishery's jar fills with
+   * its share of the total removal, and the seals' pile is the cube root of
+   * their tonnage against a 300 000 t reference, so raising the seal herd
+   * grows one and empties the other: the two claims are competing for the
+   * same collapse, and there is only one collapse to explain.
+   *
+   * Push the seals past the fishery and their pile turns red. That is not the
+   * evidence agreeing - it is the point at which a student can read off the
+   * diet share the claim needs, and then ask whether any stomach sample has
+   * ever shown it.
+   */
+  drive: ({ f, index }) => {
+    if (index === 0) {
+      return { level: 0.06 + 0.78 * (f.fisherySharePercent / 100) };
+    }
+    return {
+      scale: 1.3 * Math.max(0.18, Math.cbrt(f.sealCodKt / 300)),
+      color: f.sealSharePercent > 50 ? "#c0503a" : "#a4dcf0",
+      glow: Math.min(0.9, f.sealSharePercent / 90),
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -187,9 +274,59 @@ const GLACIER_BAY: ArchetypeSpec = {
     "The first species to arrive are the ones that stay",
   ],
   specimens: [
-    { id: "alder", name: "Alder: the plant that builds the soil",
-      art: { art: "cell", plant: true } },
+    { id: "ground", name: "The ground itself, sampled to 20 cm",
+      art: { art: "glassware", which: "beaker", level: 0.08, color: "#c9c2b0", precipitate: 0.85 } },
   ],
+  variables: [
+    { key: "years", label: "Years since the ice pulled back", min: 0, max: 200, step: 1, default: 0 },
+  ],
+  /*
+   * Crocker and Major's Glacier Bay chronosequence, as three curves that
+   * approach their measured end points.
+   *
+   * Nitrogen: near zero in fresh till, and about 1 200 kg per hectare after
+   * fifty years of alder, levelling towards 1 500. Alder does that with
+   * Frankia bacteria in its root nodules, which is why nothing bigger can
+   * grow until the alder has been and gone.
+   *
+   * Acidity: pH 8.0 on the raw carbonate-rich till, falling towards 5.0 as
+   * alder and then spruce litter acidifies it - most of the fall inside the
+   * first fifty years.
+   *
+   * Organic layer: nothing at all to begin with, building towards about 12 cm
+   * of forest floor under closed spruce. That layer is the soil; the rock
+   * flour underneath it was only ever ground-up rock.
+   */
+  measure: (v) => {
+    const nitrogenKgPerHa = 1500 * (1 - Math.exp(-v.years / 33));
+    const organicCm = 12 * (1 - Math.exp(-v.years / 70));
+    return {
+      nitrogenKgPerHa,
+      pH: 8 - 3 * (1 - Math.exp(-v.years / 30)),
+      organicLayerCm: organicCm,
+      organicSharePercent: (100 * organicCm) / 20,
+      nitrogenPerYearKgPerHa: v.years > 0 ? nitrogenKgPerHa / v.years : 0,
+    };
+  },
+  /*
+   * The sample jar is the readout: it starts as a jar of pale grey rock flour
+   * with no organic layer at all, and fills and darkens as the alder builds
+   * one. Colour tracks the nitrogen, depth tracks the forest floor, and the
+   * mineral grit that fills the jar at year zero is steadily replaced.
+   *
+   * At the far left is the failure state that makes the whole topic work: at
+   * year zero there is no nitrogen, so a spruce seed dropped there simply
+   * cannot grow, however much light and water it has. Nothing but a
+   * nitrogen-fixer can start this.
+   */
+  drive: ({ f }) => {
+    const built = f.nitrogenKgPerHa / 1500;
+    return {
+      level: 0.06 + 0.62 * (f.organicLayerCm / 12),
+      color: SOIL[Math.min(4, Math.floor(built * 4.999))],
+      precipitate: 0.85 - 0.6 * built,
+    };
+  },
   stages: [
     { name: "Year 0", at: 0,
       caption: "Ground-up rock the ice left behind. Nitrogen near zero, pH about 8.0, and nothing that holds water." },

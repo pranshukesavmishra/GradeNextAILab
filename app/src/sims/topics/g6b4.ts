@@ -34,6 +34,28 @@ const DIGESTIVE: ArchetypeSpec = {
     "Food is inside the body's cells as soon as it is swallowed",
     "The stomach does all of the digesting",
   ],
+  specimens: [
+    { id: "bolus", name: "The mouthful itself",
+      art: { art: "glassware", which: "flask", level: 0.8, color: "#d8b25e" } },
+  ],
+  /*
+   * The mouthful is the readout, and it answers the first misconception on the
+   * list. Nothing leaves it in the mouth, the oesophagus or the stomach — all
+   * that happens there is grinding, acid and churning, so it only changes
+   * colour. It empties in the small intestine, because that is where food
+   * actually crosses into the blood, and then again in the large intestine as
+   * the water is taken back. What is left at the end is what could not be
+   * broken down.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const absorbed = Math.max(0, (p - 0.45) / 0.55);
+    return {
+      level: 0.8 * (1 - 0.85 * absorbed),
+      color: ["#d8b25e", "#cfa14e", "#c08840", "#a06a38", "#7a4f2c"][Math.min(4, Math.floor(p * 5))],
+      bubbles: p > 0.3 && p < 0.55 ? 0.7 : 0,
+    };
+  },
   route: [
     {
       at: [0.09, 0.22], name: "Mouth",
@@ -91,6 +113,27 @@ const EXCRETORY: ArchetypeSpec = {
     "The kidneys make waste rather than remove it",
     "Anything the body does not want is simply left out of the blood",
   ],
+  specimens: [
+    { id: "filtrate", name: "What the kidney is holding",
+      art: { art: "glassware", which: "testTube", level: 0.9, color: "#b03a3a" } },
+  ],
+  /*
+   * The tube holds whatever the urea is travelling in, and the volume is the
+   * lesson: 180 litres a day go through the filter and 1.5 litres leave the
+   * body, so more than 99 per cent of it is taken straight back. That is why
+   * the level collapses at the tubule and not at the filter — the kidney
+   * filters blindly first and sorts afterwards. The colour runs from blood to
+   * urine as the useful part is reclaimed and the waste is left behind.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const reclaimed = Math.max(0, Math.min(1, (p - 0.4) / 0.25));
+    return {
+      level: 0.9 - 0.79 * reclaimed,
+      color: ["#b03a3a", "#b8544a", "#c98a52", "#d8b25e", "#e6cf72"][Math.min(4, Math.floor(p * 5))],
+      bubbles: p > 0.35 && p < 0.5 ? 0.5 : 0,
+    };
+  },
   route: [
     {
       at: [0.09, 0.3], name: "Body cells",
@@ -148,6 +191,31 @@ const CIRCULATORY: ArchetypeSpec = {
     "Blood goes round the body in one single loop",
     "Arteries carry oxygen-rich blood and veins never do",
   ],
+  specimens: [
+    { id: "rbc", name: "The red blood cell you are riding",
+      art: { art: "sphere", color: "#7d2320", radius: 0.5 } },
+  ],
+  /*
+   * The cell itself is the evidence for the double circuit. It runs dark all
+   * the way through the right side of the heart, turns bright the moment it
+   * passes the lungs — haemoglobin 98 per cent full — and stays bright through
+   * the left side and out into the body, which is exactly the point that the
+   * "arteries are red, veins are blue" rule gets wrong: the artery to the lungs
+   * carries the dark blood. It goes dark again at the capillary, where the
+   * oxygen is handed over, and it squeezes down to get through: the tube is 8
+   * micrometres wide and so is the cell, so it folds to fit.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const loaded = p >= 0.34 && p < 0.84;
+    const squeezing = p >= 0.84 && p < 0.95;
+    return {
+      color: loaded ? "#d4463a" : "#7d2320",
+      scale: squeezing ? 0.72 : 1,
+      spin: 0.68 + t * (p > 0.5 && p < 0.84 ? 1.6 : 0.4),
+      tilt: squeezing ? 0.62 : 0.24,
+    };
+  },
   route: [
     {
       at: [0.1, 0.55], name: "Right atrium",
@@ -210,6 +278,28 @@ const RESPIRATORY: ArchetypeSpec = {
     "The lungs push air in and out like a pump",
     "Breathing and respiration are the same process",
   ],
+  specimens: [
+    { id: "o2", name: "The oxygen molecule", art: { art: "molecule", formula: "O2" } },
+  ],
+  /*
+   * Nothing pushes it. A molecule of oxygen in air at body temperature averages
+   * about 480 m/s and goes where the crowd is thinner, which is the only reason
+   * it ends up in the blood — so it flies while it is a gas, slows as the
+   * airways narrow and the air almost stops moving, and once it is dissolved
+   * and then bound to haemoglobin it is carried rather than travelling. It is
+   * drawn smaller as it goes, because the space it is crossing shrinks from a
+   * 12 cm windpipe to a wall 0.3 micrometres thick.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const bound = p > 0.84;
+    return {
+      scale: 1.35 - 0.75 * p,
+      spin: t * (bound ? 0.25 : 2.6 - p * 2),
+      tilt: 0.24 + Math.sin(t * 0.6) * 0.12,
+      rate: bound ? 0.2 : 1,
+    };
+  },
   route: [
     {
       at: [0.09, 0.24], name: "Nose",
@@ -294,6 +384,23 @@ const MUSCULAR: ArchetypeSpec = {
   plot: {
     x: "load", y: "musclePull",
     xLabel: "Weight in the hand (kg)", yLabel: "Pull from the biceps (N)",
+  },
+  /*
+   * The muscle is drawn as a spring because that is what it is doing: holding
+   * against a load. It stretches in proportion to the pull it is taking — 0 N
+   * with an empty hand, 1 568 N with 20 kg on a 4 cm attachment — and the whole
+   * forearm sags with the weight. Move the attachment out towards the hand and
+   * the same 20 kg needs far less pull, so the spring relaxes without the
+   * weight changing at all: the lever is doing the work, not the muscle.
+   */
+  drive: ({ f, t }) => {
+    const strain = Math.min(1, f.musclePull / 3136);
+    return {
+      scale: 1 + strain * 0.45,
+      offset: [0, strain * 0.4],
+      tilt: 0.24 + strain * 0.3,
+      spin: 0.68 + t * 0.14,
+    };
   },
 };
 

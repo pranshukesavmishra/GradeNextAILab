@@ -18,6 +18,12 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * against those three figures.
  */
 
+/**
+ * Water in a calorimeter can, cold to boiling. A single colour ramp so the
+ * can in C4.3 reads as a thermometer at a glance.
+ */
+const WATER_HEAT = ["#5b8fd0", "#7e9cc4", "#a89bab", "#c68f86", "#d9713f", "#d94a2a"];
+
 /* ---------------------------------------------------------------- *
  * C4.1 — Modeling a food molecule broken down
  * ---------------------------------------------------------------- */
@@ -156,8 +162,63 @@ const BONDS_COST_BONDS_PAY: ArchetypeSpec = {
     "Breaking bonds releases energy",
   ],
   specimens: [
-    { id: "o2", name: "Oxygen, the other reactant", art: { art: "molecule", formula: "O2" } },
+    {
+      id: "can", name: "The can of water that catches the heat",
+      art: { art: "glassware", which: "beaker", level: 0.62, color: "#5b8fd0" },
+    },
   ],
+  variables: [
+    { key: "glucoseG", label: "Glucose burned under the can (g)", min: 0.1, max: 3, step: 0.1, default: 1 },
+  ],
+  /*
+   * The bond audit, scaled to whatever sample is on the pan, and then cashed
+   * in as a temperature.
+   *
+   * Per mole: 12 458 kJ has to go in to pull the bonds apart and 15 216 kJ
+   * comes back out as the new ones form, so 2 758 kJ is left over. One gram
+   * of glucose is 1/180.156 of a mole, so it leaves 15.31 kJ.
+   *
+   * The can holds 100 g of water, and water takes 4.18 J to warm one gram by
+   * one degree, so 15.31 kJ raises it 36.6 C. Take every joule as reaching
+   * the water, which is the assumption the arithmetic makes and not what a
+   * real can manages: a school rig loses about two thirds of it to the air.
+   */
+  measure: (v) => {
+    const moles = v.glucoseG / 180.156;
+    const bondsBrokenKJ = moles * 12458;
+    const bondsMadeKJ = moles * 15216;
+    const netKJ = bondsMadeKJ - bondsBrokenKJ;
+    const riseK = netKJ / (0.1 * 4.18);
+    return {
+      moles,
+      bondsBrokenKJ,
+      bondsMadeKJ,
+      netKJ,
+      temperatureRiseK: riseK,
+      finalTemperatureC: Math.min(100, 20 + riseK),
+      boilingPointReachedG: (80 * 0.1 * 4.18 * 180.156) / 2758,
+    };
+  },
+  /*
+   * The can is the readout: its water carries the colour of its temperature,
+   * from 20 C blue to boiling red, and the arithmetic on the rail above is
+   * what put it there.
+   *
+   * Past 2.18 g of glucose the 100 g of water reaches 100 C and the
+   * experiment fails - the thermometer stops rising, the water boils off, and
+   * every joule after that goes into steam rather than into the reading. That
+   * is the threshold, and it is why calorimetry uses a large water mass and a
+   * small sample.
+   */
+  drive: ({ f }) => {
+    const boiling = f.finalTemperatureC >= 99.9;
+    const step = Math.min(5, Math.max(0, Math.floor(((f.finalTemperatureC - 20) / 80) * 5.999)));
+    return {
+      color: WATER_HEAT[step],
+      bubbles: boiling ? 34 : 0,
+      level: boiling ? 0.54 : 0.62,
+    };
+  },
   /**
    * Mean bond enthalpies in kJ per mole: C-C 348, C-H 412, C-O 360, O-H 463,
    * O=O 496, C=O in an aldehyde 743, C=O in carbon dioxide 805.
@@ -225,6 +286,61 @@ const FLAME_OR_CELL: ArchetypeSpec = {
       art: { art: "organelle", which: "mitochondrion" },
     },
   ],
+  variables: [
+    { key: "glucoseG", label: "Glucose supplied to each (g)", min: 0.5, max: 50, step: 0.5, default: 10 },
+    { key: "cellTemperatureC", label: "Temperature the cell is held at (C)", min: 20, max: 60, step: 1, default: 37 },
+  ],
+  /*
+   * The same fuel handed to both, and the same 2803 kJ per mole in it either
+   * way. What differs is what is done with it.
+   *
+   * The flame gives all of it up at once as heat and light, at over 600 C.
+   * The cell takes about thirty steps at 37 C and traps 32 ATP per glucose;
+   * at the standard 30.5 kJ per mole of ATP that is 976 kJ, so 34.8 per cent
+   * is captured and the other 65 per cent still leaves as heat.
+   *
+   * The cell's enzymes hold that up only while it is cool enough. They begin
+   * to denature above 40 C and are finished by 50, so above 50 C the cell
+   * captures nothing at all. The flame does not care: it is already far
+   * hotter than any temperature this control can reach.
+   */
+  measure: (v) => {
+    const moles = v.glucoseG / 180.156;
+    const totalEnergyKJ = moles * 2803;
+    const enzymeFactor = v.cellTemperatureC <= 40
+      ? 1 : Math.max(0, (50 - v.cellTemperatureC) / 10);
+    const atpMoles = moles * 32 * enzymeFactor;
+    const capturedKJ = atpMoles * 30.5;
+    return {
+      totalEnergyKJ,
+      atpMoles,
+      capturedKJ,
+      capturedPercent: (100 * capturedKJ) / totalEnergyKJ,
+      heatFromFlameKJ: totalEnergyKJ,
+      heatFromCellKJ: totalEnergyKJ - capturedKJ,
+    };
+  },
+  /*
+   * Each side is drawn at the cube root of the energy it delivers, against
+   * the same 200 kJ reference, so the two piles can be read against each
+   * other directly. The flame's pile is all 2803 kJ per mole; the cell's is
+   * only the 976 kJ it banks as ATP, which is why it is always the smaller of
+   * the two by a factor of 1.4 in width - the cube root of about a third.
+   *
+   * Warm the cell past 50 C and its enzymes are gone: the mitochondrion
+   * collapses to a speck and stops turning, while the burner beside it does
+   * not change at all.
+   */
+  drive: ({ f, index }) => {
+    if (index === 0) {
+      return { scale: Math.min(1.8, Math.cbrt(f.totalEnergyKJ / 200)) };
+    }
+    const dead = f.capturedKJ < 0.01;
+    return {
+      scale: Math.min(1.8, Math.cbrt(Math.max(0.002, f.capturedKJ / 200))),
+      rate: dead ? 0 : 1,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -295,6 +411,21 @@ const A_DIFFERENT_FUEL: ArchetypeSpec = {
   plot: {
     x: "fatG", y: "energyKJ",
     xLabel: "Fat respired (g)", yLabel: "Energy released (kJ)",
+  },
+  /*
+   * The flask holds the fat itself, drawn at its own volume: palmitic acid is
+   * a white waxy solid of density 0.85 g per cm3, so 100 g is 118 cm3, and
+   * the flask is scaled to a 160 cm3 body. The bubble stream is the carbon
+   * dioxide the equation says comes back out, 2.746 g for every gram of fat,
+   * which is why the stream thickens far faster than the fat itself grows.
+   */
+  drive: ({ f, v }) => {
+    const bubbles = f.carbonDioxideMadeG / 6;
+    return {
+      level: Math.min(0.86, 0.06 + v.fatG / (0.85 * 160)),
+      precipitate: 0.55,
+      bubbles: bubbles < 1 ? 0 : Math.min(45, bubbles),
+    };
   },
 };
 

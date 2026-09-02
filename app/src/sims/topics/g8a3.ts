@@ -16,7 +16,26 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * A3.1 gives a baseball and a shot put the identical 50 N for 0.10 s and lets
  * the 50-fold mass ratio do the teaching. A3.4 uses real coefficients: 0.02
  * for a puck on ice, 0.30 for wood on wood, 0.70 for rubber on dry asphalt.
+ *
+ * Every one of the five is driven, because a First Law simulation that does not
+ * move is a contradiction in terms. The same push sends the baseball off the
+ * bench and barely stirs the shot put; the sorting specimens either hold their
+ * velocity or visibly change it, which is the sort itself; and taking the
+ * friction away sends the block over the end of the bench, where it tips and
+ * falls, because nothing was ever going to stop it.
  */
+
+/**
+ * A 0-1 sawtooth that runs once every `period` seconds.
+ *
+ * Apparatus that should be travelling is drawn making a real run across its
+ * own patch of bench, and the run repeats, so the student sees the whole of a
+ * motion — start, travel, arrival — rather than a frozen pose.
+ */
+function cycle(t: number, period: number): number {
+  const p = (t / period) % 1;
+  return p < 0 ? p + 1 : p;
+}
 
 /* ---------------------------------------------------------------- *
  * A3.1 — Inertia
@@ -64,6 +83,24 @@ const FIFTY_NEWTONS_EACH: ArchetypeSpec = {
     shotPutSpeedMs: (v.force * v.pushTime) / 7.26,
     massRatio: 7.26 / 0.145,
   }),
+  /*
+   * Both balls are shoved at the same instant and then drawn on the same 5 m
+   * of bench, which is the only fair way to show a 50-fold difference: give
+   * each its own scale and the picture quietly hides the point. Half a second
+   * after a 50 N shove the baseball has covered 17 m and is long gone, while
+   * the shot put has managed 34 cm. Once a ball reaches the end of the bench
+   * it has left the apparatus, and it is flagged rather than drawn creeping
+   * along the edge.
+   */
+  drive: ({ f, t, index }) => {
+    const speed = index === 0 ? f.baseballSpeedMs : f.shotPutSpeedMs;
+    const tau = Math.min(cycle(t, 3) * 3, 0.5);       // the half second after the push
+    const at = Math.min(1, (speed * tau) / 5);        // along 5 m of bench
+    return {
+      offset: [-0.5 + 0.85 * at, 0],
+      color: at >= 1 ? "#e0483f" : undefined,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -129,6 +166,43 @@ const DO_THEY_CANCEL: ArchetypeSpec = {
       art: { art: "planet", color: "#3f7fd0", atmosphere: "#9fd8ff" },
     },
   ],
+  /*
+   * The motion is the evidence, so the specimen shows it. A balanced object
+   * holds whatever velocity it has: the hanging mass does not move at all, the
+   * car crosses at a dead-steady speed, the skydiver falls at an unchanging
+   * 55 m/s. An unbalanced one changes velocity in front of you: the ball at
+   * the apex falls away with the square of the time, the released magnet
+   * accelerates into the plate, and the Earth keeps a steady speed while its
+   * direction turns through a whole circle, which is the case students find
+   * hardest and the only one worth animating twice.
+   */
+  drive: ({ t, specimen }) => {
+    switch (specimen.id) {
+      // Balanced. Note that "balanced" and "still" are not the same thing:
+      // two of these three are moving, and moving is not the question.
+      case "spring":
+        return { offset: [0, 0], spin: 0.68 };
+      case "car":
+        return { offset: [-0.28 + 0.56 * cycle(t, 3.2), 0], spin: 0.68 };
+      case "skydiver":
+        return { offset: [0, -0.28 + 0.56 * cycle(t, 2.6)] };
+      // Unbalanced. Distance goes as the square of the time, which is what a
+      // constant acceleration looks like and is visibly not a steady drift.
+      case "apex": {
+        const k = cycle(t, 2.4);
+        return { offset: [0, -0.3 + 0.6 * k * k] };
+      }
+      case "magnet": {
+        const k = cycle(t, 1.9);
+        return { offset: [-0.3 + 0.6 * k * k, 0], spin: 0.68 };
+      }
+      default: {
+        // Constant speed, turning direction: still an unbalanced force.
+        const a = t * 0.55;
+        return { offset: [0.26 * Math.cos(a), 0.26 * Math.sin(a)] };
+      }
+    }
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -180,6 +254,18 @@ const EVERY_ARROW: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * The net arrow is not a decoration, so the cart obeys it: it starts from
+   * rest and covers half x 3.80 x t squared, which is 1.9 m in the first
+   * second. The travel is kept short so the labelled arrows stay beside the
+   * parts they name, but a cart that accelerates while its net-force arrow is
+   * showing is worth more than a cart parked under one.
+   */
+  drive: ({ t }) => {
+    const tau = Math.min(cycle(t, 3.4) * 3.4, 1);
+    const s = 0.5 * 3.8 * tau * tau;              // metres, from a = F / m
+    return { offset: [-0.2 + 0.4 * Math.min(1, s / 1.9), 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -203,11 +289,14 @@ const TAKE_FRICTION_AWAY: ArchetypeSpec = {
     "A moving object needs a constant push or it will slow down on its own",
     "Heavier objects always slide further because they have more momentum",
   ],
-  specimens: [{ id: "balance", name: "Block on a spring balance", art: { art: "apparatus", which: "spring" } }],
+  specimens: [
+    { id: "block", name: "Block launched along a 4 m bench",
+      art: { art: "apparatus", which: "cart" } },
+  ],
   variables: [
-    { key: "mass", label: "Mass of the block (kg)", min: 0.5, max: 50, step: 0.5, default: 5 },
     { key: "mu", label: "Coefficient of friction", min: 0.02, max: 1, step: 0.01, default: 0.3 },
     { key: "speed", label: "Starting speed (m/s)", min: 0.5, max: 20, step: 0.5, default: 4 },
+    { key: "mass", label: "Mass of the block (kg)", min: 0.5, max: 50, step: 0.5, default: 5 },
   ],
   // Friction on a level surface is mu times the normal force, and the normal
   // force here is the whole weight m g. The deceleration is then mu g, with no
@@ -222,6 +311,28 @@ const TAKE_FRICTION_AWAY: ArchetypeSpec = {
     stoppingTimeS: v.speed / (v.mu * 9.81),
   }),
   plot: { x: "mu", y: "stoppingDistanceM", xLabel: "Coefficient of friction", yLabel: "Stopping distance (m)" },
+  /*
+   * The tagline promises the stopping distance runs off the bench, so it does.
+   * The block is launched every five seconds and drawn at its real position,
+   * v t - half mu g t squared, on a bench 4 m long. Wood on wood at 0.30 and
+   * 4 m/s stops after 2.7 m, comfortably on the bench. Slide the coefficient
+   * down to 0.02, the value for ice, and the stopping distance becomes 40.8 m:
+   * the block reaches the end still moving, tips over the edge and drops,
+   * which is the whole First Law in one picture. Nothing was ever going to
+   * stop it, because stopping is what friction does, not what motion does.
+   */
+  drive: ({ v, f, t }) => {
+    const tau = Math.min(cycle(t, 5) * 5, f.stoppingTimeS);
+    const s = v.speed * tau - 0.5 * f.decelerationMs2 * tau * tau;
+    const at = s / 4;                                  // fraction of the bench
+    if (at >= 1) {
+      // Off the end, and now falling. Beyond the bench there is no normal
+      // force to rub against, so it keeps the speed it had and tips as it goes.
+      const fall = Math.min(1, (at - 1) / 0.5);
+      return { offset: [0.6, 0.62 * fall], tilt: 0.24 + 1 * fall, spin: 0.68 };
+    }
+    return { offset: [-0.55 + 1.15 * at, 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -258,6 +369,21 @@ const THE_BUS_STOPS: ArchetypeSpec = {
     { name: "Both stopped", at: 1,
       caption: "It felt like being thrown forward. It was the absence of a force, not the presence of one." },
   ],
+  /*
+   * The run is the story: two seconds cruising at 12 m/s, then the brakes take
+   * 12 m/s off at 4.8 m/s2, which takes exactly 2.5 s and covers 15 m, and
+   * then it sits at the stop before pulling away again. The bus is drawn over
+   * the 39 m of road that whole run covers, so the braking stretch is visibly
+   * the part where the ground stops arriving as fast as it was.
+   */
+  drive: ({ t }) => {
+    const k = cycle(t, 6.5) * 6.5;
+    let s: number;
+    if (k < 2) s = 12 * k;                                    // cruising
+    else if (k < 4.5) { const u = k - 2; s = 24 + 12 * u - 2.4 * u * u; }
+    else s = 39;                                              // stopped
+    return { offset: [-0.5 + s / 39, 0], spin: 0.68 };
+  },
 };
 
 export const g8a3FiftyNewtonsEach = buildSim(FIFTY_NEWTONS_EACH);

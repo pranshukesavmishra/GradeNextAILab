@@ -21,6 +21,26 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * insulated, lidded cup meets.
  */
 
+/**
+ * Where the stage rail has got to, rebuilt from the clock.
+ *
+ * `drive` is handed elapsed time but not progress, and at the default Speed of
+ * 0.6 the engine advances progress by 0.096 a second, so this is the rail's
+ * own position and the cup cools in step with the caption under it.
+ */
+const railPhase = (t: number) => (t * 0.096) % 1;
+
+/**
+ * The colour of a drink at a temperature, and the brief's pass mark.
+ *
+ * The whole topic is judged against one number — still above 70 degrees at 30
+ * minutes — so the ramp has its break exactly there. A cup that has fallen
+ * below the target looks like it: the drink goes flat and grey rather than
+ * merely a shade cooler.
+ */
+const drinkColor = (c: number) =>
+  c >= 80 ? "#e08a3c" : c >= 70 ? "#c2793c" : c >= 55 ? "#8a7f86" : "#6a7a90";
+
 /* C5.1 — Choosing materials to control heat transfer. */
 const WHAT_BLOCKS_HEAT: ArchetypeSpec = {
   id: "g6c5-what-blocks-heat",
@@ -36,7 +56,7 @@ const WHAT_BLOCKS_HEAT: ArchetypeSpec = {
     "Explain why trapped air is the working part of most insulation.",
   ],
   misconceptions: ["Thick materials always insulate better than thin ones"],
-  specimens: [{ id: "wall", name: "One square metre of wall", art: { art: "apparatus", which: "stand" } }],
+  specimens: [{ id: "wall", name: "One square metre of wall", art: { art: "sphere", color: "#e2d7bc", radius: 0.44 } }],
   variables: [
     { key: "thicknessMm", label: "Thickness (mm)", min: 5, max: 200, step: 5, default: 50 },
     { key: "deltaT", label: "Temperature difference across it (degrees C)", min: 5, max: 40, step: 1, default: 20 },
@@ -57,6 +77,20 @@ const WHAT_BLOCKS_HEAT: ArchetypeSpec = {
     };
   },
   plot: { x: "thicknessMm", y: "woolW", xLabel: "Thickness (mm)", yLabel: "Energy per second through wool (W)" },
+  /*
+   * The wall is drawn as thick as you have made it, and lit by the heat coming
+   * through it. Fourier's law puts those two the opposite way round: 5 mm of
+   * wool across 40 degrees passes 320 W and glows like a radiator, 200 mm
+   * across 5 degrees passes 1 W and is stone cold. The steel line is the
+   * warning — 50 W/m K instead of 0.04 means even 200 mm of it leaks 5 000 W,
+   * which is why the material matters more than the thickness.
+   */
+  drive: ({ v, f }) => ({
+    scale: 0.55 + (v.thicknessMm / 200) * 0.85,
+    color: f.woolW > 150 ? "#e0722c" : f.woolW > 40 ? "#d8a45c" : "#cfd6e0",
+    glow: Math.min(1, f.woolW / 220),
+    rate: 0.15 + Math.min(3, f.woolW / 80),
+  }),
 };
 
 /* C5.2 — Defining the design problem. */
@@ -134,6 +168,24 @@ const BUILD_THE_CUP: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * The cup is filled at 90 degrees and left to cool on Newton's law, which is
+   * the run the whole topic is about, and then filled again. The steam is the
+   * evaporation the lid is there to stop — heaviest while the drink is hottest,
+   * and gone once it is near the room. The break at 70 degrees is the brief's
+   * pass mark, and the drink visibly gives it up part way down.
+   */
+  drive: ({ t }) => {
+    const u = (t % 26) / 26;
+    const tempC = 21 + 69 * Math.exp(-u * 1.2);
+    return {
+      level: 0.6,
+      color: drinkColor(tempC),
+      bubbles: Math.max(0, (tempC - 45) / 60),
+      glow: Math.max(0, (tempC - 45) / 90),
+      rate: 0.2 + (tempC - 21) / 30,
+    };
+  },
 };
 
 /* C5.4 — Testing a device and collecting data. */
@@ -172,6 +224,22 @@ const TEST_THE_CUP: ArchetypeSpec = {
     };
   },
   plot: { x: "minutes", y: "tempC", xLabel: "Time (minutes)", yLabel: "Water temperature (degrees C)" },
+  /*
+   * The cup under test really is the cup you specified: a 20 mm sleeve makes it
+   * visibly fatter than a 1 mm one, and the drink inside is at the temperature
+   * Newton's law of cooling puts it at. At 30 minutes that is 70.4 degrees on
+   * 1 mm of foam and 85.7 on 20 mm — the difference between failing the brief
+   * and passing it comfortably, and the drink goes grey the moment it drops
+   * through the 70 degree target.
+   */
+  drive: ({ v, f }) => ({
+    scale: 0.8 + (v.foamMm / 20) * 0.45,
+    level: 0.6,
+    color: drinkColor(f.tempC),
+    bubbles: Math.max(0, (f.tempC - 45) / 60),
+    glow: Math.max(0, (f.tempC - 50) / 80),
+    rate: 0.15 + (f.tempC - 21) / 30,
+  }),
 };
 
 /* C5.5 — Comparing competing designs. */
@@ -189,6 +257,34 @@ const TWO_DESIGNS: ArchetypeSpec = {
     "Identify which feature of a design does most of the work.",
   ],
   misconceptions: ["The design that looks better engineered performs better"],
+  variables: [
+    { key: "minutes", label: "Time since filling (minutes)", min: 0, max: 60, step: 1, default: 30 },
+    { key: "roomC", label: "Room temperature (degrees C)", min: 5, max: 30, step: 1, default: 21 },
+  ],
+  /*
+   * Both cups hold 200 g of water at 90 degrees with 0.02 m2 of wall, and heat
+   * leaves through the wall and then through the surface air film at about
+   * 10 W/m2 K, the two resistances adding. Design A is 5 mm of foam at
+   * 0.035 W/m K, design B a 3 mm air gap at 0.026: A gives U = 4.12 W/m2 K and
+   * B gives 4.64, so on the wall alone B is only half a degree behind. What
+   * separates them is the lid. B has none, so about 5 g evaporates in half an
+   * hour and the latent heat of vaporisation, 2 260 J per gram, takes 11 300 J
+   * out of a cup that only needs 837 J to shift a degree.
+   */
+  measure: (v) => {
+    const area = 0.02, capacity = 0.2 * 4186;
+    const cool = (u: number) =>
+      v.roomC + (90 - v.roomC) * Math.exp((-v.minutes * 60 * u * area) / capacity);
+    const evaporatedG = (5 / 30) * v.minutes;
+    const designB = cool(1 / (0.003 / 0.026 + 0.1)) - (evaporatedG * 2260) / capacity;
+    return {
+      designATempC: cool(1 / (0.005 / 0.035 + 0.1)),
+      designBTempC: designB,
+      designBWallOnlyTempC: cool(1 / (0.003 / 0.026 + 0.1)),
+      waterEvaporatedFromBG: evaporatedG,
+      energyLostAsSteamFromBJ: evaporatedG * 2260,
+    };
+  },
   specimens: [
     { id: "sleeve", name: "A: 5 mm foam sleeve with a lid",
       because: "79 degrees at 30 minutes, walls 6 mm, sixty pence. It passes the 70 degree target with room to spare, mostly because of the lid.",
@@ -197,9 +293,36 @@ const TWO_DESIGNS: ArchetypeSpec = {
       because: "The wall alone would give 78 degrees, but five grams evaporate from the open top and take 11 300 J with them. It ends at 64 and fails, at twice the cost.",
       art: { art: "glassware", which: "flask", level: 0.6, bubbles: 3 } },
   ],
+  /*
+   * Run the clock and the two designs separate in front of you. A holds its
+   * colour; B steams the whole time, drops below the 70 degree pass mark and
+   * goes grey, and its level falls as the water it is losing leaves the cup for
+   * good. The steam is not decoration — it is where B's missing 13 degrees
+   * went, and it is the only real difference between the two walls.
+   */
+  drive: ({ f, index }) => {
+    const tempC = index === 0 ? f.designATempC : f.designBTempC;
+    return {
+      level: index === 0 ? 0.6 : 0.6 - Math.min(0.18, f.waterEvaporatedFromBG / 55),
+      color: drinkColor(tempC),
+      bubbles: index === 0
+        ? Math.max(0, (tempC - 60) / 90)
+        : 0.3 + Math.max(0, (tempC - 45) / 55),
+      glow: Math.max(0, (tempC - 50) / 80),
+      rate: 0.15 + Math.max(0, tempC - 21) / 28,
+    };
+  },
 };
 
-/* C5.6 — Redesigning based on evidence. */
+/*
+ * C5.6 — Redesigning based on evidence.
+ *
+ * The 30-minute reading each version of the cup actually scored, one per stage
+ * of the rail: plain, plain again while the loss is found, lid, foam, foil and
+ * base pad, and the projection for one more layer of foam.
+ */
+const VERSION_RESULTS = [52, 52, 66, 79, 81, 85];
+
 const ONE_CHANGE: ArchetypeSpec = {
   id: "g6c5-one-change",
   title: "One Change at a Time",
@@ -229,6 +352,28 @@ const ONE_CHANGE: ArchetypeSpec = {
     { name: "Where next", at: 1,
       caption: "Another 5 mm of foam would add about 4 degrees, the next 10 mm only 3 more, and 20 mm is the limit the brief allows. Each change buys less than the one before." },
   ],
+  /*
+   * Each version of the cup is shown at the 30-minute reading it actually
+   * scored: 52 degrees, then 66 with the lid, then 79 with the foam, then 81
+   * with the foil and the base pad. The steam vanishes at version 2, because
+   * that is the change the lid made and the reason it was worth 14 degrees, and
+   * the drink crosses back over the 70 degree pass mark at version 3 — the
+   * moment the design starts working.
+   */
+  drive: ({ t }) => {
+    const p = railPhase(t) * (VERSION_RESULTS.length - 1);
+    const i = Math.min(VERSION_RESULTS.length - 2, Math.floor(p));
+    const k = p - i;
+    const tempC = VERSION_RESULTS[i] + (VERSION_RESULTS[i + 1] - VERSION_RESULTS[i]) * k;
+    const lidOn = p >= 1.6;
+    return {
+      level: 0.6,
+      color: drinkColor(tempC),
+      bubbles: lidOn ? 0.05 : 0.75,
+      glow: Math.max(0, (tempC - 50) / 60),
+      rate: 0.2 + (tempC - 40) / 30,
+    };
+  },
 };
 
 export const g6c5WhatBlocksHeat = buildSim(WHAT_BLOCKS_HEAT);

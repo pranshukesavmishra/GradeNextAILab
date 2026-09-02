@@ -18,6 +18,16 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * reading against their own working.
  */
 
+/**
+ * Where the stage rail has got to, rebuilt from the clock.
+ *
+ * `drive` is handed the run's elapsed time but not its progress, and at the
+ * default Speed of 0.6 the engine advances progress by 0.096 every second. So
+ * this is exactly the rail's position, and the apparatus moves through the
+ * process in step with the captions underneath it.
+ */
+const railPhase = (t: number) => (t * 0.096) % 1;
+
 /* C1.1 — Forms of energy. */
 const MOVING_OR_STORED: ArchetypeSpec = {
   id: "g6c1-moving-or-stored",
@@ -57,6 +67,28 @@ const MOVING_OR_STORED: ArchetypeSpec = {
       because: "Radiant energy crossing space at 300 000 km/s, arriving at about 1 000 W on every square metre at midday.",
       art: { art: "sphere", color: "#f6d365", radius: 0.5, glow: 1 } },
   ],
+  /*
+   * The specimen has to give the answer away before the student reads a word
+   * of it: energy on the move moves, energy in store sits perfectly still.
+   * A `rate` of 0 stops the specimen turning, which is the whole distinction
+   * this sort is about.
+   */
+  drive: ({ specimen, t }) => {
+    switch (specimen.id) {
+      case "cart":
+        return { offset: [Math.sin(t * 1.5) * 0.75, 0], rate: 1.7 };
+      case "spring":
+        return { scale: 1.24, rate: 0 };
+      case "battery":
+        return { rate: 0 };
+      case "tea":
+        return { level: 0.6, color: "#b5763c", bubbles: 0.5, rate: 1.2 };
+      case "ball":
+        return { offset: [0, -0.55], rate: 0 };
+      default:
+        return { scale: 1 + 0.06 * Math.sin(t * 2.4), glow: 1, rate: 2 };
+    }
+  },
 };
 
 /* C1.2 — Kinetic energy. */
@@ -87,6 +119,19 @@ const TWICE_THE_SPEED: ArchetypeSpec = {
     brakingDistanceM: (v.speed * v.speed) / 12,
   }),
   plot: { x: "speed", y: "kineticEnergyJ", xLabel: "Speed (m/s)", yLabel: "Kinetic energy (J)" },
+  /*
+   * The cart is the speedometer. It runs the bench at the speed set, so 20 m/s
+   * crosses four times as often as 5 m/s and 0 m/s does not move at all.
+   * Mass is a volume, so the drawn width is its cube root: 120 kg is only 1.8
+   * times as wide as 20 kg, not six times. The lean is the stop that is
+   * coming — 33 m of braking at 20 m/s against 2 m at 5.
+   */
+  drive: ({ v, f, t }) => ({
+    offset: [Math.sin(t * v.speed * 0.09) * 0.85, 0],
+    scale: Math.cbrt(v.mass / 80),
+    tilt: 0.24 + Math.min(0.5, f.brakingDistanceM / 70),
+    rate: 0.3 + v.speed / 8,
+  }),
 };
 
 /* C1.3 — Potential energy. */
@@ -104,7 +149,7 @@ const LIFTED_AND_READY: ArchetypeSpec = {
     "Predict the landing speed of a dropped object from its stored energy.",
   ],
   misconceptions: ["A heavier object always falls faster"],
-  specimens: [{ id: "mass", name: "Mass on a stand", art: { art: "apparatus", which: "stand" } }],
+  specimens: [{ id: "mass", name: "The lifted mass", art: { art: "sphere", color: "#b8c0cc", radius: 0.4 } }],
   variables: [
     { key: "mass", label: "Mass (kg)", min: 0.1, max: 20, step: 0.1, default: 2 },
     { key: "height", label: "Height above the floor (m)", min: 0, max: 20, step: 0.1, default: 5 },
@@ -117,9 +162,32 @@ const LIFTED_AND_READY: ArchetypeSpec = {
     fallTimeS: Math.sqrt((2 * v.height) / 9.81),
   }),
   plot: { x: "height", y: "storedEnergyJ", xLabel: "Height (m)", yLabel: "Stored energy (J)" },
+  /*
+   * Lifting it is the experiment, so the mass is drawn where you have lifted
+   * it to. Steel of twice the mass is only 1.26 times as wide, so the size
+   * follows the cube root; the top of the range is clipped at 1.9 so a 20 kg
+   * block still fits on the bench. On the floor it stores nothing at all, and
+   * goes the dull grey of a thing that is not about to do anything.
+   */
+  drive: ({ v, f }) => ({
+    offset: [0, -(v.height / 20) * 1.15],
+    scale: Math.min(1.9, Math.cbrt(v.mass / 2)),
+    color: v.height < 0.05 ? "#8d94a3" : undefined,
+    glow: Math.min(1, f.storedEnergyJ / 2000),
+    rate: v.height < 0.05 ? 0 : 1,
+  }),
 };
 
-/* C1.4 — Energy transfer and transformation. */
+/*
+ * C1.4 — Energy transfer and transformation.
+ *
+ * The useful power left at each place on the route, and the colour of the form
+ * the energy is in there: chemical, mechanical, electrical, electrical, light,
+ * heat.
+ */
+const CHAIN_WATTS = [300, 75, 52, 50, 2.5, 2.5];
+const CHAIN_COLORS = ["#7fbf52", "#e8b23c", "#4a63f0", "#4a63f0", "#fff2c4", "#c9564a"];
+
 const ARM_TO_LIGHT: ArchetypeSpec = {
   id: "g6c1-arm-to-light",
   title: "From Your Arm to the Light",
@@ -134,6 +202,7 @@ const ARM_TO_LIGHT: ArchetypeSpec = {
     "Explain that energy is not destroyed at each step, only spread out as heat.",
   ],
   misconceptions: ["Energy is used up as it passes through a machine"],
+  specimens: [{ id: "joule", name: "The energy on its way", art: { art: "sphere", color: "#7fbf52" } }],
   stages: [
     { name: "Food", at: 0, caption: "Chemical energy in, about 300 J every second." },
     { name: "Crank", at: 0.25, caption: "A quarter of it turns the handle. The rest already warms you." },
@@ -155,6 +224,26 @@ const ARM_TO_LIGHT: ArchetypeSpec = {
     { at: [0.9, 0.6], name: "The room",
       note: "Walls absorb the light and warm slightly. Add it all up and the full 300 W has become heat: transferred and spread out, never destroyed." },
   ],
+  /*
+   * The packet being followed is drawn at the size of the useful power still
+   * in it: 300 W of food, 75 W at the handle, 52 W out of the generator, 50 W
+   * at the lamp, 2.5 W of light. Energy is a volume, so the width is the cube
+   * root of that — the packet leaves the lamp a fifth as wide as it arrived at
+   * your muscles, which is what five per cent efficiency looks like. It also
+   * takes the colour of the form it is in at each step.
+   */
+  drive: ({ t }) => {
+    const p = railPhase(t) * (CHAIN_WATTS.length - 1);
+    const i = Math.min(CHAIN_WATTS.length - 2, Math.floor(p));
+    const k = p - i;
+    const watts = CHAIN_WATTS[i] + (CHAIN_WATTS[i + 1] - CHAIN_WATTS[i]) * k;
+    return {
+      scale: Math.cbrt(watts / 300) * 1.25,
+      color: CHAIN_COLORS[k < 0.5 ? i : i + 1],
+      glow: Math.min(1, watts / 60),
+      rate: 0.3 + watts / 150,
+    };
+  },
 };
 
 /* C1.5 — Conservation of energy, introduced. */
@@ -185,6 +274,23 @@ const NOTHING_IS_LOST: ArchetypeSpec = {
     { name: "At rest", at: 1,
       caption: "After many passes the skater stops. All 1 766 J is now warmth in the ramp, the wheels and the air." },
   ],
+  /*
+   * The skater actually rides the half-pipe. Height goes as the square of the
+   * horizontal position, which is the shape of the pipe, and the amplitude
+   * decays because friction and air take 265 J out of 1 766 J on every pass —
+   * so the last pass reaches a fraction of the first, and by the end of the
+   * rail the cart is sitting still at the bottom with all of it gone to heat.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const s = Math.sin(u * Math.PI * 6);
+    const amp = 1 - 0.85 * u;
+    return {
+      offset: [s * amp, -s * s * amp * amp * 0.9],
+      tilt: 0.24 - s * amp * 0.45,
+      rate: amp,
+    };
+  },
 };
 
 /* C1.6 — Tracking energy through everyday examples. */
@@ -202,6 +308,29 @@ const WHERE_IT_ENDS_UP: ArchetypeSpec = {
     "Explain that wasted energy is not destroyed but spread out as heat.",
   ],
   misconceptions: ["An efficient device produces no waste heat"],
+  variables: [
+    { key: "lumensWanted", label: "Light wanted (lumens)", min: 200, max: 1600, step: 50, default: 800 },
+    { key: "hoursPerDay", label: "Hours lit each day", min: 1, max: 12, step: 0.5, default: 4 },
+  ],
+  /*
+   * Luminous efficacy, measured: a tungsten filament manages about 14 lumens
+   * per watt and a domestic LED about 100. So the 800 lumens of a standard
+   * 60 W bulb costs 57 W one way and 8 W the other. Of the filament's power
+   * about 95 per cent leaves as heat rather than light, against 65 per cent
+   * for the LED, and a kilowatt-hour is a thousand watt-hours.
+   */
+  measure: (v) => {
+    const filamentW = v.lumensWanted / 14;
+    const ledW = v.lumensWanted / 100;
+    return {
+      filamentWatts: filamentW,
+      ledWatts: ledW,
+      filamentWasteHeatW: filamentW * 0.95,
+      ledWasteHeatW: ledW * 0.65,
+      timesMoreEnergy: filamentW / ledW,
+      savedPerYearKWh: ((filamentW - ledW) * v.hoursPerDay * 365) / 1000,
+    };
+  },
   specimens: [
     { id: "filament", name: "Filament lamp: 57 W for 800 lumens",
       because: "About 5 per cent leaves as visible light, near 2.8 W. The other 54 W leaves as infrared and heat: the bulb is really a small heater that glows.",
@@ -210,6 +339,27 @@ const WHERE_IT_ENDS_UP: ArchetypeSpec = {
       because: "About 35 per cent leaves as visible light, near 2.8 W again. Same light, one seventh of the energy, and only 5 W of heat.",
       art: { art: "sphere", color: "#f4f0d8", radius: 0.4, glow: 1 } },
   ],
+  /*
+   * Both lamps are drawn at the size of the energy they eat. Power is a
+   * volume here, so the width is its cube root: seven times the energy is not
+   * seven times as wide but 1.9 times, which is what a factor of seven in a
+   * volume actually looks like. The filament also shakes, because 54 of its
+   * 57 watts are heat it cannot get rid of; the LED sits still on 5.
+   */
+  drive: ({ f, index, t }) => index === 0
+    ? {
+        scale: Math.cbrt(f.filamentWatts / 20),
+        offset: [0, 0.012 * Math.sin(t * 21)],
+        tilt: 0.24 + 0.05 * Math.sin(t * 6),
+        glow: Math.min(1, f.filamentWatts / 60),
+        color: "#ffae3a",
+        rate: 1.6,
+      }
+    : {
+        scale: Math.cbrt(f.ledWatts / 20),
+        glow: Math.min(1, f.ledWatts / 12),
+        rate: 0.5,
+      },
 };
 
 export const g6c1MovingOrStored = buildSim(MOVING_OR_STORED);

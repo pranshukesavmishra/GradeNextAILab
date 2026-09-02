@@ -19,6 +19,15 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * Every efficiency quoted in this topic is one of those ratios.
  */
 
+/** Odum's four floors, kcal per square metre per year. */
+const SILVER_SPRINGS_KCAL = [20810, 3368, 383, 21];
+
+/** One colour per floor, so two nearly empty jars can still be told apart. */
+const FLOOR_COLOR = ["#4f9e5c", "#a8a83f", "#c98a3a", "#8f7fa8"];
+
+/** A store of energy, from the producers' full catch down to a cold ember. */
+const ENERGY_LEFT = ["#f2c14e", "#e0a03a", "#c07a30", "#8a5730", "#584038"];
+
 /* ---------------------------------------------------------------- *
  * D2.1 — Producers, consumers and decomposers
  * ---------------------------------------------------------------- */
@@ -191,9 +200,9 @@ const TENTH_OF_A_TENTH: ArchetypeSpec = {
       art: { art: "sphere", color: "#f2c14e", radius: 0.5, glow: 1 } },
   ],
   variables: [
-    { key: "producer", label: "Energy fixed by the producers (kcal per m2 per year)", min: 2000, max: 30000, step: 100, default: 20810 },
-    { key: "efficiency", label: "Passed on at each step (per cent)", min: 2, max: 25, step: 0.5, default: 10 },
     { key: "level", label: "Trophic level (1 = producers)", min: 1, max: 5, step: 0.1, default: 4 },
+    { key: "efficiency", label: "Passed on at each step (per cent)", min: 2, max: 25, step: 0.5, default: 10 },
+    { key: "producer", label: "Energy fixed by the producers (kcal per m2 per year)", min: 2000, max: 30000, step: 100, default: 20810 },
   ],
   // E(L) = E1 * f^(L-1). At Silver Springs' 20 810 kcal per m2 per year and a
   // clean tenth per step, level 4 leaves 20.81 kcal - and a person needing
@@ -211,6 +220,27 @@ const TENTH_OF_A_TENTH: ArchetypeSpec = {
   plot: {
     x: "level", y: "energyAvailable",
     xLabel: "Trophic level", yLabel: "Energy available (kcal per m2 per year)",
+  },
+  /*
+   * The store of energy is the readout, and it is drawn as a solid: its width
+   * is the cube root of what is left, against the producers' catch as the
+   * full-sized ball. A tenth per step is not a tenth of the width - it is a
+   * little under half of it - which is why the ball is still clearly there at
+   * level 2 and has gone dark by level 5.
+   *
+   * It dims as it shrinks, and past level 4 it is a cold ember: 20.81 kcal
+   * per square metre per year is 3.5 hectares of spring to feed one person,
+   * and level 5 needs ten times that again. That is the arithmetic behind
+   * food chains stopping at four or five links.
+   */
+  drive: ({ f }) => {
+    const share = f.percentOfProducers;
+    const step = share > 50 ? 0 : share > 10 ? 1 : share > 1 ? 2 : share > 0.1 ? 3 : 4;
+    return {
+      scale: 1.3 * Math.max(0.09, Math.cbrt(share / 100)),
+      color: ENERGY_LEFT[step],
+      glow: Math.min(1, share / 60),
+    };
   },
 };
 
@@ -236,9 +266,51 @@ const SILVER_SPRINGS: ArchetypeSpec = {
     "Decomposers are a small side branch of the pyramid",
   ],
   specimens: [
-    { id: "respiration", name: "Respiration: where the missing nine tenths goes",
-      art: { art: "organelle", which: "mitochondrion" } },
+    { id: "floor", name: "The energy standing on one floor of the pyramid",
+      art: { art: "glassware", which: "beaker", level: 0.85, color: "#4f9e5c" } },
   ],
+  variables: [
+    { key: "floor", label: "Floor (1 producers, 2 herbivores, 3 carnivores, 4 top carnivores)", min: 1, max: 4, step: 1, default: 1 },
+  ],
+  /*
+   * Odum's measured figures, and nothing else: 1 700 000 kcal of sunlight per
+   * square metre per year, then 20 810, 3 368, 383 and 21 on the four floors
+   * above it. Every efficiency here is one of those ratios divided by the one
+   * below it - 1.2 per cent of the sunlight, then 16.2, 11.4 and 5.5 per cent
+   * from floor to floor - so the jar's contents and the caption on the rail
+   * are the same measurement said twice.
+   */
+  measure: (v) => {
+    const i = Math.min(3, Math.max(0, Math.round(v.floor) - 1));
+    const energy = SILVER_SPRINGS_KCAL[i];
+    const below = i === 0 ? 1700000 : SILVER_SPRINGS_KCAL[i - 1];
+    return {
+      energyKcal: energy,
+      percentOfSunlight: (100 * energy) / 1700000,
+      percentOfProducers: (100 * energy) / 20810,
+      transferFromBelowPercent: (100 * energy) / below,
+      lostBeforeThisFloorPercent: 100 - (100 * energy) / below,
+      decomposersKcal: 5060,
+    };
+  },
+  /*
+   * The jar holds the floor's energy against the producers' catch as a full
+   * jar, so what a student sees is the pyramid itself: nearly full at the
+   * plants, a fifth of that in the herbivores, and a film in the bottom by
+   * the top carnivores. The bubble stream is what was lost on the way up -
+   * respired, never eaten, or dropped - and it is heavy at every step.
+   *
+   * The two top floors are both nearly empty, which is honest and hard to
+   * read, so each floor also carries its own colour.
+   */
+  drive: ({ f, v }) => {
+    const i = Math.min(3, Math.max(0, Math.round(v.floor) - 1));
+    return {
+      level: 0.05 + 0.8 * (f.energyKcal / 20810),
+      color: FLOOR_COLOR[i],
+      bubbles: Math.min(34, f.lostBeforeThisFloorPercent / 3),
+    };
+  },
   stages: [
     { name: "Sunlight", at: 0,
       caption: "1 700 000 kcal falls on every square metre of the spring each year." },

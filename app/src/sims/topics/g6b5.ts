@@ -36,7 +36,7 @@ const MEAL_TO_BLOOD: ArchetypeSpec = {
     "The digestive system delivers food to the cells by itself",
   ],
   specimens: [
-    { id: "sample", name: "Blood sample", art: { art: "glassware", which: "testTube", level: 0.6, color: "#b03a3a" } },
+    { id: "sample", name: "The blood glucose reading", art: { art: "glassware", which: "testTube", level: 0.6, color: "#b03a3a" } },
   ],
   variables: [
     { key: "minutes", label: "Time since the meal", unit: "min", min: 0, max: 180, step: 5, default: 30 },
@@ -61,6 +61,21 @@ const MEAL_TO_BLOOD: ArchetypeSpec = {
     x: "minutes", y: "bloodGlucose",
     xLabel: "Minutes since the meal", yLabel: "Blood glucose (mmol/L)",
   },
+  /*
+   * The tube is the reading, filled from 4 mmol/L at the bottom to 10 at the
+   * brim, so it stands at 0.17 when the blood is fasting and climbs to 0.63 at
+   * the 7.8 mmol/L mark. That mark matters: 7.8 two hours after a 75 g load is
+   * the line between a normal result and impaired glucose tolerance, so the
+   * tube turns amber above it and red above 11.1, where the diagnosis changes
+   * again. Leave the slider at 0 or run it out to 180 minutes and the reading
+   * is the same 5.0 both times, which is exactly what a healthy answer looks
+   * like — the interesting part is the half hour in between.
+   */
+  drive: ({ f }) => ({
+    level: Math.max(0.02, Math.min(1, (f.bloodGlucose - 4) / 6)),
+    color: f.bloodGlucose >= 11.1 ? "#e0483f" : f.bloodGlucose >= 7.8 ? "#d89a3c" : "#b03a3a",
+    bubbles: 0,
+  }),
 };
 
 /* ---------------------------------------------------------------- *
@@ -113,6 +128,24 @@ const GAS_HANDOVER: ArchetypeSpec = {
       caption: "The carbon dioxide leaves in the next breath: exhaled air is about 4% of it.",
     },
   ],
+  /*
+   * The air sac fills and empties at 14 breaths a minute, the resting rate, so
+   * the level rises and falls the whole way through — nothing here is still.
+   * What changes across the run is the blood on the other side of the wall: it
+   * arrives dark, with oxygen at 5.3 kPa, and leaves bright at 98 per cent
+   * saturation, so the colour swings once and only once, at the moment the
+   * gases actually cross.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const breath = 0.5 + 0.5 * Math.sin(t * 1.47);
+    const stage = Math.min(4, Math.floor(p * 5));
+    return {
+      level: 0.12 + 0.16 * breath,
+      color: ["#6a86b8", "#6a86b8", "#9a6a8a", "#c04a48", "#d4463a"][stage],
+      bubbles: p > 0.3 && p < 0.7 ? 0.9 : 0.3,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -136,6 +169,26 @@ const CATCH_A_BALL: ArchetypeSpec = {
     "Muscles decide to move on their own",
     "Seeing and reacting happen at the same instant",
   ],
+  specimens: [
+    { id: "ball", name: "The ball, still coming", art: { art: "sphere", color: "#e08a2c", radius: 0.5 } },
+  ],
+  /*
+   * The ball does not wait for the nervous system, and that is the point of the
+   * subtopic. It keeps coming through every stage — larger as it nears, because
+   * a thing twice as close looks twice as wide — and only in the last stage,
+   * about 250 ms after it came into view, does the hand close on it. A ball
+   * thrown at 10 m/s covers two and a half metres in that quarter second.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const caught = p > 0.9;
+    return {
+      scale: caught ? 1.5 : 0.35 + p * 1.25,
+      offset: [0.5 - p * 0.5, -0.15 + p * 0.15],
+      spin: t * (caught ? 0 : 2.2),
+      rate: caught ? 0 : 1,
+    };
+  },
   route: [
     {
       at: [0.09, 0.28], name: "Retina",
@@ -221,6 +274,23 @@ const WATER_BALANCE: ArchetypeSpec = {
     x: "drink", y: "urineLitres",
     xLabel: "Water drunk (L/day)", yLabel: "Urine passed (L/day)",
   },
+  /*
+   * A day's urine in one beaker, drawn against a 5 litre scale, and coloured
+   * the way urine really is coloured: pale when it is dilute, deep amber when
+   * the kidney has squeezed it down. The colour is set from the concentration
+   * the model computes, so the two always agree. At 1 200 mOsm/L the beaker
+   * goes dark and stops falling — that is the hard floor of about half a litre
+   * a day, the least water the body can shed 600 mOsm of solute in, and no
+   * amount of extra sweating will get it lower.
+   */
+  drive: ({ f }) => {
+    const shade = Math.max(0, Math.min(4, Math.round((f.concentration - 100) / 275)));
+    return {
+      level: Math.min(1, f.urineLitres / 5),
+      color: ["#f2ecc0", "#eede8a", "#e6c95e", "#d8a63c", "#b87a24"][shade],
+      bubbles: 0,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -268,6 +338,25 @@ const EXERCISE: ArchetypeSpec = {
   plot: {
     x: "work", y: "heartRate",
     xLabel: "Work rate (W)", yLabel: "Heart rate (beats/min)",
+  },
+  /*
+   * The heart beats at the rate the panel prints — 70 a minute sitting still,
+   * 170 at 250 W — so the pulse you watch is the reading. It also fills more.
+   * Stroke volume is cardiac output divided by heart rate, which is 71 mL at
+   * rest and 118 mL flat out, and a chamber holding 1.66 times the volume is
+   * the cube root of that, 1.18 times, across: the heart works harder in two
+   * separate ways at once, and both of them are on the picture.
+   */
+  drive: ({ f, t }) => {
+    const strokeMl = (f.cardiacOutput * 1000) / f.heartRate;
+    const beat = Math.max(0, Math.sin((t * f.heartRate * Math.PI) / 30));
+    return {
+      scale: Math.cbrt(strokeMl / 71) * (1 - 0.12 * beat * beat),
+      color: ["#8c2a22", "#a8332a", "#c0392b", "#d4463a", "#e8574a"][
+        Math.max(0, Math.min(4, Math.round((f.heartRate - 70) / 25)))
+      ],
+      spin: 0.68 + t * 0.2,
+    };
   },
 };
 

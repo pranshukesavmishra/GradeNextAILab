@@ -114,6 +114,52 @@ const WALL: ArchetypeSpec = {
       art: { art: "cell" },
     },
   ],
+  variables: [
+    {
+      key: "outside", label: "Solute in the water around both cells", unit: "mOsm/L",
+      min: 50, max: 900, step: 10, default: 300,
+    },
+  ],
+  /*
+   * The same water, the same osmosis, two different outsides — which is the
+   * only fair way to show what the wall is for.
+   *
+   * Both cells follow Boyle-van 't Hoff, V = b + (1 - b) C0 / C with b = 0.35
+   * and C0 = 300 mOsm/L. The animal cell simply obeys it and haemolyses at 1.65
+   * times its volume, near 150 mOsm/L. The plant cell cannot: cellulose gives
+   * way at well under a per cent of strain, so once the contents press on the
+   * wall the wall presses back and the volume stops at full turgor. Going the
+   * other way the contents shrink from the wall — plasmolysis — but the wall
+   * holds the cell's outline where it was.
+   */
+  measure: (v) => {
+    const relative = 0.35 + 0.65 * (300 / v.outside);
+    return {
+      animalVolume: relative,
+      plantVolume: Math.min(1.05, relative),
+      animalBursts: relative >= 1.65 ? 1 : 0,
+      plasmolysed: relative < 0.88 ? 1 : 0,
+      saltPercent: (v.outside / 300) * 0.9,
+    };
+  },
+  /*
+   * Volume goes as the cube of the radius, so both cells are drawn at the cube
+   * root of their volume. The plant cell is held between 0.88 and 1.05 of its
+   * volume by the wall, which is a width change of under six per cent across
+   * the whole slider; the animal cell runs from 0.83 to 1.62 times as wide and
+   * then bursts. Standing side by side, that is the argument for the wall.
+   */
+  drive: ({ f, index }) => {
+    if (index === 0) {
+      return { scale: Math.cbrt(Math.min(1.05, Math.max(0.88, f.animalVolume))), rate: 1 };
+    }
+    const burst = f.animalBursts > 0;
+    return {
+      scale: Math.cbrt(Math.max(0.2, f.animalVolume)),
+      rate: burst ? 0 : 1,
+      tilt: burst ? 0.72 : 0.24,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *

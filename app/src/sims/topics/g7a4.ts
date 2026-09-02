@@ -182,6 +182,29 @@ const TWO_OR_TWICE: ArchetypeSpec = {
     x: "coefficient", y: "totalAtoms",
     xLabel: "Coefficient in front of the formula", yLabel: "Atoms in total",
   },
+  /*
+   * The two numbers do different things to the sample, so they do different
+   * things to the drawing.
+   *
+   * The coefficient is a count of whole molecules, so it is an amount: six
+   * waters take six times the volume of one, and volume goes as the cube of
+   * the width, so 6H2O is drawn 1.82 times as wide as H2O, not six times.
+   *
+   * The subscript is not an amount at all. Move it and the substance is no
+   * longer water, and no amount of redrawing a water molecule can show
+   * hydrogen peroxide. So the sample is set apart and turned on end instead:
+   * a deliberate mark that says this is a different substance, 34.01 g per
+   * mole against 18.015, and not two of anything.
+   */
+  drive: ({ v }) => {
+    const peroxide = Math.round(v.oxygenSubscript) >= 2;
+    return {
+      scale: Math.cbrt(Math.max(1, Math.round(v.coefficient))),
+      tilt: peroxide ? 1.15 : 0.24,
+      offset: peroxide ? [0.22, 0] : [0, 0],
+      rate: peroxide ? 0.35 : 1,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -208,6 +231,34 @@ const INSIDE_BRACKETS: ArchetypeSpec = {
   specimens: [
     { id: "limewater", name: "Limewater: calcium hydroxide solution", art: { art: "glassware", which: "beaker", level: 0.58, color: "#e6efe8" } },
   ],
+  // Named only so `drive` can read the speed the engine already publishes for a
+  // staged simulation; the stage position is 0.16 x speed x t.
+  variables: [
+    { key: "rate", label: "Speed", min: 0, max: 2, step: 0.1, default: 0.6 },
+  ],
+  /*
+   * The beaker is the tally. Each stage adds the atoms that step accounts for
+   * -- 1 for the calcium, 2 more inside the bracket, 2 more when the subscript
+   * outside is applied -- and the solution rises to that fraction of the five
+   * atoms in Ca(OH)2. It is full when the count is complete, which is the
+   * whole check: if the level has not reached the mark, an atom is missing.
+   *
+   * The last stage changes the formula to 3Mg(NO3)2, which is twenty-seven
+   * atoms. Five atoms' worth of beaker cannot hold that, so it fills to the
+   * brim and the solution changes: a different substance, and a count that
+   * needs a bigger vessel.
+   */
+  drive: ({ v, t }) => {
+    const p = (0.16 * v.rate * t) % 1;
+    const counted = [1, 3, 5, 5, 27];
+    const i = Math.max(0, Math.min(3, Math.floor(p * 4)));
+    const n = counted[i] + (counted[i + 1] - counted[i]) * (p * 4 - i);
+    return {
+      level: 0.12 + 0.66 * Math.min(1, n / 5),
+      color: n > 5 ? "#cfe0f0" : "#e6efe8",
+      bubbles: n > 5 ? 0.35 : 0,
+    };
+  },
   stages: [
     {
       name: "Ca", at: 0,

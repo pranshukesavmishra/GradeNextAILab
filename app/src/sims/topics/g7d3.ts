@@ -19,6 +19,12 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * atmospheric pool turn over in roughly seven years.
  */
 
+/** Oak litter as the decomposers get through it: fresh leaf to black humus. */
+const LITTER = ["#8a6a3c", "#6f5432", "#54432c", "#3a3226"];
+
+/** What is left of a joule after each meal, from the producers' catch to a cold ember. */
+const ENERGY_LEFT = ["#f2c14e", "#e0a03a", "#c07a30", "#8a5730", "#584038"];
+
 /* ---------------------------------------------------------------- *
  * D3.1 — Matter cycling between organisms and the environment
  * ---------------------------------------------------------------- */
@@ -89,8 +95,8 @@ const LITTER_BAG: ArchetypeSpec = {
       art: { art: "glassware", which: "beaker", level: 0.34, color: "#7a5c34", precipitate: 0.7 } },
   ],
   variables: [
-    { key: "k", label: "Decay constant k (per year)", min: 0.05, max: 4, step: 0.05, default: 0.6 },
     { key: "years", label: "Years buried", min: 0, max: 10, step: 0.25, default: 2 },
+    { key: "k", label: "Decay constant k (per year)", min: 0.05, max: 4, step: 0.05, default: 0.6 },
     { key: "litterfall", label: "Leaf fall (tonnes per hectare per year)", min: 1, max: 12, step: 0.1, default: 4 },
   ],
   // Olson's decomposition model. Mass remaining is exponential, M/M0 = e^(-kt),
@@ -104,6 +110,26 @@ const LITTER_BAG: ArchetypeSpec = {
     litterOnFloor: v.litterfall / v.k,
   }),
   plot: { x: "years", y: "percentRemaining", xLabel: "Years buried", yLabel: "Original mass left (per cent)" },
+  /*
+   * The bag is the readout, and it is weighed by eye: the leaves fill it in
+   * proportion to the mass still there, so at a temperate k of 0.6 it is
+   * three tenths full after two years and all but empty after ten.
+   *
+   * The colour is the other half of the measurement. Fresh oak litter is
+   * light brown; what the decomposers leave behind is black humus, because
+   * the sugars and cellulose go first and the dark lignin goes last. A bag
+   * that looks empty is not a bag where nothing happened - it is a bag whose
+   * contents left as carbon dioxide, breathed out by the animals and fungi
+   * that ate them.
+   */
+  drive: ({ f }) => {
+    const left = f.percentRemaining / 100;
+    return {
+      level: 0.05 + 0.56 * left,
+      precipitate: 0.12 + 0.62 * left,
+      color: LITTER[Math.min(3, Math.floor((1 - left) * 3.999))],
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -241,6 +267,54 @@ const CYCLES_AND_FLOWS: ArchetypeSpec = {
       art: { art: "sphere", color: "#f2c14e", radius: 0.5, glow: 1 },
     },
   ],
+  variables: [
+    { key: "steps", label: "Meals since the producers (trophic steps)", min: 0, max: 5, step: 1, default: 0 },
+    { key: "transferPercent", label: "Energy passed on at each meal (per cent)", min: 2, max: 25, step: 1, default: 10 },
+  ],
+  /*
+   * Two accounts of the same journey up a food chain, kept side by side.
+   *
+   * The atoms: every carbon atom eaten is still a carbon atom afterwards.
+   * Some is built into the eater, most is breathed straight back out as CO2,
+   * and the decomposers return the rest. Nothing is lost at any step, which
+   * is why the atmosphere's 875 Gt of carbon can keep turning over roughly
+   * every seven years and never run down.
+   *
+   * The energy: a tenth gets through each meal, so of 1 000 kJ caught by the
+   * producers, five steps leave 0.01 kJ - ten joules. And it does not come
+   * back, because what was lost left as heat, at the temperature of the
+   * organism, which nothing in an ecosystem can catch and re-use.
+   */
+  measure: (v) => {
+    const share = Math.pow(v.transferPercent / 100, v.steps);
+    return {
+      carbonAtomsRemainingPercent: 100,
+      energyRemainingPercent: 100 * share,
+      energyLeftKJ: 1000 * share,
+      energyLostAsHeatKJ: 1000 * (1 - share),
+      atmosphericTurnoverYears: 875 / 120,
+    };
+  },
+  /*
+   * The atom does not move. Whatever the slider is set to it is drawn at the
+   * same size, because that is the finding: one carbon atom in, one carbon
+   * atom out, however many mouths it has passed through.
+   *
+   * The joule beside it is drawn at the cube root of what is left, so a tenth
+   * per meal takes it to just under half its width each step, and it dims as
+   * it goes. At five steps it is a cold ember a tenth of its original width -
+   * and that, not any rule about counting, is why food chains stop.
+   */
+  drive: ({ f, index }) => {
+    if (index === 0) return { scale: 1, rate: 1 };
+    const share = f.energyRemainingPercent;
+    const step = share > 50 ? 0 : share > 10 ? 1 : share > 1 ? 2 : share > 0.1 ? 3 : 4;
+    return {
+      scale: 1.25 * Math.max(0.09, Math.cbrt(share / 100)),
+      color: ENERGY_LEFT[step],
+      glow: Math.min(1, share / 60),
+    };
+  },
 };
 
 export const g7d3OneCarbonAtom = buildSim(ONE_CARBON_ATOM);

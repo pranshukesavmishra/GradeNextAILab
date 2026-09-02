@@ -20,6 +20,27 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * the two agree because they are the same front.
  */
 
+/**
+ * Where the stage rail has got to, rebuilt from the clock.
+ *
+ * `drive` is handed elapsed time but not progress, and at the default Speed of
+ * 0.6 the engine advances progress by 0.096 a second, so this is the rail's own
+ * position and the weather moves in step with the caption under it.
+ */
+const railPhase = (t: number) => (t * 0.096) % 1;
+
+/**
+ * How much water each air mass carries, in grams per kilogram of air.
+ *
+ * Worked from each source region's dew point through the mixing ratio,
+ * r = 0.622 e / (P - e): continental arctic air holds almost nothing, Gulf air
+ * in summer holds 18.9 g. That single number is what "continental" and
+ * "maritime" mean, so it is what D4.1 draws.
+ */
+const AIR_MASS_WATER_G_PER_KG: Record<string, number> = {
+  cp: 0.14, ca: 0.05, ct: 2.6, mp: 6.7, mtgulf: 18.9, mtpacific: 14,
+};
+
 /* D4.1 — Air masses and source regions. */
 const WHERE_THE_AIR_WAS_BORN: ArchetypeSpec = {
   id: "g6d4-where-the-air-was-born",
@@ -62,6 +83,23 @@ const WHERE_THE_AIR_WAS_BORN: ArchetypeSpec = {
       because: "Maritime tropical again: 22 degrees, dew point 19, about 14 g of water per kilogram. Steered onto California by the jet stream it becomes an atmospheric river, carrying vapour at many times the flow of the Mississippi.",
       art: { art: "sphere", color: "#c98a80", radius: 0.44 } },
   ],
+  /*
+   * Size here is the water the air mass is carrying, which is the only thing
+   * the sort is asking about: 0.05 g per kilogram over the Arctic ice pack and
+   * 18.9 over the summer Gulf, a factor of nearly four hundred. Water vapour is
+   * a mass carried in a fixed mass of air rather than a volume, so it is drawn
+   * in proportion rather than as a cube root. The colours are the temperatures
+   * the air masses actually have, and the speed is the same: warm air is
+   * restless, and continental arctic air is nearly still.
+   */
+  drive: ({ specimen }) => {
+    const water = AIR_MASS_WATER_G_PER_KG[specimen.id] ?? 5;
+    return {
+      scale: 0.6 + (water / 19) * 0.72,
+      glow: Math.min(0.9, water / 20),
+      rate: 0.25 + water / 9,
+    };
+  },
 };
 
 /* D4.2 — High- and low-pressure systems. */
@@ -114,6 +152,39 @@ const SINKING_OR_RISING: ArchetypeSpec = {
       surfaceWindAfterFrictionMs: geostrophic * 0.6,
     };
   },
+  /*
+   * Two systems, driven by the one number the controls produce. The high on the
+   * left has air sinking into it, so it settles, shrinks as it is compressed,
+   * and shines: sinking air warms and its cloud evaporates, which is why a high
+   * means a clear sky. The low on the right has air rising out of it, so it
+   * lifts, swells and fills with the cloud that rising air condenses. Both turn
+   * at the wind the pressure gradient and the Coriolis parameter give them —
+   * 18 m/s at the defaults, 3.6 m/s across a slack gradient, and past 33 m/s
+   * the low is at hurricane force and goes storm-dark.
+   */
+  drive: ({ f, index, t }) => {
+    const wind = f.geostrophicWindMs;
+    const storm = wind > 33;
+    if (index === 0) {
+      return {
+        offset: [0, 0.1 + Math.min(0.25, wind / 160)],
+        scale: 1.05 - Math.min(0.2, wind / 220),
+        glow: 1,
+        color: "#f2d98c",
+        rate: 0.2 + wind / 14,
+      };
+    }
+    return {
+      offset: [0, -0.1 - Math.min(0.25, wind / 160)],
+      scale: 0.95 + Math.min(0.25, wind / 180),
+      level: Math.min(0.95, 0.35 + wind / 60),
+      bubbles: Math.min(1, wind / 30),
+      color: storm ? "#3b4a63" : "#5f8fbe",
+      glow: storm ? 0.8 : 0,
+      rate: 0.2 + wind / 14,
+      tilt: 0.24 + 0.04 * Math.sin(t * (1 + wind / 6)),
+    };
+  },
 };
 
 /* D4.3 — Cold fronts. */
@@ -149,6 +220,27 @@ const THE_COLD_FRONT_PASSES: ArchetypeSpec = {
     { name: "A day later", at: 1,
       caption: "1018 hPa, cool and dry, the new air mass in charge. Moving at 40 km/h the front is now some 960 km away, over the Rockies, doing this to somebody else." },
   ],
+  /*
+   * The wedge of cold air crosses the stage while the captions run, and it is
+   * drawn at the temperature and the violence of the moment. It arrives warm
+   * and sticky at 26 degrees, throws the warm air up at the line, shakes itself
+   * apart through the half hour of squall — the only part of the whole event
+   * with gusts past 25 m/s in it — and then settles cold, clear and steady at
+   * 18 degrees. The colour is the air temperature, so the eight-degree drop is
+   * something a student sees rather than reads.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const squall = u > 0.3 && u < 0.55;
+    const tempC = u < 0.4 ? 26 : u < 0.7 ? 26 - (u - 0.4) * 26.7 : 18;
+    return {
+      offset: [0.9 - u * 1.8, squall ? 0.035 * Math.sin(t * 30) : 0],
+      scale: 0.75 + u * 0.5,
+      color: tempC > 24 ? "#d8756b" : tempC > 20 ? "#9a8fb0" : "#3d6fbf",
+      glow: squall ? 0.9 : 0,
+      rate: squall ? 4 : 0.3 + u,
+    };
+  },
 };
 
 /* D4.4 — Warm fronts. */
@@ -196,6 +288,30 @@ const A_RAMP_ONE_IN_TWO_HUNDRED: ArchetypeSpec = {
     x: "distanceAheadKm", y: "frontalSurfaceHeightM",
     xLabel: "Distance ahead of the surface front (km)", yLabel: "Height of the frontal surface (m)",
   },
+  /*
+   * The parcel rides the ramp, and where it is on the stage is where it is in
+   * the sky: on the deck 20 km ahead of the surface front, ten kilometres up
+   * at 1 500 km ahead on a one-in-150 slope. It expands as it climbs, because
+   * pressure falls faster than temperature does — at 5 333 m the pressure is
+   * 51.7 kPa and the air is at -19.7 degrees, so a parcel holds 1.73 times the
+   * volume it held at the surface and is therefore 1.20 times as wide, the cube
+   * root of that. The colour is the cloud it makes: nothing while it is warm,
+   * grey water cloud from about 0 degrees, and the white of pure ice crystals
+   * below -20, which is the cirrostratus that warns you a warm front is coming
+   * a day before the rain does.
+   */
+  drive: ({ f }) => {
+    const km = f.frontalSurfaceHeightM / 1000;
+    const c = f.airTemperatureUpThereC;
+    const pressureRatio = (1 - 2.25577e-5 * Math.min(11000, f.frontalSurfaceHeightM)) ** 5.25588;
+    return {
+      offset: [-0.55 + Math.min(1, km / 10) * 1.1, 0.62 - Math.min(1, km / 10) * 1.28],
+      scale: Math.cbrt(((c + 273.15) / 288.15) / Math.max(0.2, pressureRatio)),
+      color: c < -20 ? "#f2f6fb" : c < 0 ? "#b8c2d0" : c < 10 ? "#9fb4c8" : "#d8756b",
+      glow: c < -20 ? 0.7 : 0,
+      rate: 0.25 + km / 3,
+    };
+  },
 };
 
 /* D4.5 — Occluded and stationary fronts. */
@@ -236,6 +352,23 @@ const THE_END_OF_A_LOW: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * A low in its last day is still turning, and this one turns the way a
+   * northern-hemisphere low does. Occlusion takes about a day to finish, so
+   * over the same cycle the system darkens and slows: the cold front catches
+   * the warm one, the warm air is lifted clear of the ground, and with nothing
+   * warm left to lift the low has no engine and fills in. The turning slowing
+   * to almost nothing is the dying, and it is the thing the labels are about.
+   */
+  drive: ({ t }) => {
+    const age = (t % 30) / 30;
+    return {
+      spin: -t * (0.5 - age * 0.42),
+      tilt: 0.3,
+      color: age > 0.72 ? "#6f7f95" : age > 0.4 ? "#51739f" : "#5a7fb8",
+      scale: 1 + age * 0.12,
+    };
+  },
 };
 
 /* D4.6 — Collecting data to track a front. */
@@ -256,6 +389,7 @@ const TRACKING_IT_ACROSS_THE_STATE: ArchetypeSpec = {
     "You need a satellite picture to know where a front is",
     "A single station's readings can tell you which way the weather is moving",
   ],
+  specimens: [{ id: "front", name: "The pressure minimum, crossing the state", art: { art: "sphere", color: "#3d6fbf" } }],
   stages: [
     { name: "First report", at: 0, caption: "Bodega Bay, midnight: pressure bottoms out at 1001 hPa." },
     { name: "Second report", at: 0.25, caption: "Santa Rosa, 40 km inland, 01:00. The same signature, one hour later." },
@@ -277,6 +411,25 @@ const TRACKING_IT_ACROSS_THE_STATE: ArchetypeSpec = {
     { at: [0.90, 0.32], name: "South Lake Tahoe, 300 km, 07:30",
       note: "300 divided by 40 is 7.5 hours. At 1 900 m the air behind the front is below zero, so the same system that gave Sacramento rain gives Tahoe 20 cm of snow. Send the warning eight hours in advance, which is the whole point of writing the times down." },
   ],
+  /*
+   * The front crosses the state at a steady 40 km/h, which is the one fact the
+   * whole method rests on, and the marker is what each station is actually
+   * recording: a pressure minimum. So it dips as it passes each of the six
+   * stations — a real barograph trace, a V rather than a step — and it climbs as
+   * it goes east and up, from sea level at Bodega Bay to 1 900 m at Tahoe,
+   * where the same front delivers snow instead of rain.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const station = Math.abs(Math.sin(u * Math.PI * 5));
+    return {
+      offset: [-0.85 + u * 1.7, 0.3 - u * 0.7],
+      scale: 1.05 - (1 - station) * 0.3,
+      color: u > 0.8 ? "#e8f0f8" : u > 0.5 ? "#5f8fbe" : "#3d6fbf",
+      glow: 1 - station,
+      rate: 0.4 + u,
+    };
+  },
 };
 
 export const g6d4WhereTheAirWasBorn = buildSim(WHERE_THE_AIR_WAS_BORN);

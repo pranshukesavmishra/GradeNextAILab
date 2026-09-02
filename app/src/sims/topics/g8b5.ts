@@ -18,7 +18,42 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * force is steady. Round one gives 66.7 g on 3 cm of foam and a broken egg;
  * round two buys crush distance and gets to 24.6 g, and the cost of that is
  * the trade-off the topic is really about.
+ *
+ * A design topic whose test never fails is not a design topic, so the egg
+ * breaks on screen. A shell loaded at a point gives way near 30 N, and for a
+ * 58 g egg that is 30 / (0.058 x 9.81) = 53 g of deceleration: everything
+ * above that line lands, flattens and stays down, and everything below it
+ * lands and is picked up for the next drop. The padded package is drawn at its
+ * true radius, 25 mm of egg plus the jacket, so tripling the jacket makes it
+ * three times as wide and, as the readout says, ten times as heavy.
  */
+
+/** A 0-1 sawtooth that runs once every `period` seconds. */
+function cycle(t: number, period: number): number {
+  const p = (t / period) % 1;
+  return p < 0 ? p + 1 : p;
+}
+
+/** The deceleration a 58 g shell survives in this rig: 30 N, so 53 g. */
+const SHELL_LIMIT_G = 30 / (0.058 * 9.81);
+
+/**
+ * Where the falling package is, as a height above the floor in specimen widths.
+ *
+ * It is released, falls under gravity — so the distance goes as the square of
+ * the time — lands, and is either lifted back for the next drop or left where
+ * it fell. A package that has broken does not get lifted again, which is the
+ * only honest way to draw a one-shot test.
+ */
+function drop(k: number, amplitude: number, broken: boolean): number {
+  if (k < 0.45) {
+    const u = k / 0.45;
+    return amplitude * (1 - u * u);
+  }
+  if (broken) return 0;
+  const u = (k - 0.45) / 0.55;
+  return amplitude * u * u;                             // lifted back up
+}
 
 /* ---------------------------------------------------------------- *
  * B5.1 — Developing a model to generate data
@@ -118,6 +153,26 @@ const ROUND_ONE: ArchetypeSpec = {
     x: "dropHeight", y: "decelerationG",
     xLabel: "Drop height (m)", yLabel: "Deceleration (g)",
   },
+  /*
+   * The rig runs. The package is released from the height set — drawn on a 4 m
+   * scale, so 0.25 m is a nudge off the bench and 4 m is the full drop — falls
+   * as half g t squared, and lands. Then the model is tested against the shell:
+   * 2.00 m onto 3 cm of foam is 66.7 g, well past the 53 g the shell takes, so
+   * it stays on the floor, flattened and pale, and no amount of repeating the
+   * drop brings it back. Wind the height down to 0.75 m and the same 3 cm of
+   * foam gives 25 g, and the package is picked up and dropped again all day.
+   */
+  drive: ({ f, t }) => {
+    const broken = f.decelerationG >= SHELL_LIMIT_G;
+    const k = cycle(t, 2.8);
+    const height = drop(k, 0.85 * Math.min(1, f.impactSpeedMs / 8.9), broken);
+    const landed = broken && k >= 0.45;
+    return {
+      offset: [0, 0.42 - height],
+      scale: landed ? 0.72 : 1,
+      color: landed ? "#c8b48a" : undefined,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -160,6 +215,25 @@ const WHAT_THE_DATA_SAID: ArchetypeSpec = {
     { name: "What changed", at: 1,
       caption: "One variable moved, from 3 cm to 9 cm, and the deceleration fell by a factor of three. The data, not the guesswork, chose which variable that was." },
   ],
+  /*
+   * The two rounds, one after the other, from the same 2.00 m. Round one is
+   * the 3 cm jacket: a small package, 66.7 g on landing, and it stays where it
+   * lands. Round two is the 9 cm jacket, drawn at its true radius — 115 mm
+   * against 55 mm, so twice as wide — which is 22.2 g, and that one survives
+   * and is picked up again. The same energy arrives both times. Only the
+   * distance it is spent over has changed.
+   */
+  drive: ({ t }) => {
+    const roundTwo = cycle(t, 8) >= 0.5;
+    const k = cycle(t, 4);
+    const height = drop(k, 0.8, !roundTwo);
+    const landed = !roundTwo && k >= 0.45;
+    return {
+      offset: [0, 0.42 - height],
+      scale: (roundTwo ? 1.18 : 0.62) * (landed ? 0.78 : 1),
+      color: landed ? "#c8b48a" : undefined,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -214,6 +288,33 @@ const SAFE_OR_SMALL: ArchetypeSpec = {
       compactFoamMassG: shell(0.03) * 25 * 1000,
       paddedFoamMassG: shell(t) * 25 * 1000,
       paddedWidthMm: (0.025 + t) * 2000,
+    };
+  },
+  /*
+   * The trade-off is a picture before it is a number. Both packages are drawn
+   * to the same scale at their real radius, 25 mm of egg plus the jacket, so
+   * the padded one grows with the control in a straight line while the readout
+   * beside it grows with the cube: 1 cm of jacket is 0.6 g of foam and 15 cm
+   * is 610 g, a thousand times as much for fifteen times the thickness. That
+   * is the right power, and drawing the width as though it grew like the mass
+   * would teach the wrong lesson entirely.
+   *
+   * And both are tested. The compact design is stuck at 3 cm, so from 2.00 m
+   * it takes 66.7 g and breaks every time; the padded one survives until the
+   * jacket is thin enough, or the brief's drop tall enough, to push it past
+   * 53 g as well.
+   */
+  drive: ({ v, f, t, index }) => {
+    const broken = (index === 0 ? f.compactDecelerationG : f.paddedDecelerationG)
+      >= SHELL_LIMIT_G;
+    const radius = index === 0 ? 0.055 : 0.025 + v.jacketCm / 100;
+    const k = cycle(t, 3);
+    const height = drop(k, 0.8 * Math.min(1, v.dropHeight / 4), broken);
+    const landed = broken && k >= 0.45;
+    return {
+      offset: [0, 0.42 - height],
+      scale: (radius / 0.115) * (landed ? 0.8 : 1),
+      color: landed ? "#c8b48a" : undefined,
     };
   },
 };

@@ -137,6 +137,19 @@ const BURNING_AND_BAKING: ArchetypeSpec = {
     };
   },
   plot: { x: "petrolLitres", y: "totalCO2kg", xLabel: "Petrol burned in a year (litres)", yLabel: "CO2 released (kg)" },
+  /*
+   * The molecule stands for the whole year's gas, so it is drawn to volume:
+   * width goes as the cube root of the mass, because a cloud eight times
+   * heavier is only twice as wide. A full tank a week and a house's worth of
+   * cement comes to about 13 tonnes of CO2 — around 7 000 cubic metres of gas
+   * at room temperature, which is why the picture keeps growing long after the
+   * intuition has stopped. It vibrates harder the faster the carbon is going
+   * in.
+   */
+  drive: ({ f, t }) => ({
+    scale: 0.3 + 0.9 * Math.cbrt(f.totalCO2kg / 12930),
+    spin: 0.68 + t * (0.3 + f.totalCO2kg / 6000),
+  }),
 };
 
 export const g6f3BurningAndBaking = buildSim(BURNING_AND_BAKING);
@@ -193,6 +206,49 @@ const FOREST_TO_BURGER: ArchetypeSpec = {
   specimens: [
     { id: "forest", name: "One hectare of tropical forest", art: { art: "habitat", which: "forest" } },
   ],
+  variables: [
+    { key: "years", label: "Years since the hectare was cleared", min: 0, max: 60, step: 1, default: 0 },
+    { key: "cattle", label: "Cattle grazing the hectare", min: 0, max: 4, step: 1, default: 1 },
+  ],
+  /*
+   * Clearing is fast and regrowth is not, and that asymmetry is the whole
+   * lesson. Above-ground carbon goes from about 90 tonnes a hectare to the
+   * 5 tonnes a pasture holds in a season of burning; secondary forest then
+   * climbs back along C = 5 + 85 * (1 - e^(-t/30)), which is the recovery
+   * curve fitted across tropical regrowth plots — about 60 per cent of the
+   * old-growth stock after 30 years and 90 per cent only after roughly 70.
+   * Every tonne of carbon released is 44/12 = 3.67 tonnes of CO2, so the
+   * hectare owes about 310 tonnes of CO2 the moment it is cleared.
+   *
+   * And the cattle standing on it: rumen microbes make methane from cellulose,
+   * about 110 kg a head a year, and methane warms about 28 times as much as
+   * CO2 over a century. One cow is therefore 3.1 tonnes of CO2-equivalent a
+   * year, so four of them undo a decade of the regrowth above them.
+   */
+  measure: (v) => {
+    const carbonTPerHa = 5 + 85 * (1 - Math.exp(-v.years / 30));
+    return {
+      aboveGroundCarbonTPerHa: carbonTPerHa,
+      co2StillOwedT: (90 - carbonTPerHa) * (44 / 12),
+      methaneKgPerYear: v.cattle * 110,
+      cattleCO2ePerYearT: (v.cattle * 110 * 28) / 1000,
+      percentOfOldGrowth: (carbonTPerHa / 90) * 100,
+    };
+  },
+  /*
+   * The hectare is drawn at the carbon standing on it. At year zero it is a
+   * stripped, sunken clearing holding a twentieth of what it held; thirty
+   * years of regrowth brings back about three fifths of the canopy, and it is
+   * still not a forest at sixty. Run the slider back and forth and watch how
+   * long the return trip takes compared with the going.
+   */
+  drive: ({ f }) => {
+    const share = f.aboveGroundCarbonTPerHa / 90;
+    return {
+      scale: 0.36 + 0.62 * share,
+      offset: [0, 0.34 * (1 - share)],
+    };
+  },
   stages: [
     { name: "Forest", at: 0, caption: "A tropical forest is a carbon store you can walk into: about 90 tonnes of carbon per hectare in wood." },
     { name: "Clearing", at: 0.2, caption: "Burning releases in weeks what took a century to build. This is a transfer between spheres, not a creation of carbon." },
@@ -227,6 +283,47 @@ const SUN_OR_US: ArchetypeSpec = {
     "Volcanoes emit more CO2 than people do",
     "A hot El Nino year proves the trend, and a cool year disproves it",
   ],
+  variables: [
+    { key: "co2Ppm", label: "Carbon dioxide in the air (ppm)", min: 280, max: 560, step: 1, default: 424 },
+  ],
+  /*
+   * Myhre's formula, which is the standard way the forcing from CO2 is
+   * computed: F = 5.35 * ln(C / C0) watts per square metre, with C0 the 280
+   * ppm of 1750. At today's 424 ppm that is 2.22 W/m2, and at a doubling to
+   * 560 ppm it is 3.71 — the number the whole idea of climate sensitivity is
+   * built on. Set against it, the Sun. Its 11-year cycle swings the forcing by
+   * about 0.17 W/m2 and averages out; the change since 1750 is about 0.01,
+   * which makes today's CO2 push some 220 times the Sun's, and the Sun has
+   * been dimming slightly through the decades in which Earth warmed fastest.
+   *
+   * Divide the forcing by the Planck response of 3.76 W/m2 per degree and you
+   * get the warming with no feedbacks at all: 0.59 degrees today. The observed
+   * 1.1 is larger because water vapour and ice amplify it, which is a
+   * different simulation.
+   */
+  measure: (v) => {
+    const co2ForcingWm2 = 5.35 * Math.log(v.co2Ppm / 280);
+    return {
+      co2ForcingWm2,
+      solarForcingWm2: 0.01,
+      timesBiggerThanTheSun: co2ForcingWm2 / 0.01,
+      warmingWithNoFeedbacksC: co2ForcingWm2 / 3.76,
+    };
+  },
+  /*
+   * Drag the CO2 from its 1750 value to a doubling and watch which side of the
+   * comparison moves. The Sun keeps its size and brightness, breathing only
+   * with its 11-year cycle, because that is what the measurements say it has
+   * done. The molecule beside it grows from nothing at 280 ppm to the full
+   * 3.71 W/m2 of a doubling. Two hundred times, drawn.
+   */
+  drive: ({ f, t, index }) => {
+    if (index === 0) return { glow: 0.92 + 0.08 * Math.sin(t * 0.5), scale: 1 };
+    return {
+      scale: 0.28 + 0.82 * (f.co2ForcingWm2 / 3.71),
+      spin: 0.68 + t * (0.3 + f.co2ForcingWm2 * 0.35),
+    };
+  },
   specimens: [
     {
       id: "sun",
@@ -269,6 +366,42 @@ const HOW_FAST_IS_FAST: ArchetypeSpec = {
   specimens: [
     { id: "earth", name: "Earth through time", art: { art: "planet", color: "#2f6ea8", atmosphere: "#a8d4f0" } },
   ],
+  variables: [
+    { key: "warmingPerCentury", label: "Warming rate (degrees per century)", min: 0.05, max: 3, step: 0.05, default: 2 },
+  ],
+  /*
+   * Rate, not size, is the variable here. The last ice age ended at about 0.06
+   * degrees a century; the present rate is 2. Divide one by the other and the
+   * present change is 33 times faster than the fastest warming in the ice
+   * cores, which is the number the last stages are built on.
+   *
+   * And what a rate costs a species: the temperature belts slide at a speed
+   * proportional to it. Observations over 1960 to 2009, when the world warmed
+   * 0.13 degrees a decade, give a global mean of 0.42 km a year, so the
+   * constant is about 3.2 km a year for every degree per decade. Today's rate
+   * moves them about 0.65 km a year, and a forest spreads a few hundred metres
+   * a year at best.
+   */
+  measure: (v) => ({
+    degreesPerCentury: v.warmingPerCentury,
+    degreesPerDecade: v.warmingPerCentury / 10,
+    beltsMoveKmPerYear: 3.2 * (v.warmingPerCentury / 10),
+    timesTheIceAgeRate: v.warmingPerCentury / 0.06,
+  }),
+  /*
+   * The planet is coloured by how fast it is being changed, not by how warm it
+   * is: the blue of a world drifting at the ice cores' 0.06 degrees a century,
+   * and the red of one moving at 2. It turns faster as the rate rises, because
+   * speed is the whole point of this subtopic and speed is what a still
+   * picture is worst at showing.
+   */
+  drive: ({ v, t }) => ({
+    color: v.warmingPerCentury >= 1.5 ? "#b8452c"
+      : v.warmingPerCentury >= 0.6 ? "#c9713f"
+      : v.warmingPerCentury >= 0.2 ? "#8fa2b8"
+      : "#2f6ea8",
+    spin: 0.68 + t * (0.1 + v.warmingPerCentury * 0.5),
+  }),
   stages: [
     {
       name: "800,000 years", at: 0,
@@ -292,7 +425,7 @@ const HOW_FAST_IS_FAST: ArchetypeSpec = {
     },
     {
       name: "Why speed matters", at: 1,
-      caption: "Species tracked the old changes by moving. Temperature belts are now sliding about 0.4 km a year on average, and much faster across flat land, while forests spread a few hundred metres a year at best.",
+      caption: "Species tracked the old changes by moving. Temperature belts slid about 0.4 km a year over 1960 to 2009 and about 0.65 km a year at today's rate, much faster across flat land, while forests spread a few hundred metres a year at best.",
     },
   ],
 };

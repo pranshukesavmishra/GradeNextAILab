@@ -18,6 +18,15 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * particles move; thermal energy also counts how many there are.
  */
 
+/**
+ * Where the stage rail has got to, rebuilt from the clock.
+ *
+ * `drive` is handed elapsed time but not progress, and at the default Speed of
+ * 0.6 the engine advances progress by 0.096 a second. So this is the rail's
+ * own position, and the specimen changes in step with the caption under it.
+ */
+const railPhase = (t: number) => (t * 0.096) % 1;
+
 /* C2.1 — Matter is made of particles. */
 const CUT_IT_AGAIN: ArchetypeSpec = {
   id: "g6c2-cut-it-again",
@@ -46,6 +55,24 @@ const CUT_IT_AGAIN: ArchetypeSpec = {
     { name: "One cut too far", at: 1,
       caption: "Break the molecule and the sweetness is gone: only carbon, hydrogen and oxygen atoms are left. That is the limit." },
   ],
+  /*
+   * The cube really is cut down. A 12 mm cube becomes a 0.5 mm grain, then one
+   * crystal, then a molecule 1 nanometre across: seven orders of magnitude, so
+   * the drawn size follows the logarithm of the real width rather than the
+   * width itself, or every stage after the first would be a single pixel. It
+   * pales as it goes, and at the last cut it turns to loose atoms and stops
+   * being sugar — the colour drops out and the turning stops.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const broken = u > 0.9;
+    return {
+      scale: 1.15 - u * 0.85,
+      color: broken ? "#8d94a3" : u > 0.65 ? "#dfe6f2" : undefined,
+      rate: broken ? 0 : 0.4 + u * 2.4,
+      glow: broken ? 0.8 : 0,
+    };
+  },
 };
 
 /* C2.2 — Evidence for particle motion. */
@@ -79,6 +106,23 @@ const HOW_A_SMELL: ArchetypeSpec = {
     };
   },
   plot: { x: "distance", y: "diffusionHours", xLabel: "Distance (cm)", yLabel: "Time to diffuse (hours)" },
+  /*
+   * The flask is the clock. Diffusion time goes as the square of the distance,
+   * so the bubbling that stands for molecules leaving slows right down as the
+   * target moves away: 1 cm takes 5 seconds, 500 cm takes 145 hours. The
+   * flask drains as its scent leaves, and past about a day the run has failed
+   * as a way of delivering a smell at all — the liquid goes flat and grey,
+   * which is the honest answer to "would you smell it?".
+   */
+  drive: ({ f }) => {
+    const hopeless = f.diffusionHours > 24;
+    return {
+      level: 0.05 + 0.3 / (1 + f.diffusionHours / 3),
+      bubbles: Math.max(0.04, 3 / (1 + f.diffusionHours)),
+      color: hopeless ? "#7d8595" : "#b07fd0",
+      rate: Math.max(0.05, 2 / (1 + f.diffusionHours / 2)),
+    };
+  },
 };
 
 /* C2.3 — Particle movement in solids, liquids and gases. */
@@ -124,6 +168,35 @@ const SOLID_LIQUID_GAS: ArchetypeSpec = {
       because: "It pours, so it looks like a liquid, but each grain is a solid crystal. A heap of solids is still solid.",
       art: { art: "sphere", color: "#cbb894", radius: 0.44 } },
   ],
+  /*
+   * This sort asks the student to judge by particle motion, so the specimen
+   * has to show particle motion. Solids only shiver in place; liquids turn
+   * slowly and roll; gases fly, at the speeds kinetic theory gives them —
+   * about 500 m/s for air at room temperature, faster still for steam at 110
+   * degrees. Sand is the trap: it pours, but each grain shivers like the
+   * solid it is.
+   */
+  drive: ({ specimen, t }) => {
+    switch (specimen.id) {
+      case "ice":
+        return { offset: [0.012 * Math.sin(t * 26), 0.012 * Math.cos(t * 31)], rate: 0.05 };
+      case "copper":
+        return { offset: [0.01 * Math.sin(t * 22), 0.01 * Math.cos(t * 27)], rate: 0.05 };
+      case "sand":
+        return { offset: [0.014 * Math.sin(t * 19), 0.014 * Math.cos(t * 24)], rate: 0.05 };
+      case "water":
+        return { level: 0.6, bubbles: 0.12, rate: 0.55 };
+      case "oil":
+        return { level: 0.7, bubbles: 0.05, rate: 0.3 };
+      case "steam":
+        return { level: 0.06, bubbles: 22, scale: 1.18, rate: 3.2 };
+      default:
+        return {
+          offset: [0.24 * Math.sin(t * 3.1), 0.2 * Math.cos(t * 2.3)],
+          scale: 1.1, glow: 0.8, rate: 3.6,
+        };
+    }
+  },
 };
 
 /* C2.4 — Temperature as average kinetic energy. */
@@ -159,6 +232,25 @@ const HOW_FAST: ArchetypeSpec = {
     };
   },
   plot: { x: "tempC", y: "nitrogenSpeedMs", xLabel: "Temperature (degrees C)", yLabel: "Average nitrogen speed (m/s)" },
+  /*
+   * Temperature is speed, so the sample is drawn moving at the speed kinetic
+   * theory gives it: the jitter and the turning both scale with the root-mean-
+   * square speed, 425 m/s at -50 degrees and 819 at 500. That is the lesson —
+   * nearly twice the speed for a change that looks like ten times the
+   * temperature on the Celsius scale, because it is the kelvin that counts and
+   * speed goes as its square root. The colour runs from cold blue to hot amber
+   * across the same range.
+   */
+  drive: ({ f, t }) => {
+    const s = f.nitrogenSpeedMs / 511;
+    return {
+      offset: [0.13 * s * Math.sin(t * 4.4 * s), 0.11 * s * Math.cos(t * 3.7 * s)],
+      color: f.temperatureK > 500 ? "#e8934a" : f.temperatureK < 250 ? "#7fa8d8" : "#a9c8e8",
+      glow: Math.min(1, (f.temperatureK - 200) / 600),
+      scale: 0.9 + s * 0.25,
+      rate: s * s * 2,
+    };
+  },
 };
 
 /* C2.5 — Temperature vs total thermal energy. */
@@ -176,6 +268,27 @@ const SPARK_AND_BATH: ArchetypeSpec = {
     "Use mass and specific heat capacity to explain why a cool object can hold more energy.",
   ],
   misconceptions: ["Hotter always means more thermal energy"],
+  variables: [
+    { key: "sparkTempC", label: "Temperature of the spark (degrees C)", min: 200, max: 1400, step: 10, default: 1000 },
+    { key: "bathTempC", label: "Temperature of the bath (degrees C)", min: 22, max: 45, step: 0.5, default: 40 },
+  ],
+  /*
+   * q = m c dT above a 20 degree room, with the measured specific heat
+   * capacities: steel 466 J/kg K, water 4 186. The spark is 0.02 g of steel,
+   * the bath 150 kg of water. At the defaults that is 9.1 J against
+   * 12 558 000 J — the spark is 25 times hotter and holds one part in 1.4
+   * million of the energy.
+   */
+  measure: (v) => {
+    const sparkJ = 0.00002 * 466 * (v.sparkTempC - 20);
+    const bathJ = 150 * 4186 * (v.bathTempC - 20);
+    return {
+      sparkEnergyJ: sparkJ,
+      bathEnergyMJ: bathJ / 1e6,
+      bathHoldsThisManyTimesMore: bathJ / sparkJ,
+      sparkIsThisManyTimesHotter: (v.sparkTempC - 20) / (v.bathTempC - 20),
+    };
+  },
   specimens: [
     { id: "spark", name: "Grinder spark: 0.02 g of steel at 1 000 degrees",
       because: "Very hot, yet only about 9 J above room temperature. There is so little steel that it cools before it can even mark your skin.",
@@ -184,6 +297,32 @@ const SPARK_AND_BATH: ArchetypeSpec = {
       because: "Barely warm, but about 12 600 000 J above room temperature: 1.4 million times the spark. Mass and specific heat capacity do the counting.",
       art: { art: "glassware", which: "beaker", level: 0.78 } },
   ],
+  /*
+   * Colour is temperature and only temperature, which is exactly the trap this
+   * comparison is built on. The spark runs the blackbody sequence a smith
+   * reads by eye — dull red near 600 degrees, orange at 1 000, yellow-white
+   * above 1 300 — while the bath never leaves tepid blue. Below about 500
+   * degrees the spark stops glowing altogether and is just a grey speck of
+   * steel. The bath is the one that fills the beaker.
+   */
+  drive: ({ v, f, index, t }) => {
+    if (index === 0) {
+      const hot = v.sparkTempC;
+      return {
+        color: hot < 500 ? "#6f6a78" : hot < 800 ? "#c94a2c" : hot < 1150 ? "#ff8a3d" : "#ffe6a8",
+        glow: Math.max(0, (hot - 450) / 950),
+        scale: 0.55 + 0.12 * Math.sin(t * 7),
+        rate: 2.4,
+      };
+    }
+    return {
+      level: 0.5 + (v.bathTempC - 22) / 46,
+      color: v.bathTempC > 41 ? "#8fb6d8" : "#7fa8c8",
+      bubbles: Math.max(0, (v.bathTempC - 38) / 14),
+      glow: Math.min(0.35, f.bathEnergyMJ / 40),
+      rate: 0.5,
+    };
+  },
 };
 
 /* C2.6 — Measuring temperature. */
@@ -221,6 +360,19 @@ const INSIDE_A_THERMOMETER: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * A thermometer that never moves teaches nothing. This one is dropped into
+   * hot water every twenty seconds and left to come to equilibrium: the column
+   * climbs fast at first and then ever more slowly, on the exponential
+   * approach that real thermal contact gives, and settles just short of the
+   * final reading. That last slow crawl is the whole point of the
+   * "why it takes time" label.
+   */
+  drive: ({ t }) => {
+    const u = (t % 20) / 20;
+    const settled = 1 - Math.exp(-u * 6);
+    return { level: 0.18 + settled * 0.6, color: "#c0392b", rate: 0.3 };
+  },
 };
 
 export const g6c2CutItAgain = buildSim(CUT_IT_AGAIN);

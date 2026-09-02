@@ -16,7 +16,19 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * hanger. Each 100 g on the hanger is 0.981 N of pull, and because the total
  * moving mass is held at 1.00 kg the acceleration comes out at 0.981 m/s2 per
  * step, which is what makes the graph a straight line through the origin.
+ *
+ * So the cart runs. In A4.2 it covers half a t squared over a two-second run,
+ * which means zero net force leaves it standing exactly where it started; in
+ * A4.3 it makes all five runs in turn, each one visibly quicker than the last;
+ * and in A4.4 it stops dead as soon as friction grows past the pull, which is
+ * the moment the prediction and the measurement part company for good.
  */
+
+/** A 0-1 sawtooth that runs once every `period` seconds. */
+function cycle(t: number, period: number): number {
+  const p = (t / period) % 1;
+  return p < 0 ? p + 1 : p;
+}
 
 /* ---------------------------------------------------------------- *
  * A4.1 — Planning a fair test
@@ -82,6 +94,36 @@ const THREE_KINDS_OF_VARIABLE: ArchetypeSpec = {
       art: { art: "apparatus", which: "stand" },
     },
   ],
+  /*
+   * The three kinds behave differently on the bench, so they are drawn behaving
+   * differently. The independent variable is the one you step through, so the
+   * balance walks up its five settings, 0.981 N at a time. The dependent ones
+   * answer back: a reading arrives, holds, and is replaced by the next. The
+   * controlled ones do not move at all — being identical from run to run is
+   * the entire job of a controlled variable, and a student who notices that
+   * three of these six never so much as twitch has understood the category.
+   */
+  drive: ({ t, specimen }) => {
+    switch (specimen.id) {
+      // Independent: five settings, stepped through in order.
+      case "pull": {
+        const step = Math.floor(cycle(t, 7.5) * 5);           // 0 to 4
+        return { scale: 0.78 + 0.14 * step, spin: 0.12, tilt: 0.2 };
+      }
+      // Dependent: a reading that arrives after each run and then settles.
+      case "accel": {
+        const k = cycle(t, 1.5);
+        return { scale: 1 + 0.14 * Math.exp(-6 * k) };
+      }
+      case "timer": {
+        const k = cycle(t, 1.5);
+        return { scale: 1 + 0.1 * Math.exp(-6 * k), spin: 0.68 };
+      }
+      // Controlled: identical every run, which on the bench means motionless.
+      default:
+        return { offset: [0, 0], spin: 0.68 };
+    }
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -120,6 +162,25 @@ const FORCE_OVER_MASS: ArchetypeSpec = {
     weightN: v.mass * 9.81,
   }),
   plot: { x: "force", y: "accelerationMs2", xLabel: "Net force (N)", yLabel: "Acceleration (m/s2)" },
+  /*
+   * A two-second run, drawn on 8 m of track and then held at wherever it got
+   * to until the next run starts. The cart covers half a t squared, so 6 N on
+   * 2 kg gives 3 m/s2 and is 6 m along at the end of the run, while 20 N on
+   * 2 kg gives 10 m/s2 and is off the end of the track after 1.3 s. Set the
+   * net force to zero and the cart does not move at all: no net force, no
+   * change of motion, and the picture says it without a word. It is drawn
+   * larger as the mass grows, by the cube root, because a cart with five times
+   * the load on it is only 1.7 times as wide.
+   */
+  drive: ({ v, f, t }) => {
+    const tau = Math.min(cycle(t, 5) * 5, 2);
+    const s = 0.5 * f.accelerationMs2 * tau * tau;
+    return {
+      scale: Math.cbrt(v.mass / 2),
+      offset: [-0.55 + 1.15 * Math.min(1, s / 8), 0],
+      spin: 0.68,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -143,7 +204,10 @@ const FIVE_RUNS: ArchetypeSpec = {
     "One reading per setting is enough if you measure carefully",
     "Adding masses to the hanger keeps everything else the same",
   ],
-  specimens: [{ id: "rig", name: "Pulley and stand", art: { art: "apparatus", which: "stand" } }],
+  specimens: [
+    { id: "cart", name: "The 1.00 kg cart on the levelled track",
+      art: { art: "apparatus", which: "cart" } },
+  ],
   stages: [
     { name: "Level", at: 0,
       caption: "Level the track first: a cart set down gently must not creep either way." },
@@ -156,6 +220,21 @@ const FIVE_RUNS: ArchetypeSpec = {
     { name: "Five points", at: 1,
       caption: "Pull 0.98 to 4.91 N, acceleration 0.98 to 4.91 m/s2. A straight line through the origin." },
   ],
+  /*
+   * All five runs, in order, over and over. Run n has n masses on the hanger,
+   * so the pull is 0.981 n newtons on a moving mass held at 1.00 kg and the
+   * acceleration is 0.981 n m/s2. Each run is 1.4 s long and the cart covers
+   * half a t squared, which is 0.96 m on run one and 4.81 m on run five, drawn
+   * on the same 5 m of track. The five runs are visibly different lengths, and
+   * that difference is the straight line the topic is trying to produce.
+   */
+  drive: ({ t }) => {
+    const run = Math.floor(cycle(t, 10) * 5);                 // 0 to 4
+    const tau = Math.min(cycle(t, 2) * 2, 1.4);
+    const a = 0.981 * (run + 1);
+    const s = 0.5 * a * tau * tau;
+    return { offset: [-0.5 + Math.min(1, s / 5), 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -179,7 +258,9 @@ const WHY_IT_CAME_UP_SHORT: ArchetypeSpec = {
     "A measurement that misses the prediction means the theory is wrong",
     "Repeating the run more times would remove the difference",
   ],
-  specimens: [{ id: "balance", name: "Spring balance on the cord", art: { art: "apparatus", which: "spring" } }],
+  specimens: [
+    { id: "balance", name: "Spring balance on the cord", art: { art: "apparatus", which: "spring" } },
+  ],
   variables: [
     { key: "force", label: "Applied force (N)", min: 0.2, max: 6, step: 0.1, default: 3 },
     { key: "mass", label: "Moving mass (kg)", min: 0.2, max: 5, step: 0.1, default: 1 },
@@ -203,6 +284,25 @@ const WHY_IT_CAME_UP_SHORT: ArchetypeSpec = {
   plot: {
     x: "force", y: "percentBelowPrediction",
     xLabel: "Applied force (N)", yLabel: "Measurement below prediction (%)",
+  },
+  /*
+   * The balance is the instrument, so it reads. Its extension is proportional
+   * to the force in the cord, which is what a spring balance is, and it is
+   * dragged along at the acceleration the cart actually gets — F minus mu m g,
+   * over m — rather than the one the prediction promised. The failure state is
+   * the interesting one: wind the rolling coefficient up past mu = F / (m g)
+   * and the balance stretches to a healthy reading while nothing moves at all.
+   * A pull can be plainly there on the dial and still not be enough.
+   */
+  drive: ({ v, f, t }) => {
+    const tau = Math.min(cycle(t, 3.4) * 3.4, 2);
+    const s = 0.5 * f.measuredAccelMs2 * tau * tau;
+    return {
+      scale: 0.7 + (v.force / 6) * 0.45,
+      offset: [-0.5 + 0.7 * Math.min(1, s / 12), 0],
+      spin: 0.12,
+      tilt: 0.2,
+    };
   },
 };
 

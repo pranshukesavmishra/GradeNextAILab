@@ -20,6 +20,26 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * simulation against another and find them consistent.
  */
 
+/**
+ * Where the stage rail has got to, rebuilt from the clock.
+ *
+ * `drive` is handed elapsed time but not progress, and at the default Speed of
+ * 0.6 the engine advances progress by 0.096 a second, so this is the rail's
+ * own position and the beaker heats in step with the caption under it.
+ */
+const railPhase = (t: number) => (t * 0.096) % 1;
+
+/**
+ * The colour of water at a temperature, from cold tap to rolling boil.
+ *
+ * Water does not really change colour when you heat it, but a student cannot
+ * see a number written on a beaker, and this is the one quantity every
+ * simulation in the topic is about. The same ramp is used everywhere here, so
+ * the same temperature always looks the same.
+ */
+const waterColor = (c: number) =>
+  c >= 100 ? "#f2f4f8" : c > 75 ? "#d88a5a" : c > 45 ? "#c2a072" : c > 30 ? "#8fa8c4" : "#5f92c4";
+
 /* C4.1 — Effect of material type on temperature change. */
 const WHICH_MATERIAL: ArchetypeSpec = {
   id: "g6c4-which-material",
@@ -51,6 +71,21 @@ const WHICH_MATERIAL: ArchetypeSpec = {
     };
   },
   plot: { x: "energyJ", y: "waterRiseC", xLabel: "Energy added (J)", yLabel: "Temperature rise of water (degrees C)" },
+  /*
+   * The sample on the bench is the half-kilogram of water, drawn at the
+   * temperature the energy has actually put it at: 20 degrees at the bottom of
+   * the range and 43.9 at 50 000 J. Convection starts as soon as there is a
+   * temperature difference to drive it, so the stirring grows with the rise.
+   * The glow is the iron sample's temperature over the same energy — it reaches
+   * 242 degrees on the same 50 000 J, and that gap is the whole subtopic.
+   */
+  drive: ({ f }) => ({
+    level: 0.55,
+    color: waterColor(20 + f.waterRiseC),
+    bubbles: Math.min(0.8, f.waterRiseC / 40),
+    glow: Math.min(1, f.ironRiseC / 240),
+    rate: 0.2 + f.waterRiseC / 8,
+  }),
 };
 
 /* C4.2 — Effect of mass on temperature change. */
@@ -83,6 +118,25 @@ const HOW_MUCH_MATTER: ArchetypeSpec = {
     };
   },
   plot: { x: "massKg", y: "riseC", xLabel: "Mass of water (kg)", yLabel: "Temperature rise (degrees C)" },
+  /*
+   * The pan holds the water you asked for: the fill is the mass, straight off
+   * the first control, so two kilograms is a full pan and a hundred grams is a
+   * puddle in the bottom. The colour is the temperature that mass reaches, and
+   * the failure state is real — 0.1 kg given 60 000 J needs a rise of 143
+   * degrees, which water cannot do. It boils instead, the level drops as it
+   * goes off as steam, and the pan is on its way to boiling dry.
+   */
+  drive: ({ v, f }) => {
+    const boiling = f.finalTempC >= 100;
+    const fill = 0.06 + (v.massKg / 2) * 0.82;
+    return {
+      level: boiling ? fill * 0.55 : fill,
+      color: waterColor(f.finalTempC),
+      bubbles: boiling ? 1 : Math.min(0.7, f.riseC / 60),
+      glow: boiling ? 0.9 : 0,
+      rate: boiling ? 3.4 : 0.2 + f.riseC / 30,
+    };
+  },
 };
 
 /* C4.3 — Planning a fair test investigation. */
@@ -119,6 +173,21 @@ const FAIR_TEST_RIG: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * The rig is not a diagram, it is a run: the 50 W heater goes on, the sample
+   * climbs 5.7 degrees every two minutes, and at ten minutes it is switched off
+   * and the next sample goes in. Watching the same run happen twice is what
+   * makes "same heater, same time, same mass" mean anything.
+   */
+  drive: ({ t }) => {
+    const u = (t % 24) / 24;
+    return {
+      level: 0.5,
+      color: waterColor(20 + u * 29),
+      bubbles: u * 0.6,
+      rate: 0.2 + u * 2,
+    };
+  },
 };
 
 /* C4.4 — Collecting and organizing temperature-time data. */
@@ -151,6 +220,24 @@ const MINUTE_BY_MINUTE: ArchetypeSpec = {
     { name: "10 min", at: 1,
       caption: "48.7 degrees. Ten minutes, 30 000 J, a rise of 28.7 degrees. Now the table is ready to plot." },
   ],
+  /*
+   * The beaker heats while the table is filled in. A steady 50 W into 250 g of
+   * water is 2.87 degrees a minute, dead straight, so the colour walks evenly
+   * from 20 degrees to 48.7 and the convection stirring grows with it. Nothing
+   * boils here and nothing should: 48.7 degrees is hand-hot, and the straight
+   * line is the reading worth having.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const tempC = 20 + 28.7 * u;
+    return {
+      level: 0.6,
+      color: waterColor(tempC),
+      bubbles: u * 0.55,
+      glow: u * 0.4,
+      rate: 0.2 + u * 2.2,
+    };
+  },
 };
 
 /* C4.5 — Analyzing and interpreting data. */
@@ -168,14 +255,62 @@ const TWO_DATA_SETS: ArchetypeSpec = {
     "Account for energy that leaves an experiment as steam.",
   ],
   misconceptions: ["A result below the prediction means the experiment was done wrong"],
+  variables: [
+    { key: "minutes", label: "Time the heater has run (minutes)", min: 0, max: 20, step: 0.5, default: 10 },
+    { key: "heaterW", label: "Heater power (W)", min: 20, max: 80, step: 5, default: 50 },
+  ],
+  /*
+   * q = m c dT for 250 g of water, c = 4 186 J/kg K, so 50 W for 600 s is
+   * 30 000 J and a rise of 28.7 degrees: the covered beaker reaches 48.7, the
+   * predicted value. The open one loses about 0.23 g a minute to evaporation
+   * and the latent heat of vaporisation is 2 260 J per gram, so 10 minutes
+   * costs it 5 200 J, worth 5.0 degrees, and it arrives at 43.7. Neither can
+   * pass 100 degrees: beyond that the energy goes into boiling the water away
+   * rather than into raising its temperature.
+   */
+  measure: (v) => {
+    const capacity = 0.25 * 4186;
+    const supplied = v.heaterW * 60 * v.minutes;
+    const evaporatedG = 0.23 * v.minutes;
+    const openLoss = evaporatedG * 2260;
+    const cap = (j: number) => Math.min(100, 20 + j / capacity);
+    return {
+      coveredTempC: cap(supplied),
+      openTempC: cap(supplied - openLoss),
+      gapC: cap(supplied) - cap(supplied - openLoss),
+      energyLostAsSteamJ: openLoss,
+      waterEvaporatedG: evaporatedG,
+      energySuppliedJ: supplied,
+    };
+  },
   specimens: [
-    { id: "covered", name: "Covered beaker: 48.1 degrees at 10 min",
-      because: "Almost exactly the predicted 48.7. The lid keeps the vapour in, so nearly all 30 000 J stayed in the water.",
+    { id: "covered", name: "Covered beaker: 48.7 degrees at 10 min",
+      because: "Exactly the prediction. The lid keeps the vapour in, so all 30 000 J stayed in the water.",
       art: { art: "glassware", which: "flask", level: 0.6 } },
-    { id: "open", name: "Open beaker: 43.2 degrees at 10 min",
-      because: "About 2 g of water evaporated, and each gram carries away 2 260 J. That is 4 520 J, worth 4.3 degrees: the missing energy left as steam.",
+    { id: "open", name: "Open beaker: 43.7 degrees at 10 min",
+      because: "About 2.3 g of water evaporated, and each gram carries away 2 260 J. That is 5 200 J, worth 5.0 degrees: the missing energy left as steam.",
       art: { art: "glassware", which: "beaker", level: 0.6, bubbles: 4 } },
   ],
+  /*
+   * Two beakers, side by side, at the temperatures the arithmetic gives them.
+   * The open one is always the cooler and always the steamier, and the steam is
+   * where its missing degrees went — it is not a botched experiment, it is an
+   * unclosed one. Push the heater far enough and the open beaker hits 100
+   * first, at which point its level starts dropping and its temperature stops
+   * moving however much longer you run it.
+   */
+  drive: ({ f, index }) => {
+    const tempC = index === 0 ? f.coveredTempC : f.openTempC;
+    const boiling = tempC >= 99.9;
+    const steam = index === 0 ? 0.12 : 0.35 + Math.min(0.5, f.waterEvaporatedG / 8);
+    return {
+      level: index === 0 ? 0.6 : 0.6 - Math.min(0.22, f.waterEvaporatedG / 20),
+      color: waterColor(tempC),
+      bubbles: boiling ? 1 : steam,
+      glow: Math.max(0, (tempC - 40) / 60),
+      rate: 0.2 + (tempC - 20) / 20,
+    };
+  },
 };
 
 /* C4.6 — Constructing an explanation from evidence. */

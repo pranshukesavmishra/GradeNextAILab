@@ -101,6 +101,51 @@ const WHERE_YOU_START: ArchetypeSpec = {
     "A graph cannot mislead if the numbers in it are correct",
     "Fifteen years is long enough to see a climate trend",
   ],
+  variables: [
+    { key: "windowYears", label: "Years in the window you are looking at", min: 5, max: 60, step: 1, default: 15 },
+  ],
+  /*
+   * How long a window has to be before a trend means anything.
+   *
+   * A least-squares trend fitted to n annual values with a year-to-year
+   * scatter s has a standard error of s * sqrt(12 / (n(n^2 - 1))) per year.
+   * Climate noise is not independent from year to year, though: ENSO gives the
+   * global mean a lag-one correlation near 0.7, which widens the error bar by
+   * sqrt((1 + r)/(1 - r)) = 2.4. With s = 0.1 degrees, a 15-year window carries
+   * an error bar of about 0.14 degrees per decade around a real trend of 0.19,
+   * so the window cannot tell 0.05 from 0.19 and a flat-looking stretch proves
+   * nothing. By 30 years the bar is down to about 0.05 and the trend is four
+   * times its own uncertainty. That is why 30 years is the convention.
+   */
+  measure: (v) => {
+    const n = v.windowYears;
+    const standardErrorPerDecade =
+      10 * 0.1 * Math.sqrt(12 / (n * (n * n - 1))) * 2.4;
+    return {
+      trueTrendPerDecade: 0.19,
+      uncertaintyPerDecade: 2 * standardErrorPerDecade,
+      trendOverItsUncertainty: 0.19 / (2 * standardErrorPerDecade),
+      yearsInTheWindow: n,
+    };
+  },
+  /*
+   * The left-hand specimen is not the data: it is the error bar. A five-year
+   * window carries an uncertainty of plus or minus 1.5 degrees per decade — a
+   * grey ball far bigger than the trend inside it, which is why a short window
+   * can be made to say anything. Drag the window out and it shrinks and
+   * hardens, and somewhere near twenty years it becomes smaller than the trend
+   * and the answer stops depending on where you started. The right-hand
+   * planet is the record itself and never moves.
+   */
+  drive: ({ f, index }) => {
+    if (index !== 0) return { color: "#c2603a" };
+    const clear = f.trendOverItsUncertainty;
+    return {
+      scale: 0.28 + 0.9 * Math.min(1, f.uncertaintyPerDecade / 1.3),
+      color: clear >= 2 ? "#c2603a" : clear >= 1 ? "#b0947e" : "#9aa8bc",
+      glow: Math.min(0.8, clear / 4),
+    };
+  },
   specimens: [
     {
       id: "short",
@@ -144,6 +189,43 @@ const WHICH_CAME_FIRST: ArchetypeSpec = {
   specimens: [
     { id: "earth", name: "Earth at the end of an ice age", art: { art: "planet", color: "#dfe9f2", atmosphere: "#cfe0ee" } },
   ],
+  variables: [
+    { key: "co2Ppm", label: "Carbon dioxide during the deglaciation (ppm)", min: 180, max: 300, step: 1, default: 180 },
+  ],
+  /*
+   * Walk the deglaciation with the number that did the work. CO2 climbed from
+   * the 180 ppm of the last glacial maximum to the 280 ppm of the Holocene,
+   * and Myhre's formula turns that into 5.35 * ln(280/180) = 2.36 W/m2 of
+   * extra heating, applied to the whole planet and kept there — which is the
+   * 2.4 the caption quotes and roughly half of the deglacial warming.
+   *
+   * The ice went with it. Sea level stood about 125 m below today at 180 ppm
+   * and was back to modern by 280, and through the termination the two ran
+   * close to in step, so the ice remaining is drawn straight from the CO2.
+   */
+  measure: (v) => {
+    const forcingWm2 = 5.35 * Math.log(v.co2Ppm / 180);
+    return {
+      forcingWm2,
+      warmingWithNoFeedbacksC: forcingWm2 / 3.76,
+      seaLevelBelowTodayM: Math.max(0, (125 * (280 - v.co2Ppm)) / 100),
+      co2Ppm: v.co2Ppm,
+    };
+  },
+  /*
+   * This is the ice age ending, drawn. At 180 ppm the planet is white to the
+   * mid-latitudes with 125 m of sea water locked up in ice sheets; take the
+   * CO2 up through 220 and the ice pulls back off the continents; by 280 the
+   * coastlines are where you would recognise them. The lag argument is about
+   * which of these two started first. What the picture shows is that once the
+   * CO2 was up, it was doing the melting.
+   */
+  drive: ({ f }) => ({
+    color: f.seaLevelBelowTodayM >= 95 ? "#eef5fa"
+      : f.seaLevelBelowTodayM >= 60 ? "#cfe0ee"
+      : f.seaLevelBelowTodayM >= 25 ? "#8fb2ce"
+      : "#2f6ea8",
+  }),
   stages: [
     {
       name: "The orbit nudges", at: 0,

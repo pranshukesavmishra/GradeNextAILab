@@ -18,7 +18,21 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * 4.08 m it travels. The hydro plant then does the same accounting at
  * 49 megawatts, and the bouncing ball does it with a coefficient of
  * restitution. g is 9.81 N/kg throughout.
+ *
+ * Conservation is a counting argument, and counting arguments are dull until
+ * something visibly runs out. So the bike coasts to a stop where the joules
+ * ran out, the tennis ball runs its whole bouncing sequence with each hop e
+ * squared as high as the last — at e = 0.2 it is on the floor within a second
+ * and stays there — and in B4.5 the six advertised claims are drawn exactly as
+ * advertised, so the ball really does climb higher each bounce. Deciding
+ * whether what you are watching can be true is the point of the exercise.
  */
+
+/** A 0-1 sawtooth that runs once every `period` seconds. */
+function cycle(t: number, period: number): number {
+  const p = (t / period) % 1;
+  return p < 0 ? p + 1 : p;
+}
 
 /* ---------------------------------------------------------------- *
  * B4.1 — Energy is conserved
@@ -157,6 +171,19 @@ const SPREAD_NOT_GONE: ArchetypeSpec = {
       ],
     },
   ],
+  /*
+   * The brake is applied and the bike stops, over and over, because the joules
+   * only start their journey into the rim once something is taking them. Eight
+   * metres per second brought to rest in two seconds is 4 m/s2 and 8 m of road,
+   * and the travel is drawn small so the labels stay beside the parts they
+   * name. What matters is that the motion visibly ends: after that the 2 880 J
+   * are all in the six places the labels point at.
+   */
+  drive: ({ t }) => {
+    const tau = Math.min(cycle(t, 4) * 4, 2);
+    const s = 8 * tau - 2 * tau * tau;                  // 8 m/s, -4 m/s2
+    return { offset: [-0.2 + 0.4 * (s / 8), 0], spin: 0.68 };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -210,6 +237,35 @@ const BOUNCE_AFTER_BOUNCE: ArchetypeSpec = {
     x: "restitution", y: "reboundHeightM",
     xLabel: "Bounciness, e", yLabel: "Rebound height (m)",
   },
+  /*
+   * The whole sequence, not one bounce. Each hop reaches e squared of the last
+   * one's height and lasts e times as long, which is what root(2 h / g) does
+   * when h is multiplied by e squared, so the bounces crowd together exactly
+   * the way a real ball's do. At e = 0.95 the ball is still going at the end
+   * of a nine-second window; at e = 0.2 it is finished inside a second and
+   * then lies on the floor for the other eight, which is the whole answer to
+   * "where did its energy go" put in front of the student rather than told to
+   * them. It never comes back on its own, because nothing is going to hand
+   * warm rubber and a warm floor back as motion.
+   */
+  drive: ({ v, t }) => {
+    const e = v.restitution;
+    let k = cycle(t, 9) * 9;
+    let amp = 0.9 * Math.min(1, v.dropHeight / 3);
+    let dur = 0.9;                                      // the first drop
+    let height = 0;
+    for (let i = 0; i < 12 && k >= 0; i++) {
+      if (k < dur) {
+        const u = k / dur;
+        height = i === 0 ? amp * (1 - u * u) : amp * 4 * u * (1 - u);
+        break;
+      }
+      k -= dur;
+      amp *= e * e;
+      dur *= e;
+    }
+    return { offset: [0, 0.45 - height] };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -257,6 +313,47 @@ const DOES_IT_ADD_UP: ArchetypeSpec = {
       because: "One wind puts a fixed half k x squared into the spring. Friction only ever takes from that, so each run can match the last at best. Going further needs joules that were never wound in.",
       art: { art: "apparatus", which: "spring" } },
   ],
+  /*
+   * Each claim is drawn as its advertisement makes it, which is the only fair
+   * way to audit one: the ball really does come back higher than it was
+   * dropped from, and the wind-up toy really does go further on every run.
+   * Neither of those can happen, and seeing it happen is what makes a student
+   * ask where the extra joules came from. The three honest devices behave
+   * honestly — the lamp lights, the heat pump runs, the clock ticks — and the
+   * magnet motor does what every magnet motor ever built has done, which is
+   * turn a little way and stop.
+   */
+  drive: ({ t, specimen }) => {
+    const k = cycle(t, 4);
+    switch (specimen.id) {
+      // Claimed: runs for ever on nothing. Observed: turns, then stalls.
+      case "motor":
+        return { spin: 0.68 + 2.4 * (1 - Math.exp(-6 * k)) };
+      // Claimed and true: energy in equals energy out, every second.
+      case "led": return { offset: [0, 0], spin: 0.68 };
+      case "heatpump": return { offset: [0, 0], spin: 0.68 };
+      case "clock": {
+        // One tick a second, which is all a 0.2 mW movement has to do.
+        const tick = cycle(t, 1);
+        return { offset: [0, 0.02 * Math.exp(-9 * tick)], spin: 0.68 };
+      }
+      // Claimed: 1.0 m down, 1.2 m up. Drawn as claimed, so the extra 20 per
+      // cent of height is there on the screen with no source behind it.
+      case "ball": {
+        const drop = 0.5;
+        const height = k < 0.4
+          ? drop * (1 - (k / 0.4) * (k / 0.4))
+          : drop * 1.2 * 4 * ((k - 0.4) / 0.6) * (1 - (k - 0.4) / 0.6);
+        return { offset: [0, 0.42 - height] };
+      }
+      // Claimed: further on every run, from one winding.
+      default: {
+        const run = Math.floor(cycle(t, 9) * 3);        // runs one, two, three
+        const u = cycle(t, 3);
+        return { offset: [-0.3 + 0.2 * (run + 1) * u, 0], spin: 0.12, tilt: 0.2 };
+      }
+    }
+  },
 };
 
 export const g8b4CloseTheBox = buildSim(CLOSE_THE_BOX);

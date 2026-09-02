@@ -91,6 +91,22 @@ const HOW_MANY_SURVIVE: ArchetypeSpec = {
     surplusOverReplacement: (v.eggs * v.survival) / 100 - 2,
   }),
   plot: { x: "eggs", y: "survivalNeededPercent", xLabel: "Eggs laid", yLabel: "Survival needed to replace the pair (%)" },
+  /*
+   * What is drawn is not one bird but the brood that is left at the end of the
+   * season, so its width goes as the square root of the number in it: a flock
+   * spreads over ground, and ground is an area. One is exactly replacement, so
+   * a brood drawn at full size is a pair that has just held its own. Below that
+   * the line is shrinking — the picture sinks and slows — and no amount of
+   * laying fixes it if the survival rate falls with the clutch.
+   */
+  drive: ({ f }) => {
+    const share = Math.max(0, f.survivorsPerPair) / 2;
+    return {
+      scale: Math.max(0.28, Math.min(1.9, Math.sqrt(share))),
+      offset: [0, share < 1 ? (1 - share) * 0.45 : 0],
+      rate: share < 0.5 ? 0.15 : 1,
+    };
+  },
 };
 
 /* E3.3 — Flower structures and pollen. */
@@ -144,6 +160,47 @@ const ANTHER_TO_SEED: ArchetypeSpec = {
     "Explain why pollination and fertilisation are two separate events.",
   ],
   misconceptions: ["Pollination and fertilisation are the same event"],
+  specimens: [{ id: "grain", name: "One grain of apple pollen", art: { art: "cell" } }],
+  variables: [
+    { key: "hours", label: "Hours since the grain landed", min: 0, max: 72, step: 1, default: 0 },
+    { key: "temperature", label: "Temperature (degrees)", min: 5, max: 30, step: 1, default: 20 },
+  ],
+  /*
+   * An apple style is about 10 mm long and the tube drills down it at roughly
+   * 0.2 mm an hour at 20 degrees, so fertilisation follows pollination by about
+   * two days. Growth is enzyme work, so it follows the usual Q10 of 2: ten
+   * degrees warmer and the tube goes twice as fast, ten degrees colder and it
+   * halves. That is the whole of the effective pollination period. The stigma
+   * stays receptive for about four days; at 10 degrees the tube needs a hundred
+   * hours and misses it, and the flower drops without setting fruit.
+   */
+  measure: (v) => {
+    const growthRate = 0.2 * Math.pow(2, (v.temperature - 20) / 10);
+    const tubeLengthMm = Math.min(10, growthRate * v.hours);
+    const hoursToTheOvule = 10 / growthRate;
+    return {
+      tubeGrowthMmPerHour: growthRate,
+      tubeLengthMm,
+      hoursToTheOvule,
+      fertilised: tubeLengthMm >= 10 ? 1 : 0,
+      missesThePeriod: hoursToTheOvule > 96 ? 1 : 0,
+    };
+  },
+  /*
+   * The grain travels. It lands on the stigma at full size and works its way
+   * down the style, shrinking as it goes deeper into the tissue, and the moment
+   * the tube reaches the ovule it stops dead: fertilisation is over and the
+   * grain has nothing left to do. Pull the temperature down to 10 degrees and
+   * watch it stall a third of the way down, which is a flower that drops.
+   */
+  drive: ({ f }) => {
+    const p = f.tubeLengthMm / 10;
+    return {
+      offset: [0.5 * p, 0.85 * p - 0.3],
+      scale: 1 - 0.42 * p,
+      rate: f.fertilised ? 0 : 1,
+    };
+  },
   stages: [
     { name: "Ripe", at: 0, caption: "The anther dries, splits and offers its pollen." },
     { name: "Carried", at: 0.25, caption: "An insect moves it to a different tree. Pollination is over the moment the grain lands." },
@@ -202,6 +259,17 @@ const HOW_FAR_CARRIED: ArchetypeSpec = {
     metresPerMetreOfHeight: v.wind / v.fallSpeed,
   }),
   plot: { x: "wind", y: "distanceM", xLabel: "Wind speed (m/s)", yLabel: "Distance travelled (m)" },
+  /*
+   * The seed goes where the arithmetic sends it. Raise the release height and
+   * it climbs; put wind behind it and it is carried downrange; and because it
+   * is being carried away from you it is drawn smaller the farther it gets,
+   * halving in width at about 40 m. Set the fall speed to an acorn's and the
+   * whole flight collapses to nothing: it lands on its own parent's roots.
+   */
+  drive: ({ v, f }) => ({
+    offset: [Math.min(1.2, f.distanceM / 45), -Math.min(1, v.height / 30)],
+    scale: 1 / (1 + f.distanceM / 40),
+  }),
 };
 
 export const g6e3SignalOrNot = buildSim(SIGNAL_OR_NOT);

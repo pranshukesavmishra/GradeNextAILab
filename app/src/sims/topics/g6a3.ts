@@ -41,6 +41,30 @@ const WHY_A_MODEL: ArchetypeSpec = {
       because: "Warm dyed water rising through cold water shows the same buoyancy. Safe, cheap, and you can run it twenty times and change one thing each run.",
       art: { art: "glassware", which: "beaker", level: 0.55, color: "#c8582f", bubbles: 3 } },
   ],
+  /*
+   * Waiting is the difference, so waiting is what the two sides show. The
+   * volcano sits as cold grey rock for almost the whole run and erupts once;
+   * the tank runs a fresh plume roughly every three seconds, and you can change
+   * one thing between plumes. Nothing here is a control: the point is that one
+   * of these will not perform on request and the other will, over and over.
+   */
+  drive: ({ t, index }) => {
+    if (index === 0) {
+      const era = (t / 20) % 1;
+      const erupting = era > 0.82;
+      return {
+        color: erupting ? "#ff8a2e" : "#6b5a52",
+        scale: erupting ? 1 + (era - 0.82) * 1.6 : 1,
+        rate: erupting ? 1 : 0.15,
+      };
+    }
+    const run = (t / 3) % 1;
+    return {
+      level: 0.55,
+      color: run < 0.5 ? "#c8582f" : "#a83f6e",
+      bubbles: run < 0.6 ? 0.2 + run : 0,
+    };
+  },
 };
 
 /* A3.2 — Diagrams and flowcharts as models. */
@@ -73,6 +97,23 @@ const BOXES_AND_ARROWS: ArchetypeSpec = {
     { name: "Loop closes", at: 1,
       caption: "The thermostat reads 20 and switches the boiler off. An output has become an input: that is feedback." },
   ],
+  /*
+   * A flowchart's arrows are of two kinds and the boiler shows which is which.
+   * Through the sensing and signalling boxes it stands dead still: information
+   * is crossing, and information has no mass. From the burn to the radiators it
+   * fires — swelling and rumbling on its mountings — because those arrows carry
+   * matter and energy. Then the thermostat reaches 20 degrees and it stops.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const firing = p >= 0.35 && p < 0.9;
+    return {
+      scale: firing ? 1.16 + 0.04 * Math.sin(t * 9) : 1,
+      offset: firing ? [Math.sin(t * 21) * 0.015, 0] : [0, 0],
+      rate: firing ? 1 : 0,
+      tilt: 0.24,
+    };
+  },
 };
 
 /* A3.3 — Physical and digital models. */
@@ -148,6 +189,21 @@ const NOT_JUST_SMALLER: ArchetypeSpec = {
     };
   },
   plot: { x: "scale", y: "modelMassKg", xLabel: "Model scale (1 to n)", yLabel: "Model mass (kg)" },
+  /*
+   * Two things happen at once and only one of them is obvious. The model is
+   * drawn at a true 1/n of the length of the bridge — until 1/n would be too
+   * small to see anything at all, which is itself the honest limit of a scale
+   * model. The second is the point of the whole subtopic: a beam sags by an
+   * amount that goes as the square of its span, so shrinking every length by n
+   * cuts the sag by n squared. At 1:2 the model still droops under its own
+   * weight; at 1:100 it is dead flat, and no amount of looking at it will tell
+   * you what the real 40 m bridge does.
+   */
+  drive: ({ v }) => ({
+    scale: Math.max(0.16, 2 / v.scale),
+    tilt: 0.24 + 1.4 / (v.scale * v.scale),
+    spin: 0.68,
+  }),
 };
 
 /* A3.5 — Building and revising a model of a system. */

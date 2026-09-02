@@ -194,6 +194,33 @@ const SAME_ELEMENT: ArchetypeSpec = {
     x: "neutrons", y: "massNumber",
     xLabel: "Neutrons in the nucleus", yLabel: "Mass number (protons + neutrons)",
   },
+  /*
+   * The nucleus is the readout. Its radius is 1.2 A^(1/3) fm, so the drawn
+   * size is the cube root of the mass number against carbon-12's: a nucleus of
+   * 44 nucleons is only 1.5 times as wide as one of 12, not nearly four times,
+   * because nucleons pack at a fixed density.
+   *
+   * Stability is the failure state, and it is a real line. Among the first
+   * twenty elements every stable isotope sits between about N/Z = 0.8 and
+   * N/Z = 1.3; outside that band the nucleus is radioactive, and it shakes
+   * here in the direction it will decay -- a neutron-rich nucleus drifts one
+   * way, a proton-rich one the other. Push it far past the band and no such
+   * nucleus exists at all: it stops dead.
+   */
+  drive: ({ f, t }) => {
+    const ratio = f.neutronsPerProton;
+    const off = ratio > 1.3 ? ratio - 1.3 : ratio < 0.8 ? ratio - 0.8 : 0;
+    const shake = Math.min(0.22, Math.abs(off) * 0.3);
+    const gone = ratio > 2.6 || ratio < 0.42;
+    return {
+      scale: Math.cbrt(f.massNumber / 12),
+      rate: gone ? 0 : 0.8 + Math.abs(off) * 0.6,
+      offset: [
+        Math.sign(off) * shake * (0.6 + 0.4 * Math.sin(t * 7.7)),
+        Math.cos(t * 6.1) * shake * 0.5,
+      ],
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -217,6 +244,35 @@ const THROUGH_THE_FOIL: ArchetypeSpec = {
     "Scientists saw the nucleus and then drew it",
     "Most of the alpha particles bounced back",
   ],
+  specimens: [
+    {
+      id: "alpha", name: "One alpha particle: 2 protons, 2 neutrons, no electrons",
+      art: { art: "atom", protons: 2, neutrons: 2, electrons: 0 },
+    },
+  ],
+  // Named only so `drive` can read the speed the engine already publishes for a
+  // staged simulation; the stage position is 0.16 x speed x t.
+  variables: [
+    { key: "rate", label: "Speed", min: 0, max: 2, step: 0.1, default: 0.6 },
+  ],
+  /*
+   * The alpha particle is the subject, and what it does is decelerate. It
+   * leaves the source at 1.5 x 10^7 m/s and crosses 1 400 layers of gold as if
+   * they were not there. At the head-on approach every joule of its 4.9 MeV of
+   * kinetic energy is turned into electrical potential energy against the
+   * +79 nucleus, so it stops dead -- 46 fm short of the nucleus, having never
+   * touched it -- and is thrown straight back out at the speed it arrived.
+   * The picture stops with it.
+   */
+  drive: ({ v, t }) => {
+    const p = (0.16 * v.rate * t) % 1;
+    const near = Math.max(0, 1 - Math.abs(p - 0.8) / 0.2);
+    return {
+      rate: 0.12 + (1 - near) * 1.9,
+      scale: 0.72 + near * 0.62,
+      offset: [(p <= 0.8 ? p * 0.5 : (1.6 - p) * 0.5) - 0.2, 0],
+    };
+  },
   stages: [
     { name: "Source", at: 0, caption: "Radium in a lead block. Each alpha particle leaves at 1.5 x 10^7 m/s: 5% of the speed of light." },
     { name: "Foil", at: 0.3, caption: "Gold leaf 400 nm thick, about 1,400 atoms deep. Thin enough to see through, thick enough to hit something." },
@@ -280,6 +336,34 @@ const SHELLS_TO_CLOUD: ArchetypeSpec = {
   specimens: [
     { id: "h", name: "A hydrogen atom", art: { art: "atom", protons: 1, neutrons: 0, electrons: 1 } },
   ],
+  // Named only so `drive` can read the speed the engine already publishes for a
+  // staged simulation; the stage position is 0.16 x speed x t.
+  variables: [
+    { key: "rate", label: "Speed", min: 0, max: 2, step: 0.1, default: 0.6 },
+  ],
+  /*
+   * Each model is drawn the size it claims the atom's charge is. Thomson's
+   * positive charge fills the whole atom, 10^-10 m across, so the picture
+   * starts wide and slack. Rutherford's collapses it into a nucleus 25 000
+   * times smaller and the drawing shrinks with it. Bohr pins the electron to
+   * fixed levels, so it settles into a steady turn. Schrodinger takes the path
+   * away again: the electron is a standing wave with no orbit, so it smears
+   * into a blur that will not resolve however long you look at it.
+   */
+  drive: ({ v, t }) => {
+    const p = (0.16 * v.rate * t) % 1;
+    const at = [0, 0.25, 0.5, 0.75, 1];
+    const scaleAt = [1.5, 0.62, 0.95, 1.2, 1.05];
+    const rateAt = [0.15, 1.1, 0.9, 3.2, 1.4];
+    let i = 0;
+    while (i < 3 && p > at[i + 1]) i++;
+    const k = Math.max(0, Math.min(1, (p - at[i]) / (at[i + 1] - at[i])));
+    return {
+      scale: scaleAt[i] + (scaleAt[i + 1] - scaleAt[i]) * k,
+      rate: rateAt[i] + (rateAt[i + 1] - rateAt[i]) * k,
+      tilt: 0.24 + Math.sin(t * 0.3) * 0.05,
+    };
+  },
   stages: [
     {
       name: "1897 Thomson", at: 0,
@@ -339,6 +423,62 @@ const TWO_MODELS: ArchetypeSpec = {
       art: { art: "atom", protons: 2, neutrons: 2, electrons: 2 },
     },
   ],
+  variables: [
+    {
+      key: "energy", label: "Energy of the alpha particle", unit: "MeV",
+      min: 1, max: 60, step: 0.5, default: 4.9,
+    },
+  ],
+  /*
+   * Fire the same alpha at each model and ask what it should do.
+   *
+   * An alpha of energy E, charge +2, aimed straight at a gold nucleus of
+   * charge +79, stops where all its kinetic energy has become electrical
+   * potential energy. In the units nuclear physicists use, e^2/(4 pi eps0) is
+   * 1.43996 MeV fm, so the closest approach is
+   *
+   *   d = 2 x 79 x 1.43996 / E  =  227.5 / E  femtometres
+   *
+   * which for the 4.9 MeV alphas Geiger and Marsden used is 46 fm: seven times
+   * further out than the gold nucleus itself, which is 1.2 x 197^(1/3) =
+   * 7.0 fm in radius. Their alphas never touched a nucleus. Rutherford's count
+   * of large deflections falls as 1/E^2, so 1 in 8 000 at 4.9 MeV.
+   *
+   * Thomson's atom spreads the same +79 over the whole 10^-10 m of the atom,
+   * and the single-scattering angle it allows is 2 x 79 x 1.43996 / (10^5 fm x
+   * E) radians -- 0.027 degrees at 4.9 MeV. That is the number that killed it.
+   */
+  measure: (v) => ({
+    closestApproachFm: 227.5 / v.energy,
+    goldNucleusRadiusFm: 7.0,
+    turnedBackPerMillion: 125 * (4.9 / v.energy) ** 2,
+    thomsonMaxDeflectionDeg: 0.1304 / v.energy,
+    reachesTheNucleus: 227.5 / v.energy <= 7.0 ? 1 : 0,
+  }),
+  /*
+   * Thomson's atom is inert whatever you fire at it: a hundredth of a degree
+   * is not a picture, so it sits there, and that is the honest drawing of what
+   * the model predicts. Rutherford's nucleus fills more and more of the frame
+   * as the alpha is allowed closer -- the drawn size is the 46 fm turning
+   * point of a radium alpha divided by this one's. Past 32.5 MeV the alpha
+   * arrives inside the nuclear surface, Rutherford's formula stops holding,
+   * and the drawing stops with it: that departure is how nuclear radii were
+   * first measured.
+   */
+  drive: ({ f, t, index }) => {
+    if (index === 0) {
+      return {
+        rate: 0.12,
+        offset: [Math.sin(t * 5) * f.thomsonMaxDeflectionDeg * 0.12, 0],
+      };
+    }
+    const hit = f.reachesTheNucleus > 0;
+    return {
+      scale: Math.max(0.45, Math.min(2.5, 46.4 / f.closestApproachFm)),
+      rate: hit ? 0 : 0.5 + 8 / f.closestApproachFm,
+      offset: hit ? [Math.sin(t * 24) * 0.09, Math.cos(t * 19) * 0.09] : [0, 0],
+    };
+  },
 };
 
 export const g7a2ThreeParticles = buildSim(THREE_PARTICLES);

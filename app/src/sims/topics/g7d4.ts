@@ -20,6 +20,12 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * which is why predation and competition are two views of one meal.
  */
 
+/** Isle Royale from the air: unbrowsed forest through to a browsed-out island. */
+const FOREST = ["#5f8f4a", "#7d9a52", "#9a9a55", "#a88a4f", "#a8703f"];
+
+/** A coral colony: full of algae, paling, bleached white, then dead and turfed over. */
+const CORAL = ["#b5763c", "#c99a63", "#ddc3a4", "#f2efe8", "#8b9478"];
+
 /* ---------------------------------------------------------------- *
  * D4.1 — Competition and predation
  * ---------------------------------------------------------------- */
@@ -54,18 +60,50 @@ const WOLVES_AND_MOOSE: ArchetypeSpec = {
   // yields about 180 kg of edible meat, so one wolf needs 3.4 moose and a pack
   // of 20 needs 69 - about 7 per cent of a herd of a thousand, which is the
   // share Isle Royale wolves have actually been measured taking.
+  //
+  // What that share means for the island is the other half of the sum. An
+  // unhunted moose herd adds about 20 per cent a year, so the herd grows by
+  // 20 less whatever the wolves take, and the island's 544 square kilometres
+  // then carry that many moose. Isle Royale's long-run average is about 1.7
+  // moose per square kilometre; balsam fir stops regenerating above roughly 3,
+  // and it was at 4.4 in 1995, the year before 80 per cent of the herd died in
+  // one winter.
   measure: (v) => {
     const perWolf = (v.intake * 365) / 180;
     const killed = perWolf * v.wolves;
+    const takenPercent = v.moose > 0 ? (100 * killed) / v.moose : 0;
+    const nextYear = v.moose * (1 + (20 - takenPercent) / 100);
     return {
       moosePerWolfPerYear: perWolf,
       mooseKilledPerYear: killed,
-      percentOfHerdTaken: v.moose > 0 ? (100 * killed) / v.moose : 0,
+      percentOfHerdTaken: takenPercent,
+      herdChangePercent: 20 - takenPercent,
+      moosePerSquareKm: v.moose / 544,
+      moosePerSquareKmNextYear: nextYear / 544,
     };
   },
   plot: {
     x: "wolves", y: "percentOfHerdTaken",
     xLabel: "Wolves on the island", yLabel: "Share of the herd taken each year (per cent)",
+  },
+  /*
+   * The island is the readout, seen from above. Its colour is the browse: at
+   * well under one moose per square kilometre the balsam fir and aspen grow
+   * away unbrowsed and the island is dark green; by three per square kilometre
+   * the fir cannot regenerate at all and the island is the brown of a browsed
+   * shoreline.
+   *
+   * Both controls move it, which is the lesson. Add moose and the island
+   * browns; add wolves and it recovers, because the predator is the only
+   * thing on Isle Royale that takes moose out. The brown end is not a
+   * hypothetical: 1995 reached 4.4 moose per square kilometre and the
+   * following winter killed four fifths of them.
+   */
+  drive: ({ f }) => {
+    const pressure = f.moosePerSquareKmNextYear / 4;
+    return {
+      color: FOREST[Math.min(4, Math.max(0, Math.floor(pressure * 4.999)))],
+    };
   },
 };
 
@@ -162,6 +200,53 @@ const SAME_DEAL_TWICE: ArchetypeSpec = {
       art: { art: "sphere", color: "#c9502f", radius: 0.4 },
     },
   ],
+  variables: [
+    { key: "parasiteLoadPercent", label: "Parasites on the hosts, against a normal year (%)", min: 0, max: 200, step: 5, default: 100 },
+  ],
+  /*
+   * Two cleaners, one bargain, and one measured meal each.
+   *
+   * A cleaner wrasse on the Great Barrier Reef inspects about 2 300 client
+   * fish a day and takes some 1 200 parasitic gnathiid isopods off them. A
+   * red-billed oxpecker takes over 100 engorged ticks a day off a buffalo.
+   * Different oceans, different continents, no species in common - and the
+   * same trade: the cleaner is fed and the host is deloused.
+   *
+   * The same bargain also fails the same way. Where parasites are scarce both
+   * cleaners turn on the host: the wrasse takes mucus off the client's skin
+   * instead, and the oxpecker drinks blood and keeps existing wounds open.
+   * Below about a fifth of a normal load there is not enough on the host to
+   * pay for the cleaning, and a mutualism becomes a parasitism.
+   */
+  measure: (v) => {
+    const share = v.parasiteLoadPercent / 100;
+    return {
+      wrasseParasitesPerDay: 1218 * share,
+      oxpeckerTicksPerDay: 100 * share,
+      wrasseClientsPerDay: 2297,
+      hostsCleanedPerDay: 2297 * Math.min(1, share),
+      cheating: v.parasiteLoadPercent < 20 ? 1 : 0,
+    };
+  },
+  /*
+   * Each cleaner is drawn at the size of its meal, not the size of the
+   * animal: the cube root of the day's catch against a normal year, so both
+   * respond to the same control by the same rule and can be read against
+   * each other.
+   *
+   * Take the parasites away and both shrink together, and both turn red at
+   * the same point - the wrasse biting mucus, the oxpecker drinking blood.
+   * One pattern, twice, including the way it breaks.
+   */
+  drive: ({ f, v }) => {
+    const share = Math.max(0.01, v.parasiteLoadPercent / 100);
+    const cheating = f.cheating > 0;
+    return {
+      scale: 1.25 * Math.max(0.3, Math.cbrt(share)),
+      color: cheating ? "#b0342a" : undefined,
+      glow: cheating ? 0.9 : Math.min(0.7, share * 0.4),
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -186,9 +271,54 @@ const WHEN_IT_TURNS: ArchetypeSpec = {
     "Bleached coral is dead coral",
   ],
   specimens: [
-    { id: "symbiont", name: "The coral's algae: one to two million per square centimetre",
-      art: { art: "cell", plant: true } },
+    { id: "colony", name: "A branching coral, one to two million algae per square centimetre",
+      art: { art: "sphere", color: "#b5763c", radius: 0.5 } },
   ],
+  variables: [
+    { key: "degreeWeeks", label: "Degree heating weeks above the summer maximum", min: 0, max: 12, step: 0.5, default: 0 },
+  ],
+  /*
+   * Heat stress on a reef is counted in degree heating weeks: one week at one
+   * degree above the hottest month's average is one DHW, and they add up
+   * across a summer. It is the measure NOAA issues its reef warnings in.
+   *
+   * Bleaching starts at about 4 DHW, where a coral has lost 60 to 90 per cent
+   * of its algae, and widespread death begins at about 8. On the Great
+   * Barrier Reef in 2016 the worst-hit reefs ran past 8 DHW and about 29 per
+   * cent of shallow-water corals died. The algae supply up to 95 per cent of
+   * the coral's energy, so what is left of them is what is left of its food.
+   */
+  measure: (v) => {
+    const algaePercent = 100 * Math.max(0, 1 - Math.max(0, v.degreeWeeks - 1) / 5);
+    const mortalityPercent = Math.min(100, Math.max(0, (v.degreeWeeks - 8) * 15));
+    return {
+      algaePercent,
+      algaePerSquareCm: 1.5e6 * (algaePercent / 100),
+      energyFromAlgaePercent: 0.95 * algaePercent,
+      mortalityPercent,
+      bleached: algaePercent <= 40 ? 1 : 0,
+    };
+  },
+  /*
+   * The colony is the readout. It is golden brown while the algae are in it,
+   * because the colour of a healthy coral is the colour of its lodgers; it
+   * pales as they are expelled and is bone white by 6 degree heating weeks,
+   * with the skeleton showing through tissue that is still alive.
+   *
+   * Past 8 it goes grey-green and stops moving: that is not bleaching any
+   * more but death, and the green is the turf algae that take a dead
+   * skeleton over. A bleached coral can be recovered; that one cannot.
+   */
+  drive: ({ f }) => {
+    const dead = f.mortalityPercent > 0;
+    const a = f.algaePercent;
+    const step = dead ? 4 : a > 75 ? 0 : a > 45 ? 1 : a > 15 ? 2 : 3;
+    return {
+      color: CORAL[step],
+      glow: dead ? 0 : 0.15 + 0.005 * a,
+      rate: dead ? 0 : 1,
+    };
+  },
   stages: [
     { name: "Below 29 C", at: 0,
       caption: "Millions of algal cells per square centimetre supply up to 95 per cent of the coral's energy." },

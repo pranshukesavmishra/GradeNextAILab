@@ -143,6 +143,17 @@ const THE_SAWTOOTH: ArchetypeSpec = {
     x: "atomicNumber", y: "outerElectrons",
     xLabel: "Atomic number Z", yLabel: "Electrons in the outer shell",
   },
+  /*
+   * The atom is drawn at its published radius, against sodium's 190 pm. That
+   * makes the second pattern visible without a graph: the atom collapses
+   * across a row -- sodium 190 pm down to chlorine 79 -- and then jumps
+   * straight back out to 243 pm at potassium, where a new shell opens. Helium
+   * at 31 pm is a sixth of potassium's width, so the drawn size is floored
+   * only enough to keep it on the stage.
+   */
+  drive: ({ f }) => ({
+    scale: Math.max(0.22, f.atomicRadiusPm / 190),
+  }),
 };
 
 /* ---------------------------------------------------------------- *
@@ -229,6 +240,27 @@ const THE_GAPS: ArchetypeSpec = {
   specimens: [
     { id: "ge", name: "Germanium-74: 2, 8, 18, 4", art: { art: "atom", protons: 32, neutrons: 42, electrons: 32 } },
   ],
+  // Named only so `drive` can read the speed the engine already publishes for a
+  // staged simulation; the stage position is 0.16 x speed x t.
+  variables: [
+    { key: "rate", label: "Speed", min: 0, max: 2, step: 0.1, default: 0.6 },
+  ],
+  /*
+   * Germanium is the subject, and for the first three stages it does not
+   * exist. Dobereiner, Newlands and Mendeleev are all working around a gap, so
+   * the atom is drawn as one: a faint speck sitting low in its cell, turning
+   * hardly at all. In 1886 Winkler isolates it and it rises into place at full
+   * size, and Moseley's X-rays in 1913 fix that place for good.
+   */
+  drive: ({ v, t }) => {
+    const p = (0.16 * v.rate * t) % 1;
+    const found = Math.max(0, Math.min(1, (p - 0.5) / 0.25));
+    return {
+      scale: 0.3 + found * 0.75,
+      rate: 0.08 + found * 1.2,
+      offset: [0, (1 - found) * 0.28],
+    };
+  },
   stages: [
     {
       name: "1829 Triads", at: 0,
@@ -288,6 +320,58 @@ const DOWN_THE_GROUP: ArchetypeSpec = {
       art: { art: "glassware", which: "beaker", level: 0.6, color: "#d7c1ea", bubbles: 1 },
     },
   ],
+  variables: [
+    {
+      key: "mass", label: "Metal dropped in", unit: "g",
+      min: 0.02, max: 2, step: 0.02, default: 0.2,
+    },
+  ],
+  /*
+   * The same reaction on both benches: 2M + 2H2O gives 2MOH + H2, half a mole
+   * of hydrogen for every mole of metal, into 200 g of water each time.
+   * Sodium is 22.99 g per mole and potassium 39.10, so equal masses give
+   * sodium the larger mole count and the larger volume of gas -- and the
+   * potassium beaker is still the violent one, which is the point.
+   *
+   * The heats of reaction are the standard ones, -184 kJ per mole of sodium
+   * and -196 per mole of potassium, and the water is taken as 4.18 J/g/K.
+   * Ignition is the bench observation rather than a calculation: a lump of
+   * potassium of about a tenth of a gram or more sets its own hydrogen alight
+   * with a lilac flame, while sodium needs to be nearer a gram before its
+   * yellow flame appears -- the difference is the outer electron, 419 kJ/mol
+   * to remove from potassium against 496 from sodium.
+   */
+  measure: (v) => {
+    const molNa = v.mass / 22.99;
+    const molK = v.mass / 39.10;
+    return {
+      sodiumHydrogenCm3: molNa * 0.5 * 24000,
+      potassiumHydrogenCm3: molK * 0.5 * 24000,
+      sodiumRiseC: (molNa * 184000) / (200 * 4.18),
+      potassiumRiseC: (molK * 196000) / (200 * 4.18),
+      sodiumIgnites: v.mass >= 1 ? 1 : 0,
+      potassiumIgnites: v.mass >= 0.1 ? 1 : 0,
+    };
+  },
+  /*
+   * Both beakers fizz harder as more metal goes in, and the potassium beaker
+   * catches fire first. Bubble intensity is the hydrogen each one makes,
+   * against the 0.26 dm3 a full 2 g of sodium would give; once a beaker
+   * ignites, the solution takes the colour of that metal's flame -- sodium's
+   * yellow at 589 nm, potassium's lilac at 766 nm -- and the fizzing goes to
+   * its limit. The bubbles saturate at 300 cm3 of hydrogen, which 0.6 g of
+   * sodium reaches and 0.98 g of potassium does not.
+   */
+  drive: ({ f, index }) => {
+    const gas = index === 0 ? f.sodiumHydrogenCm3 : f.potassiumHydrogenCm3;
+    const lit = (index === 0 ? f.sodiumIgnites : f.potassiumIgnites) > 0;
+    const cool = index === 0 ? "#bcd9ea" : "#d7c1ea";
+    return {
+      bubbles: Math.min(1, 0.06 + gas / 300),
+      color: lit ? (index === 0 ? "#f0b33a" : "#b57ae0") : cool,
+      rate: lit ? 2.4 : 0.5 + Math.min(1.4, gas / 200),
+    };
+  },
 };
 
 export const g7a3ReadingACell = buildSim(READING_A_CELL);

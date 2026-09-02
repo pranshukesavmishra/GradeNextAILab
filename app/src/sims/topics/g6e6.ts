@@ -69,12 +69,44 @@ const TWINS_AND_SIBLINGS: ArchetypeSpec = {
     "State how much DNA identical twins and full siblings share, and why the numbers differ.",
   ],
   misconceptions: ["Children of the same parents inherit the same genes"],
+  variables: [
+    { key: "meioses", label: "Meioses between the two people (1 = siblings)", min: 0, max: 6, step: 1, default: 1 },
+  ],
+  /*
+   * The coefficient of relationship, and it is exactly a half per meiosis.
+   * Identical twins came from one zygote with no meiosis between them, so they
+   * share everything. Full siblings are one meiosis apart on each side and
+   * share a half; half-siblings, grandparents and uncles are two and share a
+   * quarter; first cousins are three and share an eighth; second cousins are
+   * five and share about 3 per cent. Any real pair scatters around its
+   * expected value — full siblings land anywhere between about 37 and 61 per
+   * cent — because a finite number of chromosome segments is being dealt, but
+   * the average is fixed by the arithmetic and nothing else.
+   */
+  measure: (v) => ({
+    twinSharedPercent: 100,
+    relativeSharedPercent: 100 * Math.pow(0.5, v.meioses),
+    timesLessThanATwin: Math.pow(2, v.meioses),
+    meiosesBetweenThem: v.meioses,
+  }),
+  /*
+   * Both panels draw the DNA the pair have in common, and DNA is a thread, so
+   * the length drawn is the share itself and not its cube root. The twins are
+   * fixed at the full set: nothing on this slider can touch them. Their
+   * neighbour halves with every meiosis you put between the two people, until
+   * a second cousin is a stub next to a twin — which is the picture a family
+   * tree is really making.
+   */
+  drive: ({ f, index }) => {
+    const share = index === 0 ? 1 : f.relativeSharedPercent / 100;
+    return { scale: 0.16 + 0.84 * share, rate: 0.4 + share };
+  },
   specimens: [
     { id: "twins", name: "Identical twins: one fertilised egg",
       because: "One zygote split within a fortnight, so both carry the same set. Even so their fingerprints differ: those form from random folding in the womb.",
       art: { art: "cell" } },
-    { id: "siblings", name: "Full siblings: two fertilised eggs",
-      because: "A different egg and a different sperm, each one of millions. They share about half of the DNA that varies between people, and any given pair can land anywhere from about 37 to 61 per cent.",
+    { id: "siblings", name: "A relative, one meiosis away and then further",
+      because: "At one meiosis these are full siblings: a different egg and a different sperm, sharing about half of what varies between people, and any real pair lands between about 37 and 61 per cent. Every further step halves it — grandparent a quarter, first cousin an eighth.",
       art: { art: "dna" } },
   ],
 };
@@ -95,6 +127,38 @@ const THREE_SHUFFLES: ArchetypeSpec = {
   ],
   misconceptions: ["Variation between siblings comes mainly from mutation"],
   specimens: [{ id: "meiosis", name: "One cell entering meiosis", art: { art: "cell" } }],
+  variables: [
+    { key: "swaps", label: "Crossovers in this meiosis", min: 0, max: 70, step: 1, default: 55 },
+  ],
+  /*
+   * Two of the three shuffles are countable. Independent assortment deals one
+   * chromosome from each of 23 pairs, which is 2^23 gametes on its own. Every
+   * crossover then splits one chromosome into two pieces that can each come
+   * from either parent, doubling the versions that chromosome can take, so c
+   * crossovers give 2^(23 + c) gametes altogether. A human meiosis makes about
+   * 55 of them, which is 2^78: 3.0e23 different gametes from one cell, before
+   * the third shuffle — which sperm meets which egg — has happened at all.
+   */
+  measure: (v) => {
+    const exponent = 23 + v.swaps;
+    return {
+      differentGametesPossible: Math.pow(2, exponent),
+      possiblePairings: Math.pow(2, 2 * exponent),
+      crossoversPerChromosome: v.swaps / 23,
+      powerOfTwo: exponent,
+    };
+  },
+  /*
+   * The count runs to 24 digits, so the cell is drawn on a log scale and the
+   * caption should say so: its width follows the exponent, not the number. No
+   * crossing over at all still leaves 2^23 gametes, which is why the cell never
+   * shrinks to nothing; every extra swap widens it a little further, and the
+   * chromosomes inside turn faster the more ways there are to deal them.
+   */
+  drive: ({ f, t }) => ({
+    scale: 0.52 + 0.48 * (f.powerOfTwo / 93),
+    spin: 0.68 + t * (0.25 + f.powerOfTwo / 90),
+  }),
   stages: [
     { name: "Pairs line up", at: 0,
       caption: "The 23 pairs come together, each chromosome beside its match from the other parent. Nothing has been shuffled yet." },
@@ -150,6 +214,21 @@ const ALMOST_PERFECT: ArchetypeSpec = {
     };
   },
   plot: { x: "generations", y: "newMutationsInTheCulture", xLabel: "Generations", yLabel: "New mutations in the culture" },
+  /*
+   * What is drawn is the culture, not one cell, so its width goes as the cube
+   * root of the number of cells in it: a thousand million cells is ten times
+   * the width of a million, not a thousand times. It divides faster the more
+   * generations you ask for. And when the new mutations in the culture pass
+   * 4.6 million — the length of the genome — every position in that genome has
+   * been changed in some cell somewhere, and a resistant cell is already in
+   * the flask before the antibiotic arrives. At that point the culture is
+   * lit: it is no longer a clone in any useful sense.
+   */
+  drive: ({ v, f }) => ({
+    scale: 0.4 + 0.6 * Math.cbrt(v.colony / 1000),
+    rate: 0.3 + v.generations / 25,
+    glow: f.newMutationsInTheCulture >= 4.6e6 ? 0.85 : 0,
+  }),
 };
 
 /* E6.5 — Simple inheritance diagrams. */
@@ -218,13 +297,30 @@ const PUNNETT_SQUARE: ArchetypeSpec = {
   // because neither parent has a tall allele to send.
   measure: (v) => {
     const p = v.mother / 2, q = v.father / 2;
+    const percentTall = 100 * (1 - (1 - p) * (1 - q));
     return {
-      percentTall: 100 * (1 - (1 - p) * (1 - q)),
+      percentTall,
       percentCarryingBothAlleles: 100 * (p * (1 - q) + (1 - p) * q),
       percentDwarf: 100 * (1 - p) * (1 - q),
+      // Mendel's own two varieties: about 2 m and about 0.4 m. The average
+      // seedling from this cross is those two heights in the ratio the square
+      // predicts, which is the number a grower would actually see in the row.
+      averageOffspringHeightM: 2 * (percentTall / 100) + 0.4 * (1 - percentTall / 100),
     };
   },
   plot: { x: "mother", y: "percentTall", xLabel: "Tall alleles in the seed parent", yLabel: "Tall offspring (%)" },
+  /*
+   * The plant on the bench is the average of the row this cross would give.
+   * tt by tt can only make dwarfs and it stands 0.4 m; TT by anything makes
+   * nothing but tall plants and it stands 2 m; the famous Tt by Tt sits at
+   * three-quarters of the way up, because three offspring in four are tall.
+   * The pot stays on the bench line so the heights can be read against each
+   * other.
+   */
+  drive: ({ f }) => {
+    const scale = f.averageOffspringHeightM / 2;
+    return { scale, offset: [0, 0.7 * (1 - scale)] };
+  },
 };
 
 export const g6e6WhatAGeneIs = buildSim(WHAT_A_GENE_IS);

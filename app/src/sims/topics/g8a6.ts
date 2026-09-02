@@ -16,7 +16,31 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * which is 30 mph, carrying 6 285 J of kinetic energy. A crumple zone gets rid
  * of that energy over a distance, and the average force is simply the energy
  * divided by that distance, so 0.60 m of crush means 10.5 kN.
+ *
+ * An engineering topic has to fail visibly or it teaches nothing, so it does:
+ * every design here is run at the barrier, crushes through the distance it was
+ * built with, and buckles over the moment the force it is holding passes the
+ * criterion it was set. Drag the crumple distance down to 0.05 m and the
+ * element is a stub that folds instantly at 126 kN; drag it out to 1.2 m and
+ * it is a long, calm collapse at 5.2 kN.
  */
+
+/** A 0-1 sawtooth that runs once every `period` seconds. */
+function cycle(t: number, period: number): number {
+  const p = (t / period) % 1;
+  return p < 0 ? p + 1 : p;
+}
+
+/**
+ * How far a design has buckled, as a tilt in radians.
+ *
+ * A criterion that cannot be failed in the picture is a number on a panel, so
+ * anything holding more than its limit leans over in proportion and is fully
+ * down at twice the limit.
+ */
+function buckle(force: number, limit: number): number {
+  return 0.24 + 0.9 * Math.min(1, Math.max(0, force / limit - 1));
+}
 
 /* ---------------------------------------------------------------- *
  * A6.1 — Defining criteria and constraints
@@ -81,6 +105,37 @@ const MUST_OR_MAY: ArchetypeSpec = {
       art: { art: "apparatus", which: "battery" },
     },
   ],
+  /*
+   * A criterion is something you run a test to find out about, so the three
+   * criteria are shown being tested: the sled is driven at the barrier, the
+   * egg is dropped, the crumple element is squeezed through its stopping time.
+   * A constraint is a fact about the world you cannot test away — the chassis
+   * is 200 mm long whatever you do to it — so the three constraints sit
+   * perfectly still. If you cannot imagine the measurement, it is not a
+   * criterion.
+   */
+  drive: ({ t, specimen }) => {
+    switch (specimen.id) {
+      // Criteria: measured, every time, on a rig.
+      case "force": {
+        const k = cycle(t, 2.6);
+        return { offset: [-0.3 + 0.6 * Math.min(1, k * 1.6), 0], spin: 0.68 };
+      }
+      case "egg": {
+        const k = cycle(t, 2.4);
+        const fall = Math.min(1, k * 1.5);
+        return { offset: [0, -0.32 + 0.64 * fall * fall] };
+      }
+      case "time": {
+        const k = cycle(t, 2.4);
+        const crush = k < 0.35 ? k / 0.35 : Math.max(0, 1 - (k - 0.35) / 0.5);
+        return { scale: 1.05 - 0.4 * crush, spin: 0.12, tilt: 0.2 };
+      }
+      // Constraints: fixed before the ideas start, and fixed while you work.
+      default:
+        return { offset: [0, 0], spin: 0.68 };
+    }
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -104,11 +159,14 @@ const LONGER_TO_CRUSH: ArchetypeSpec = {
     "A stronger car body protects the people inside better",
     "A crumple zone works by making the car bounce off",
   ],
-  specimens: [{ id: "crumple", name: "Crumple element", art: { art: "apparatus", which: "spring" } }],
+  specimens: [
+    { id: "crumple", name: "Crumple element on the test rig",
+      art: { art: "apparatus", which: "spring" } },
+  ],
   variables: [
-    { key: "mass", label: "Occupant mass (kg)", min: 40, max: 100, step: 1, default: 70 },
-    { key: "speed", label: "Impact speed (m/s)", min: 5, max: 30, step: 0.1, default: 13.4 },
     { key: "crumple", label: "Crumple distance (m)", min: 0.05, max: 1.2, step: 0.05, default: 0.6 },
+    { key: "speed", label: "Impact speed (m/s)", min: 5, max: 30, step: 0.1, default: 13.4 },
+    { key: "mass", label: "Occupant mass (kg)", min: 40, max: 100, step: 1, default: 70 },
   ],
   // Work and energy: all the kinetic energy has to be taken out over the
   // crumple distance, so the average force is half m v squared divided by d,
@@ -122,6 +180,26 @@ const LONGER_TO_CRUSH: ArchetypeSpec = {
     decelerationG: (v.speed * v.speed) / (2 * v.crumple) / 9.81,
   }),
   plot: { x: "crumple", y: "forceKN", xLabel: "Crumple distance (m)", yLabel: "Average force (kN)" },
+  /*
+   * The element is drawn at the length it has to crush through, so the control
+   * changes the apparatus before anything is even tested: 0.05 m is a stub and
+   * 1.2 m is longer than the bench. Then it is crushed, over the real 2 d / v
+   * seconds the stop lasts, and it folds down to a little over half its length
+   * before springing back for the next run. The buckle is the verdict: at
+   * 0.05 m it is holding 126 kN against a 15 kN criterion and lies flat, and
+   * at 1.2 m it is holding 5.2 kN and stands square. Nothing about the energy
+   * changed between those two — 6 285 J went in either way.
+   */
+  drive: ({ v, f, t }) => {
+    const stop = (2 * v.crumple) / v.speed;             // seconds of crushing
+    const k = cycle(t, 2.8) * 2.8;
+    const collapse = k < stop ? k / stop : k < stop + 1.2 ? 1 - (k - stop) / 1.2 : 0;
+    return {
+      scale: (0.55 + 0.75 * (v.crumple / 1.2)) * (1 - 0.42 * collapse),
+      tilt: buckle(f.forceKN, 15),
+      spin: 0.12,
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -213,9 +291,9 @@ const TWO_NOSES_SCORED: ArchetypeSpec = {
     },
   ],
   variables: [
-    { key: "mass", label: "Occupant mass (kg)", min: 40, max: 100, step: 1, default: 70 },
     { key: "speed", label: "Test speed (m/s)", min: 5, max: 30, step: 0.1, default: 13.4 },
     { key: "limit", label: "Force criterion (kN)", min: 5, max: 30, step: 0.5, default: 15 },
+    { key: "mass", label: "Occupant mass (kg)", min: 40, max: 100, step: 1, default: 70 },
   ],
   // Both designs are scored on the same run. Force is half m v squared over
   // the crush distance: 0.25 m for the foam nose, 0.60 m for the crumple can.
@@ -228,6 +306,29 @@ const TWO_NOSES_SCORED: ArchetypeSpec = {
       canForceKN: can,
       foamMarginPercent: ((v.limit - foam) / v.limit) * 100,
       canMarginPercent: ((v.limit - can) / v.limit) * 100,
+    };
+  },
+  /*
+   * The same run, side by side, on the same clock. The foam nose has 0.25 m to
+   * work with and the crumple can has 0.60 m, so the can is drawn longer and
+   * takes visibly longer to fold, which is the entire reason it wins. At the
+   * 13.4 m/s the test specifies the foam nose is holding 25.1 kN against a
+   * 15 kN criterion and lies over, while the can holds 10.5 kN and stands.
+   * Raise the speed to 20 m/s and both go down: a design is only ever proved
+   * at the speed it was tested at.
+   */
+  drive: ({ v, f, t, index }) => {
+    const crush = index === 0 ? 0.25 : 0.6;
+    const force = index === 0 ? f.foamForceKN : f.canForceKN;
+    const stop = (2 * crush) / v.speed;
+    const k = cycle(t, 2.6) * 2.6;
+    const collapse = k < stop ? k / stop : k < stop + 1.1 ? 1 - (k - stop) / 1.1 : 0;
+    const over = force > v.limit;
+    return {
+      scale: (0.62 + 0.6 * crush) * (1 - 0.4 * collapse),
+      offset: [over ? 0.02 * Math.sin(t * 47) : 0, 0],
+      tilt: buckle(force, v.limit),
+      spin: index === 0 ? 0.12 : 0.68,
     };
   },
 };

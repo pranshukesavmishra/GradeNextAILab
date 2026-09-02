@@ -20,6 +20,26 @@ import type { ArchetypeSpec } from "@engine/archetype";
  * is where the nine-day residence time in D1.6 comes from.
  */
 
+/**
+ * Where the stage rail has got to, rebuilt from the clock.
+ *
+ * `drive` is handed elapsed time but not progress, and at the default Speed of
+ * 0.6 the engine advances progress by 0.096 a second, so this is the rail's
+ * own position and the water moves in step with the caption under it.
+ */
+const railPhase = (t: number) => (t * 0.096) % 1;
+
+/**
+ * How big each of Earth's reservoirs is, in cubic kilometres.
+ *
+ * The published figures, and the only numbers D1.1 needs: everything else in
+ * that simulation is a ratio of two of these.
+ */
+const RESERVOIR_KM3: Record<string, number> = {
+  ocean: 1.338e9, icecaps: 2.4064e7, groundwater: 1.053e7,
+  salinelakes: 8.54e4, freshlakes: 9.1e4, rivers: 2.12e3,
+};
+
 /* D1.1 — Earth's water reservoirs. */
 const WHERE_THE_WATER_IS: ArchetypeSpec = {
   id: "g6d1-where-the-water-is",
@@ -63,6 +83,25 @@ const WHERE_THE_WATER_IS: ArchetypeSpec = {
       because: "2 120 km3. Freeze every river on Earth and it would be a cube 12.8 km on a side: 0.0002 per cent of Earth's water, and most of what we drink from.",
       art: { art: "glassware", which: "testTube", level: 0.3, color: "#4fa3d1" } },
   ],
+  /*
+   * Every specimen is drawn at the size of what it actually holds. Volume goes
+   * as the cube of the width, so the ocean at 1.338 billion cubic kilometres is
+   * not six hundred thousand times as wide as the rivers but 85 times — and
+   * even that will not fit on a bench, so the small stores are held at a floor
+   * of 0.22 rather than shrinking to nothing. The ice does not move, because
+   * it is the one store where the water is not going anywhere; the salt lake
+   * grows its crust of salt, because evaporation is the only way out of it.
+   */
+  drive: ({ specimen, t }) => {
+    const km3 = RESERVOIR_KM3[specimen.id] ?? 1e5;
+    const scale = Math.max(0.22, Math.cbrt(km3 / 2.5e8));
+    if (specimen.id === "icecaps") return { scale, rate: 0 };
+    if (specimen.id === "salinelakes") {
+      return { scale, level: 0.35, precipitate: 0.25 + 0.35 * railPhase(t), rate: 0.3 };
+    }
+    if (specimen.id === "ocean") return { scale, rate: 0.5 };
+    return { scale, rate: 0.8 };
+  },
 };
 
 /* D1.2 — Evaporation and condensation. */
@@ -83,7 +122,7 @@ const INTO_THE_AIR_AND_BACK: ArchetypeSpec = {
     "Air holds water like a sponge and warm air has bigger holes",
     "Clouds form because air runs out of room for water",
   ],
-  specimens: [{ id: "parcel", name: "One cubic metre of air", art: { art: "molecule", formula: "H2O" } }],
+  specimens: [{ id: "parcel", name: "A sealed flask of moist air over water", art: { art: "glassware", which: "flask", level: 0.2, color: "#4a90c2" } }],
   variables: [
     { key: "airTempC", label: "Air temperature (degrees C)", min: -10, max: 40, step: 1, default: 20 },
     { key: "humidityPct", label: "Relative humidity (per cent)", min: 5, max: 100, step: 1, default: 50 },
@@ -112,6 +151,26 @@ const INTO_THE_AIR_AND_BACK: ArchetypeSpec = {
   plot: {
     x: "airTempC", y: "saturationPressureKPa",
     xLabel: "Air temperature (degrees C)", yLabel: "Vapour pressure at saturation (kPa)",
+  },
+  /*
+   * The flask is the sky in a jar. What the air is carrying — 1.2 grams in a
+   * cubic metre at -10 degrees and half humidity, 25.5 grams at 40 — sets how
+   * high the water stands in it, and the gap between the actual and the
+   * saturation vapour pressure sets how hard it is evaporating: dry warm air
+   * boils the surface, cold damp air barely touches it. Past about 92 per cent
+   * humidity that gap has closed and the run crosses its threshold — mist
+   * appears in the flask, because the air can hold no more and the water has
+   * to come back out. That is condensation, and it is what a cloud is.
+   */
+  drive: ({ v, f }) => {
+    const dryingPower = f.saturationPressureKPa - f.actualPressureKPa;
+    return {
+      level: 0.08 + Math.min(0.55, f.waterInAirGPerM3 / 46),
+      bubbles: Math.min(1, dryingPower * 0.6),
+      precipitate: Math.max(0, (v.humidityPct - 88) / 12),
+      color: v.airTempC > 25 ? "#5fa8c8" : v.airTempC < 2 ? "#8fb6d8" : "#4a90c2",
+      rate: 0.15 + Math.min(3, dryingPower),
+    };
   },
 };
 
@@ -158,6 +217,38 @@ const MEADOW_OR_CAR_PARK: ArchetypeSpec = {
       carParkRunoffLitres: 0.9 * stormLitres,
       carParkSoaksInLitres: 0.1 * stormLitres,
       extraLitresToTheDrain: 0.7 * stormLitres,
+      meadowRunoffMm: 0.2 * v.rainDepthMm,
+      meadowSoaksInMm: 0.8 * v.rainDepthMm,
+      carParkRunoffMm: 0.9 * v.rainDepthMm,
+    };
+  },
+  /*
+   * Each plot is drawn holding the water that ran off it, in millimetres over
+   * the whole plot, so the two beakers are filling at the rates their runoff
+   * coefficients demand: for every millimetre of rain the meadow sheds 0.2 mm
+   * and the car park 0.9. The meadow's suspended load is the water going the
+   * other way, down into the soil at 10 to 20 mm an hour, which is the part
+   * that refills a well. Past about 50 mm of rain the car park is delivering
+   * more than a street drain can swallow — it browns over and boils, because at
+   * that point the water is in the road rather than in the pipe.
+   */
+  drive: ({ f, index }) => {
+    if (index === 0) {
+      return {
+        level: Math.min(1, f.meadowRunoffMm / 100),
+        color: "#4f9a5e",
+        precipitate: Math.min(0.85, f.meadowSoaksInMm / 60),
+        bubbles: 0.05,
+        rate: 0.3,
+      };
+    }
+    const flooding = f.carParkRunoffMm > 45;
+    return {
+      level: Math.min(1, f.carParkRunoffMm / 100),
+      color: flooding ? "#6b5a3c" : "#5a6472",
+      bubbles: flooding ? 0.9 : 0.1,
+      glow: flooding ? 0.6 : 0,
+      rate: 0.3 + f.carParkRunoffMm / 25,
     };
   },
 };
@@ -180,6 +271,7 @@ const THROUGH_THE_TREE: ArchetypeSpec = {
     "Plants drink water the way animals do, and keep it",
     "Water is pushed up a tree from the roots",
   ],
+  specimens: [{ id: "drop", name: "The water molecule being followed", art: { art: "molecule", formula: "H2O" } }],
   stages: [
     { name: "Soil", at: 0, caption: "A film of water on soil grains, held there since the last rain." },
     { name: "Root", at: 0.25, caption: "Drawn in through root hairs, pulled by the water leaving the leaves far above." },
@@ -201,6 +293,24 @@ const THROUGH_THE_TREE: ArchetypeSpec = {
     { at: [0.88, 0.26], name: "The air above the canopy",
       note: "Between 97 and 99 per cent of everything the tree drew from the soil leaves here as vapour. Only the last one or two per cent ends up in sugar and wood. Across all the land on Earth, plants return roughly 39 000 km3 of water to the air each year." },
   ],
+  /*
+   * The molecule climbs the tree. It rises steadily through the soil, the root
+   * and the trunk, tumbling slowly because it is still liquid and roped to its
+   * neighbours by hydrogen bonds. Past the leaf — three quarters of the way
+   * along — it evaporates, and the change is unmistakable: it breaks loose and
+   * spins freely, because a water molecule in air moves at about 590 m/s
+   * between collisions and nothing is holding it any more.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const vapour = u > 0.75;
+    return {
+      offset: [0.35 * Math.sin(u * 5.6), 0.62 - u * 1.24],
+      scale: vapour ? 0.85 : 1,
+      spin: vapour ? t * 3.4 : 0.68 + t * 0.3,
+      rate: vapour ? 4 : 0.6,
+    };
+  },
 };
 
 /* D1.5 — Two drivers: solar energy and gravity. */
@@ -249,6 +359,21 @@ const SUN_LIFTS_GRAVITY_DROPS: ArchetypeSpec = {
     x: "cloudHeightM", y: "energyFromGravityKJ",
     xLabel: "Height of the cloud base (m)", yLabel: "Energy gravity returns (kJ)",
   },
+  /*
+   * The puddle holds the water you asked for — one kilogram is a film in the
+   * bottom, five hundred fills it — and evaporates at the rate its temperature
+   * allows, which is why a warm puddle steams and a cold one just sits there.
+   * The glow is the size of the Sun's share of the work against gravity's:
+   * about 126 times at the default settings, and never less than about 40 at
+   * any cloud height the slider can reach. Gravity never catches up.
+   */
+  drive: ({ v, f }) => ({
+    level: 0.05 + (v.waterMassKg / 500) * 0.8,
+    bubbles: Math.min(1, v.waterTempC / 28),
+    color: v.waterTempC > 24 ? "#5fa8c8" : v.waterTempC < 6 ? "#8fb6d8" : "#4a90c2",
+    glow: Math.min(1, f.sunTimesGreater / 200),
+    rate: 0.15 + v.waterTempC / 12,
+  }),
 };
 
 /* D1.6 — Residence time, and the cycle as a system. */
@@ -284,6 +409,25 @@ const HOW_LONG_IT_STAYS: ArchetypeSpec = {
     { name: "Back to the ocean, or stuck", at: 1,
       caption: "Unless it is caught: groundwater averages 1 400 years, and ice near the base of the Antarctic sheet fell as snow more than 100 000 years ago." },
   ],
+  /*
+   * The molecule goes round the loop, and how fast it moves at each place is
+   * the residence time there: 3 100 years in the ocean, nine days in the air,
+   * three weeks in a river. So it barely stirs at the bottom of the ocean and
+   * tears across the sky, which is the point — the same water, the same cycle,
+   * and residence times four orders of magnitude apart. It rises as it
+   * evaporates and falls as it rains, because that is the shape of the cycle.
+   */
+  drive: ({ t }) => {
+    const u = railPhase(t);
+    const height = u < 0.2 ? -0.5 + u * 1.5 : u < 0.5 ? 0.7 : 0.7 - (u - 0.5) * 2.4;
+    const aloft = u >= 0.2 && u < 0.5;
+    return {
+      offset: [0.5 * Math.sin(u * 6.3), -height],
+      spin: aloft ? t * 3.6 : 0.68 + t * 0.2,
+      scale: aloft ? 0.8 : 1.05,
+      rate: aloft ? 4 : 0.35,
+    };
+  },
 };
 
 export const g6d1WhereTheWaterIs = buildSim(WHERE_THE_WATER_IS);

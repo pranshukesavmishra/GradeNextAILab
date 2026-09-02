@@ -104,6 +104,28 @@ const SIGNAL_PATH: ArchetypeSpec = {
     "Nerve signals travel at the speed of electricity in a wire",
     "The finger feels the touch, rather than the brain",
   ],
+  specimens: [
+    { id: "impulse", name: "The impulse itself", art: { art: "sphere", color: "#3f6a9e", radius: 0.4 } },
+  ],
+  /*
+   * A nerve impulse is not a current running down a wire — it is a wave of
+   * charge that each patch of membrane has to build again, which is why it
+   * manages 50 m/s where electricity manages 200 million. So the impulse runs
+   * along the neuron and then stops dead at every synapse, gathering while the
+   * handover is made and costing about a millisecond each time. Three relays
+   * on this route: into the cord, at the brain stem, and at the thalamus.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    // Synapses sit at the three relays; between them the signal simply runs.
+    const atSynapse = (p > 0.36 && p < 0.44) || (p > 0.55 && p < 0.63) || (p > 0.74 && p < 0.82);
+    return {
+      scale: atSynapse ? 0.6 : 1 + 0.12 * Math.sin(t * 12),
+      color: atSynapse ? "#3f6a9e" : "#5fd8ff",
+      spin: t * (atSynapse ? 0.2 : 2.4),
+      rate: atSynapse ? 0 : 1,
+    };
+  },
   route: [
     {
       at: [0.09, 0.28], name: "Touch receptor",
@@ -187,6 +209,25 @@ const CHOOSING: ArchetypeSpec = {
     x: "choices", y: "reactionMs",
     xLabel: "Number of choices", yLabel: "Reaction time (ms)",
   },
+  /*
+   * The brain lights and swells with the work it is being given: nothing extra
+   * to do with one button, 450 ms of deciding with eight. It also flashes at
+   * the rate it can actually answer — one flash per reaction, so five a second
+   * at 200 ms and barely one and a half a second at 650. Slow and hot at one
+   * end, quick and cool at the other, and the reason is the number of choices
+   * rather than the speed of anybody's nerves.
+   */
+  drive: ({ f, t }) => {
+    const load = f.decisionMs / 450;
+    const pulse = Math.max(0, Math.sin((t * Math.PI * 1000) / f.reactionMs));
+    return {
+      color: ["#4a63f0", "#6a6ae0", "#9a63c0", "#c85a86", "#e0724a", "#f0913c"][
+        Math.max(0, Math.min(5, Math.round(load * 5)))
+      ],
+      scale: 1 + load * 0.35 + pulse * pulse * 0.12,
+      spin: 0.68 + t * (0.2 + load * 0.9),
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *
@@ -247,6 +288,34 @@ const REFLEX_VS_VOLUNTARY: ArchetypeSpec = {
       voluntaryMs,
       savedMs: voluntaryMs - reflexMs,
       timesFaster: voluntaryMs / reflexMs,
+      reflexPathCm: 2 * v.nerveLength,
+      voluntaryPathCm: 2 * v.nerveLength + 100,
+    };
+  },
+  /*
+   * Both legs run at once, at one eighth of real speed, and each one is drawn
+   * travelling its own route: 2 x 50 cm for the reflex, and the same again plus
+   * the 100 cm up to the brain and back for the chosen response. The signal
+   * moves across at the fraction of its own journey the clock has reached, so
+   * at any instant you can see the reflex already home while the voluntary
+   * response is still on its way, and the moment each arrives it lights up.
+   *
+   * Both sliders bite. A longer nerve makes both journeys longer, and a slower
+   * signal makes both take longer — but only the voluntary side carries the 180
+   * ms of deciding, which is why it stays about five times slower whatever you
+   * do to the wiring.
+   */
+  drive: ({ f, t, index }) => {
+    const clockMs = ((t / 8) % 0.5) * 1000;
+    const took = index === 0 ? f.reflexMs : f.voluntaryMs;
+    const path = index === 0 ? f.reflexPathCm : f.voluntaryPathCm;
+    const progress = Math.min(1, clockMs / took);
+    const arrived = progress >= 1;
+    return {
+      offset: [-0.6 + progress * (path / 300) * 1.25, 0],
+      scale: 0.62 + progress * 0.42,
+      color: arrived ? "#f0c93c" : "#5a7ec0",
+      spin: 0.68 + t * (arrived ? 0.15 : 2.2),
     };
   },
 };
@@ -297,6 +366,24 @@ const MEMORY: ArchetypeSpec = {
       caption: "Stored as a pattern of strengthened synapses. Recalling it rebuilds it, and can change it.",
     },
   ],
+  /*
+   * What the run shows is how much survives each step, so the brain dims at
+   * every one. Everything the eyes send arrives at once and blazes for about a
+   * quarter of a second; attention throws nearly all of it away; working memory
+   * keeps five to nine items for half a minute; and what is left after
+   * consolidation is a small, steady, permanent thing. It only stops flickering
+   * at the end: a long-term memory is a pattern that holds still.
+   */
+  drive: ({ t }) => {
+    const p = (t * 0.096) % 1;
+    const stage = Math.min(4, Math.floor(p * 5));
+    const flicker = stage < 4 ? 1 + 0.1 * Math.sin(t * (9 - stage * 2)) : 1;
+    return {
+      scale: [1.55, 1.05, 0.82, 0.66, 0.6][stage] * flicker,
+      color: ["#ffe98a", "#f0c93c", "#d8913c", "#a86ec0", "#7a5ad8"][stage],
+      spin: 0.68 + t * (stage < 4 ? 0.9 : 0.12),
+    };
+  },
 };
 
 /* ---------------------------------------------------------------- *

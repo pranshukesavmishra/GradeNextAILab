@@ -47,7 +47,7 @@ const TODAY_OR_ALWAYS: ArchetypeSpec = {
     { id: "drop", name: "It is three degrees colder than yesterday", category: "weather",
       because: "A difference between two days. Day-to-day swings of five or ten degrees are ordinary in mid-latitudes and average out to nothing over thirty years.",
       art: { art: "sphere", color: "#8fb8d8", radius: 0.3 } },
-    { id: "rome", name: "July is Rome's warmest month, averaging about 24 degrees", category: "climate",
+    { id: "rome", name: "July in Rome averages about 24 degrees", category: "climate",
       because: "The word averaging gives it away. This number comes from thirty Julys, not from one.",
       art: { art: "sphere", color: "#f6c453", radius: 0.42, glow: 0.6 } },
     { id: "storm", name: "A storm is forecast to make landfall on Thursday", category: "weather",
@@ -90,6 +90,23 @@ const THIRTY_YEARS: ArchetypeSpec = {
     yearsToHalveTheError: v.years * 4,
   }),
   plot: { x: "years", y: "uncertaintyC", xLabel: "Years of record", yLabel: "Uncertainty in the mean (degrees)" },
+  /*
+   * The beaker is the record itself. It fills as the years are added — sixty
+   * years fills it — and what is dissolved in it settles as the average
+   * steadies: while the uncertainty is above about a degree the liquid is
+   * churning and muddy, and by thirty years it has cleared to the settled blue
+   * of a number you could quote. Below the World Meteorological Organization's
+   * thirty-year normal nothing has settled out yet, and the picture says so.
+   */
+  drive: ({ v, f }) => {
+    const settled = 1 - Math.min(1, f.uncertaintyC / 1.5);
+    return {
+      level: 0.08 + 0.82 * (v.years / 60),
+      bubbles: 1 - settled,
+      precipitate: settled * 0.85,
+      color: settled > 0.78 ? "#2f7fc0" : settled > 0.45 ? "#7fb4d8" : "#b09a58",
+    };
+  },
 };
 
 /* E1.3 — Reading climate graphs. */
@@ -108,17 +125,51 @@ const READING_A_CLIMOGRAPH: ArchetypeSpec = {
   ],
   misconceptions: ["The bars and the line on a climograph share one scale"],
   specimens: [{ id: "gauge", name: "Rome, 42 degrees north", art: { art: "glassware", which: "beaker", level: 0.32, color: "#7fb4d8" } }],
+  variables: [
+    { key: "month", label: "Month (1 = January)", min: 1, max: 12, step: 1, default: 7 },
+  ],
+  // Rome Ciampino's 1971-2000 normals, the twelve pairs the climograph is
+  // drawn from. Mean temperature in degrees and precipitation in millimetres:
+  // the bars total 802 mm a year and the line runs from 7.5 in January to 24.5
+  // in August, an annual range of 17 degrees.
+  measure: (v) => {
+    const T = [7.5, 8.2, 10.2, 12.6, 17.2, 21.1, 24.1, 24.5, 20.8, 16.4, 11.4, 8.4];
+    const P = [67, 73, 58, 81, 53, 34, 15, 24, 74, 113, 116, 94];
+    const i = Math.min(11, Math.max(0, Math.round(v.month) - 1));
+    return {
+      meanTempC: T[i],
+      rainfallMm: P[i],
+      annualRainfallMm: 802,
+      annualRangeC: 17,
+    };
+  },
+  /*
+   * The gauge is the bar and the line at once. It fills with the month you are
+   * standing in — 15 mm in July barely wets the bottom, 116 mm in November
+   * nearly fills it — and the water takes the colour of that month's mean
+   * temperature, so the summer drought reads as a hot, empty gauge and the
+   * autumn rain as a cold, full one. That pairing is the whole Mediterranean
+   * pattern, and it is what names the zone.
+   */
+  drive: ({ f }) => ({
+    level: 0.06 + (f.rainfallMm / 116) * 0.82,
+    color: f.meanTempC >= 22 ? "#e2793f"
+      : f.meanTempC >= 16 ? "#e0b45c"
+      : f.meanTempC >= 11 ? "#6fa8cf"
+      : "#a9d0ea",
+    bubbles: f.meanTempC >= 22 ? 0.55 : 0,
+  }),
   stages: [
     { name: "Two graphs", at: 0,
       caption: "Bars are rainfall in millimetres, read on the right axis. The line is mean temperature in degrees, read on the left. Twelve of each, January to December." },
     { name: "Warmest month", at: 0.2,
-      caption: "Follow the line to its peak: July, about 24 degrees. That is an average of every July day, not the hottest afternoon." },
+      caption: "Follow the line to its peak: August at about 24.5 degrees, with July a fifth of a degree behind. That is an average of every day in the month, not the hottest afternoon." },
     { name: "Coldest month", at: 0.4,
-      caption: "The line bottoms out in January at about 8 degrees. Annual range = 24 - 8 = 16 degrees, mild for 42 degrees north because the sea is 25 km away." },
+      caption: "The line bottoms out in January at about 7.5 degrees. Annual range = 24.5 - 7.5 = 17 degrees, mild for 42 degrees north because the sea is 25 km away." },
     { name: "Total the bars", at: 0.6,
       caption: "Add the twelve bars: about 800 mm a year. London gets about 600 mm, Singapore about 2 340 mm." },
     { name: "When it falls", at: 0.8,
-      caption: "The tallest bar is November, near 110 mm. The shortest is July, near 15 mm. Rome's rain arrives in winter and nearly stops in summer." },
+      caption: "The tallest bar is November, at 116 mm. The shortest is July, at 15 mm — seven times less. Rome's rain arrives in winter and nearly stops in summer." },
     { name: "Name the zone", at: 1,
       caption: "Hot dry summer, mild wet winter: a Mediterranean climate, Koeppen Csa. The shape of the graph names the zone before you read the caption." },
   ],
