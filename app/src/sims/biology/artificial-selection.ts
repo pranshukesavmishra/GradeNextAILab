@@ -170,6 +170,23 @@ function newIndividual(caseDef: BreedCase, h2: number, rng: Rng): Individual {
  * Model
  * ------------------------------------------------------------------ */
 
+/**
+ * The live breeding cut: who would breed if the generation turned over right
+ * now. This is the boundary the histogram draws — the phenotype of the worst
+ * individual inside the cut, and how much better than average the chosen
+ * parents currently are.
+ */
+function selectionCut(state: State, params: ParamValues): { cutoff: number; nextS: number } {
+  const caseDef = CASES[params.case as string] ?? CASES.maize;
+  const t = traitIndex(params.selectFor as string);
+  const bigger = params.direction !== "smaller";
+  const values = state.pop.map((p) => phenotype(p, caseDef, t));
+  if (!values.length) return { cutoff: caseDef.traits[t].start, nextS: 0 };
+  const sorted = values.slice().sort((a, b) => (bigger ? b - a : a - b));
+  const nKeep = Math.max(2, Math.min(sorted.length, Math.round(sorted.length * (params.keep as number))));
+  return { cutoff: sorted[nKeep - 1], nextS: mean(sorted.slice(0, nKeep)) - mean(sorted) };
+}
+
 const model: SimModel<State> = {
   init(params, ctx) {
     return founding(params, ctx);
@@ -288,6 +305,11 @@ const model: SimModel<State> = {
         semantic: "velocity", graphable: true,
       },
       {
+        key: "cutoff", label: `Breeding cutoff${tr.unit ? ` (${tr.unit})` : ""}`,
+        quantity: q(selectionCut(state, params).cutoff, "count"),
+        semantic: "force", graphable: true, bands: ["6-8", "9-12"],
+      },
+      {
         key: "selectionDifferential", label: "How much better the parents were",
         quantity: q(state.lastS, "count"), semantic: "force", graphable: true,
         bands: ["6-8", "9-12"],
@@ -314,6 +336,7 @@ const model: SimModel<State> = {
     const m = mean(values);
     const other = (t + 1) % 3;
     const otherMean = mean(state.pop.map((p) => phenotype(p, caseDef, other)));
+    const cut = selectionCut(state, params);
     return {
       case: caseDef.key,
       traitName: tr.name,
@@ -322,6 +345,8 @@ const model: SimModel<State> = {
       startMean: state.startMean[t],
       change: m - state.startMean[t],
       unselectedChange: otherMean - state.startMean[other],
+      breedingCutoff: cut.cutoff,
+      nextSelectionDifferential: cut.nextS,
       selectionDifferential: state.lastS,
       response: state.lastR,
       predictedResponse: h2 * state.lastS,

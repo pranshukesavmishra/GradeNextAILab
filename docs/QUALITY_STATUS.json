@@ -28,14 +28,6 @@
       "tested": 4
     },
     {
-      "id": "bio.artificial-selection",
-      "subject": "biology",
-      "unresponsive": [
-        "keep"
-      ],
-      "tested": 3
-    },
-    {
       "id": "bio.cell",
       "subject": "biology",
       "unresponsive": [
