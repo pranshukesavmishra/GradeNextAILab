@@ -891,3 +891,419 @@ total 300 m in 25 s. Stepped every tick: v ← v + a dt, x ← x + v dt.
 Gravel trap beyond 300 m: a = −8 m/s² with ±1 m/s² noise.
 
 ---
+
+## Topic A3 — Newton's First Law
+
+### A3.1 — Inertia
+
+**Subtopic.** A3.1 *Inertia* (`g8a3-fifty-newtons-each`).
+
+**The question.** Two balls get exactly the same push. One is a baseball,
+one is a shot put. What does "the same push" do to each — and is anything
+pushing back?
+
+**The scene.** One long lab bench, side-on camera, with **two identical
+launch lanes** side by side front and back, each 5.0 m long with 0.5 m
+marks scored into the bench and a red start line. In each lane, a
+*pneumatic ram*: a cylinder on a stand with a padded piston face, a force
+dial on its body (5–200 N) and a contact-time dial (0.02–0.50 s). Lane A
+(front): a baseball, 0.145 kg, on a shallow guide groove. Lane B (back): a
+shot put, 7.26 kg, same groove. Both balls sit touching their piston faces.
+One *fire button* is wired to both rams through a visible cable — one press,
+two identical pushes at the same instant. A light gate stands at the 1.0 m
+mark of each lane. During the push, an orange force arrow (2 cm of arrow
+per 10 N) is drawn from each piston face onto its ball; both arrows are the
+same length because the dials are shared. After the push, each ball carries
+only its blue velocity arrow (1 cm per 2 m/s). A high-speed clock (ms) at
+the top. Beyond the 5.0 m end of the bench: open floor, 0.9 m down.
+Instrument column: *speed after the push vs impulse* graph (two point
+series, one per ball) and the ledger.
+
+**What the student does.**
+1. Set the force dial (default 50 N) and the time dial (default 0.10 s).
+2. Roll each ball back against its piston (a drag; the ball clicks home).
+3. Press fire. Watch. Read the two light-gate speeds.
+- Run 1: 50 N, 0.10 s.
+- Run 2 (change the force): 100 N, 0.10 s.
+- Run 3 (change the contact time): 100 N, 0.20 s.
+
+**What they see happen.** The two orange arrows appear together, identical,
+for exactly 0.10 s — a slow-motion dilation stretches the push to about a
+second of screen time so it can be seen, with the ms clock showing true
+time. The baseball streaks away, is through its light gate almost at once
+("34.5 m/s" pops above the gate) and is off the end of the bench within a
+blink — it flies off the edge and bounces away across the floor. The shot
+put barely stirs: it creeps forward, takes 1.4 s to reach its gate
+("0.69 m/s"), and rolls to the 5 m mark over several seconds. After the
+push, neither ball has any arrow on it but the blue one: nothing is pushing
+either of them, and both keep the velocity the push left them with. Runs 2
+and 3 double the impulse and both speeds double — but the *ratio* of the
+two speeds never moves.
+
+**What accumulates.** Two point-series on the speed-vs-impulse graph: the
+baseball's points lie on a steep line, the shot's on a line 50 times
+shallower. Ledger: *impulse (N·s)*, *baseball speed*, *shot speed*, *ratio*
+— the ratio column reads 50.1 in every row, and a footer note ties it to
+7.26 / 0.145.
+
+**The failure state.** At maximum impulse (200 N × 0.50 s = 100 N·s) even
+the shot put reaches 13.8 m/s: it thunders off the end of the bench,
+drops, and cracks a floor tile with a dust flash — the ledger records
+"left the bench at 13.8 m/s". The baseball at that setting (690 m/s) is
+refused by the rig: a red interlock trips at 60 m/s equivalent
+("ram cannot follow the ball"), teaching that a push can only act while
+the piston is still touching.
+
+**The prediction.** *Both balls get 50 N for 0.10 s. The baseball leaves at
+34.5 m/s. The shot put will leave at about…*
+1. 34.5 m/s — same push, same speed.
+2. 17 m/s — half, because it is heavier.
+3. 0.69 m/s — fifty times less, because it has fifty times the mass. ✔
+4. 0 m/s — a shot put cannot be moved by 50 N.
+Reveal: the same impulse divided by fifty times the mass is a fiftieth of
+the speed. The mass ratio 7.26 / 0.145 = 50.1 is the speed ratio, exactly.
+
+**The misconception it confronts.** *"Heavy objects have more inertia only
+while they are moving"* — both balls are at rest when the push lands, and
+the resistance to *starting* is where the 50× shows up. *"Inertia is a force
+that pushes back on you"* — during the push the only arrow on each ball is
+the ram's orange one; after it, no arrow at all, yet the ball keeps going.
+Inertia is never drawn as an arrow because it is not a force.
+
+**Real numbers.** Impulse = F·t; v = F·t / m. Baseball m = 0.145 kg
+(regulation), shot m = 7.26 kg (regulation): 50 N × 0.10 s = 5.0 N·s →
+34.5 m/s and 0.689 m/s; ratio 50.1 at every setting. F ∈ [5, 200] N,
+t ∈ [0.02, 0.5] s. During the push a = F/m stepped per tick; after it,
+v constant (groove friction negligible, stated on the rig).
+
+---
+
+### A3.2 — Balanced vs unbalanced forces
+
+**Subtopic.** A3.2 *Balanced vs unbalanced forces* (`g8a3-do-they-cancel`).
+
+**The question.** Two teams pull on the same cart in opposite directions.
+If the pulls are equal, does the cart have to be standing still?
+
+**The scene.** The **Track kit**, with a pulley clamped to *each* end of the
+2.0 m track. A 1.0 kg cart sits mid-track with a cord from each end plate
+running over its pulley to a hanger hanging off the bench edge. Each hanger
+takes 100 g slotted masses from a tray drawn beside the track (each slot
+mass is a real object the student picks up and drops on). Force arrows: the
+left cord's pull in teal from the cart's left plate, the right cord's pull
+in orange from the right plate (2 cm per 0.5 N), and above the cart the
+dashed *net* arrow — drawn only as long as the difference. Blue velocity
+arrow on the cart. Light gates at 0.5 m and 1.5 m. Instrument column:
+*velocity vs time* graph (x 0–8 s, y −1…1 m/s) and the ledger.
+
+**What the student does.**
+1. Load hangers: run 1 loads 3 masses each side (2.94 N each way).
+2. Press release. Watch 4 s. Then, mid-scene, *flick* the cart: drag it
+   sideways and let go (the drag speed becomes its launch speed, capped
+   at 0.6 m/s).
+- Run 1: 3 v 3, cart at rest, then flicked.
+- Run 2 (change one side): 4 v 3, cart starting at rest.
+- Run 3 (change the start): 4 v 3, but flick the cart *towards* the lighter
+  side first.
+
+**What they see happen.** Run 1: with equal loads the two arrows are the
+same length, the net arrow is absent, and the cart does not move — v-t flat
+at 0. Then the flick: while the cart glides, both cord arrows stay equal
+(the cords stay taut over their pulleys), the net arrow is still absent —
+and the cart *keeps gliding at the same speed*, the v-t line flat at
+0.4 m/s until the end-stop. Balanced does not mean still; it means
+*unchanging*. Run 2: one extra mass and a short net arrow appears (0.981 N);
+the cart accelerates from rest towards the heavier side; the v-t line is a
+straight ramp. Run 3: flicked one way with the net arrow pointing the other,
+the cart slows, stops for an instant, and comes back — the v-t line crosses
+zero, while the net arrow never changes direction.
+
+**What accumulates.** Three v-t traces: a flat step then a flat glide; a
+ramp from zero; a ramp that crosses the axis. Ledger: *left (N)*, *right
+(N)*, *net (N)*, *what the velocity did* (auto: "held at 0", "held at
+0.4", "changed steadily"). The rule — net zero ↔ velocity holds — emerges
+across rows.
+
+**The failure state.** Any unbalanced run eventually drives the cart to an
+end: the winning hanger reaches the floor, its cord goes slack, its arrow
+vanishes mid-run — and the cart, now under one cord only… no: with the
+pulling cord slack the *other* side's still-hanging load takes over, and
+the cart decelerates and reverses. The moment of the arrow vanishing is
+marked on the v-t trace with a kink flag ("left hanger landed"). Students
+watch the force diagram rewrite itself and the motion answer it.
+
+**The prediction.** *Equal loads on both sides. You flick the cart to the
+right and let go. What does it do?*
+1. Stops quickly — the forces cancel it out.
+2. Keeps rolling at the speed you gave it. ✔
+3. Speeds up towards the right pulley.
+4. Returns to the middle, where it balances.
+Reveal: cancelling forces add to zero, and zero force changes nothing —
+including a velocity of 0.4 m/s. Only an *unbalanced* force can slow it.
+
+**The misconception it confronts.** *"Something moving must have an
+unbalanced force on it"* — run 1's glide happens under a visibly zero net
+arrow. *"A moving object at the top of its flight has no force acting"* is
+met by run 3's cousin: at the instant the cart reverses, its velocity arrow
+vanishes while the net arrow is still there, full length, pointing the way
+it is about to go.
+
+**Real numbers.** Each 100 g slot = 0.981 N of cord tension. Net =
+(n_L − n_R) × 0.981 N. Moving mass = 1.0 kg cart + 0.1 kg × (n_L + n_R);
+run 2: net 0.981 N on 1.7 kg → a = 0.577 m/s². Flick speed cap 0.6 m/s.
+Track rolling resistance 0.02 N (declared on the rig; visibly negligible
+over 2 m). Stepped: a = net/m each tick; cord tension recomputed when a
+hanger lands.
+
+---
+
+### A3.3 — Free-body diagrams
+
+**Subtopic.** A3.3 *Free-body diagrams* (`g8a3-every-arrow`).
+
+**The question.** Draw every force on the cart — and only the forces. Does
+your diagram predict what the cart actually does?
+
+**The scene.** The **Track kit**. A 5.0 kg loaded cart (the load bay
+visibly stacked) at the 0.2 m mark; a cord from its front plate over the
+right-hand pulley to a 2.04 kg hanger (the cord tension will be 20.0 N).
+Light gates at 0.5 m and 1.5 m. The cart is drawn large; next to the track
+floats the *arrow palette*: five draggable arrows, each a labelled tile —
+**Weight**, **Normal force**, **Pull of the cord**, **Friction**, and a
+trap: **Force of motion**. Dragging a tile to the cart pins an arrow at the
+correct application point (weight from the centre downward, normal up from
+the wheels, pull from the front plate, friction backward at the wheels);
+the student then *sizes* it by dragging its tip along a newton scale that
+appears (2 cm per 10 N). A *prediction chip* above the cart continuously
+computes the acceleration implied by the student's current diagram
+("your arrows say a = … m/s²"). A TEST button on the electromagnet release.
+Instrument column: the measured *velocity vs time* graph and a ledger of
+diagram-vs-measured.
+
+**What the student does.**
+1. Build the diagram: drag on the arrows they believe in, size each.
+2. Press TEST. The cart runs; the gates measure the real acceleration; the
+   chip's prediction is laid over the measured value.
+- Run 1: the setup above (correct diagram: 49.1 down, 49.1 up, 20.0
+  forward, 0.98 back → net 19.0 N, a = 3.80).
+- Run 2 (change what pulls): unhook the cord (drag it off the plate). Now a
+  correct diagram is two arrows, and the cart must sit still.
+- Run 3 (change the load on the surface): a hand icon presses down on the
+  cart with 20 N (drag the hand onto the cart roof). Weight stays 49.1;
+  what changes?
+
+**What they see happen.** Run 1: with a correct diagram the chip says 3.80,
+the gates measure 3.80, the two numbers fuse into one green tick, and the
+dashed net arrow the model draws matches the gap the student left between
+pull and friction. If the student added **Force of motion**, the chip
+over-predicts; on TEST the measured line falls below the predicted one, the
+bogus arrow glows red, cracks, and crumbles off the cart — there is no
+pusher to supply it. Run 2: cord off; a correct diagram is weight and
+normal only; TEST confirms a = 0, and the two arrows sit head-to-head.
+Run 3: with the hand pressing 20 N, the normal arrow must be dragged out to
+69.1 N to keep the cart from sinking (the model shows the wheels
+compressing until the diagram balances vertically), friction grows to
+1.38 N (it follows the normal, not the weight), and the measured a drops
+to 3.72.
+
+**What accumulates.** Ledger, one row per test: *arrows used*, *diagram's
+predicted a*, *measured a*, *verdict*. Three rows tell the story: right
+diagram → match; bogus arrow → over-prediction; pressed cart → normal
+69.1 ≠ weight 49.1 and still a match.
+
+**The failure state.** The crumbling motion-force arrow is the designed
+failure. A second: size the friction arrow above the pull (drag it past
+20 N) and the chip predicts the cart accelerating *backwards*; TEST shows
+it plainly does not, and the oversized arrow is trimmed back by the model
+with a "the bench can only resist, never drive" note.
+
+**The prediction.** *The cart is rolling forward at a steady speed after
+the hanger has landed. Which arrows belong on it?*
+1. Weight, normal, and a forward force of motion.
+2. Weight and normal only, plus a small backward friction. ✔
+3. A forward force bigger than friction.
+4. No arrows — nothing is touching it horizontally.
+Reveal: motion is not a force. Only the Earth, the bench and the axles are
+acting; the small friction arrow is why the glide very slowly dies.
+
+**The misconception it confronts.** *"A moving object carries a forward
+force with it"* — the palette invites the error and the measurement
+executes it. *"The normal force is always equal to the weight"* — run 3
+splits them by 20 N on screen, with both arrows labelled.
+
+**Real numbers.** Weight = 5.0 × 9.81 = 49.1 N; normal = 49.1 N (run 3:
+69.1 N); pull = 20.0 N; rolling friction = 0.020 × normal = 0.98 N (run 3:
+1.38 N); net = 19.0 N; a = net / 5.0 = 3.80 m/s² (run 3: 3.72). Cart from
+rest covers ½ × 3.80 × t²: 1.9 m in 1.0 s, matching the gate timing.
+
+---
+
+### A3.4 — Friction as the reason intuition misleads
+
+**Subtopic.** A3.4 *Friction as the reason intuition misleads*
+(`g8a3-take-friction-away`).
+
+**The question.** Everything you have ever slid comes to a stop. Is that
+because moving things naturally stop — or because something stops them?
+
+**The scene.** A 4.0 m bench, side camera, with a *swappable surface bed*:
+the top of the bench is a channel into which the student slides one of
+three full-length strips from a rack at the left — **rubber-on-asphalt**
+(dark, gritty texture, μ = 0.70), **wood** (grain, μ = 0.30), **polished
+ice** (pale, specular, μ = 0.02). A spring launcher at the 0 m end fires a
+5.0 kg block at exactly 4.0 m/s (its dial is fixed and says so). Metre
+marks 0–4 m; beyond the 4 m end, the bench ends and the floor is 0.9 m
+below, with a crash mat conspicuously *not* covering the landing zone. On
+the block: blue velocity arrow, and a red friction arrow pointing backward
+whose length is live (2 cm per 5 N). A skid trail darkens the strip behind
+the block. Thermal view toggle: the skid trail glows on rubber, faintly on
+wood, not at all on ice. Instrument column: *stopping distance vs μ* graph
+(one point per run) and the v-t graph of the current run.
+
+**What the student does.**
+1. Slide a strip into the bed (a drag; it clunks home).
+2. Cock the launcher (pull its handle back to the latch) and fire.
+3. Read where the block stopped against the metre marks; the run drops a
+   point on the distance-vs-μ graph.
+- Run 1: wood.
+- Run 2 (change the surface): rubber.
+- Run 3 (change the surface): ice.
+- Run 4 (change the mass, surface back to wood): stack a second 5 kg block
+  on top and fire again.
+
+**What they see happen.** Wood: the red arrow sits at 14.7 N; the block
+decelerates visibly and stops at 2.72 m; the v-t line is a straight descent
+lasting 1.36 s. Rubber: a long red arrow (34.3 N), a hard stop at 1.17 m,
+a strong thermal streak. Ice: the red arrow is a sliver (0.98 N); the block
+crosses the whole bench barely slowing (3.92 m/s at the end), sails off
+the edge, tips forward and falls to the floor with a bang; the v-t line is
+almost flat to the edge, then the model hands it to gravity. Run 4: double
+the mass — the friction arrow doubles (29.4 N) but the block stops at the
+*same* 2.72 m mark, on top of run 1's skid.
+
+**What accumulates.** The distance-vs-μ graph gains points at (0.70,
+1.17), (0.30, 2.72), (0.02, "> 4 m, left the bench" plotted as an
+open-topped marker at the axis top with 40.8 m labelled), and run 4's point
+lands exactly on run 1's. A dashed curve v²/(2μg) is fitted through the
+student's own points after three runs. Ledger: *surface*, *μ*, *friction
+(N)*, *deceleration*, *stopping distance*, *mass*.
+
+**The failure state.** The ice run *is* the failure state and the lesson:
+nothing was ever going to stop the block in 4 m, because stopping is what
+friction does, not what motion does. The block's fall is honest — off the
+end, tip, drop, bounce — and the ledger records "needed 40.8 m; had 4".
+
+**The prediction.** *Same launcher, same block, ice strip. Where does the
+block stop?*
+1. Around 3 m — ice is slippery but everything stops.
+2. It will not stop on this bench. ✔
+3. At the same 2.72 m as wood — the block is the same.
+4. Sooner than wood — ice is cold.
+Reveal: μ = 0.02 needs v²/(2μg) = 40.8 m. The bench holds 4. The block was
+always leaving.
+
+**The misconception it confronts.** *"A moving object needs a constant push
+or it will slow down on its own"* — the launcher touches the block for a
+tenth of a second and the only horizontal arrow ever after is friction's;
+shrink that arrow and the "natural" stopping recedes to 40.8 m and beyond.
+*"Heavier objects always slide further because they have more momentum"* —
+run 4 doubles the mass and lands on the same mark, because deceleration
+μg has no mass in it.
+
+**Real numbers.** Friction = μ m g (wood 14.7 N at 5 kg); deceleration
+= μ g regardless of mass: 6.87, 2.94, 0.196 m/s². Stopping distance
+= v²/(2μg) at 4.0 m/s: rubber 1.17 m, wood 2.72 m, ice 40.8 m. Stopping
+time = v/(μg): 0.58, 1.36, 20.4 s. Speed at the 4 m edge on ice:
+√(16 − 2×0.196×4) = 3.92 m/s. Stepped: v ← v − μg dt while on the strip;
+projectile once past the edge.
+
+---
+
+### A3.5 — Applying the First Law to everyday scenarios
+
+**Subtopic.** A3.5 *Applying the First Law to everyday scenarios*
+(`g8a3-the-bus-stops`).
+
+**The question.** The bus brakes hard and you lurch towards the front.
+What pushed you?
+
+**The scene.** The **Bus kit**, the founder's own failed case rebuilt. A
+single-deck bus drawn in cutaway side view filling the stage: driver's cab
+with a brake pedal, six rows of seats, an aisle, an overhead handrail
+running the length, a padded partition behind the cab. Mid-aisle stands a
+65 kg passenger holding a phone, feet on the marked floor. Above the bus, a
+street: lampposts, a zebra crossing 60 m ahead, parked cars — all of which
+slide past the windows so the bus's motion is visible *twice*, in the world
+going by and in a roadside distance track under the wheels. Instruments:
+the bus's speedometer (cab), a *blue velocity arrow on the bus's roof* and
+a *separate blue velocity arrow on the passenger's chest*, each labelled
+with its own number; when braking, an orange deceleration arrow on the bus
+and — only if something is touching the passenger — an orange force arrow
+at the touch point (hand on rail, or chest on partition), with a newton
+label. A *grip meter* beside the passenger's hand (0–500 N, with a red
+"grip fails" zone above 400 N). Camera toggle, the hero control: **street
+camera** (bus moves through a fixed world) / **bus camera** (bus fixed,
+world slides). Instrument column: two v-t lines on one graph — bus and
+passenger — plus the ledger.
+
+**What the student does.**
+1. Choose the passenger's state by dragging their hand: onto the rail, or
+   hanging free at their side.
+2. Press the bus's pedal (bottom-left) with a chosen braking strength
+   (a two-stop pedal: normal 4.8 m/s², emergency 8.0 m/s²). A dog trots
+   toward the crossing to give the driver a reason.
+3. Watch in the street camera; then replay the same run in the bus camera.
+- Run 1: holding the rail, normal braking.
+- Run 2 (change the grip): hand free, normal braking.
+- Run 3 (change the braking): holding the rail, emergency stop.
+
+**What they see happen.** Run 1: both arrows read 12 m/s. The pedal goes
+down; the bus's arrow starts shrinking (orange arrow on the bus only); for
+a beat the passenger's arrow *does not shrink* — then the rail tugs, an
+orange 312 N arrow appears at the hand, and the passenger's arrow shrinks
+in step. On the graph, the bus's line and the passenger's line fall
+together. Run 2: hand free. The bus's line falls; the passenger's line
+*stays flat at 12 m/s* — in the street camera the passenger glides in a
+dead-straight, constant-speed line while the bus slows around them; in the
+bus camera the same event looks like the passenger accelerating towards
+the front with nothing touching them. They cover the 3 m of aisle in
+1.12 s and meet the partition at 5.4 m/s relative; the pad compresses, an
+orange arrow blooms at the chest, and only then does the passenger's v-t
+line fall. Run 3: the rail must supply 520 N; the grip meter climbs into
+the red at 400 N, the hand tears off the rail mid-brake, and the run turns
+into run 2 from that instant — the kink is marked on the graph.
+
+**What accumulates.** Three pairs of v-t lines. Ledger: *grip*, *braking
+(m/s²)*, *force the passenger needed (65 × a)*, *what supplied it (rail /
+partition / nothing until…)*, *gap between the two lines*. The rule — no
+touch, no change — is the column that never has an exception.
+
+**The failure state.** Two, both real: the free passenger striking the
+partition at 5.4 m/s, and the grip failing at 400 N in the emergency stop.
+Both are moments where the *absence* of a force is the visible event.
+
+**The prediction.** *The driver brakes. Nothing is touching the standing
+passenger. What happens to them?*
+1. They are thrown towards the front by the braking force.
+2. They keep moving at 12 m/s while the bus slows around them. ✔
+3. They slow with the bus — they are inside it.
+4. They fall straight down.
+Reveal: watch the street camera. The passenger's path is a straight,
+steady 12 m/s the whole time; it is the bus that changed. "Thrown forward"
+is what an unchanged motion looks like from a braking seat.
+
+**The misconception it confronts.** *"A force throws you forward when a
+vehicle brakes"* and *"You stop when the vehicle stops because you are
+inside it."* The two-camera replay is the confrontation: the same run
+looks like a mysterious forward push in the bus frame and like nothing
+happening to the passenger in the street frame — and the force arrows,
+which only ever appear at a touch, agree with the street.
+
+**Real numbers.** Bus and passenger at 12 m/s. Normal braking 4.8 m/s²:
+stop in 2.5 s over 15 m. Rail force = 65 × 4.8 = 312 N; emergency
+= 65 × 8.0 = 520 N against a 400 N grip limit. Free passenger: relative
+acceleration 4.8 m/s², 3.0 m of aisle → t = √(2×3/4.8) = 1.12 s, relative
+speed 4.8 × 1.12 = 5.4 m/s at the partition. Stepped per tick for both
+bodies separately; the passenger's a is 0 until a contact force exists.
+
+---

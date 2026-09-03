@@ -215,7 +215,7 @@ export function useSim(opts: UseSimOptions): SimHandle {
   );
 
   const recordPoint = useCallback(() => {
-    setData((prev) => [...prev, runner.snapshotRow()]);
+    setData((prev) => [...prev, { ...runner.snapshotRow(), trial: prev.length + 1 }]);
   }, [runner]);
 
   const clearData = useCallback(() => setData([]), []);

@@ -321,7 +321,12 @@ export function autoLab(spec: ArchetypeSpec): LabDefinition | null {
           describe: "Five readings, spread across the range",
           test: (val) => {
             if (val.data.length < 5) return false;
-            const xsSeen = val.data.map((d) => d.values[xKey]).filter(Number.isFinite);
+            // The control being varied is an input, not a readout: it lives in
+            // the row's recorded inputs. Reading it from `values` — which this
+            // once did — found nothing and quietly made the step impossible.
+            const xsSeen = val.data
+              .map((d) => Number(d.inputs?.[xKey] ?? d.values[xKey]))
+              .filter(Number.isFinite);
             if (xsSeen.length < 5) return false;
             return (Math.max(...xsSeen) - Math.min(...xsSeen)) >= span * 0.6;
           },

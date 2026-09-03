@@ -885,3 +885,26 @@ svg { flex: none; }
   .topnav-item { padding: 0 11px; }
   .brand-text { display: none; }
 }
+
+/* Trial data: table beside the student's own plotted runs. */
+.data-body {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.data-body .data-scroll { flex: 1 1 auto; min-width: 0; }
+.trial-plot {
+  flex: 0 0 280px;
+  max-width: 40%;
+  border: 1px solid var(--line, rgba(120, 90, 160, 0.25));
+  border-radius: 10px;
+  overflow: hidden;
+}
+.trial-plot canvas { display: block; width: 100%; }
+.trial-plot-picks { display: inline-flex; gap: 10px; align-items: center; font-size: 12px; }
+.trial-plot-picks label { display: inline-flex; gap: 5px; align-items: center; color: inherit; }
+.trial-plot-picks select { font-size: 12px; max-width: 150px; }
+@media (max-width: 760px) {
+  .data-body { flex-direction: column; }
+  .trial-plot { flex-basis: auto; max-width: 100%; width: 100%; }
+}

@@ -186,7 +186,9 @@ export class SimRunner {
   }
 
   snapshotRow(): DataRow {
-    return { t: this.time, values: this.readoutValues() };
+    // Copy the params: the row must keep the settings it was recorded under,
+    // not follow the sliders around afterwards.
+    return { t: this.time, values: this.readoutValues(), inputs: { ...this.params } };
   }
 
   /** A compact fingerprint of state, used by determinism tests. */
