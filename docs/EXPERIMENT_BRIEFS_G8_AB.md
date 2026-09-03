@@ -3360,3 +3360,440 @@ radius 0.9 m, same 0.527 m rise → far angle cos⁻¹(1 − 0.527/0.9) ≈
 good).
 
 ---
+
+## Topic B3 — Energy transfer in a collision
+
+B3.1 runs on the **Energy track** (level section, no ramp); B3.2 and B3.5
+on the **Stand and drop rig** family; B3.3 and B3.4 on the **Crash rig**.
+The topic's shared instrument is the *collision ledger* — a two-column
+tally, momentum and kinetic energy, before and after every collision,
+with the momentum column always balancing and the energy column made to
+say where the difference went.
+
+### B3.1 — Energy converted, not lost
+
+**Subtopic.** B3.1 *Energy converted, not lost* (`g8b3-two-carts-one-click`).
+
+**The question.** One trolley rolls in with 2.00 J. After the click, the
+pair rolls away with 1.00 J. Half the energy is missing — where is it?
+
+**The scene.** The Energy track's level 4.5 m section, side camera.
+Trolley A (1.0 kg, hook-and-loop pad on its nose) is launched by the
+calibrated plunger at exactly 2.0 m/s; trolley B (1.0 kg, matching pad)
+stands at rest at the 2.0 m mark. Light gates at 1.0 m (before) and
+3.0 m (after). Over each trolley, its orange energy bar and a small
+momentum arrow (grey, distinct from the velocity arrow, labelled in
+kg·m/s). At the top, the collision ledger. The hero instrument: the
+*click magnifier* — after any collision a replay window opens at 1/100
+speed and 20× zoom on the pads, showing the thousands of tiny hooks
+bending, catching and shivering, with a thermal tint blooming across
+both pads and a single sound-wave ring leaving the click. Instrument
+column: the ledger, bars, and a *where-did-it-go* stack (thermal,
+sound, pad deformation) that fills to exactly the missing amount.
+
+**What the student does.**
+1. Launch A. Read the before-gate. Watch the click. Read the
+   after-gate. Open the magnifier and scrub the replay.
+- Run 1: A at 2.0 m/s into B (1.0 kg), stick.
+- Run 2 (change the target's mass): B loaded to 2.0 kg? — the student
+  stacks a slab on B and relaunches.
+- Run 3 (change the speed): B back to 1.0 kg, A launched at 4.0 m/s.
+
+**What they see happen.** Run 1: A crosses the first metre in half a
+second; the click; the pair crawls on at exactly half the approach
+speed — the second half of the journey visibly takes twice as long.
+The ledger fills: momentum 2.0 before, 2.0 after; energy 2.00 before,
+1.00 after, and the where-did-it-go stack rises to 1.00 J: bent hooks,
+one click of sound, two slightly warm pads in the magnifier. Run 2:
+the heavier target crawls away at 0.67 m/s; momentum still balances
+(2.0 = 3.0 × 0.667); the energy row keeps only 0.67 J — a *third*
+kept this time, so the "half" of run 1 was a fact about equal masses,
+not a law. Run 3: everything scales — 8.00 J in, 4.00 J kept, the
+stack takes 4.00 — and the *fraction* for the equal pair returns to
+exactly half.
+
+**What accumulates.** Three ledger rows in which the momentum columns
+balance to the digit every time and the energy columns never do; the
+stack's receipts matching the deficit every time; gate stamps proving
+the half-speed crawl. A final ledger line totals each run: "moving +
+converted = arrived", exact.
+
+**The failure state.** A "recover it" button on the pads invites the
+student to un-click the trolleys and get the joule back: the pair is
+pulled apart by tongs, the hooks un-bend audibly — and the meters
+show the separation *costing* work, not refunding any. The joule in
+the warm pads and the spent sound ring never reassembles. The button
+exists to fail.
+
+**The prediction.** *A arrives at 2.0 m/s and sticks to an identical
+B. The pair moves off at…*
+1. 2.0 m/s — the energy carries on.
+2. 1.41 m/s — the energy is shared.
+3. 1.0 m/s — the momentum is shared. ✔
+4. 0 — the crash stops them.
+Reveal: 2.0 kg·m/s spread over 2.0 kg can only be 1.0 m/s. Momentum
+set the speed; the energy books then closed at half, and the pads,
+the click and the warmth are the other half, itemised.
+
+**The misconception it confronts.** *"Energy is destroyed in a
+collision"* — the stack fills to the deficit, receipt by receipt, in
+the magnifier's own imagery. *"Momentum and kinetic energy are the
+same thing"* — two columns, same table, same events: one balances,
+one does not, three runs running.
+
+**Real numbers.** Equal pair: 1.0 kg at 2.0 m/s → momentum 2.0
+kg·m/s, KE 2.00 J; after sticking v = 1.00 m/s, KE 1.00 J: exactly
+half converted, for any equal sticking pair. Loaded target: v′ =
+2.0/3.0 = 0.667 m/s, KE′ = 0.667 J (2/3 converted). Doubled speed:
+4 m/s → 8.00 J in, 4.00 J kept. Converted share for mass ratio
+m₂/m₁ hitting a stationary target = m₂/(m₁+m₂).
+
+---
+
+### B3.2 — Elastic vs inelastic collisions
+
+**Subtopic.** B3.2 *Elastic vs inelastic collisions*
+(`g8b3-steel-and-clay`).
+
+**The question.** Two balls, the same mass, the same drop, the same
+0.49 J on arrival. Why does one come back to your hand and the other
+just lie there?
+
+**The scene.** The **Stand and drop rig** doubled: two clear drop
+columns side by side over one massive steel anvil, each with a metre
+scale, an electromagnet release at the top (heights ganged to one
+clamp, 0.2–3.0 m), and a *peak ring* that slides up each column to
+latch at the highest rebound point. Column L: a 50 g hardened steel
+bearing. Column R: a 50 g ball of modelling clay. Each ball leaves a
+strobe trail (a dotted fall-and-rise history that persists per run).
+A dashed *release line* is drawn across both columns at the drop
+height. Below each column, the energy bar pair plus a brown
+*deformation* bar; a thermal tint on ball and anvil. A material dial
+on column L morphs its ball (steel e = 0.95, superball 0.89, wood
+0.60, …) — column R's clay is fixed at its measured e = 0.14 and
+says so on a brass plate. Instrument column: *rebound height vs drop
+height* graph (a line per material) and the ledger.
+
+**What the student does.**
+1. Set the shared height. Release both at once (one switch). Watch
+   the falls, the strikes, the rebounds; log the peak rings.
+- Run 1: 1.00 m, steel vs clay.
+- Run 2 (change the height): 2.00 m.
+- Run 3 (change the material): dial L to superball, 1.00 m.
+
+**What they see happen.** Both balls fall identically — the strobe
+dots match all the way down, arriving together at 4.43 m/s: the drop
+is fair and seen to be. Then the anvil: the steel bearing rings and
+climbs back to 0.90 m — its trail nearly retraces itself — while the
+clay lands with a dead *thud*, flattens visibly into a mound, and
+its rebound is a 2 cm hop the peak ring barely registers. The bars:
+steel keeps 90 % as motion, a sliver to sound and warmth; clay keeps
+2 %, its brown deformation bar taking nearly everything, its shape
+change permanent — tongs offered mid-scene fail to re-round it.
+Run 2: both rebounds scale in proportion (1.80 m and 0.04 m): the
+*ratio* is the material's, not the drop's. Run 3: the superball
+tops out at 0.79 m — bouncy, and measurably not elastic.
+
+**What accumulates.** Peak rings latched per run; per-material lines
+building on rebound-vs-drop, each straight through the origin with
+slope e²; the ledger of *material*, *drop*, *arrival energy*,
+*rebound height*, *% kept (= e² × 100)*, *where the rest went* —
+steel's "rest" split into ring-tone and warmth, clay's into shape.
+
+**The failure state.** The dashed release line is a boundary nothing
+crosses: every rebound, every material, every height latches its
+ring *below* the line. A "beat the line" challenge invites the
+student to find any setting that returns a ball above where it was
+dropped from; the challenge is unwinnable and says why when
+conceded — a rebound above the line would be energy from nowhere
+(B4.5 will meet a claim that pretends otherwise).
+
+**The prediction.** *Same mass, same 1.00 m drop, same 0.49 J
+arriving. The clay's rebound will be…*
+1. About 0.90 m, like the steel — energy is energy.
+2. About half the steel's.
+3. A couple of centimetres: nearly everything went into its new
+   shape. ✔
+4. Zero exactly — clay cannot bounce.
+Reveal: the peak ring sits at 2 cm. The collision kept e² = 2 % as
+motion; the mound on the anvil *is* the other 98 %, plus a little
+warmth the tint shows.
+
+**The misconception it confronts.** *"An elastic collision is one
+where something stretches"* — the steel, which visibly deforms
+least, is the most elastic thing on the bench; elastic names what
+happens to the *kinetic energy*, not to the shape. *"The clay ball
+lost its energy, and the steel ball did not use any"* — both bars
+account to the same 0.49 J: the steel spent a tenth (ring, warmth),
+the clay banked nearly all of it as shape and heat; nobody lost
+anything.
+
+**Real numbers.** Arrival: v = √(2gh) = 4.43 m/s from 1.00 m;
+E = mgh = 0.050 × 9.81 × 1.00 = 0.4905 J. Rebound height = h·e²;
+energy kept = E·e². Steel e = 0.95 → 0.90 m, 90.3 %; clay e = 0.14
+→ 0.02 m, 2.0 %; superball e = 0.89 → 0.79 m, 79 %. Ranges: h
+0.2–3.0 m, e dial 0.05–0.98.
+
+---
+
+### B3.3 — Tracing energy through a crash
+
+**Subtopic.** B3.3 *Tracing energy through a crash*
+(`g8b3-through-the-crash`).
+
+**The question.** 137 200 J arrive at a wall in a tenth of a second.
+Trace every joule — and find which few thousand of them are the ones
+that decide whether the driver walks away.
+
+**The scene.** The **Crash rig** at full length with a complete
+cutaway car: bumper and thin-walled *crash boxes*, a 0.60 m crumple
+zone (engine bay drawn as folding structure), a rigid cabin cell, a
+70 kg driver on a seat with a working belt (toggle: worn / off), a
+dashboard 0.06 m of padding away from an unbelted driver's chest,
+and an airbag module (toggle) adding 0.15 m of ride-down. The car
+arrives at 14 m/s (50 km/h). Overhead, the hero instrument: the
+*energy river* — a 137 200 J ribbon flowing with the car that, at
+the wall, divides in real time into named channels (crash boxes,
+crumple zone, cabin's residual motion, driver's share), each channel
+gauged in joules and kN as it takes its cut. G-meters on the cabin
+and on the driver's chest, red-lined at 30 g. Millisecond clock;
+1/100 replay scrubber. Instrument column: the river's final
+accounting and the ledger.
+
+**What the student does.**
+1. Configure the driver (belt on/off, airbag on/off). Fire. Scrub
+   the replay along the ms clock, reading each channel as it fills.
+- Run 1: belt on, airbag on.
+- Run 2 (remove one protection): belt off, airbag on (it cannot
+  save an unbelted driver and the run shows why).
+- Run 3 (stiffen the car): a chassis swap lever replaces the 0.60 m
+  crumple zone with 0.15 m of "performance" bracing; belt and
+  airbag on.
+
+**What they see happen.** Run 1, scrubbed: first the crash boxes
+fold (the first few cm and joules); then the crumple zone spends
+90 ms folding through 0.60 m at 229 kN while the cabin's g-meter
+reads 16.6 g; the driver, belted, rides the cabin's own slow-down
+stretched to 0.75 m by belt give and airbag — chest gauge 9.1 kN,
+13.3 g, green. The river ends fully spent: torn steel, warm metal,
+the bang — every channel labelled, nothing missing. Run 2: the car's
+side of the crash is identical — same crumple, same 16.6 g cabin —
+but the driver's channel now runs level at 14 m/s *across the
+cabin* while everything slows around them, then spends its whole
+6 860 J against 0.06 m of dashboard: 114 kN, 166 g, the chest gauge
+pinned in red and the airbag flag reading "fired too late to
+matter". Run 3: the stiff car stops in a quarter of the distance —
+the cabin's own meter hits 66 g, and even the belted driver's
+channel reads over the line: the car survives looking straighter,
+the person does not.
+
+**What accumulates.** Three river accountings pinned side by side —
+same 137 200 J total each time, radically different splits; the
+ledger of *configuration*, *cabin g*, *driver ride-down (m)*,
+*driver peak force*, *driver g*, *verdict against 30 g*. The
+constant total over three catastrophically different outcomes is
+the topic's thesis in one table.
+
+**The failure state.** Runs 2 and 3 are the failure states, played
+honestly: the unbelted dash-strike and the rigid-car cabin, both
+crossing the red line with the numbers that say so.
+
+**The prediction.** *The belt is off. The car's crumple zone works
+perfectly anyway. The driver's stop happens over…*
+1. The same 0.75 m as before — the car does the stopping.
+2. 0.60 m — the crumple zone's length.
+3. 0.06 m of dashboard, at about twelve times the force. ✔
+4. It never happens — the airbag catches them.
+Reveal: a crumple zone can only slow what is attached to it. The
+belt is the attachment; without it the driver keeps 14 m/s until
+the dashboard, and 6 860 J over 0.06 m is 114 kN.
+
+**The misconception it confronts.** *"A stiff car is a safe car"* —
+run 3's straighter wreck and worse chest numbers, side by side with
+run 1. *"A seatbelt works by holding you still"* — the replay shows
+the belt *moving* the driver, riding them down the same 90 ms curve
+as the cabin, stretched a little longer; holding still is exactly
+what the dashboard does, and the dashboard reads 166 g.
+
+**Real numbers.** 1 400 kg at 14 m/s: ½·1400·14² = 137 200 J,
+~0.1 s to spend it. Crumple 0.60 m → average 137 200/0.60 =
+229 kN; cabin deceleration 14²/(2·0.60) = 163 m/s² = 16.6 g.
+Belted driver: 70 kg, 6 860 J over ≈ 0.75 m (crush + belt stretch
++ airbag) → 9 100 N, 13.3 g. Unbelted: 6 860 J over 0.06 m →
+114 000 N, 166 g. Stiff swap: 0.15 m → cabin 66.6 g; belted driver
+ride-down collapses to ≈ 0.30 m → 22.9 kN, 33 g, over the line.
+
+---
+
+### B3.4 — Safety design and energy conversion
+
+**Subtopic.** B3.4 *Safety design and energy conversion*
+(`g8b3-buy-yourself-a-metre`).
+
+**The question.** You cannot make the crash smaller. Can you make it
+*longer* — and how many metres does a survivable crash cost?
+
+**The scene.** The **Crash rig**, one lane: a 70 kg instrumented
+sled (no car body — the physics bare) arriving at 14 m/s at a
+barrier whose face carries the *crush caddy*: a stack of
+uniform-crush cartridges the student drags to any depth from 0.05
+to 1.20 m, a metre scale beneath. Above the barrier, this brief's
+twin dials, mounted together on one bracket: the **energy dial**,
+frozen at 6 860 J with its needle painted on (a plaque: "not
+adjustable — this is what arriving at 14 m/s means"), and the
+**g-meter**, live, with a red *injury line at 30 g*. Force gauge on
+the barrier in kN; ms clock; thermal tint on the crushed
+cartridges. Instrument column: *deceleration (g) vs crush distance
+(m)* graph accumulating the student's points on a drawn 30 g rule,
+and the ledger.
+
+**What the student does.**
+1. Drag the caddy to a depth. Fire. Read the g-meter's peak-hold,
+   the force gauge, the clock.
+- Run 1: 0.60 m.
+- Run 2 (starve it): 0.05 m.
+- Run 3 (spend big): 1.20 m.
+- Then the design question, put by the rig: "find the *least*
+  crush that stays under 30 g" — the student closes in by halves:
+  0.30 m reads 33 g (just over), 0.35 m reads 28.6 g (under).
+
+**What they see happen.** Run 1: 86 ms of steady crushing, 11.4 kN,
+16.6 g — under the line with room. Run 2: the same 6 860 J spent
+in 7 ms — 137 kN, 200 g, the sled's frame drums and the g-needle
+wraps deep into the red; the cartridges are a scorched wafer.
+Run 3: 171 ms of the gentlest stop on the rig, 5.7 kN, 8.3 g.
+Every run, the frozen energy dial has not moved and the thermal
+tint totals the same joules — only the *metres* differ, and the
+g-meter answers the metres alone. The closing-in exercise turns
+the hyperbola into a design act: survivability costs 0.35 m, and
+every centimetre under that is paid in g.
+
+**What accumulates.** The student's points tracing their own
+hyperbola over the 30 g rule, with the found crossing at ≈ 0.33 m
+marked; the ledger of *crush*, *stop time*, *force*, *g*, *under /
+over the line*; the row of spent cartridge stacks left standing in
+the scene, depth-ordered, all equally warm.
+
+**The failure state.** Run 2's 200 g wafer — and, at the other
+end, a caddy over-drag past 1.20 m hits the rail's end bracket:
+the rig cannot buy more than 1.2 m in this lane, which is the
+constraint a real car's bonnet length imposes and the reason A6
+existed.
+
+**The prediction.** *Halve the crush distance from 0.60 to
+0.30 m. The deceleration will…*
+1. Halve — less crushing, less violence.
+2. Stay 16.6 g — the energy is unchanged.
+3. Double to about 33 g, crossing the injury line. ✔
+4. Quadruple.
+Reveal: same joules over half the metres is twice the force, and
+the g-meter read 33. The energy dial never moved; only the
+distance was yours.
+
+**The misconception it confronts.** *"Padding removes energy from
+a crash"* — the frozen dial and the constant thermal total show
+nothing removed, ever; padding only *stretches the spending*.
+*"A stronger, stiffer structure protects people better"* — the
+stiffest setting on the bench (0.05 m) posts the worst number on
+the g-meter by a factor of twelve.
+
+**Real numbers.** E = ½·70·14² = 6 860 J, fixed. Average force
+= E/d: 0.05 m → 137 kN; 0.35 m → 19.6 kN; 0.60 m → 11.4 kN;
+1.20 m → 5.7 kN. Deceleration = v²/(2d): 200 g, 28.6 g, 16.6 g,
+8.3 g; injury line 30 g crosses at d = 14²/(2·30·9.81) = 0.333 m.
+Stop time = 2d/v: 7, 50, 86, 171 ms. Ranges kept: crush 0.05–1.2 m,
+speed dial 2–20 m/s available for the measure phase.
+
+---
+
+### B3.5 — Comparing energy conversion across two collisions
+
+**Subtopic.** B3.5 *Comparing energy conversion across two
+collisions* (`g8b3-kept-or-converted`).
+
+**The question.** Six collisions, from a superball to a smashed
+test tube. Measured fairly, what fraction of the motion survives
+each one — and what evidence gives the answer away before the
+meter does?
+
+**The scene.** The *collision carousel*: a rotating hexagonal
+bench that swings each of six stations into the one instrumented
+test bay. The bay's fixed instruments: an in/out speed gate pair,
+a peak-height ring on a drop column, a microphone whose waveform
+draws in the corner, a thermal probe, and the *kept-fraction
+meter* — a big dial 0–100 % that computes (speed out / speed in)²
+or (height out / height in). The six stations, each with its own
+apparatus: ① rubber superball over concrete; ② two steel bearings
+on a twin pendulum cradle that click together; ③ a sealed chamber
+of nitrogen molecules (magnified view) where two molecules meet;
+④ a putty ball over the same concrete; ⑤ two railway wagons on a
+short track, one rolled at the other, couplers ready; ⑥ a test
+tube held over a tiled floor, with a rack of spare tubes and a
+"broken: n" counter. A shelf above the bay holds six empty tile
+slots on a 0–100 % rail, waiting for measured results. Instrument
+column: the tiles, waveforms and ledger.
+
+**What the student does.** Rotate the carousel, run each station,
+and let its measured tile snap onto the shelf's percentage rail:
+drop the superball (ring at 0.80 m → 80 %); swing one bearing
+into the other (the struck one flies out at 95 % of the arriving
+speed → 90 % kept); watch the molecular pair meet and part (gates
+read identical speeds → 100 %); drop the putty (no ring at all →
+≈ 0 %); roll a wagon at its twin (couple, and the pair leaves at
+half speed → 50 %); release the tube (it breaks — 0 %, and the
+counter ticks). Then the sort: slide the divider on the rail to
+split the tiles into "motion mostly survives" and "mostly
+converted" — the tiles have already arranged themselves; the
+divider's natural gap sits between 50 % and 80 %.
+
+**What they see happen.** Each station pairs its number with its
+evidence: the superball's tall ring against the putty's absent
+one; the bearings' sharp *click* on the microphone — a spike of
+spent per cent — against the wagons' long clang at 50 %; the
+molecules' silent, dent-free 100 % (the one collision with
+nowhere for energy to hide); the tube's crack and scatter, its
+waveform ragged, its warmth immeasurable, its shape
+unrecoverable. The putty and tube both read ≈ 0 by wholly
+different receipts: warmth-and-shape versus new surfaces and
+flying fragments.
+
+**What accumulates.** Six measured tiles standing on the
+percentage rail in the student's own order; six waveforms; the
+ledger of *station*, *evidence used (height / speed / both)*,
+*% kept*, *loudest?*, *permanent shape change?* — the last two
+columns deliberately failing to sort the tiles on their own.
+
+**The failure state.** The test tube: a one-shot collision — no
+rerun, only a fresh tube and an honest counter. And station ③'s
+challenge button ("make the molecules keep less than 100 %")
+concedes: molecules have no dents to take and no warmth of their
+own to gain; perfect elasticity exists, and only down there.
+
+**The prediction.** *The wagons couple with a deafening clang;
+the putty lands almost silently. Which converts the larger
+fraction of its motion?*
+1. The wagons — you can hear the energy leaving.
+2. The putty: quiet, but nearly 100 % converted. ✔
+3. Equal — clang and thud are the same joules.
+4. Neither converts anything.
+Reveal: the meter read 50 % for the wagons, ≈ 0 % kept for the
+putty. Loudness is *a* leak, not *the* ledger; most of the
+putty's energy left as shape and warmth, which make no sound.
+
+**The misconception it confronts.** *"Any collision with a
+bounce is perfectly elastic"* — the superball's own tile reads
+80, and nothing on the rail but the molecules reads 100. *"A
+quiet collision converts as much energy as a loud one"* — the
+prediction question is built on its refutation, with the
+microphone's evidence honestly useful and honestly
+insufficient.
+
+**Real numbers.** Kept fraction = e² (speeds) or h′/h (heights).
+Superball on concrete: rebound 0.80 m from 1.00 m → 80 %. Steel
+bearings: e ≈ 0.95 → 90 %. N₂ pair: 100 % (no internal store to
+take it). Putty: e ≈ 0.03 → ≈ 0 %, permanent flattening. Equal
+wagons coupling: kept = ½ exactly (momentum shared, B3.1's law).
+Test tube: 0 % — energy into new glass surfaces, fragments and
+the crack.
+
+---

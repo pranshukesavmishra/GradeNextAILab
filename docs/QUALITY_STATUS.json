@@ -4,15 +4,6 @@
   "hardInvariants": "asserted in CI: finite readouts, clock advances, determinism, clean reset",
   "unresponsiveControls": [
     {
-      "id": "phys.motion-graphs",
-      "subject": "physics",
-      "unresponsive": [
-        "drive",
-        "observerSpeed"
-      ],
-      "tested": 4
-    },
-    {
       "id": "g6a5-swing-and-graph",
       "subject": "engineering",
       "unresponsive": [

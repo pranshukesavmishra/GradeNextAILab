@@ -134,9 +134,15 @@ function freshState(params: ParamValues): State {
   };
 }
 
-/** Velocity the current mode is asking for right now. */
+/**
+ * Velocity the current mode is asking for right now. The speed dial always
+ * wins while it is off zero: nudging it mid-script takes over the driving,
+ * and returning it to zero hands control back to the script.
+ */
 function demandedVelocity(state: State, params: ParamValues): number {
-  return params.mode === "script" ? scriptTarget(params, state.t) : (params.drive as number);
+  const drive = params.drive as number;
+  if (params.mode !== "script" || drive !== 0) return drive;
+  return scriptTarget(params, state.t);
 }
 
 const model: SimModel<State> = {
@@ -248,6 +254,11 @@ const model: SimModel<State> = {
         unit: "m/s²", semantic: "acceleration", graphable: true, bands: ["6-8", "9-12"],
       },
       {
+        key: "vSeen", label: "Velocity the observer measures",
+        quantity: q(state.v - (params.observerSpeed as number), "velocity"),
+        unit: "m/s", semantic: "velocity", graphable: true, bands: ["6-8", "9-12"],
+      },
+      {
         key: "matchScore", label: "On the target graph",
         quantity: q(state.t > 0 ? state.onTargetTime / Math.min(state.t, MATCH_SECONDS) : 0, "percent"),
         unit: "%", semantic: "time", graphable: false, bands: ["6-8", "9-12"],
@@ -275,6 +286,7 @@ const model: SimModel<State> = {
       reversed: state.distance - Math.abs(displacement) > 0.05,
       avgSpeed: state.t > 0 ? state.distance / state.t : 0,
       avgVelocity: state.t > 0 ? displacement / state.t : 0,
+      vObserved: state.v - (params.observerSpeed as number),
       graphSlope: slope,
       matchScore: score,
       matchComplete: params.mode === "match" && state.t >= MATCH_SECONDS,
@@ -523,8 +535,8 @@ function render(rc: RenderContext<State>) {
   }
 
   /* ---- the moving observer (A1.4) ---- */
-  if (moving) {
-    const ox = X(xObs);
+  if (moving || band !== "3-5") {
+    const ox = X((params.startX as number) + (params.observerSpeed as number) * state.t);
     if (ox > x0s - 40 && ox < x1s + 40) {
       contactShadow(ctx, ox, railY + 4, 12, 2);
       material(ctx, ox - 13, railY - 20, 26, 7, cTime, 3);
@@ -574,11 +586,13 @@ function render(rc: RenderContext<State>) {
     });
   }
   if (!compact) {
-    const name = params.mode === "script"
+    const overridden = params.mode === "script" && (params.drive as number) !== 0;
+    const name = params.mode === "script" && !overridden
       ? SEGMENT_LABELS[[params.segA, params.segB, params.segC][
           Math.min(2, Math.floor(state.t / SEGMENT_SECONDS))] as string] ?? "at rest"
-      : params.mode === "drive" ? "you are driving" : "match the graph";
-    caption(ctx, 12, 18, params.mode === "script" && state.t >= SCRIPT_SECONDS ? "script finished" : name,
+      : params.mode === "match" ? "match the graph" : "you are driving";
+    caption(ctx, 12, 18,
+      params.mode === "script" && !overridden && state.t >= SCRIPT_SECONDS ? "script finished" : name,
       theme, { size: 12, color: theme.inkSoft });
     if (moving) {
       caption(ctx, 12, 34, `measured from the observer (${vObs.toFixed(1)} m/s)`, theme, {
@@ -816,7 +830,7 @@ export const motionGraphsSim: SimManifest<State> = {
     drive: {
       type: "number", label: "Speed dial", kind: "velocity", unit: "m/s",
       min: -3, max: 3, step: 0.25, default: 0,
-      help: "The speed you are asking for. The cart takes time to get there.",
+      help: "The speed you are asking for. The cart takes time to get there. Off zero, the dial overrides the script.",
     },
     accel: {
       type: "number", label: "How quickly speed changes", kind: "acceleration", unit: "m/s²",
