@@ -4624,30 +4624,38 @@ runs out*, plus a horizontal line at 30 N: the shell's force limit
 (53 g). Every built stack can be dropped for real; the logger card
 referees. Instrument column: budget graph, trace gallery, ledger.
 
-**What they see and do — three builds, three drops.**
-- Run 1 (the single soft stack): 9 cm of the 12 N grade. The budget
-  graph shows one rectangle: 12 N × 9 cm = 1.08 J — visibly short
-  of the 1.14 J target, a sliver of unshaded energy left over. Drop:
-  the trace runs flat at 12 N (21 g) for 8.7 cm… and then the
-  sliver lands all at once: bottoming spike, crack. 0.06 J with
-  nowhere to go is still a hammer.
-- Run 2 (the single firm stack): 9 cm of 14 N. Rectangle: 1.26 J —
-  budget met with room. Drop: flat trace at 24.6 g, egg intact,
-  8.1 cm used. It works — and the whole landing, first touch
-  included, runs at 24.6 g.
+**What the student does.**
+1. Build a stack on the layer press: pull layer slabs from the
+   catalogue drawer, slide them into the 9 cm frame in landing
+   order (outer at the bottom), and watch the budget graph tile
+   its rectangles as each slab seats.
+2. Carry the built jacket to the pallet (a drag), seat the egg,
+   release from 2.00 m, and pin the logger card next to the
+   stack's budget tiling.
+- Run 1 (the single soft stack): 9 cm of the 12 N grade.
+- Run 2 (the single firm stack): 9 cm of the 14 N grade.
 - Run 3 (the two-layer stack, round two's design): 6 cm of 12 N
-  *outer*, 3 cm of 14 N *inner*. Rectangles: 0.72 J + 0.42 J =
-  1.14 J — the budget tiled exactly, to the joule. Drop: the trace
-  is a two-step staircase — 21 g for the first 6 cm, a clean
-  handover, 24.6 g for the last 3 — flat-topped twice, no spike,
-  egg intact, and the *first* two-thirds of the landing ran 15 %
-  gentler than run 2's.
-- The wrong-order coda: flip the layers (14 N outer). The budget
-  graph is identical — same rectangles, same 1.14 J — but the drop
-  opens *hard* at 24.6 g from first touch, and the inner 12 N layer
-  meets the remaining 0.42 J with only 12 × 0.03 = 0.36 J of
-  capacity: bottoming spike, crack. Order is invisible to the
-  budget and decisive to the egg.
+  outer, 3 cm of 14 N inner. Then the coda: flip the two layers
+  (14 N outer) and drop once more.
+
+**What they see happen.** Run 1: the budget graph shows one
+rectangle, 12 N × 9 cm = 1.08 J — visibly short of the 1.14 J
+target, a sliver of unshaded energy left over. The drop agrees:
+the trace runs flat at 12 N (21 g) for 8.7 cm… and then the
+sliver lands all at once — bottoming spike, crack. 0.06 J with
+nowhere to go is still a hammer. Run 2: rectangle 1.26 J, budget
+met with room; the trace is flat at 24.6 g, 8.1 cm used, egg
+intact — and the whole landing, first touch included, runs at
+24.6 g. Run 3: rectangles 0.72 J + 0.42 J = 1.14 J, the budget
+tiled exactly, to the joule; the trace is a two-step staircase —
+21 g for the first 6 cm, a clean handover, 24.6 g for the last
+3 — flat-topped twice, no spike, egg intact, and the first
+two-thirds of the landing ran 15 % gentler than run 2's. The
+wrong-order coda: the budget graph is *identical* — same
+rectangles, same 1.14 J — but the drop opens hard at 24.6 g from
+first touch, and the inner 12 N layer meets the remaining 0.42 J
+with only 12 × 0.03 = 0.36 J of capacity: bottoming spike,
+crack. Order is invisible to the budget and decisive to the egg.
 
 **What accumulates.** Four budget-graph tilings pinned beside their
 four logger cards — short/spiked, met/flat, exact/staircase,
