@@ -28,22 +28,6 @@
       "tested": 4
     },
     {
-      "id": "bio.cell",
-      "subject": "biology",
-      "unresponsive": [
-        "light"
-      ],
-      "tested": 2
-    },
-    {
-      "id": "bio.fossil-record",
-      "subject": "biology",
-      "unresponsive": [
-        "fossilRate"
-      ],
-      "tested": 3
-    },
-    {
       "id": "bio.homology",
       "subject": "biology",
       "unresponsive": [

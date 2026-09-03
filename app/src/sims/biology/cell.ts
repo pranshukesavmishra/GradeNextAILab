@@ -1843,7 +1843,7 @@ export const cellSim: SimManifest<State> = {
     cellType: {
       type: "option", label: "Cell type",
       options: [{ value: "animal", label: "Animal cell" }, { value: "plant", label: "Plant cell" }],
-      default: "animal",
+      default: "plant",
       help: "Switch and watch which parts appear and disappear.",
     },
     bodyPlan: {

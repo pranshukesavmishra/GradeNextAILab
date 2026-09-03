@@ -794,7 +794,7 @@ export const fossilRecordSim: SimManifest<State> = {
   params: {
     startMa: {
       type: "number", label: "Start from", kind: "count",
-      min: 0, max: 540, step: 10, default: 540,
+      min: 0, max: 540, step: 10, default: 520,
       marks: [
         { value: 540, label: "Cambrian" },
         { value: 250, label: "Permian end" },
