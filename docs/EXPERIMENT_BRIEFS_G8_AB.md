@@ -4253,3 +4253,467 @@ per cycle; observed behaviour: turns, then stalls. Wind-up toy:
 fixed ½kx² per wind; friction work per run can at best equal it.
 
 ---
+
+## Topic B5 — Modeling and iterative testing
+
+One engineering programme spans the topic: land a 58 g egg from 2.00 m
+without breaking it. The apparatus is the **Stand and drop rig** in its
+egg-lab dress, built once for all five briefs: a 2.0 m stand with a metre
+rule bolted to it (extendable to 4.0 m), an electromagnet release, a
+padded *test pallet* where foam samples clip in, an **accelerometer
+logger** whose trace (deceleration vs ms) prints on a card after every
+drop, a *foam catalogue* drawer (samples labelled by crush force), an
+egg carton of identical 58 g eggs, and a "broken: n" counter. The model
+under test is one line, printed on the rig's flank: **deceleration in g
+= drop height ÷ crush distance** — exact whenever the crushing force is
+steady. The shell's limit, measured once in B5.2 and painted on the rig
+thereafter: **53 g**.
+
+### B5.1 — Developing a model to generate data
+
+**Subtopic.** B5.1 *Developing a model to generate data*
+(`g8b5-build-the-drop-rig`).
+
+**The question.** Before the rig can answer any question about foam, it
+has to stop lying. Which parts of it exist purely so the numbers can be
+trusted?
+
+**The scene.** The egg-lab rig *in pieces*: a parts trolley holds the
+stand and rule, the electromagnet, a hook-and-string "hand release"
+(the tempting alternative), the egg carton, a 3 cm foam sample, the
+logger, and a protocol card reading "three drops per setting". The
+assembly points on the bench glow faintly. Beside the bench, the
+*calibration board*: a strip chart that plots every drop's measured
+arrival speed as a dot on a line marked with the theoretical 6.26 m/s,
+and below it a slot where logger cards file themselves per drop.
+Instrument column: the calibration board writ large and the ledger.
+
+**What the student does.** Build, then *calibrate* — the experiment is
+discovering what each part is for by dropping with and without it:
+- Run 1 (release comparison): assemble with the hand release; drop a
+  dummy egg five times reading arrival speed each time. Swap in the
+  electromagnet; five more.
+- Run 2 (height comparison): nudge the release clamp to 1.90 m
+  ("near enough"), three drops; then set it against the rule's 2.00 m
+  stop, three drops.
+- Run 3 (repeats comparison): two foam samples that differ by 5 %
+  (marked A and B) — first one drop each, then three drops each.
+
+**What they see happen.** Run 1: the hand-release dots scatter around
+and *above* 6.26 (a hand always adds a little push and a wobble —
+±0.15 m/s and visible spin on the way down); the electromagnet dots
+stack on the line. Run 2: at 1.90 m every logger card reads 5 % low —
+consistently, not noisily; a tidy rig can still be wrong, and it is
+wrong the same way every time (the calibration board draws the offset
+as a shifted cluster, not a spread one). Run 3: with one drop each,
+sample A reads 64 g and B reads 66 — indistinguishable from the
+scatter; with three each, the means separate cleanly (64.1 ± 1.2 vs
+67.4 ± 1.1) and a divider appears between the clusters. The logger
+cards stack up as the physical record of all of it.
+
+**What accumulates.** The calibration board's dot clusters — scattered,
+stacked, shifted — each labelled with the rig state that made them;
+the card file; a final *rig certificate* that stamps itself only when
+release = electromagnet, height = against-the-stop, and protocol =
+×3: "this rig's numbers now mean something."
+
+**The failure state.** Any drop made before the certificate exists
+files its card with a grey corner — usable, untrusted. The concrete
+failure is run 3's first half: a real 5 % foam improvement rendered
+invisible by a one-drop protocol; the improvement was there and the
+rig could not see it.
+
+**The prediction.** *Five hand-released drops, five electromagnet
+drops. The two clusters of arrival speeds will…*
+1. Match — a drop is a drop.
+2. Hand release reads higher and scatters wider. ✔
+3. Electromagnet reads higher.
+4. Both scatter the same amount.
+Reveal: the hand's dots ride above the line and spread; the magnet's
+sit on it. A release that adds an unknown push adds an unknown energy
+— and unknowns are what the rig exists to remove.
+
+**The misconception it confronts.** *"One successful drop shows the
+design works"* — sample B "beat" sample A on single drops in a third
+of the seeded orderings, and three-drop means un-decide it. *"A model
+has to look like the real thing to be useful"* — the rig looks
+nothing like a delivery van; it controls two lengths and a release,
+and that is exactly enough for g = h/d to generate trustworthy
+numbers.
+
+**Real numbers.** From 2.00 m: arrival √(2·9.81·2.00) = 6.26 m/s,
+energy 0.058 × 9.81 × 2.00 = 1.14 J. Height error 10 cm → 5 % error
+in every computed deceleration. Hand release: +0.05 to +0.25 m/s and
+spin; electromagnet: from rest, no spin. Foam pair: true 64 vs 67 g;
+single-drop noise ±2.5 g; three-drop mean noise ±1.2 g. Crush time
+≈ 2d/v ≈ 9.6 ms at 3 cm.
+
+---
+
+### B5.2 — Running a first round of testing
+
+**Subtopic.** B5.2 *Running a first round of testing* (`g8b5-round-one`).
+
+**The question.** Three centimetres of foam under the egg. Raise the
+drop until something gives — where exactly is the edge, and is it
+above or below the 2.00 m the brief demands?
+
+**The scene.** The certified rig from B5.1. On the pallet: the round-one
+package — the egg in a 3 cm foam jacket (drawn at true size, 110 mm
+across). The release clamp slides on the rule, 0.25–4.00 m. The logger
+prints its card per drop. New to this brief, the *survival chart*: a
+vertical strip beside the rule, one marker per drop at its height —
+green (intact) or cracked-egg red — building a boundary the student
+closes in on. A dashed line is painted across the rule at 2.00 m,
+labelled "the brief". The egg carton and the broken counter stand by;
+a cracked egg is *not reused* — it stays flattened on the pallet until
+swapped, and the counter ticks. Instrument column: *deceleration vs
+drop height* graph (a straight line through the origin building from
+the student's drops, slope 1/0.03), the survival chart mirrored, and
+the ledger.
+
+**What the student does.**
+- Run 1: drop from 0.75 m. Read the card. Log the marker.
+- Run 2: drop from 2.00 m — the brief's own requirement.
+- Run 3 (bracket the edge): binary-search the clamp — 1.40 m, 1.70,
+  1.55, 1.60 — until the boundary between green and red is pinned
+  inside a 10 cm band.
+
+**What they see happen.** Run 1: a soft landing — the card reads 25 g,
+flat-topped; the egg is lifted back for reuse; a green marker at
+0.75 m. Run 2: the fall looks identical until the last centimetre —
+the foam bottoms firm, the card prints 66.7 g, and the shell cracks
+with an audible tick; yolk wets the foam; red marker at 2.00 m, right
+on the brief's dashed line; the counter ticks 1. Round one has
+*failed the brief*, measurably. Run 3: markers alternate green, red,
+green… converging; the boundary lands between 1.55 and 1.60 m, and
+the graph's line shows why: deceleration crosses the shell's measured
+limit — 53 g — at h = 53 × 0.03 = 1.59 m. The student has produced,
+from their own drops, both the failure of the current design and the
+number (53 g) that any redesign must respect; the 53 g line paints
+itself onto the rig's flank for the rest of the topic.
+
+**What accumulates.** The survival chart's green/red boundary with its
+bracket; the deceleration line through the origin, slope 33.3 g/m;
+logger cards for every drop; the ledger of *height*, *g measured*,
+*g predicted = h/0.03*, *intact?* — prediction and measurement
+agreeing within noise on every row, which certifies the model even
+as the design fails.
+
+**The failure state.** The 2.00 m crack is the round's designed
+failure — the brief's own requirement breaking the current design on
+screen — plus every red marker of the bracketing, each costing a
+real egg from a finite carton.
+
+**The prediction.** *3 cm of foam. The brief demands 2.00 m. The
+drop will…*
+1. Crack the egg: 2.00 ÷ 0.03 is 66.7 g, past anything a shell
+   takes. ✔
+2. Be survived — foam is foam.
+3. Be survived if the egg lands point-down.
+4. Depend on the egg's mass.
+Reveal: the card printed 66.7 g and the shell went at its ~53 g
+limit. The model predicted the failure before the yolk confirmed it
+— which is what models are for.
+
+**The misconception it confronts.** *"A heavier package hits harder,
+so a light egg is safer"* — the g = h/d line has no mass in it; a
+side drop with a 116 g double-yolker (twice the mass) prints the
+same 66.7 g card. *"Doubling the drop height doubles the energy but
+not the force"* — the graph line is straight: height doubles, g
+doubles, force with it.
+
+**Real numbers.** g = h/d exactly for steady crushing: 0.75 m →
+25 g; 1.59 m → 53 g (the shell's edge: 30 N ÷ (0.058 × 9.81) =
+52.8); 2.00 m → 66.7 g. Arrival at 2.00 m: 6.26 m/s, 1.14 J; crush
+time 2d/v = 9.6 ms; average force at 2.00 m = 1.14 J / 0.03 m =
+38 N > the 30 N shell limit. Logger noise ±1.5 g.
+
+---
+
+### B5.3 — Modifying the model from test data
+
+**Subtopic.** B5.3 *Modifying the model from test data*
+(`g8b5-what-the-data-said`).
+
+**The question.** Round one broke the egg at 66.7 g. Two fixes are on
+the bench: thicker foam, and stiffer foam. The equation only mentions
+one of them — which, and can the logger prove it?
+
+**The scene.** The certified rig, clamp locked at the brief's 2.00 m
+(a padlock icon on the rule: the brief is not negotiable, so height
+has left the table). On the bench, three packages drawn at true
+size: **round one's** 3 cm soft jacket (110 mm across, still yolk-
+stained), a **stiff** 3 cm jacket (same size, denser hatch — the
+catalogue calls it "firm: crushes at 38 N"), and a **thick** 9 cm
+soft jacket (230 mm across, visibly a different object). The logger's
+card printer now feeds a *trace gallery* — cards pinned side by side
+for comparison, each a deceleration-vs-ms curve. Instrument column:
+the gallery, the g = h/d model line with the three packages' predicted
+points flagged on it, and the ledger.
+
+**What the student does.**
+- Run 1 (re-run the failure, eyes on the trace): drop round one's
+  spare. Pin the card.
+- Run 2 (the intuitive fix): drop the *stiff* 3 cm package.
+- Run 3 (the model's fix): drop the *thick* 9 cm package.
+
+**What they see happen.** Run 1's card: a clean flat top at 66.7 g
+for 9.6 ms — the foam crushed all the way, steadily, and steady ×
+too-short = deadly; crack, counter ticks. Run 2, the popular
+choice: the stiff foam *barely crushes* — 1 cm — and its card is a
+narrow tower: a spike past 100 g in 3 ms. Worse than round one, and
+the trace says exactly why: d in g = h/d is the distance the foam
+actually gives, and stiffness *reduced* it. Crack; counter. Run 3:
+the fall is the same 2.00 m, the landing takes three times as long,
+and the card is a low plateau: 22.2 g predicted, 23 g printed,
+flat-topped for 29 ms with no end-spike — the foam used its full
+9 cm and never bottomed. The egg is lifted out whole, held up to
+the camera. One variable moved; the deceleration fell by a factor
+of three; the *trace shape* — flat versus spiked — is the
+between-runs referee.
+
+**What accumulates.** Three pinned cards forming the topic's key
+exhibit: flat-and-high (crack), spiked (crack, worse), flat-and-low
+(intact); the model line with measured points landing on it for
+runs 1 and 3 and *off* it for run 2, annotated "d was not 3 cm —
+the foam only gave 1"; the ledger of *package*, *d given (from the
+trace's duration)*, *g predicted*, *g printed*, *intact?*.
+
+**The failure state.** Run 2 — the plausible improvement made
+measurably worse, cracked egg and spiked card as the evidence pair;
+plus the model's own limit surfaced: g = h/d applies only when the
+trace is flat, and the spike is the trace announcing the model's
+edge.
+
+**The prediction.** *Same 2.00 m. Which package saves the egg?*
+1. The stiff 3 cm — stronger foam, stronger protection.
+2. The thick 9 cm: only distance appears in g = h/d. ✔
+3. Both — any change helps.
+4. Neither — 2.00 m is simply too high.
+Reveal: cards 22 g flat against 100+ g spiked. The equation never
+had a "stiffness" term, and the logger showed stiffness *stealing*
+the one term it does have.
+
+**The misconception it confronts.** *"A failed test means starting
+the design again"* — round two is round one with one number moved,
+and it passes; the data pointed at the variable, and everything
+else (rig, egg, height, protocol) carried over. *"More padding
+always means a softer landing"* — the stiff jacket *is* more
+padding by weight, and it spiked; padding helps exactly in
+proportion to the crush distance it donates.
+
+**Real numbers.** Locked height 2.00 m, arrival 1.14 J. Round one:
+2.00/0.03 = 66.7 g, flat, 9.6 ms. Stiff: gives ≈ 0.01 m → spike
+> 100 g, ≈ 3 ms, then hard stop. Round two: 2.00/0.09 = 22.2 g
+predicted, 23 g logged, ≈ 29 ms flat; package 230 mm across.
+Shell line 53 g. Flat-top test: model valid; end-spike: foam
+bottomed, model void.
+
+---
+
+### B5.4 — Naming the trade-off in each improvement
+
+**Subtopic.** B5.4 *Naming the trade-off in each improvement*
+(`g8b5-safe-or-small`).
+
+**The question.** The 9 cm jacket saves the egg — and will not go
+through a letterbox. What exactly does every centimetre of safety
+cost, and is there a thickness that satisfies both?
+
+**The scene.** The certified rig (clamp still locked at 2.00 m) with
+two new stations flanking it. Left, the **letterbox**: a wall-mounted
+brass slot, 150 mm wide, with a spring flap — packages are posted by
+hand, and one that does not fit *visibly* does not fit. Right, the
+**postal scale**, reading the foam's mass in grams. Centre, the
+*jacket lathe*: a dial that builds a package at any jacket thickness
+1–15 cm, always drawn at true radius around the 50 mm egg — the
+package on the pallet grows in width *linearly* with the dial while
+the scale under it climbs with the *cube*. Instrument column: a
+two-axis scorecard — *deceleration (g) vs thickness* falling as 1/t,
+and *foam mass (g) vs thickness* rising as a cubic — with the 53 g
+shell line on the first and the letterbox's 150 mm limit drawn as a
+vertical wall across both; ledger.
+
+**What the student does.**
+- Run 1 (test the compact): dial 3 cm. Post it — it sails through
+  the slot; weigh it — 16 g; drop it — crack (66.7 g).
+- Run 2 (test the padded): dial 9 cm. Drop — intact (22.2 g); weigh
+  — 158 g, ten times the foam for three times the thickness; post —
+  it jams in the slot flap, half in, half out, and stays there
+  until pulled back.
+- Run 3 (hunt the window): sweep the dial while watching both
+  curves: survival needs t ≥ 3.8 cm; the slot allows t ≤ 5.0 cm.
+  Build 4.5 cm; drop, weigh, post — all three pass, and then the
+  rig asks its last question: drop the 4.5 cm package *five* times
+  (44 g is only 17 % under the 53 g edge, and foam varies…).
+
+**What they see happen.** The lathe makes the cost physical: dialling
+3 → 9 cm triples the width on screen but the scale spins 16 → 158 —
+the cube at work, stated by the ledger as "×3 thickness, ×10 foam".
+The letterbox turns "too big" from a number into an event. Run 3
+finds the window — 3.8 to 5.0 cm — and then prices it: of five
+drops at 4.5 cm (44 g nominal, ±3 g of real foam variation), the
+seeded sequence cracks one egg on the fourth drop at a logged 49 +
+4 g excursion… no: at 44 ± 3 the shell's 53 stays clear; the drops
+log 42–47 g, all green but crowding the line on the chart — the
+student watches five markers stack just under the red zone and is
+asked to *name* what the 9 cm design was buying: distance from the
+edge. The window exists; it is narrow, and it spends margin to fit
+the slot.
+
+**What accumulates.** The two-curve scorecard with the survival
+line, the slot wall, and the discovered window shaded between
+them; five clustered markers under the 53 g line at 4.5 cm against
+one lonely comfortable marker at 9 cm (22 g); the ledger's final
+column, written by the student from a menu: what each design
+*costs* — compact: the egg; padded: the letterbox and 158 g;
+window: the margin.
+
+**The failure state.** Run 2's jam — a passing design failing a
+constraint bodily, in brass — and run 1's crack: each end of the
+dial fails a different master, which is what "trade-off" means
+when it stops being a word.
+
+**The prediction.** *Tripling the jacket from 3 to 9 cm multiplies
+the foam needed by about…*
+1. 3 — three times the thickness.
+2. 6.
+3. 10 — the jacket is a shell, and shells grow with the cube. ✔
+4. 2.
+Reveal: the scale read 16 g then 158 g. Width grew like the dial;
+volume grew like the dial cubed; the postage grows with the
+volume.
+
+**The misconception it confronts.** *"The best design is the one
+that scores best on the main criterion"* — the 9 cm jacket is the
+safety champion and hangs jammed in the letterbox. *"Improvements
+are free if the material is cheap"* — the foam costs pennies; the
+158 g and the 230 mm cost the mission; the window design pays in
+margin instead, and the five crowded markers price that too.
+
+**Real numbers.** Survival: g = 2.00/t ≤ 53 → t ≥ 3.77 cm. Slot:
+width 2(25 + t mm) ≤ 150 → t ≤ 50 mm. Window: 3.8–5.0 cm; at
+4.5 cm, 44.4 g nominal, foam spread ±3 g. Foam mass = shell
+volume × 25 kg/m³: 3 cm → 16 g; 4.5 cm → 34 g; 9 cm → 158 g;
+15 cm → 610 g (a thousand times 1 cm's 0.6 g for fifteen times
+the thickness). Package widths: 110, 140, 230, 350 mm.
+
+---
+
+### B5.5 — A second round of modification
+
+**Subtopic.** B5.5 *A second round of modification* (`g8b5-two-layers`).
+
+**The question.** Nine centimetres to spend and 1.14 J to absorb —
+and the catalogue only stocks foams with fixed crush forces. Can
+two layers do what no single stocked foam can?
+
+**The scene.** The certified rig, 2.00 m, one last station: the
+**layer press** — a cross-section workbench where the student builds
+a 9 cm jacket from horizontal layers pulled out of the *foam
+catalogue* drawer: grades stamped 8 N, 10 N, 12 N, 14 N, 16 N (each
+crushes at exactly its stamped force, and says so). Layers stack in
+the order they will meet the ground — *outer at the bottom*. Beside
+the press, the brief's hero instrument: the **energy budget graph**
+— force (N) vertical, crush distance (cm) horizontal, with the
+arriving 1.14 J drawn as a shaded target area and the student's
+stack rendered as rectangles (width = layer thickness, height =
+stamped force) that must *tile at least 1.14 J before the distance
+runs out*, plus a horizontal line at 30 N: the shell's force limit
+(53 g). Every built stack can be dropped for real; the logger card
+referees. Instrument column: budget graph, trace gallery, ledger.
+
+**What they see and do — three builds, three drops.**
+- Run 1 (the single soft stack): 9 cm of the 12 N grade. The budget
+  graph shows one rectangle: 12 N × 9 cm = 1.08 J — visibly short
+  of the 1.14 J target, a sliver of unshaded energy left over. Drop:
+  the trace runs flat at 12 N (21 g) for 8.7 cm… and then the
+  sliver lands all at once: bottoming spike, crack. 0.06 J with
+  nowhere to go is still a hammer.
+- Run 2 (the single firm stack): 9 cm of 14 N. Rectangle: 1.26 J —
+  budget met with room. Drop: flat trace at 24.6 g, egg intact,
+  8.1 cm used. It works — and the whole landing, first touch
+  included, runs at 24.6 g.
+- Run 3 (the two-layer stack, round two's design): 6 cm of 12 N
+  *outer*, 3 cm of 14 N *inner*. Rectangles: 0.72 J + 0.42 J =
+  1.14 J — the budget tiled exactly, to the joule. Drop: the trace
+  is a two-step staircase — 21 g for the first 6 cm, a clean
+  handover, 24.6 g for the last 3 — flat-topped twice, no spike,
+  egg intact, and the *first* two-thirds of the landing ran 15 %
+  gentler than run 2's.
+- The wrong-order coda: flip the layers (14 N outer). The budget
+  graph is identical — same rectangles, same 1.14 J — but the drop
+  opens *hard* at 24.6 g from first touch, and the inner 12 N layer
+  meets the remaining 0.42 J with only 12 × 0.03 = 0.36 J of
+  capacity: bottoming spike, crack. Order is invisible to the
+  budget and decisive to the egg.
+
+**What accumulates.** Four budget-graph tilings pinned beside their
+four logger cards — short/spiked, met/flat, exact/staircase,
+exact-but-reversed/spiked — the pairing teaching that the area
+argument is necessary and not sufficient; the ledger of *stack*,
+*capacity (J)*, *peak g*, *distance used*, *intact?*; and the
+programme's closing line, auto-totalled from run 3: 0.72 + 0.42 =
+1.14 J = 0.058 × 9.81 × 2.00 — the books of the whole topic closed
+by the student's own final drop. The crushed layers stay crushed:
+the package is single-use, and the ledger's last cell names that
+as the accepted trade.
+
+**The failure state.** Two engineered cracks — the under-budget
+bottom-out and the right-budget wrong-order spike — each predicted
+by one instrument and missed by the other, which is the round-two
+lesson: model *and* trace, always both.
+
+**The prediction.** *Two stacks hold the same 1.14 J: 12-then-14,
+and 14-then-12. Dropped, they will…*
+1. Behave identically — same foams, same energy.
+2. Both crack — 1.14 J is 1.14 J.
+3. Differ: soft-first lands gently and survives; firm-first spikes
+   at the end and cracks. ✔
+4. Differ: firm-first is better — strength up front.
+Reveal: the staircase card against the spiked one. The budget
+fixes *whether* the energy fits; the order fixes *when* each force
+is met, and the last centimetre is the one that decides.
+
+**The misconception it confronts.** *"Softer padding is always
+better"* — the all-soft stack is the one that cracks the egg, by
+0.06 J of shortfall. *"A second round of testing is only needed if
+the first one failed"* — run 2 *passed*, and run 3 still found a
+measurably gentler landing inside the same 9 cm; iteration is how
+the passing design got better, not how the failing one got
+rescued.
+
+**Real numbers.** Budget: 0.058 × 9.81 × 2.00 = 1.14 J over
+≤ 9 cm; shell force limit 30 N (53 g). Layer capacities F × d:
+12 N × 0.09 = 1.08 J (short); 14 N × 0.09 = 1.26 J (met, 8.14 cm
+used); 12 N × 0.06 = 0.72 J + 14 N × 0.03 = 0.42 J = 1.14 J
+(exact). Peaks: 12 N → 21.1 g; 14 N → 24.6 g — against 66.7 g in
+round one and 22.2 g in the idealised round-two model. Bottoming
+remainder in run 1: 0.06 J arriving at 1.4 m/s into a hard stop.
+
+---
+
+## Coverage
+
+| Topic | Briefs | Kit |
+|---|---|---|
+| A1 Describing motion | A1.1–A1.5 | block walk · slot-car table · Track kit · platform/train · town journey |
+| A2 Acceleration and motion graphs | A2.1–A2.5 | Road kit (+ drop tower in A2.3) |
+| A3 Newton's First Law | A3.1–A3.5 | launch lanes · Track kit ×3 · Bus kit |
+| A4 Force, mass, acceleration | A4.1–A4.5 | Track kit (one investigation throughout) |
+| A5 Third Law and collisions | A5.1–A5.5 | Track kit + pair probe · farm lane · Crash rig ×2 |
+| A6 Engineering a collision solution | A6.1–A6.5 | Crash rig + scrutineering bench + component press |
+| B1 Kinetic energy | B1.1–B1.5 | Energy track (brake strip) · Crash rig |
+| B2 Potential energy | B2.1–B2.5 | tall Stand rig · Spring bench · Pendulum |
+| B3 Energy transfer in collisions | B3.1–B3.5 | Energy track · drop columns · Crash rig ×2 · carousel |
+| B4 Conservation | B4.1–B4.5 | boundary box over bench · valley · bike · drop rig · auditor's bench |
+| B5 Modeling and iterative testing | B5.1–B5.5 | egg-drop rig (one programme throughout) |
+
+Fifty-five briefs. Every scene is a complete apparatus in spatial
+relationship; every model is stepped live; every cause is drawn on the
+objects; every experiment is run by hand, accumulates across runs, can
+fail visibly, and opens with a committed prediction. The science —
+every constant and relationship in every *Real numbers* section — is
+carried over from the checked `measure` functions and `because` text of
+the g8a1–g8a6 and g8b1–g8b5 specs.

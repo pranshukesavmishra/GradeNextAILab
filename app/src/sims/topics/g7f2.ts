@@ -44,7 +44,7 @@ const TEN_TIMES_RARER: ArchetypeSpec = {
       art: { art: "sphere", color: "#e0a04a", radius: 0.44, glow: 0.35 } },
   ],
   variables: [
-    { key: "magnitude", label: "Magnitude of interest", min: 4, max: 9, step: 0.1, default: 6 },
+    { key: "magnitude", label: "Magnitude of interest", min: 4, max: 9, step: 0.1, default: 7 },
     { key: "bValue", label: "b-value of the region", min: 0.7, max: 1.3, step: 0.05, default: 1 },
   ],
   /*

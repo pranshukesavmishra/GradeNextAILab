@@ -4,14 +4,6 @@
   "hardInvariants": "asserted in CI: finite readouts, clock advances, determinism, clean reset",
   "unresponsiveControls": [
     {
-      "id": "g7f2-ten-times-rarer",
-      "subject": "engineering",
-      "unresponsive": [
-        "bValue"
-      ],
-      "tested": 2
-    },
-    {
       "id": "phys.circuits",
       "subject": "physics",
       "unresponsive": [
