@@ -76,7 +76,7 @@ briefs say what differs.
 | **Bus** | A3.5 | A single-deck bus cut away along its length: driver, standing passenger, handrail, floor with anti-slip marks, windows the outside scenery moves past. |
 | **Crash rig** | A5.4, A5.5, A6.1–A6.5, B1.5, B3.3, B3.4 | A 12 m rail with a barrier at the end, a sled carrying a seated crash dummy, a clip-on nose element of settable length, a chest force gauge on the dummy, a high-speed clock (ms), an energy bar column. |
 | **Energy track** | B1.1–B1.4, B3.1, B4.1 | A curved launch ramp with a height scale (0–1.5 m), a level 3 m run with a light-gate speedometer at the foot of the ramp, and a magnetic brake strip whose retarding force is set on a dial (10 N default), with a distance scale along it. The distance the trolley drives into the brake strip *is* the energy meter. |
-| **Stand and drop rig** | B2.1, B2.3, B3.2, B4.4, B5.1–B5.5 | A 2.0 m lab stand with a cm scale, a clamp that slides up and down, an electromagnet release, a clay or anvil landing bed, a height scale on the wall behind, and a strobe trace of the falling body. |
+| **Stand and drop rig** | B2.1, B2.3, B3.2, B4.4, B5.1–B5.5 · 5 | A 2.0 m lab stand with a cm scale, a clamp that slides up and down, an electromagnet release, a clay or anvil landing bed, a height scale on the wall behind, and a strobe trace of the falling body. |
 | **Spring bench** | B2.2, B2.4, B2.3 (partly) | A horizontal spring clamped at one end on the bench, a metre rule along it, a force gauge on the free end, a 50 g ball and a vertical launch tube with a 4 m height scale. |
 | **Pendulum** | B2.5 | A 2 kg bob on a 1.8 m string from a beam, a protractor at the pivot, a light gate at the bottom, a movable peg. |
 
@@ -4704,21 +4704,21 @@ remainder in run 1: 0.06 J arriving at 1.4 m/s into a hard stop.
 
 ## Coverage
 
-| Topic | Briefs | Kit |
+| Topic | Briefs (count) | Kit |
 |---|---|---|
-| A1 Describing motion | A1.1–A1.5 | block walk · slot-car table · Track kit · platform/train · town journey |
-| A2 Acceleration and motion graphs | A2.1–A2.5 | Road kit (+ drop tower in A2.3) |
-| A3 Newton's First Law | A3.1–A3.5 | launch lanes · Track kit ×3 · Bus kit |
-| A4 Force, mass, acceleration | A4.1–A4.5 | Track kit (one investigation throughout) |
-| A5 Third Law and collisions | A5.1–A5.5 | Track kit + pair probe · farm lane · Crash rig ×2 |
-| A6 Engineering a collision solution | A6.1–A6.5 | Crash rig + scrutineering bench + component press |
-| B1 Kinetic energy | B1.1–B1.5 | Energy track (brake strip) · Crash rig |
-| B2 Potential energy | B2.1–B2.5 | tall Stand rig · Spring bench · Pendulum |
-| B3 Energy transfer in collisions | B3.1–B3.5 | Energy track · drop columns · Crash rig ×2 · carousel |
-| B4 Conservation | B4.1–B4.5 | boundary box over bench · valley · bike · drop rig · auditor's bench |
-| B5 Modeling and iterative testing | B5.1–B5.5 | egg-drop rig (one programme throughout) |
+| A1 Describing motion | A1.1–A1.5 · 5 | block walk · slot-car table · Track kit · platform/train · town journey |
+| A2 Acceleration and motion graphs | A2.1–A2.5 · 5 | Road kit (+ drop tower in A2.3) |
+| A3 Newton's First Law | A3.1–A3.5 · 5 | launch lanes · Track kit ×3 · Bus kit |
+| A4 Force, mass, acceleration | A4.1–A4.5 · 5 | Track kit (one investigation throughout) |
+| A5 Third Law and collisions | A5.1–A5.5 · 5 | Track kit + pair probe · farm lane · Crash rig ×2 |
+| A6 Engineering a collision solution | A6.1–A6.5 · 5 | Crash rig + scrutineering bench + component press |
+| B1 Kinetic energy | B1.1–B1.5 · 5 | Energy track (brake strip) · Crash rig |
+| B2 Potential energy | B2.1–B2.5 · 5 | tall Stand rig · Spring bench · Pendulum |
+| B3 Energy transfer in collisions | B3.1–B3.5 · 5 | Energy track · drop columns · Crash rig ×2 · carousel |
+| B4 Conservation | B4.1–B4.5 · 5 | boundary box over bench · valley · bike · drop rig · auditor's bench |
+| B5 Modeling and iterative testing | B5.1–B5.5 · 5 | egg-drop rig (one programme throughout) |
 
-Fifty-five briefs. Every scene is a complete apparatus in spatial
+Eleven topics, five briefs per topic — fifty-five briefs in all. Every scene is a complete apparatus in spatial
 relationship; every model is stepped live; every cause is drawn on the
 objects; every experiment is run by hand, accumulates across runs, can
 fail visibly, and opens with a committed prediction. The science —

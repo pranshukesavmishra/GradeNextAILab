@@ -41,7 +41,7 @@ the architecture outcome is being built directly.
 |---|---|---|---|
 | Scene-engine architecture workflow | `wf_ffe191e8-756`, script `design-scene-engine-wf_ffe191e8-756.js` | all 4 architects (physics, pedagogy, visual, scale) | 3 judges, synthesise → writes `docs/SCENE_ENGINE_SPEC.md` |
 | Phase-1 audit workflow | `wf_4916b355-36a`, script `audit-catalogue-wf_4916b355-36a.js` | audit:registry, audit:handwritten | archetypes, infra, reconcile → writes `docs/AUDIT.md` + `app/src/manifest/simulations.json` |
-| Product designer briefs | background agent, deliverable `docs/EXPERIMENT_BRIEFS_G8_AB.md` | 25 briefs (topics A1-A5) | A6, B1-B5; fix A1 run-3 slip → 3.59 m/s |
+| Product designer briefs | COMPLETE | all 55 briefs (A1.1-A6.5, B1.1-B5.5), 4727 lines, every brief carries all ten sections, A1.5 slip fixed, coverage table appended; 8 shared scene kits specified once with per-brief deltas | — |
 
 ## Acceptance gate (landed)
 

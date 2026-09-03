@@ -151,6 +151,7 @@ const model: SimModel<State> = {
     if (storm) {
       const height = params.cloudHeight as number;
       const field = pointField(state.cloudQ, height);
+      const rate = params.chargeRate as number;
       return [
         {
           key: "cloudCharge", label: "Charge on the cloud", quantity: q(state.cloudQ, "charge"),
@@ -168,6 +169,11 @@ const model: SimModel<State> = {
         {
           key: "cloudHeight", label: "Cloud base height", quantity: q(height, "length"),
           unit: "m", semantic: "distance", graphable: true, bands: ["6-8", "9-12"],
+        },
+        {
+          key: "strikeInterval", label: "Seconds between strikes",
+          quantity: q(breakdownCharge(height) / rate, "time"),
+          unit: "s", semantic: "time", graphable: true, bands: ["6-8", "9-12"],
         },
         {
           key: "strikes", label: "Strikes so far", quantity: q(state.strikes, "count"),
@@ -217,6 +223,7 @@ const model: SimModel<State> = {
       cloudCharge: state.cloudQ,
       fieldAtGround: pointField(state.cloudQ, height),
       breakdownCharge: breakdownCharge(height),
+      strikeIntervalS: breakdownCharge(height) / (params.chargeRate as number),
       strikes: state.strikes,
       lastBoltCharge: state.lastBoltCharge,
       storm: (params.scenario as string) === "storm",

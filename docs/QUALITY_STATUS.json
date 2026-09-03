@@ -20,14 +20,6 @@
       "tested": 4
     },
     {
-      "id": "phys.electric-force",
-      "subject": "physics",
-      "unresponsive": [
-        "chargeRate"
-      ],
-      "tested": 4
-    },
-    {
       "id": "phys.em-spectrum",
       "subject": "physics",
       "unresponsive": [
