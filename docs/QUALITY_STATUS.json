@@ -1,0 +1,160 @@
+{
+  "generated": "by app/src/sims/acceptance.test.ts — do not edit by hand",
+  "simCount": 582,
+  "hardInvariants": "asserted in CI: finite readouts, clock advances, determinism, clean reset",
+  "unresponsiveControls": [
+    {
+      "id": "phys.motion-graphs",
+      "subject": "physics",
+      "unresponsive": [
+        "drive",
+        "observerSpeed"
+      ],
+      "tested": 4
+    },
+    {
+      "id": "g6a5-swing-and-graph",
+      "subject": "engineering",
+      "unresponsive": [
+        "mass"
+      ],
+      "tested": 2
+    },
+    {
+      "id": "g7d3-cycles-and-flows",
+      "subject": "biology",
+      "unresponsive": [
+        "transferPercent"
+      ],
+      "tested": 2
+    },
+    {
+      "id": "g7f2-ten-times-rarer",
+      "subject": "engineering",
+      "unresponsive": [
+        "bValue"
+      ],
+      "tested": 2
+    },
+    {
+      "id": "phys.circuits",
+      "subject": "physics",
+      "unresponsive": [
+        "bulbCount"
+      ],
+      "tested": 4
+    },
+    {
+      "id": "phys.collisions",
+      "subject": "physics",
+      "unresponsive": [
+        "massB"
+      ],
+      "tested": 4
+    },
+    {
+      "id": "phys.electric-force",
+      "subject": "physics",
+      "unresponsive": [
+        "chargeRate"
+      ],
+      "tested": 4
+    },
+    {
+      "id": "phys.em-spectrum",
+      "subject": "physics",
+      "unresponsive": [
+        "zoom"
+      ],
+      "tested": 2
+    },
+    {
+      "id": "phys.forces",
+      "subject": "physics",
+      "unresponsive": [
+        "friction"
+      ],
+      "tested": 4
+    },
+    {
+      "id": "chem.ph",
+      "subject": "chemistry",
+      "unresponsive": [
+        "titrantConc"
+      ],
+      "tested": 3
+    },
+    {
+      "id": "bio.artificial-selection",
+      "subject": "biology",
+      "unresponsive": [
+        "keep"
+      ],
+      "tested": 3
+    },
+    {
+      "id": "bio.cell",
+      "subject": "biology",
+      "unresponsive": [
+        "light"
+      ],
+      "tested": 2
+    },
+    {
+      "id": "bio.fossil-record",
+      "subject": "biology",
+      "unresponsive": [
+        "fossilRate"
+      ],
+      "tested": 3
+    },
+    {
+      "id": "bio.homology",
+      "subject": "biology",
+      "unresponsive": [
+        "align"
+      ],
+      "tested": 2
+    },
+    {
+      "id": "bio.human-impact",
+      "subject": "biology",
+      "unresponsive": [
+        "protectLand"
+      ],
+      "tested": 4
+    },
+    {
+      "id": "bio.natural-selection",
+      "subject": "biology",
+      "unresponsive": [
+        "mutationRate"
+      ],
+      "tested": 4
+    },
+    {
+      "id": "earth.spheres",
+      "subject": "earth",
+      "unresponsive": [
+        "rate"
+      ],
+      "tested": 1
+    },
+    {
+      "id": "earth.water-cycle",
+      "subject": "earth",
+      "unresponsive": [
+        "vegetation"
+      ],
+      "tested": 4
+    },
+    {
+      "id": "math.probability",
+      "subject": "math",
+      "unresponsive": [
+        "sectors"
+      ],
+      "tested": 1
+    }
+  ]
+}

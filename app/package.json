@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b --noEmit",
-    "health": "node scripts/health.mjs"
+    "health": "node scripts/health.mjs",
+    "lab:quality": "node scripts/wire-topics.mjs --check && node scripts/wire-curriculum.mjs --check && tsc -b --noEmit && vitest run"
   },
   "dependencies": {
     "@types/three": "^0.170.0",

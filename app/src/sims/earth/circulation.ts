@@ -370,8 +370,13 @@ const model: SimModel<State> = {
       deflectionKm: state.deflectionM / 1000,
       maxDeflectionKm: state.maxDeflectionM / 1000,
       deflectsRight: state.deflectionM > 0,
-      inertialRadiusKm: inertialRadius(speed, lat, rotation) / 1000,
-      inertialPeriodHours: inertialPeriod(lat, rotation) / 3600,
+      // Where f ~ 0 (equator, or rotation off) there is no inertial circle at
+      // all — the parcel runs straight. The boolean carries that physics; the
+      // numbers are clamped to the same caps the readouts use so they stay
+      // finite for display and lab checks.
+      inertialCircleExists: Number.isFinite(inertialRadius(speed, lat, rotation)),
+      inertialRadiusKm: Math.min(4e7, inertialRadius(speed, lat, rotation)) / 1000,
+      inertialPeriodHours: Math.min(1e7, inertialPeriod(lat, rotation)) / 3600,
       speedKept: Math.hypot(state.real.vx, state.real.vy),
       launchSpeed: speed,
       elapsedHours: state.t / 3600,

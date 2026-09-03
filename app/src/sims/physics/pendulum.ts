@@ -194,9 +194,11 @@ const model: SimModel<State> = {
       swings: Math.floor(state.crossings / 2),
       maxAngle: state.maxAngle,
       smallAnglePeriod: smallAnglePeriod(L, g),
-      periodError: state.period > 0 ? Math.abs(state.period - target) : Number.POSITIVE_INFINITY,
+      // `measured` is the validity flag; until then the errors read 0, and every
+      // lab check gates on `measured` so nothing passes off the placeholder.
+      periodError: state.period > 0 ? Math.abs(state.period - target) : 0,
       gEstimate,
-      gError: gEstimate > 0 ? Math.abs(gEstimate - g) : Number.POSITIVE_INFINITY,
+      gError: gEstimate > 0 ? Math.abs(gEstimate - g) : 0,
     };
   },
 };

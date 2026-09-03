@@ -342,7 +342,9 @@ const model: SimModel<State> = {
     const c = coeffsOf(params);
     const f = features(family, c);
     const target = mysteryCurve(family, params.mystery as string);
-    const err = target ? curveError(family, c, target) : Number.POSITIVE_INFINITY;
+    // `mysteryOn` is the validity flag; with no mystery curve the distance
+    // reads 0 and every check that uses it must also require mysteryOn.
+    const err = target ? curveError(family, c, target) : 0;
     return {
       family,
       rootCount: f.roots.length,
@@ -791,7 +793,7 @@ export const functionGrapherSim: SimManifest<State> = {
           instruction: "Adjust a until the two curves lie on top of each other.",
           check: {
             describe: "The curves are within 0.05 everywhere",
-            test: (v) => (v.facts.matchError as number) < 0.05,
+            test: (v) => v.facts.mysteryOn === true && (v.facts.matchError as number) < 0.05,
           },
           hints: ["The mystery curve opens downwards, so a is negative.", "Try a = −1."],
         },

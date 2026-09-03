@@ -39,9 +39,25 @@ the architecture outcome is being built directly.
 
 | Stream | Run/agent | Cached so far | Remaining |
 |---|---|---|---|
-| Scene-engine architecture workflow | `wf_ffe191e8-756`, script `design-scene-engine-wf_ffe191e8-756.js` | architects: physics, pedagogy, scale | architect:visual, 3 judges, synthesise → writes `docs/SCENE_ENGINE_SPEC.md` |
-| Phase-1 audit workflow | `wf_4916b355-36a`, script `audit-catalogue-wf_4916b355-36a.js` | audit:registry | handwritten, archetypes, infra, reconcile → writes `docs/AUDIT.md` + `app/src/manifest/simulations.json` |
-| Product designer briefs | background agent, deliverable `docs/EXPERIMENT_BRIEFS_G8_AB.md` | topics A1-A2 (~1300 lines) | A3-A6, B1-B5 (55 subtopics total); fix A1 run-3 slip → 3.59 m/s |
+| Scene-engine architecture workflow | `wf_ffe191e8-756`, script `design-scene-engine-wf_ffe191e8-756.js` | all 4 architects (physics, pedagogy, visual, scale) | 3 judges, synthesise → writes `docs/SCENE_ENGINE_SPEC.md` |
+| Phase-1 audit workflow | `wf_4916b355-36a`, script `audit-catalogue-wf_4916b355-36a.js` | audit:registry, audit:handwritten | archetypes, infra, reconcile → writes `docs/AUDIT.md` + `app/src/manifest/simulations.json` |
+| Product designer briefs | background agent, deliverable `docs/EXPERIMENT_BRIEFS_G8_AB.md` | 25 briefs (topics A1-A5) | A6, B1-B5; fix A1 run-3 slip → 3.59 m/s |
+
+## Acceptance gate (landed)
+
+`app/src/sims/acceptance.test.ts` asserts, for all 582 sims: finite readouts
+and facts at t=0 and after a run, the clock advances, determinism (same seed →
+same fingerprint), and clean reset. `npm run lab:quality` = wire-topics
+--check + wire-curriculum --check + tsc + vitest (930 tests). The min→max
+causal sweep is REPORTED to `docs/QUALITY_STATUS.json`, not asserted: 19 sims
+queue there for triage. Triage rule: an unresponsive control is either a real
+defect (fix the model) or correct physics whose null effect lacks an exposed
+readout (e.g. pendulum period is mass-independent — expose energy so mass
+visibly does something); when the queue is empty, promote the sweep to an
+assertion. Three sims that leaked Infinity through facts (pendulum periodError
+/gError, circulation inertialRadius at f≈0, function-grapher matchError) now
+use validity-flag booleans + finite placeholders, with every lab check gated
+on the flag.
 
 Resume commands are in the workflow scripts dir:
 `/root/.claude/projects/-home-user-GradeNextAILab/cab651ca-ba1e-5d3f-b80e-a9208800d96c/workflows/scripts/`

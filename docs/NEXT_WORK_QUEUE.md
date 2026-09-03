@@ -13,10 +13,12 @@
    projectile (upgrade), collisions (upgrade), forces, energy, waves, optics,
    circuits (needs real circuit solver), gas laws, ecosystem, probability.
    Use `docs/EXPERIMENT_BRIEFS_G8_AB.md` for the mechanics/energy ones.
-4. **Quality gate command** (`npm run lab:quality`): wire-topics --check,
-   wire-curriculum --check, tsc, vitest, manifest consistency, then health.
-   Extend health with the anti-fake test (drive an input, assert a dependent
-   readout changes) once the new engine lands.
+4. ~~Quality gate command~~ DONE: `npm run lab:quality` runs wire-topics
+   --check, wire-curriculum --check, tsc, vitest incl. the acceptance harness.
+   Remaining: triage the 19-sim unresponsive-control queue in
+   `docs/QUALITY_STATUS.json` (fix real dead controls; expose the missing
+   readout where the null effect is the physics), then promote the causal
+   sweep from a report to an assertion.
 5. **Audit-driven catalogue plan**: when `docs/AUDIT.md` + manifest land,
    group the 521 archetype subtopics by target engine and schedule rebuild
    waves (engines first, then configurations).

@@ -1307,3 +1307,1634 @@ speed 4.8 × 1.12 = 5.4 m/s at the partition. Stepped per tick for both
 bodies separately; the passenger's a is 0 until a contact force exists.
 
 ---
+
+## Topic A4 — Forces, mass and change in motion
+
+One investigation runs through all five briefs: the classic trolley-and-
+hanger experiment on the **Track kit**. The engineer builds the rig once —
+2.0 m track with adjustable feet and a bubble level, 1.0 kg cart with a
+load bay carrying five 100 g slotted masses, cord over an end pulley to a
+hanger, electromagnet release at the start line, light gates at 0.5 m and
+1.5 m — and the five briefs change what the student is allowed to touch
+and what the instrument column shows. Masses are physical: the student
+picks a 100 g slot out of the cart's bay and drops it onto the hanger, or
+takes one from the separate *spares box* (the trap A4.1 is about).
+
+### A4.1 — Planning a fair test of force and motion
+
+**Subtopic.** A4.1 *Planning a fair test of force and motion*
+(`g8a4-three-kinds-of-variable`).
+
+**The question.** You want to know how the pull changes the acceleration.
+Two ways of adding pull look almost identical — why does only one of them
+give an answer?
+
+**The scene.** The A4 rig, three-quarter camera close enough that the
+cart's load bay and the hanger are both readable. In the load bay: five
+100 g masses, each engraved "100 g". On the bench beside the track: the
+*spares box*, an open crate of identical 100 g masses. Above the rig, a
+*system scale* — a long balance beam that continuously weighs everything
+that moves (cart + bay + hanger + hanger load) and shows the total:
+"moving mass: 1.00 kg". The hanger hangs off the bench edge on its cord.
+Light gates, electromagnet release. Instrument column: *acceleration vs
+pull* graph (x 0–5 N, y 0–5 m/s²) and the ledger. A faint diagonal
+reference line through the origin is NOT drawn — the student's data must
+make it.
+
+**What the student does.**
+- Series 1 (the plausible wrong way): take masses from the *spares box*,
+  one per run, onto the hanger. Release, read the gate acceleration,
+  repeat for 1–5 spares.
+- Series 2 (the fair way): put the spares back; now *move* one mass per
+  run from the cart's bay across to the hanger. Release, read, repeat
+  for 1–5 moved.
+- Series 3 (spoil a controlled variable on purpose): with the fair
+  loading at 3 moved masses, swap the electromagnet release for a hand
+  release (drag the hand icon in) and run five repeats.
+
+**What they see happen.** Series 1: with each spare added the hanger pull
+grows — but the system scale ticks up too: 1.10, 1.20, … 1.50 kg. The
+points on the graph rise but *bend over*, sagging below any straight
+line. Series 2: each move leaves the scale frozen at exactly 1.00 kg —
+the mass changed places, not amount — and the five points land on a dead
+straight line through the origin. Both series stay plotted in their own
+colours, the bent one and the straight one, from the same rig. Series 3:
+five releases by hand scatter their five points vertically around one
+pull value (the hand adds a random ±0.15 m/s of launch speed, visible as
+the cart twitching on release); re-run with the electromagnet and the
+five repeats stack into one dot.
+
+**What accumulates.** The graph ends the session holding the whole
+argument: a curved series, a straight series, and a scattered cluster
+beside a tight one. Ledger columns: *where the mass came from*, *pull
+(N)*, *moving mass (kg)*, *a (m/s²)*. A final prompt asks the student to
+label each rig part with one of three tags — *I change it* / *it answers*
+/ *I keep it the same* — and the tags snap onto the hanger load, the
+gates' readout, and the scale/release/level respectively.
+
+**The failure state.** The bent line *is* the failure: the same gesture
+("add pull") producing data no straight line fits, because two variables
+moved at once. The scattered hand-release cluster is the second failure.
+Neither is an error message; both are data the student made.
+
+**The prediction.** *You add pull by taking masses from the spares box.
+What will the graph look like?*
+1. A straight line through the origin — more pull, more acceleration.
+2. A line that bends below straight, because the load is getting heavier
+   too. ✔
+3. A flat line — the extra mass cancels the extra pull.
+4. The same as moving masses across; where they come from cannot matter.
+Reveal: the system scale read 1.50 kg by the last run. You changed the
+pull *and* the mass, and the graph shows both at once, which is why it
+shows neither cleanly.
+
+**The misconception it confronts.** *"A fair test just means being
+careful"* — series 1 is performed perfectly carefully and still fails,
+because fairness is about what is *held fixed*, not about neatness.
+*"Anything you write down during the experiment is a dependent variable"*
+— the tagging step forces the scale reading (written down every run,
+always 1.00) into *kept the same*, not *it answers*.
+
+**Real numbers.** Each 100 g on the hanger = 0.981 N of pull. Fair
+series: moving mass 1.00 kg, a = 0.981 n m/s² for n = 1…5 (0.98 to
+4.91). Unfair series: moving mass 1.0 + 0.1 n kg, a = 0.981 n /
+(1 + 0.1 n): 0.89, 1.64, 2.26, 2.80, 3.27 m/s² — each point 9–33 % below
+the fair line. Hand release adds ±0.15 m/s initial speed; gate-pair
+acceleration is computed from the two crossing speeds, so the scatter is
+±0.3 m/s² at low pulls. A 1° track slope would add g sin 1° =
+0.17 m/s² (quoted on the bubble level's tooltip).
+
+---
+
+### A4.2 — The qualitative force-mass-acceleration relationship
+
+**Subtopic.** A4.2 *The force-mass-acceleration relationship*
+(`g8a4-force-over-mass`).
+
+**The question.** Double the pull — what happens to the acceleration?
+Double the mass instead — what happens then?
+
+**The scene.** The A4 rig with two changes. The pull is now set by a
+*calibrated tow*: the cord runs to a winch with a tension dial
+(0–20 N in 0.5 N steps) that maintains exactly the set tension —
+drawn as a taut cord whose teal force arrow at the cart's plate always
+matches the dial. The cart's load bay accepts *1 kg slabs* from a rack
+(0.2–10 kg total; the cart visibly rides lower and its wheels squash as
+slabs go on). Light gates; electromagnet release; a 2.0 s run timer that
+ends every run (the winch brakes the cart gently after it). Instrument
+column: TWO graphs stacked — *a vs F* (x 0–20 N) and *a vs m*
+(x 0–10 kg) — each collecting points only from runs where the *other*
+quantity was at its default; plus the ledger.
+
+**What the student does.**
+1. Set tension 6 N, mass 2 kg. Release. The gates report a.
+- Runs 1–3 (change only the force): 6 N, 12 N, 3 N at 2 kg.
+- Runs 4–6 (change only the mass): 2 kg, 4 kg, 8 kg at 6 N.
+- Run 7 (the zero run): tension 0 N. Release. Nothing happens, on
+  purpose: the cart sits at the start line for the whole 2 s.
+
+**What they see happen.** Force runs: at 6 N the cart covers 6.0 m-worth
+of track in its 2 s (scaled onto the 2 m track with the camera
+tracking); at 12 N it is visibly twice as eager off the line and the
+orange acceleration arrow is twice as long; at 3 N, half. The *a vs F*
+graph builds a straight line through the origin. Mass runs: same 6 N
+teal arrow every time, but each added slab makes the launch lazier; the
+*a vs m* graph builds a falling curve — halve-the-a-when-you-double-the-m
+— that is visibly not a straight line. Run 7 leaves a point at the
+origin and a cart that never moved: zero net force is not slow motion,
+it is no *change* of motion.
+
+**What accumulates.** A straight line on one graph and an inverse curve
+on the other, from the student's seven runs. Ledger: *F (N)*, *m (kg)*,
+*a measured*, *F/m computed* — the last two columns agree to the digit,
+run after run, which is the law read as a table.
+
+**The failure state.** Set 20 N on 0.2 kg: a = 100 m/s². The cart
+crosses both gates in 0.2 s, hits the end-stop at 14 m/s (the run timer
+never gets its 2 s), and the bumper cannot hold it: the cart somersaults
+off the end of the track onto the bench, wheels up. The ledger records
+"run ended at the stop, 0.28 s". The physics is right; the rig has
+limits, and finding them is allowed.
+
+**The prediction.** *At 6 N the acceleration is 3.0 m/s². You double the
+mass and keep 6 N. The acceleration will be…*
+1. 6.0 m/s² — more stuff, more effect.
+2. 3.0 m/s² — the force is the same.
+3. 1.5 m/s² — twice the mass shares the same pull. ✔
+4. 0 — the cart is too heavy now.
+Reveal: the gates read 1.50. The same pull spread over twice the mass
+changes each kilogram's motion half as much: a = F / m.
+
+**The misconception it confronts.** *"A bigger force means a bigger
+speed rather than a bigger change of speed"* — every run starts from
+rest and the readout is the *slope* of the speed, and run 7's zero-force
+cart has zero *change*, at a speed of zero it merely keeps. *"Doubling
+the mass halves the force needed"* — the mass runs hold the force fixed
+on a dial in plain sight while the acceleration alone answers.
+
+**Real numbers.** a = F / m: defaults 6 N / 2 kg = 3.0 m/s²; 12 N →
+6.0; 3 N → 1.5; 4 kg → 1.5; 8 kg → 0.75. Speed after 2 s = 2a;
+distance in 2 s = 2a (numerically, ½a·4). Weight readout m·9.81 N shown
+on the cart when slabs are added. F ∈ [0, 20] N, m ∈ [0.2, 10] kg.
+Stepped: v ← v + (F/m) dt; winch tension constant along the run.
+
+---
+
+### A4.3 — Running the investigation
+
+**Subtopic.** A4.3 *Running the investigation* (`g8a4-five-runs`).
+
+**The question.** Five settings, three releases each, one straight line —
+can you run the whole experiment cleanly enough that the line is yours?
+
+**The scene.** The A4 rig in full protocol dress. The track's two feet
+have *thumbscrews* the student can turn (drag up/down); a *bubble level*
+sits on the track mid-span, its bubble drifting off-centre whenever the
+track slopes (0.2° of slope moves the bubble one graduation). The cart
+carries its five 100 g masses; the electromagnet release has an armed
+light; the hanger hangs at the pulley. A *protocol strip* across the top
+of the scene shows six steps as unlit lamps: LEVEL → LOAD → RELEASE ×3 →
+MOVE ONE ACROSS → … Instrument column: the *a vs F* graph with room for
+5 clusters of 3, a *mean* toggle that collapses each cluster to its
+mean point, and the ledger with one row per release.
+
+**What the student does.**
+1. Level: turn the thumbscrews until the bubble centres; then the check
+   — set the cart mid-track and let go. If it creeps either way, the
+   LEVEL lamp stays dark.
+2. Load: confirm five masses in the bay (scale reads 1.00 kg).
+3. Release three times at 1 mass on the hanger, recording each.
+4. Move one mass across; repeat. Continue to 5 on the hanger.
+- The three "runs" of this brief are the first three *settings*; the lab
+  step then asks for the remaining two, so the full five-point line is
+  the student's own.
+
+**What they see happen.** Levelling is a real act: the bubble chases the
+thumbscrews, overshoots, settles; the free-standing cart betrays a 0.2°
+error by creeping 2 cm in the 3 s check. Each release: arm, cart still,
+magnet click, run, two gate speeds, a point on the graph. The three
+points per setting land close but not identical (gate timing granularity
+±0.02 m/s²); the MEAN toggle draws the cluster's mean as a ringed dot.
+As settings accumulate, the ringed dots line up; after five, a fit line
+is offered and it passes through the origin with gradient 0.99.
+
+**What accumulates.** Fifteen raw points in five clusters, five mean
+dots, one fitted line, and a ledger whose *spread* column (max−min per
+setting) stays under 0.04 m/s². The graph is the deliverable A4.5 will
+reuse: it is saved to the notebook as "my five-run line".
+
+**The failure state.** Skip levelling (the protocol strip lets you — it
+marks the lamp red rather than blocking) and every cluster lands offset
+by the same +0.17 m/s² (a 1° slope helping the cart); the fitted line
+misses the origin and its intercept is flagged: "your line says the cart
+accelerates with no pull at all — believe it, or check the level."
+Hand-release (dragging the cart off the magnet manually) doubles the
+spread and the ledger's spread cell turns amber.
+
+**The prediction.** *You release three times without changing anything.
+The three accelerations will be…*
+1. Identical — nothing changed.
+2. Close but not identical, and the mean is the number to keep. ✔
+3. Wildly different — experiments are unpredictable.
+4. Rising each time as the rig warms up.
+Reveal: 0.97, 0.99, 0.98 m/s². The rig has grain — gate timing, cord
+flex — and repeats measure how much. The mean rides above the grain.
+
+**The misconception it confronts.** *"One reading per setting is enough
+if you measure carefully"* — the cluster spread exists at every setting
+however carefully the student releases, and the amber hand-release
+spread shows care alone shrinking nothing. *"Adding masses to the
+hanger keeps everything else the same"* — the MOVE lamp only lights for
+a bay-to-hanger move; feeding from the spares box (still on the bench)
+leaves it dark and the system scale ticking upward, as learned in A4.1.
+
+**Real numbers.** Setting n: pull 0.981 n N on 1.00 kg → true a =
+0.981 n m/s² (0.98, 1.96, 2.94, 3.92, 4.91). Measurement noise ±0.02
+m/s² (uniform, seeded). Slope error: +g sin θ; at 1° = +0.171 m/s² on
+every point. Run length 1.4 s; distances ½at²: 0.96 m (n = 1) to 4.81 m
+(n = 5, camera-tracked). Fit: least squares through the student's mean
+dots; expected gradient 1/1.00 kg = 0.99–1.01 kg⁻¹, intercept < 0.05
+m/s² when level.
+
+---
+
+### A4.4 — Comparing prediction to measured data
+
+**Subtopic.** A4.4 *Comparing prediction to measured data*
+(`g8a4-why-it-came-up-short`).
+
+**The question.** The law says a = F/m. Your cart keeps coming up short
+of it — is the law wrong, is the rig broken, or is something real being
+left out?
+
+**The scene.** The A4 rig with a *spring balance spliced into the cord*
+(a drawn dial balance, 0–6 N, its needle live) so the pull is measured,
+not assumed, and the cart's own rolling resistance made the subject.
+Instrument column: the *a vs F* graph now opens with a tool — a
+*prediction ruler* the student drags to lay their predicted line
+(a = F/m for the 1.00 kg cart: they pin it through the origin at slope
+1.0) before any run; the line locks in grey. Below the graph, a second
+live plot: *shortfall (%) vs F*. A small tub of fine sand and a brush
+sit by the track (the "grit" prop for the failure state). The track feet
+keep their thumbscrews.
+
+**What the student does.**
+1. Lay the prediction line.
+2. Run the five settings once each (the protocol is warmed up from
+   A4.3); each measured point lands against the grey line.
+- Run set 1: the five settings, level track.
+- Run set 2 (change one thing): brush grit onto the axles (drag the
+  brush across the cart) and rerun two settings.
+- Run set 3 (the remedy): clean the axles, then *friction-compensate* —
+  raise the start-end thumbscrew until a nudged cart glides at constant
+  speed (the bubble sits one graduation off; a "glide check" like the
+  level check but passing when the nudge neither dies nor grows). Rerun
+  the five settings.
+
+**What they see happen.** Set 1: every measured point sits *below* the
+grey line — and not by a constant amount, but by a constant *force*: the
+gap in a is 0.49 m/s² at every setting, which is 50 % of the smallest
+pull and 10 % of the largest. The shortfall plot draws that falling
+curve — the signature of a systematic effect, nothing like the
+symmetric scatter of A4.3's repeats. Set 2: with gritted axles the gap
+doubles; the shortfall curve lifts as a whole. Set 3: with the track
+tilted just enough that gravity pays the friction bill, the measured
+points land on the grey prediction line — the student has not removed
+friction, they have cancelled it, and the one-graduation bubble says so.
+
+**What accumulates.** The grey predicted line; three families of
+measured points (level, gritted, compensated); the shortfall curves for
+each. Ledger: *F from the balance (N)*, *predicted a*, *measured a*,
+*gap as force (N)* — the gap-as-force column reads 0.49, 0.49, 0.49…
+then 0.98 gritted, then 0.00 compensated.
+
+**The failure state.** Set the pull below the friction: hang a single
+50 g trim mass (0.49 N) with gritted axles (0.98 N of friction). The
+balance needle stands at 0.49 N — a force, plainly measured, plainly
+present — and the cart does not move at all; the measured point lands
+at zero. A pull can be real and still not be enough; the graph records
+a point *on the axis* that no straight line through the origin will
+ever visit.
+
+**The prediction.** *Your measured points all fall below the predicted
+line. Running each setting ten more times will…*
+1. Bring the points up to the line — errors average out.
+2. Not move the means: the gap is a real force, not noise. ✔
+3. Show the law is wrong.
+4. Widen the gap.
+Reveal: repeats shrink scatter, and this gap is not scatter — it is
+0.49 N of rolling resistance, the same every run, in one direction.
+Averaging a systematic effect just measures it more precisely.
+
+**The misconception it confronts.** *"A measurement that misses the
+prediction means the theory is wrong"* — the theory, with friction
+*included*, threads every point, and the compensated set shows the bare
+law recovered on demand. *"Repeating the run more times would remove
+the difference"* — the prediction question is settled by the tight,
+still-low clusters.
+
+**Real numbers.** Predicted a = F/m. Friction = μ m g with μ = 0.05,
+m = 1.00 kg → 0.49 N; measured a = (F − 0.49)/1.00, floored at 0.
+Shortfall % = μmg/F × 100: 50 % at 0.98 N, 25 % at 1.96 N, 10 % at
+4.91 N. Gritted μ = 0.10 → 0.98 N. Compensation tilt: sin θ = μ →
+θ = 2.9°, giving g sin θ = 0.49 m/s² along the track. Spec ranges:
+F 0.2–6 N, m 0.2–5 kg, μ 0–0.30.
+
+---
+
+### A4.5 — Communicating investigation results
+
+**Subtopic.** A4.5 *Communicating investigation results*
+(`g8a4-writing-it-up`).
+
+**The question.** Your write-up is good only if a stranger can rebuild
+your experiment from it and get your line. Can yours survive that test?
+
+**The scene.** A split stage. Left third: *your bench* — the A4 rig,
+settled, with the five-run graph from A4.3 glowing on its instrument
+panel. Right third: *Riva's bench* — a second scientist (a rendered
+figure with her own stool and coffee) at an identical but *unbuilt* rig:
+track flat-packed, cart in its box, no masses placed. Centre: the
+*report page*, an A4 sheet with six labelled slots: **Claim**,
+**Evidence**, **Reasoning**, **Spread of repeats**, **Conditions and
+limits**, **What to test next**. Below the sheet, a card tray holding
+about ten draggable cards — the six right ones and four tempting
+imposters ("We were very careful", "The graph speaks for itself",
+"It worked", "Force makes things go"). The Evidence card is the
+student's own A4.3 graph in miniature. A pneumatic message tube runs
+from the sheet to Riva's bench.
+
+**What the student does.**
+1. Fill the six slots by dragging cards; each snaps in or bounces out
+   (any card fits any slot — judging fit is Riva's job, not the UI's).
+2. Press SEND. The sheet rolls up, shoots down the tube; Riva reads it,
+   *builds her rig using only what the sheet says*, runs it, and stamps
+   the sheet.
+- Attempt 1: however the student first fills it (typically with an
+  imposter or an empty Conditions slot).
+- Attempt 2 (change what failed): fix the slot Riva's stamp named.
+- Attempt 3: the full, correct six.
+
+**What they see happen.** Riva's build is watchable and literal. If
+*Conditions and limits* ("level track, 1.00 kg total, pull below 5 N")
+is missing or vague, she shrugs, builds on her slightly sloped bench,
+and her five points land offset from the claim's line: the stamp
+**NOT REPRODUCED** thuds onto the sheet with a note ("my line does not
+pass through the origin — was yours level?"). If *Spread of repeats* is
+missing, she runs each setting once, gets 1.02 where the claim implied
+0.98, and stamps **CANNOT TELL — is this disagreement or noise?** If
+the Claim slot holds "It worked", she reads it aloud, flatly, and
+stamps **NO TESTABLE CLAIM**. With all six sound, she levels, loads,
+releases, and her five mean dots land on the student's line inside the
+quoted spread: **REPRODUCED**, and both graphs are overlaid on the
+centre sheet, her points among yours.
+
+**What accumulates.** The sheet keeps its stamps — a run of red and
+amber ending in green — and the overlay graph of two independent data
+sets on one line, which is the whole point of writing anything up. The
+ledger records each attempt: *slots filled*, *Riva's result*, *stamp*.
+
+**The failure state.** NOT REPRODUCED, performed, not announced: a real
+second rig visibly producing different data because of a specific
+missing sentence, with the divergence drawn.
+
+**The prediction.** *You send a perfect report except it never mentions
+levelling the track. Riva's line will…*
+1. Match yours — levelling is obvious.
+2. Miss the origin: her slope adds a constant push you never had. ✔
+3. Be steeper.
+4. Not exist — she cannot run at all.
+Reveal: her bench slopes 1°, hers happened to help the cart, and her
+intercept is +0.17 m/s². A condition you did not write down is a
+condition she did not meet.
+
+**The misconception it confronts.** *"A conclusion is just what you
+expected to happen"* — the Claim slot rejects nothing, but Riva does,
+and only a measurable claim ("a is proportional to F; gradient 0.99
+kg⁻¹") earns a stamp either way. *"A graph speaks for itself and needs
+no words"* — send the graph card alone and watch Riva turn it over
+looking for the mass, the level, and the spread it does not carry.
+
+**Real numbers.** The six correct contents, from the checked spec:
+Claim — acceleration proportional to net force. Evidence — five points,
+0.98–4.91 N, gradient 0.99 kg⁻¹. Reasoning — a straight line through
+the origin means a = F/m with m constant. Spread — three runs per
+setting, spread < 0.04 m/s². Conditions — level track, 1.00 kg moving
+mass, pull ≤ 5 N. Next — hold force, vary mass. Riva's un-level offset
++0.171 m/s² (1°); her single-run noise ±0.02 m/s².
+
+---
+
+## Topic A5 — Newton's Third Law and collisions
+
+A5.1–A5.3 share the **Track kit** with a new instrument, the *pair probe*
+(built once): click any force arrow and the body it acts on flashes; a
+four-box stamp appears — same size? · same type? · opposite directions? ·
+**different bodies?** — and only four ticks earn the "Third Law pair" seal.
+A5.4 and A5.5 move to the **Crash rig**.
+
+### A5.1 — Action-reaction pairs
+
+**Subtopic.** A5.1 *Action-reaction pairs* (`g8a5-partner-or-not`).
+
+**The question.** When you pull on something, it pulls back on you — always?
+Even when it is lighter than you, or moving away, or not touching you?
+
+**The scene.** The Track kit. In the middle of the track, two dial force
+gauges (spring balances with big faces, 0–20 N) hooked face-to-face, so
+gauge A's hook holds gauge B's hook. Gauge A's other end is a handle the
+student drags. Gauge B's other end clips, by choice, to one of three
+anchors parked along the bench: a **wall bracket** bolted to the bench, a
+**1.0 kg cart**, or a **7.0 kg cart** (visibly bigger, same wheels). Force
+arrows: whatever pulls on B's anchor is orange; whatever pulls back on the
+student's handle is teal; both are drawn at 2 cm per 5 N. Off to the side,
+the standing *contrast display*: a 5.0 kg cart parked on the bench with
+its weight (49 N down) and normal (49 N up) arrows drawn — two equal,
+opposite arrows that the probe will expose. Instrument column: a two-needle
+strip chart drawing both gauges against time, and the ledger.
+
+**What the student does.**
+1. Clip B to the wall. Drag the handle to pull, gently then hard, watching
+   both dials.
+2. Clip B to the 1.0 kg cart. Pull with a steady 10 N (a tension assist
+   holds the drag at 10 N once latched). The cart accelerates away.
+3. Clip B to the 7.0 kg cart. Same 10 N.
+4. With the probe, stamp two candidates: the gauge-A/gauge-B pull pair,
+   and the parked cart's weight/normal pair.
+
+**What they see happen.** Against the wall: nothing moves, and the two
+dials read identically at every instant — 3 N and 3 N, 12 N and 12 N,
+mirror needles on the strip chart. Against the light cart: the cart runs
+away at 10 m/s² *and the dials still match* — accelerating away does not
+let it pull back one newton less. Against the heavy cart: a lazier 1.4
+m/s², dials matched again. The strip chart shows two traces that never
+separate, in all three anchors. The probe on the pull pair: click the
+orange arrow — the cart flashes; click the teal — the *student's handle*
+flashes; four ticks, seal granted. The probe on weight/normal: click both
+arrows — the *same cart* flashes twice; the fourth box stays empty, a red
+"both on one body — these are balanced forces, not partners", and the seal
+is refused. The probe then offers the weight's true partner: an arrow at
+the *Earth's centre*, drawn small at the bottom of the stage, 49 N upward,
+labelled "cart pulls Earth".
+
+**What accumulates.** Strip-chart traces from three anchors, never
+diverging; a ledger of *anchor*, *A read*, *B read*, *anchor's
+acceleration*; and two stamped probe cards — one sealed, one refused —
+pinned to the instrument column.
+
+**The failure state.** Pull past 20 N and the gauges' needles hit their
+end stops together and the hooks slip with a twang — both gauges recoil,
+*both* read zero at the same instant. Even the failure is symmetric:
+you cannot break one end of an interaction.
+
+**The prediction.** *You pull the light cart and it accelerates away
+fast. While it accelerates, gauge B (its pull back on you) reads…*
+1. Less than gauge A — it is losing the tug of war.
+2. Zero — it is moving, not pulling.
+3. Exactly what gauge A reads, the whole time. ✔
+4. More than gauge A — it has speed on its side.
+Reveal: the strip chart's two traces lie on top of each other through the
+whole run. Winning and losing is about *acceleration* — the light cart
+moves because 10 N is a lot for 1 kg — never about unequal forces.
+
+**The misconception it confronts.** *"Any two equal and opposite forces
+are an action-reaction pair"* — the weight/normal card fails the probe's
+fourth box in front of the student. *"The weight of an object and the
+table's push are a Third Law pair"* — refused, and the weight's real
+partner (the cart pulling the Earth) is drawn where it lives.
+
+**Real numbers.** Pair readings equal at all times: F_AB = F_BA (the
+model enforces it by construction; the gauges display the same state).
+Anchored carts: a = 10 N / 1.0 kg = 10 m/s²; 10 / 7.0 = 1.43 m/s².
+Contrast display: weight = normal = 5.0 × 9.81 = 49 N, both on the cart.
+From the spec's sort: bat/ball 1 500 N each way; Earth–Moon 1.98 × 10²⁰ N
+each way with an 81× mass ratio (shown as a wall card the probe can also
+stamp); magnet/steel 0.40 N each way.
+
+---
+
+### A5.2 — Why the pair acts on different objects
+
+**Subtopic.** A5.2 *Why the pair acts on different objects*
+(`g8a5-one-force-each`).
+
+**The question.** Two magnets repel. Can you arrange things so only *one*
+of them feels the push?
+
+**The scene.** The Track kit. Two low-friction carts face each other
+mid-track, each carrying a bar magnet, north poles facing, a 5 cm gap
+between the pole faces. Cart L is small (20 g of magnet on a skeleton
+frame, drawn light and open); cart R is 200 g (a solid block). On each
+cart, a force arrow drawn *from its own magnet's face*, pointing away from
+the gap — L's teal, R's orange — both 0.40 N and both exactly the same
+length (2 cm per 0.1 N). A hairline links the two arrows' tails through
+the gap, labelled "one interaction". A *clamp* can be dropped over either
+cart (drag from the bench); the clamp contains its own force gauge. A
+*steel shield* on a slide can be inserted into the gap. The release is a
+pin the student pulls. Instrument column: velocity-time graph, two lines
+(L teal, R orange), and the ledger.
+
+**What the student does.**
+- Run 1 (equal masses): swap L's skeleton for a second 200 g block (a
+  drag from the parts rack). Pull the pin. Both carts released.
+- Run 2 (unequal masses): back to 20 g vs 200 g. Pull the pin.
+- Run 3 (pin one down): clamp cart R. Pull the pin — only L is free.
+- Between runs, the two vanish tests: lift one magnet clean off its cart
+  (drag it away) and watch both arrows; and slide the steel shield in.
+
+**What they see happen.** Run 1: the carts spring apart symmetrically —
+two equal arrows, two equal 2 m/s² accelerations, v-t lines mirror-image.
+Run 2: the arrows are *still the same length* — 0.40 N each — but the
+skeleton cart streaks away at 20 m/s² while the block barely rolls at
+2 m/s²; the v-t lines split 10:1 while the arrows refuse to. Run 3: the
+clamped cart's gauge climbs to 0.40 N — the force on it did not go away
+when it stopped being able to move — and the free cart accelerates as
+before. The vanish tests: lift either magnet and *both* arrows disappear
+in the same frame — there is no half-interaction to keep; the shield
+slid in shrinks both arrows together, never one.
+
+**What accumulates.** Three v-t pairs; a ledger of *m_L*, *m_R*,
+*F on L*, *F on R*, *a_L*, *a_R* in which the two force columns are
+identical in every row and the acceleration columns are not; and the
+vanish tests logged as "arrows removed: always two at a time".
+
+**The failure state.** There is no arrangement that produces one arrow.
+That impossibility is staged as the failure: a "make it one-sided"
+challenge button invites the student to try (clamp, shield, lift, swap);
+every attempt updates both arrows together, and after three attempts the
+challenge concedes with the rule written the way the rig showed it:
+*forces only come in interactions; an interaction has two ends.*
+
+**The prediction.** *20 g magnet cart against 200 g magnet cart. Which
+feels the bigger force when released?*
+1. The 200 g one — the light one cannot push hard.
+2. The 20 g one — it needs more help to keep up.
+3. Both feel 0.40 N; the light one just responds ten times as much. ✔
+4. Neither — they are not touching.
+Reveal: the arrows never differed; the accelerations did, 20 against
+2 m/s², exactly the inverse of the masses.
+
+**The misconception it confronts.** *"The stronger or heavier object
+pushes harder"* — run 2's equal arrows over a 10:1 split in response.
+*"The action happens first and the reaction answers it"* — the pin
+release and the vanish tests show both arrows born and dying in the same
+frame; neither ever exists alone.
+
+**Real numbers.** Pair force at the 5 cm gap: 0.40 N on each magnet
+(falling off visibly as the gap opens — the model uses F = 0.40 N ×
+(0.05/d)² capped at 0.40, so the arrows shrink together as the carts
+part). a_L = 0.40/0.020 = 20 m/s²; a_R = 0.40/0.200 = 2 m/s²; equal
+masses 0.40/0.200 = 2 m/s² each.
+
+---
+
+### A5.3 — A common Third Law misconception
+
+**Subtopic.** A5.3 *A common Third Law misconception*
+(`g8a5-so-nothing-moves`).
+
+**The question.** The cart pulls back on the horse exactly as hard as the
+horse pulls the cart. So how can the cart ever start moving?
+
+**The scene.** A farm lane, side camera. A horse in harness hitched to a
+loaded 700 kg cart. The traces between them pass through a *two-faced
+dial gauge* — one dial facing the horse, one facing the cart, both
+needles driven by the same spring, so the two readings cannot differ and
+the student can see they cannot. Arrows are colour-coded by the body they
+act on: **on the cart** orange (traces pull 900 N forward; rolling
+resistance 549 N backward at the wheels), **on the horse** teal (traces
+pull 900 N backward; the ground's push on the hooves, forward), **on the
+ground** grey (hoof push backward, drawn into the dirt). Under the
+scene, two *sum trays*: "forces on the CART" and "forces on the HORSE".
+Dragging an arrow to a tray works only if the arrow acts on that tray's
+body — a wrong arrow bounces out with the body it does act on flashing.
+Each tray totals its contents into a net chip. A third, tempting tray
+sits between them: "add everything". A GO whistle starts the pull.
+Ground-condition lever by the lane: DRY / MUD. Instrument column: v-t
+graph for the cart, ledger.
+
+**What the student does.**
+- Run 1: drag the 900 N forward arrow and the 549 N resistance arrow
+  into the CART tray (the 900 N *backward* arrow bounces out — it acts
+  on the horse). Net chip: 351 N. Blow GO.
+- Run 2: drop the 900/900 pair into the "add everything" tray. Blow GO
+  anyway.
+- Run 3: lever to MUD. Blow GO.
+
+**What they see happen.** Run 1: with the cart's own forces summed, the
+chip reads 351 N forward; on GO the horse leans, the traces go taut, the
+two dial faces both read 900, and the cart accelerates at a stately
+0.50 m/s² — 4.0 m down the lane in the first four seconds, hoofbeats
+and creak. The v-t line is a shallow ramp. Run 2: the "add everything"
+tray happily shows 0 N — and the cart *still* accelerates on GO, while
+the tray blushes red with the caption "this zero belongs to no body:
+one 900 acts on the cart, the other on the horse; no object anywhere
+feels both." Run 3: in mud, the hooves cannot get their grip — the
+ground's forward push on the horse maxes out below what the pull
+needs; the hooves spin, mud sprays, the two dial faces sag to 750 N
+together, the cart tray's net goes to 201 N… and then the wheels bog
+(resistance climbs) and everything stops. *This* is what "nothing
+moves" actually looks like, and it is a statement about the ground,
+not about the Third Law.
+
+**What accumulates.** Three ledger rows: *tray used*, *net on the cart
+(N)*, *predicted a*, *measured a* — 351/0.50/0.50; "no owner"/—/0.50
+(the cart ignored the fake zero); mud row with the reduced numbers.
+The graph keeps the three cart v-t lines.
+
+**The failure state.** The mud run: a real stall with a real cause —
+insufficient ground force on the horse — standing right next to the
+paradox's fake stall, so the difference between them is the lesson.
+
+**The prediction.** *The cart pulls back on the horse with exactly
+900 N. When the horse pulls, the cart will…*
+1. Stay put — 900 forward and 900 back cancel.
+2. Move only if the horse somehow pulls harder than 900.
+3. Accelerate: the 900 N back acts on the horse, not the cart. ✔
+4. Move backwards.
+Reveal: the only forces *on the cart* are 900 N forward and 549 N of
+rolling resistance. Net 351 N, and 351 N on 700 kg is 0.50 m/s². The
+partner force spends its whole life on the horse's shoulders.
+
+**The misconception it confronts.** *"Equal and opposite forces mean
+nothing can accelerate"* — the bouncing trays make the bookkeeping
+physical: the pair cannot be summed because no single body owns both.
+*"The horse must pull harder than the cart pulls back"* — the two-faced
+gauge is one spring with two windows; it cannot read 901 and 900.
+
+**Real numbers.** Traces tension 900 N (both directions, one
+interaction). Cart: weight 700 × 9.81 = 6 867 N; rolling resistance
+0.08 × 6 867 = 549 N; net 900 − 549 = 351 N; a = 351/700 = 0.50 m/s²;
+distance ½ × 0.50 × 4² = 4.0 m in 4 s. Mud: ground's forward push
+capped at 750 N; tension falls to 750 N on both faces; net on cart
+750 − 549 = 201 N until bogging raises resistance past it.
+
+---
+
+### A5.4 — Applying the law to a collision-safety design
+
+**Subtopic.** A5.4 *Applying the law to a collision-safety design*
+(`g8a5-stretch-the-stop`).
+
+**The question.** The crash will happen at 13.4 m/s no matter what you
+build. The only thing you control is how *long* the stop takes — how
+much does that buy?
+
+**The scene.** The **Crash rig**: a 12 m rail, side camera, with a
+barrier at the right end. On the rail, a sled carrying a seated crash
+dummy (70 kg, articulated at neck and hip), lap-and-shoulder belt drawn,
+a *chest force gauge* on the dummy reading in kN with a peak-hold
+needle. The barrier's face carries the design variable made physical: a
+*ride-down pack* — a telescoping stack of honeycomb cells the student
+drags out from the barrier face like an accordion, from 0.13 m (nearly a
+bare wall) to 4.0 m of travel; a scale under it reads the stopping time
+that stack buys at the current speed (t = 2d/v). Overhead, a millisecond
+clock. A launch catapult at the left end with a speed dial (2–20 m/s,
+default 13.4). Above the dummy, the momentum ribbon: "938 kg·m/s to
+remove", constant across runs at default. A red line is painted across
+the chest gauge at 15 kN, labelled "braced adult limit". Instrument
+column: *force vs stopping time* graph (one point per run, with the
+student's points joined), a slow-motion replay scrubber, and the ledger.
+
+**What the student does.**
+1. Drag the ride-down pack to a depth. The stopping-time scale follows.
+2. Fire the catapult. The sled crosses, hits, rides the pack down; the
+   chest gauge swings and peak-holds.
+3. Scrub the replay at 1/50 speed to watch the stop itself.
+- Run 1: pack at 1.00 m (0.15 s).
+- Run 2 (shorten it): pack at 0.13 m (0.02 s).
+- Run 3 (stretch it): pack at 4.0 m (0.60 s).
+
+**What they see happen.** Run 1: the sled arrives at 13.4 m/s, the pack
+concertinas over a metre, the dummy leans hard into the belt, the gauge
+swings to 6.3 kN and holds — under the red line. Run 2: the pack is a
+stub; the stop is a bang, the dummy's head whips, the gauge slams to
+46.9 kN, three times past the red line, and the dummy buckles forward
+over the belt with a shudder; the replay shows the whole stop occupying
+two frames. Run 3: four metres of unhurried crumpling, the dummy riding
+down like a braked train, 1.6 kN, the needle barely into the dial. In
+every run the momentum ribbon reads the same 938 before and 0 after —
+what changed is only *how long* the removal took.
+
+**What accumulates.** Three points on force-vs-time, joined into the
+student's own hyperbola; the ledger of *stop time*, *ride-down (m)*,
+*peak force (kN)*, *deceleration (g)*, *over/under the red line*.
+Doubling the time halves the force, in the student's own rows.
+
+**The failure state.** Any run whose force crosses 15 kN: the dummy
+buckles and shudders, the gauge holds its peak in red, and the ledger
+row is stamped over-limit. It is the same physics as the pass — only
+the time differs.
+
+**The prediction.** *Run 1 stopped in 0.15 s at 6.3 kN. Halving the
+stopping time to 0.075 s will make the peak force about…*
+1. 6.3 kN — the crash is the same crash.
+2. 9 kN — a bit worse.
+3. 12.5 kN — double: half the time, twice the force. ✔
+4. 3.1 kN — half.
+Reveal: the momentum is fixed at 938 kg·m/s. Force is momentum over
+time; shrink the denominator and the force answers in exact proportion.
+
+**The misconception it confronts.** *"A seatbelt works by being strong
+enough to hold you"* — the belt is identical in all three runs; what
+saved the dummy in run 3 was distance and time, not strength. *"The
+force in a crash depends only on how fast you were going"* — all three
+runs arrive at the same 13.4 m/s and the peak force spans 1.6 to
+46.9 kN.
+
+**Real numbers.** Momentum = m·v = 70 × 13.4 = 938 kg·m/s. Peak force
+F = m·v/t: 0.02 s → 46.9 kN; 0.15 s → 6.3 kN; 0.60 s → 1.6 kN.
+Deceleration g = v/(t·9.81): 68 g / 9.1 g / 2.3 g. Ride-down distance
+= v·t/2: 0.13 m / 1.00 m / 4.0 m. Limit line 15 kN. Ranges: t 0.02–
+0.60 s, v 2–20 m/s, m 30–90 kg (a dummy-size dial scales the figure by
+∛(m/70)).
+
+---
+
+### A5.5 — Testing the design against criteria
+
+**Subtopic.** A5.5 *Testing the design against criteria*
+(`g8a5-against-the-limit`).
+
+**The question.** Two nose designs, one 15 kN pass mark. Which passes —
+and by how much, and up to what speed?
+
+**The scene.** The **Crash rig** doubled: two parallel rails, shared
+launch catapult with one speed dial (both sleds always fired together at
+the same speed), one barrier wall across both lanes. Lane 1's sled wears
+the **rigid nose** — a machined billet, polished, visibly stiff; its
+stopping time is a measured property, 0.04 s. Lane 2's wears the
+**crumple nose** — a honeycomb cartridge, 0.12 s. Identical 70 kg
+dummies, identical chest gauges with the 15 kN red line. Between the
+lanes, the *margin board*: two vertical bars growing downward from the
+15 kN line, green below it, red above, labelled with per cent of margin
+used or exceeded. Instrument column: *peak force vs impact speed* graph,
+two curves accumulating (one per nose), the red 15 kN rule drawn across;
+ledger.
+
+**What the student does.**
+1. Set the dial to the test speed. Fire. Both sleds run and stop side by
+   side; both gauges peak-hold; the margin board fills.
+- Run 1: 13.4 m/s (the specified test).
+- Run 2 (change the criterion, not the design): drag the red line to
+  10 kN and re-fire at 13.4 — a stricter market.
+- Run 3 (find the edge): raise the speed until the crumple nose fails
+  too. The dial's fine steps let the student close in on it.
+
+**What they see happen.** Run 1: the rigid sled stops in a crack —
+23.5 kN, its dummy buckling, its margin bar shooting 56 % past the red
+line; the crumple sled rides its 0.12 s down at 7.8 kN, dummy upright,
+margin bar comfortably green at 48 % spare. Same speed, same dummy,
+same wall; three times the stopping time, a third the force, on one
+screen. Run 2: nobody's hardware changed, but at a 10 kN line the
+crumple nose's margin shrinks to 22 % and the rigid nose is now 135 %
+over — criteria are choices, and margins are measured against them.
+Run 3: at 20 m/s the rigid nose reads 35.0 kN; the crumple nose 11.7 kN
+— still passing. The student keeps raising: at 25.7 m/s the crumple
+nose's peak crosses 15.0 kN and its dummy finally buckles. Every design
+has a speed that breaks it; "safe" always carries "up to".
+
+**What accumulates.** Two force-vs-speed lines built from the student's
+own firings, both straight through the origin with slopes in the ratio
+3:1, crossing the red rule at different speeds (8.6 m/s rigid, 25.7 m/s
+crumple). Ledger: *speed*, *rigid kN*, *crumple kN*, *margin each*,
+*verdict each* — verdicts reported as margins, never as bare pass/fail.
+
+**The failure state.** Two: the rigid nose failing its very first
+specified test, and the crumple nose being *walked to* its own failure
+speed by the student in run 3 — the design that passed is also shown to
+have an edge.
+
+**The prediction.** *Same sled, same speed, same wall. The stiffer,
+stronger-looking rigid nose will read…*
+1. Lower — stronger is safer.
+2. The same — the crash energy is identical.
+3. Three times higher: it stops in a third of the time. ✔
+4. Zero — it does not break, so nothing is felt.
+Reveal: 23.5 against 7.8 kN. The dummy does not care how strong the
+nose is; it cares how long the nose gives it to stop.
+
+**The misconception it confronts.** *"The stiffer design must be the
+safer one"* — beaten side by side, same instant, same wall. *"A design
+either works or it does not, with no margin to report"* — run 2 moves
+the pass mark and the margins move with it; run 3 finds the passing
+design's own limit. The board never says PASS; it says how much room
+was left.
+
+**Real numbers.** Momentum p = m·v (70 kg default). Rigid: F = p/0.04;
+crumple: F = p/0.12. At 13.4 m/s: 23.5 kN and 7.8 kN; margins vs
+15 kN: −56 % and +48 %. At 20 m/s: 35.0 and 11.7 kN. Crumple crosses
+15 kN at v = 15 000 × 0.12 / 70 = 25.7 m/s; rigid at 8.6 m/s.
+Ride-down distances v·t/2: 0.27 m and 0.80 m at 13.4 m/s. Ranges:
+v 2–20 m/s on the dial plus a +30 % override for run 3, limit line
+5–30 kN, dummy 30–90 kg.
+
+---
+
+## Topic A6 — Engineering a collision solution
+
+One design problem spans the topic: protect a 70 kg occupant arriving at
+13.4 m/s (30 mph), carrying 6 285 J. All five briefs live around the
+**Crash rig**, extended once with two stations the engineer builds for the
+whole topic: the **scrutineering bench** (a 200 mm gauge box drawn as a
+clear acrylic tunnel, a balance scale with a 250 g limit flag, and a
+materials scanner wand) and the **component press** (a slow hydraulic ram
+with a live force-vs-crush graph whose area shades as energy).
+
+### A6.1 — Defining criteria and constraints
+
+**Subtopic.** A6.1 *Defining criteria and constraints* (`g8a6-must-or-may`).
+
+**The question.** Some requirements are tests your design must score well
+on. Others are lines you may not cross before you even run. Which is
+which — and what happens if you mix them up?
+
+**The scene.** The Crash rig on the right; the scrutineering bench on the
+left; between them, a *requirements rack* holding six engraved tags on
+lanyards: «peak force on the dummy below 15 kN» · «the egg survives a
+2.0 m drop» · «stopping time above 0.10 s» · «fits inside 200 mm» ·
+«only card, straws and tape» · «no more than 250 g added». Two prototype
+noses sit on a trolley: a card-and-straw honeycomb, and a gleaming
+steel-spring nose (the bait). Each station has a tag hook: hang a tag on
+the crash rig and the rig runs the matching test at 13.4 m/s and returns
+a *number*; hang it on the scrutineering bench and the bench performs a
+*check* — slide the nose through the gauge box, sit it on the scale,
+sweep the wand — and returns yes/no *without anything being crashed*.
+Hang a tag on the wrong station and the station visibly fails to make
+sense of it. Instrument column: a two-column board, CRITERIA (with a
+score cell each) and CONSTRAINTS (with a tick/cross each), plus the
+ledger.
+
+**What the student does.**
+- Run 1: take the honeycomb nose, hang the three test-shaped tags on the
+  crash rig one at a time, firing each test: the force test (a full sled
+  run, gauge peak 10.5 kN), the egg drop (an egg-carrier variant dropped
+  2.0 m), the timing test (the ms clock across the stop).
+- Run 2: hang the other three tags on the scrutineering bench: the nose
+  slides through the 200 mm tunnel with 12 mm to spare; the scale reads
+  240 g under the flag; the wand sweeps and lights card/straw/tape only.
+- Run 3 (the mix-up, encouraged): hang «fits inside 200 mm» on the crash
+  rig — the rig idles and a caption points at the gauge box: "nothing to
+  run; this is answered by a box." Hang «peak force below 15 kN» on the
+  scrutineering bench — the scale and box shrug: no crash, no number.
+  Then swap prototypes: the steel-spring nose *aces* the force test
+  (3.9 kN) but the wand lights STEEL in red and the scale reads 410 g —
+  scrutineering disqualifies it before its score can count.
+
+**What they see happen.** Criteria produce motion, instruments and a
+number that could rank two designs; constraints produce a quiet yes/no
+at a bench, before any test, and a breach ends the story regardless of
+scores. The bait nose makes it hurt: its beautiful force number sits on
+the board greyed out behind a red DISQUALIFIED banner.
+
+**What accumulates.** The board fills: three criteria cells with numbers
+(10.5 kN, egg intact, 0.12 s) and three constraint cells with ticks; a
+second column for the spring nose showing one brilliant number and two
+red crosses. The ledger records which station answered each tag.
+
+**The failure state.** The disqualification: a design that wins the
+measurable contest and never gets to enter, because a constraint is not
+a score to beat but a gate.
+
+**The prediction.** *The steel-spring nose reads 3.9 kN — the best force
+result of the day. Its overall verdict will be…*
+1. Winner — lowest force wins.
+2. Winner, with a small penalty for the steel.
+3. Disqualified: it breaks the materials and mass constraints, and no
+   score can buy those back. ✔
+4. A tie with the honeycomb.
+Reveal: the wand and the scale said no before the rig said 3.9. A
+criterion measures how well; a constraint rules what may exist at all.
+
+**The misconception it confronts.** *"Criteria and constraints are two
+words for the requirements list"* — the two stations physically answer
+different kinds of question, and each tag only works at one of them.
+*"A constraint is anything that makes the design harder"* — the egg's
+40 N shell makes the design very hard and is a criterion (it is tested,
+and scored, by a drop).
+
+**Real numbers.** Force criterion 15 kN ≈ 22 g on 70 kg, near a braced
+adult's limit. Egg drop: 2.0 m → arrives at √(2·9.81·2) = 6.3 m/s;
+shell fails near 40 N. Timing criterion: t > 0.10 s keeps F = 938/t
+under 9.4 kN at 13.4 m/s. Constraints: envelope 200 mm; card, straws,
+tape only; added mass ≤ 250 g. Honeycomb nose: 10.5 kN, 0.12 s, 240 g,
+188 mm. Spring nose: 3.9 kN and 410 g of steel.
+
+---
+
+### A6.2 — Crumple zones and impulse, conceptually
+
+**Subtopic.** A6.2 *Crumple zones and impulse, conceptually*
+(`g8a6-longer-to-crush`).
+
+**The question.** The crash always delivers 6 285 J. If you cannot make
+the energy smaller, what *can* you make smaller?
+
+**The scene.** The Crash rig, one lane. Clipped to the barrier, a
+*crumple element* — a honeycomb cartridge the student can grab by its
+end plate and telescope out to any length from 0.05 m (a stub) to 1.2 m
+(longer than the sled), a length scale beneath. The sled and 70 kg dummy
+arrive at a fixed 13.4 m/s (the dial is locked for this brief and says
+so: "the crash is not yours to choose"). The hero instrument sits in
+the column: the *constant-area rectangle* — a force-vs-distance graph
+in which the run draws a rectangle, crush length along the bottom,
+force up the side, and its area is shaded and labelled 6 285 J. As the
+student drags the element longer *before* a run, a ghost rectangle
+previews: wider always means lower, the area label never moving. Chest
+gauge with the 15 kN red line; ms clock. A "spring swap" hook holds a
+steel spring of the same length for run 3.
+
+**What the student does.**
+1. Drag the element to a length. Fire. Watch the crush and the
+   rectangle draw for real over the ghost.
+- Run 1: 0.60 m.
+- Run 2 (shorten it): 0.05 m.
+- Run 3 (same length, wrong physics): swap in the 0.60 m steel spring
+  and fire.
+
+**What they see happen.** Run 1: 0.60 m folds down cell by cell over
+90 ms; force flat at 10.5 kN; a long low rectangle; the dummy leans and
+recovers. Run 2: the stub is gone in 7 ms at 126 kN — a tall thin
+rectangle of exactly the same shaded area — and the dummy buckles hard
+past a pinned gauge. Same joules, both times, in the same-sized patch
+of shading; only the shape of the rectangle changed. Run 3: the spring
+compresses 0.60 m at a rising force (a triangle, not a rectangle,
+peaking at 21 kN)… and then *gives it all back*: the sled is fired
+backwards off the barrier at nearly its arrival speed, the shaded area
+un-shades as the curve retraces, and the dummy is snapped twice — once
+stopping, once being thrown back.
+
+**What accumulates.** Three force-distance figures on shared axes: two
+rectangles of equal area at 3:1 aspect, and the spring's closed
+triangle whose *kept* energy nets to nearly zero. Ledger: *length*,
+*peak force*, *stop time*, *energy kept in the element*, *sled speed
+after* — 0 m/s, 0 m/s, −12.1 m/s.
+
+**The failure state.** Two: the stub's 126 kN buckle, and the spring's
+rebound — a "protector" that returns the crash to its passenger.
+
+**The prediction.** *You double the crush length from 0.30 m to
+0.60 m. The average force will…*
+1. Stay the same — the crash energy is fixed.
+2. Halve: the same area spread over twice the width. ✔
+3. Double — more material pushes back harder.
+4. Drop to zero.
+Reveal: the rectangle cannot change its area, only its shape. Force is
+energy divided by distance, so every centimetre you add is force you
+subtract.
+
+**The misconception it confronts.** *"A stronger car body protects the
+people inside better"* — the strongest object in the brief (the stub,
+then the spring) produces the worst chest readings on screen. *"A
+crumple zone works by making the car bounce off"* — run 1 ends at
+0 m/s with the honeycomb permanently flat and the energy ledger full;
+run 3 is what bouncing actually looks like, and it is worse.
+
+**Real numbers.** E = ½ × 70 × 13.4² = 6 285 J, fixed. Average force
+= E/d: 0.05 m → 126 kN; 0.30 m → 21.0 kN; 0.60 m → 10.5 kN; 1.2 m →
+5.2 kN. Stop time = 2d/v: 7 ms, 45 ms, 90 ms, 179 ms. Deceleration
+= v²/2d: at 0.60 m, 150 m/s² = 15.3 g. Spring: F = kx to 21 kN at
+0.60 m (k = 35 kN/m), energy returned ≈ 90 %, exit speed ≈ −12.1 m/s.
+
+---
+
+### A6.3 — Generating candidate solutions
+
+**Subtopic.** A6.3 *Generating candidate solutions*
+(`g8a6-what-could-work`).
+
+**The question.** Before choosing anything: what are all the ways the
+stopping could be stretched — and what does each one actually do with
+the energy?
+
+**The scene.** The **component press**: a bench with a slow hydraulic
+ram (a piston head that advances at a steady 0.05 m/s with a force
+gauge in its face), a specimen anvil, and above it the live
+*force-vs-crush* graph whose swept area shades as "energy taken". To
+the left, a parts carousel holding six candidates, each a real object:
+a **crumple can** (drinks-can corrugation), a **foam block**, a
+**steel spring**, a **longer nose** (a second crumple can at double
+length), a **seatbelt** on a mini-sled with a 10 kg mini-dummy, and an
+**airbag** module on the same mini-sled. The two occupant-side
+candidates test on a short slave rail beside the press, fired at
+5 m/s, with a mini chest gauge. Below the graph, the *candidate
+gallery*: six empty card slots, each waiting for a tested candidate's
+autogenerated record card (peak force · distance used · energy kept ·
+energy handed back). The CHOOSE drawer under the gallery is physically
+locked — its hasp only opens when all six slots hold cards.
+
+**What the student does.** Load each candidate onto the press (drag
+from carousel to anvil), run the press stroke, watch the curve draw,
+and stamp the card into its slot. The seatbelt and airbag runs fire
+the mini-sled instead. The "runs" are the six tests; the variable that
+changes is the candidate.
+
+**What they see happen.** The crumple can draws a clean flat line at
+3 kN for 0.30 m — a 900 J rectangle, shaded and kept, the can staying
+crushed. The foam block absorbs gently for a few centimetres (40 J)
+then *bottoms out*: the curve turns a corner and climbs a cliff as the
+press meets solid, the spike flagged red. The spring draws its rising
+line, stores 250 J — then, as the press withdraws, pushes the ram
+back, and the shaded area drains away to a thin hysteresis sliver:
+"kept: ~0 J". The longer nose draws the same 3 kN but twice as far:
+1 800 J. The seatbelt run: unbelted first (the mini-dummy leaves the
+sled and strikes the end wall, its own gauge spiking), then belted
+(the dummy rides the sled's slow-down curve, gauge low and wide). The
+airbag adds 0.03 s to the dummy's stop and the gauge trace flattens
+and broadens — same impulse, spread over chest area and time.
+
+**What accumulates.** Six record cards in the gallery — the topic's
+raw material, generated by the student's own presses. The graph screen
+keeps all six curves overlaid, colour-keyed to the cards. When the
+sixth card lands, the CHOOSE drawer clunks open, revealing the A6.4
+score sheet: judging is now allowed.
+
+**The failure state.** The spring's draining shade — a candidate that
+looked best mid-stroke revealed as keeping nothing — and the foam's
+red spike, a candidate that quits early. Both failures happen on the
+press, cheaply, which is the argument for testing components before
+crashing vehicles.
+
+**The prediction.** *The steel spring reaches 250 J of shading at full
+compression. When the press withdraws, the "energy kept" figure will
+read…*
+1. 250 J — it absorbed it, we watched.
+2. About half.
+3. Nearly zero: it hands the energy straight back. ✔
+4. More than 250 J.
+Reveal: the shade drained as the spring re-extended and shoved the ram
+out. Storing is not absorbing; only what stays crushed stays kept.
+
+**The misconception it confronts.** *"The first workable idea is the
+one to build"* — the locked drawer makes collecting-before-choosing a
+mechanism, not advice, and the sixth candidate tested (whichever it
+is) usually beats the first. *"A part that springs back has absorbed
+the energy"* — the spring's shade drains on screen.
+
+**Real numbers.** Crumple can: 3 kN × 0.30 m = 900 J, kept. Foam:
+≈ 40 J then bottoms out (spike to the press limit). Spring: ½kx² =
+250 J stored, ≈ 95 % returned. Longer nose: 3 kN × 0.60 m = 1 800 J;
+doubling crush halves the peak force needed for the same energy.
+Seatbelt: keeps the dummy on the vehicle's slow-down curve (mini-sled:
+5 m/s over 0.25 m = 50 m/s² instead of a 0.02 m dash-strike at
+625 m/s²). Airbag: +0.03 s of stopping time, load spread over
+≈ 0.05 m² of chest.
+
+---
+
+### A6.4 — Systematic evaluation of designs
+
+**Subtopic.** A6.4 *Systematic evaluation of designs*
+(`g8a6-two-noses-scored`).
+
+**The question.** Two finalists from the gallery. Same test, same
+sheet, same pass marks — which one earns the recommendation?
+
+**The scene.** The Crash rig's twin rails (as in A5.5). Lane 1: the
+**foam nose**, 0.25 m of crush available, 180 g. Lane 2: the **crumple
+can nose**, 0.60 m, 240 g. Shared catapult dial. Between the lanes,
+the *score sheet* on a clipboard, four printed rows: «peak force ≤
+15 kN» · «margin against the limit» · «mass added (≤ 250 g)» · «fits
+200 mm» — each row has two empty cells, one per design, that fill only
+from a measurement or a scrutineering check, never by hand. Chest
+gauges with the red line; the scrutineering bench in the background,
+already stamped from A6.1. Instrument column: *peak force vs speed*
+graph, two accumulating curves; ledger.
+
+**What the student does.**
+- Run 1: fire both at 13.4 m/s. The force cells fill from the gauges;
+  the margin cells compute; mass and fit cells pull their stamps from
+  scrutineering.
+- Run 2 (test beyond the brief): dial to 20 m/s, fire both.
+- Run 3 (change the occupant): dummy dial to 100 kg, back to 13.4 m/s,
+  fire both.
+
+**What they see happen.** Run 1: the foam nose bottoms out through its
+0.25 m and reads 25.1 kN — its dummy buckles, its cell prints red,
+margin −68 %; the can rides 0.60 m at 10.5 kN, margin +30 %. On mass,
+the *foam wins* (180 g against 240 g) and its cell prints green — one
+sheet now holds a winner-per-row disagreement, and the verdict line
+resolves it: the force row is a criterion with a hard limit; a design
+that fails it is out no matter what it wins. Run 2: at 20 m/s both
+designs go over — 56.0 kN and 23.3 kN — both dummies buckle; the sheet
+prints a second column pair in red with the caption "the 13.4 m/s
+verdict was a 13.4 m/s verdict." Run 3: at 100 kg the can reads
+14.96 kN — a pass by 0.3 %, its margin bar a sliver — and the sheet's
+margin row shows why margins are reported: a pass that thin is a
+different fact from run 1's +30 %.
+
+**What accumulates.** The completed two-column sheet with red and
+green cells and margins; force-vs-speed curves for both noses crossing
+the 15 kN rule at 8.0 and 19.1 m/s; ledger rows for each firing.
+
+**The failure state.** The foam's bottoming-out buckle at the specified
+test; both designs failing together at 20 m/s; and the 0.3 % squeaker,
+which is the sheet teaching that pass/fail alone hides what matters.
+
+**The prediction.** *The foam nose is 60 g lighter and fails the force
+row. Overall it…*
+1. Wins — most rows green.
+2. Ties.
+3. Is rejected: no other row can pay for a failed hard criterion. ✔
+4. Wins if we retest at a gentler speed.
+Reveal: the sheet's verdict line reads the force row first. Rows are
+not currency; a hard criterion is a gate with a number on it.
+
+**The misconception it confronts.** *"The lighter design is
+automatically better"* — mass row green, dummy buckled, on one sheet.
+*"A design that fails one criterion can be fixed by scoring well on
+the others"* — the verdict line refuses the trade in front of the
+student, and run 3 shows the same design's pass thinning to 0.3 %
+when one condition moves.
+
+**Real numbers.** E = ½mv². At 70 kg, 13.4 m/s: 6 285 J → foam
+(0.25 m) 25.1 kN, margin −68 %; can (0.60 m) 10.5 kN, margin +30 %.
+At 20 m/s: 14 000 J → 56.0 kN and 23.3 kN, both over. At 100 kg,
+13.4 m/s: 8 978 J → 35.9 kN and 14.96 kN (+0.3 % margin). Masses
+180 g and 240 g against the 250 g constraint; both fit 200 mm.
+Crossing speeds for 15 kN: foam 8.0 m/s, can 19.1 m/s.
+
+---
+
+### A6.5 — Reporting the best solution and its trade-offs
+
+**Subtopic.** A6.5 *Reporting the best solution and its trade-offs*
+(`g8a6-the-recommendation`).
+
+**The question.** You are recommending the crumple can. Can you say
+exactly what the buyer gets, what it costs them, and where your
+evidence runs out — before a review board finds out for you?
+
+**The scene.** Three zones. Left: the Crash rig, loaded with the
+recommended build — can nose plus seatbelt — ready to run the
+*validation firing*. Centre: the *recommendation dossier*, a large
+card with five printed fields: **The choice** · **Evidence it meets
+each criterion** · **The energy path** · **What it costs** ·
+**Conditions not covered**. The energy-path field is filled by an
+instrument, not typing: during the validation firing an *energy
+ribbon* flows across the scene — a band leaving the sled labelled
+6 285 J, dividing into the can (a thick branch, 6 285 J at 10.5 kN
+over 0.60 m) while the belt's branch shows the dummy held on the
+sled's own 0.090 s slow-down; the ribbon freezes into the dossier as
+its diagram. Right: the *review board* — three examiners at a desk
+with their own miniature crash rig and a rubber stamp. Field chips to
+drag into the dossier are generated by the student's own instruments:
+the 10.5 kN peak, the +30 % margin, the 240 g and +0.60 m costs, and
+a chip that only exists if the student has run the rig at any speed
+above 13.4: «untested above 13.4 m/s — at 20 m/s the force reaches
+23.3 kN».
+
+**What the student does.**
+- Run 1: the validation firing at 13.4 m/s; watch the ribbon; the
+  evidence chips mint themselves.
+- Run 2 (probe the envelope): fire at 20 m/s once, on purpose, to
+  mint the conditions chip — watching their recommended design fail
+  in their own hands.
+- Run 3: assemble the dossier and submit. If **What it costs** or
+  **Conditions not covered** is empty, the board does not argue: an
+  examiner walks to their miniature rig, dials it to 20 m/s, fires,
+  watches the mini-dummy buckle, and stamps **OVERCLAIMED**. With all
+  five fields honest, the board stamps **ACCEPTED — WITHIN STATED
+  LIMITS**, and reads the costs aloud.
+
+**What they see happen.** The validation run is the topic's finale
+played on its own apparatus: the arrival, the 0.60 m of fold, the
+flat 10.5 kN, the dummy held by its belt on the same curve as the
+sled, the ribbon carrying every joule into crushed aluminium and
+warmth with nothing left over and nothing handed back. The 20 m/s
+probe is the same scene turned hostile. And the board's re-test makes
+the cost of omission concrete: claims are checked by other people
+with rigs of their own.
+
+**What accumulates.** The finished dossier — choice, four evidence
+chips against four criteria, the frozen energy ribbon, two cost
+lines, one envelope line — and the board's stamp. This card is the
+artefact the whole unit was building.
+
+**The failure state.** OVERCLAIMED: the board's independent 20 m/s
+firing, run because the dossier was silent about it.
+
+**The prediction.** *You submit without the «untested above 13.4 m/s»
+line. The board will…*
+1. Accept — the tests you did run all passed.
+2. Ask politely for more data.
+3. Run the missing test themselves and reject the claim. ✔
+4. Accept with a lower score.
+Reveal: an unstated limit reads as an unlimited claim, and unlimited
+claims are the easiest kind to break — one dial, one firing.
+
+**The misconception it confronts.** *"The best design has no
+drawbacks"* — the dossier physically will not close without the cost
+field, and the accepted stamp names the 240 g and the 0.60 m aloud.
+*"A design tested once at one speed is finished"* — the student mints
+the envelope chip by breaking their own design, and the board enforces
+it.
+
+**Real numbers.** Validation at 13.4 m/s: 6 285 J and 938 kg·m/s
+removed; can 0.60 m at 10.5 kN average; stop 2d/v = 0.090 s; dummy on
+the belt follows the same 0.090 s curve (belt load ≈ 938/0.090 =
+10.4 kN shared across the harness); margin (15 − 10.5)/15 = +30 %.
+Costs: +240 g, +0.60 m of nose. Envelope: at 20 m/s, E = 14 000 J →
+23.3 kN, over the limit by 56 %.
+
+---
+
+# Unit B — Energy in Moving Systems
+
+## Topic B1 — Kinetic energy
+
+B1.1–B1.4 run on the **Energy track**: a curved launch ramp with a height
+scale (a clamp the student drags up its rail, 0–1.5 m), a light-gate
+speedometer at the ramp's foot, a level 3 m run, and the topic's key
+instrument — the **magnetic brake strip**, a 2.5 m bed of copper fins with
+a retarding-force dial (locked at 10 N for the topic, printed on its side)
+and a distance scale. A trolley entering the strip is dragged by a steady
+10 N until it stops, so *the distance it penetrates is the kinetic energy
+made visible*: every 0.10 m of penetration is 1.0 J spent. A flag drops
+where the trolley stops and stays there between runs. B1.5 moves to the
+**Crash rig**.
+
+### B1.1 — Kinetic energy and mass
+
+**Subtopic.** B1.1 *Kinetic energy and mass* (`g8b1-load-the-trolley`).
+
+**The question.** Two trolleys pass the speed gate at exactly the same
+3.0 m/s. One is loaded double. Does it carry double the energy — and how
+would you *see* that?
+
+**The scene.** The Energy track, side camera. The trolley (1.0 kg bare)
+has an open load bay taking 1.0 kg slabs from a rack; a scale built into
+the start platform reads the total. The ramp clamp is parked at 0.46 m
+and *locked* for this brief, with a label: "same start height → the gate
+will read 3.0 m/s for any load" — the gate is there to prove it every
+run. The brake strip's stop-flags are numbered per run. Velocity arrow
+on the trolley; at the moment the trolley enters the strip an energy bar
+appears over it (orange, full) and drains in proportion as fins go by,
+while a red thermal tint blooms along the fins it has passed. Instrument
+column: *energy spent in the strip (J) vs mass (kg)* graph — the y-value
+is computed as 10 N × penetration, so the graph is literally reading the
+scene — and the ledger.
+
+**What the student does.**
+1. Load the bay (run 1: no slab — 1.0 kg total). Hoist the trolley onto
+   the ramp clamp (a drag), release.
+2. Read the gate speed as it passes; watch the strip; log the flag.
+- Run 1: 1.0 kg.
+- Run 2 (change the mass): 2.0 kg.
+- Run 3 (change the mass): 4.0 kg.
+
+**What they see happen.** Every run the gate flashes the same "3.0 m/s"
+— same start height, same arrival speed, visibly independent of load.
+But the strip tells them apart: the 1.0 kg trolley is wrestled to a stop
+in 0.45 m; the 2.0 kg pushes to 0.90 m, exactly twice as deep, past
+run 1's flag; the 4.0 kg grinds out 1.80 m of glowing fins. Three flags
+in a row, each doubling, at one shared speed. The energy bar over each
+trolley starts at 4.5, 9.0, 18 J and drains to zero at its flag.
+
+**What accumulates.** Three points on energy-vs-mass lying on a straight
+line through the origin (4.5, 9.0, 18 J at 1, 2, 4 kg); the flags
+physically on the strip in the scene; ledger columns *mass*, *gate
+speed*, *penetration (m)*, *energy = 10 N × d (J)*, *momentum (kg·m/s)*
+— the momentum column (3, 6, 12) doubling alongside energy here, held
+for contrast with B1.2 where they will part company.
+
+**The failure state.** Load 8.0 kg (two more slabs than the runs ask):
+36 J wants 3.6 m and the strip has 2.5 — the trolley reaches the end
+buffer still doing 1.7 m/s and slams it; the buffer's impact lamp
+lights, and the ledger records "energy not fully spent in the strip:
+25 J in the fins, 11 J into the buffer." The meter has a range, like
+every real meter.
+
+**The prediction.** *Same 3.0 m/s at the gate, twice the mass. The
+trolley will drive into the brake strip…*
+1. The same distance — same speed, same stop.
+2. Twice as far. ✔
+3. Four times as far.
+4. Less far — heavy things are harder to move.
+Reveal: flag 2 stands at 0.90 m, twice flag 1's 0.45 m. Each kilogram
+carries its own ½v² of energy; two kilograms at one speed carry exactly
+two shares.
+
+**The misconception it confronts.** *"A heavy object always has more
+energy than a light one"* — before run 3 the loaded 4 kg trolley sits
+parked beside the moving 1 kg one, its energy bar flat at 0 J while the
+mover's reads 4.5: mass without speed holds nothing. *"Mass and speed
+affect kinetic energy in the same way"* — the linear line built here is
+half the evidence; B1.2 supplies the bending other half on the same
+axes style.
+
+**Real numbers.** Ramp drop 0.46 m → v = √(2·9.81·0.46) = 3.0 m/s for
+any mass. E = ½mv²: 4.5, 9.0, 18.0, 36.0 J at 1, 2, 4, 8 kg. Momentum
+mv: 3.0, 6.0, 12.0. Penetration d = E / 10 N: 0.45, 0.90, 1.80, 3.60 m
+(strip length 2.5 m). Buffer case: v at strip end = √(2(E − 25)/m).
+Spec cross-checks kept: stopping force over a 2.00 m trap = E/2;
+climb height v²/2g = 0.46 m, the ramp height back again.
+
+---
+
+### B1.2 — Kinetic energy and speed
+
+**Subtopic.** B1.2 *Kinetic energy and speed* (`g8b1-roll-it-faster`).
+
+**The question.** Same trolley, twice the speed. Twice the energy — or
+more?
+
+**The scene.** The Energy track again, with the controls swapped: the
+load bay is *sealed* at 2.0 kg (a plate over it: "mass locked"), and
+the ramp clamp is now the student's — its rail marked both in metres
+*and*, on a second scale alongside, in the gate speed each height will
+produce (0.051 m ↔ 1.0 m/s, 0.20 m ↔ 2.0, 0.46 m ↔ 3.0, 0.82 m ↔ 4.0,
+1.27 m ↔ 5.0). Same gate, same 10 N strip, same numbered flags, same
+thermal bloom. Instrument column: *energy spent (J) vs gate speed
+(m/s)* graph with the y-axis to 30 J, and the ledger. A ghost overlay
+of B1.1's straight line is available as a toggle for contrast.
+
+**What the student does.**
+1. Drag the clamp to a height, seat the trolley, release; read the
+   gate; log the flag.
+- Run 1: 1.0 m/s.
+- Run 2 (double it): 2.0 m/s.
+- Run 3 (double again): 4.0 m/s.
+
+**What they see happen.** Run 1: a gentle roll; the strip swallows it
+in 0.10 m — one fin's worth of glow. Run 2: double the speed and the
+flag lands at 0.40 m — *four* fins of glow, four times the
+penetration, unmistakably not two. Run 3: 4.0 m/s buries the trolley
+1.60 m deep, sixteen times run 1, the thermal bloom running most of
+the bed. The three flags spread out along the strip in the ratio
+1 : 4 : 16 while the clamp heights that made them sit in the ratio
+1 : 4 : 16 as well — the ramp scale quietly telling the same story.
+
+**What accumulates.** Three points bending upward on energy-vs-speed
+(1, 4, 16 J at 1, 2, 4 m/s); with the B1.1 overlay on, a straight
+line and a curve share the column and the student can point at which
+variable does which. Ledger: *gate speed*, *penetration*, *energy*,
+*momentum* — momentum reads 2, 4, 8 (doubling) while energy reads 1,
+4, 16 (quadrupling): the two columns part company here, on the same
+rows.
+
+**The failure state.** The clamp's top stop is 1.27 m — 5.0 m/s and
+25 J, which is 2.50 m of penetration: the flag lands exactly at the
+strip's last centimetre, the design's own full-scale mark. A cheat
+toggle ("+push") lets the student add a hand shove at the top; any
+shove sends the trolley into the buffer, and the ledger's energy cell
+splits into "strip 25 J + buffer n J", teaching that the meter maxed,
+not the physics.
+
+**The prediction.** *Run 1 at 1.0 m/s went 0.10 m into the strip. At
+2.0 m/s the trolley will go…*
+1. 0.20 m — twice the speed, twice the energy.
+2. 0.40 m — twice the speed, four times the energy. ✔
+3. 0.10 m — the same trolley stops the same way.
+4. 0.80 m.
+Reveal: the flag is at 0.40 m. Speed enters the energy twice — once
+because you move faster, once because you arrive sooner — so doubling
+it multiplies the energy by four.
+
+**The misconception it confronts.** *"Doubling the speed doubles the
+kinetic energy"* — falsified by a flag the student walks past.
+*"A graph of energy against speed is a straight line"* — their own
+three points refuse a ruler, with B1.1's genuinely straight line
+overlaid for the contrast.
+
+**Real numbers.** Clamp heights h = v²/(2·9.81): 0.051, 0.204, 0.459,
+0.815, 1.274 m for 1–5 m/s. E = ½·2.0·v² = v²: 1, 4, 16, 25 J.
+Penetration = E/10: 0.10, 0.40, 1.60, 2.50 m. Momentum 2v: 2, 4, 8,
+10 kg·m/s. Spec cross-check kept: energy at double speed = 4× at every
+speed; climb height = v²/2g returns the clamp height.
+
+---
+
+### B1.3 — Why speed has the larger effect
+
+**Subtopic.** B1.3 *Why speed has the larger effect*
+(`g8b1-one-four-nine`).
+
+**The question.** Every extra metre per second costs energy. Does the
+third one cost the same as the first?
+
+**The scene.** The Energy track with the ramp swung aside and a
+**pump launcher** docked at the start: a stout hand pump whose handle
+the student physically drags down, a mechanical *joule counter* on its
+flank (each full stroke clicks exactly 1 J into the launch spring —
+the counter's digits roll with a clunk), a spring-compression window
+showing the coil tightening, and a release trigger. The trolley is the
+sealed 2.0 kg one. The gate reads the launch speed; the 10 N strip
+and flags stand ready as the checkable second opinion. Above the
+scene, the *price board*: a bar chart with slots for each target
+speed, 1–5 m/s, each bar built of unit blocks — one block per pump
+stroke, stacked live as the student pumps. Instrument column: the
+board is the graph this time; ledger below.
+
+**What the student does.**
+1. A target chip ("reach 1.0 m/s") docks by the gate. Pump until the
+   gate — on release — confirms the target. Strokes are counted; the
+   bar builds.
+- Run 1: target 1.0 m/s. One stroke does it: gate 1.0.
+- Run 2: target 2.0 m/s. The student pumps… 2 strokes and releases —
+  gate reads 1.41. Short. Re-dock, pump to 4, release: gate 2.0.
+- Run 3: target 3.0 m/s. 9 strokes.
+(The measure step then asks for 4.0 and 5.0: 16 and 25 strokes, the
+pumping now a real labour the student feels in repetition.)
+
+**What they see happen.** The counter and the gate together make the
+law tactile: equal speed steps, wildly unequal work. The price board
+fills into 1, 4, 9, 16, 25 — and a second row under it lights the
+*differences*: +3, +5, +7, +9, the odd numbers marching. Every launch
+is auditable: the strip flag lands at counter ÷ 10 metres, so the
+9-stroke launch buries 0.90 m of fins — the energy bought by pumping
+is recovered, all of it, as braking distance.
+
+**What accumulates.** The completed price board (the squares) with its
+difference row (the odd numbers); flags on the strip at 0.10, 0.40,
+0.90 m…; ledger: *target v*, *strokes needed*, *gate reading*,
+*strokes for this step*, *strip check (m)*.
+
+**The failure state.** Run 2's first attempt is the designed failure:
+double the strokes does *not* double the speed — 2 J launches at
+1.41 m/s, and the gate says so to two decimals. The wrong theory is
+tried by hand and priced.
+
+**The prediction.** *One stroke gave 1.0 m/s. To reach 2.0 m/s you
+will need…*
+1. 2 strokes — double is double.
+2. 3 strokes.
+3. 4 strokes. ✔
+4. It depends how fast you pump.
+Reveal: 2 strokes read 1.41 m/s on the gate. Energy goes with the
+square of the speed, so the second metre per second costs three more
+strokes than you own after the first.
+
+**The misconception it confronts.** *"Each equal step of speed adds an
+equal amount of energy"* — the student's forearm learns otherwise
+before the board says it: steps cost 1, then 3, then 5, then 7
+strokes. *"Mass and speed matter equally"* — a side plaque restates
+B1.1: adding a second kilogram would double every bar; adding a
+second metre per second squares its way up.
+
+**Real numbers.** With m = 2.0 kg, E = ½·2·v² = v² exactly: the joule
+count for v m/s is v² (1, 4, 9, 16, 25 J) and each stroke is 1.00 J
+into ½kx² of spring. Step cost to go from v−1 to v: 2v − 1 J (the odd
+numbers). Gate speed for n strokes: √n m/s (2 strokes → 1.41). Strip
+check: d = n/10 m. Five times the speed of run 1 = twenty-five times
+its energy.
+
+---
+
+### B1.4 — Interpreting the shape of the curve
+
+**Subtopic.** B1.4 *Interpreting the shape of the curve*
+(`g8b1-reading-the-curve`).
+
+**The question.** Here is the whole energy-speed curve for your
+trolley. Can you read a road-safety argument straight off its shape?
+
+**The scene.** The stage splits evenly. Right: the *curve wall* — the
+E = v² curve for the sealed 2.0 kg trolley drawn floor-to-ceiling
+(x 0–10 m/s, y 0–100 J), with a heavy crosshair bead the student
+drags *along the curve itself* (it will not leave the line), spilling
+a vertical drop-line to the speed axis and a horizontal one to the
+energy axis. Left: the Energy track, live, enslaved to the bead —
+whatever speed the bead sits at, the trolley on the track runs at,
+over and over, with the strip showing the matching penetration as a
+ghost flag at E/10 metres. Two graph tools on a small shelf: the
+*step ruler* (a rigid +2.0 m/s wide bracket that, placed anywhere on
+the curve, shades the energy strip that step adds) and the *half
+line* (a horizontal dashed line at 50 J the student can switch on).
+Instrument column: ledger of placed flags.
+
+**What the student does.**
+- Run 1 (place the flags): drag the bead to 2, 4, 6, 8, 10 m/s; at
+  each, a click plants a flag on the curve and the track below runs
+  that speed, its ghost flag landing at 0.4, 1.6, 3.6, 6.4, 10.0 m
+  (the strip's scale extends as a dashed continuation past its real
+  2.5 m, honestly labelled "beyond the rig").
+- Run 2 (equal steps, unequal strips): walk the step ruler up the
+  curve from 0: the four shaded strips it cuts read 4, 12, 20, 28 J.
+- Run 3 (the halfway hunt): switch on the 50 J half line; the student
+  drags the bead to where they think half the top energy lives.
+
+**What they see happen.** The flags climb a curve that steepens with
+every placement — the vertical gaps between successive flags grow
+(12, 20, 28, 36 J) while the horizontal gaps stay a fixed 2 m/s. The
+step ruler makes the growth into objects: four shaded strips of
+visibly increasing area, each an equal speed step. The halfway hunt:
+almost every student parks the bead at 5 m/s — the drop-line lands at
+25 J, only a quarter of the wall's height, and the bead has to be
+dragged on to 7.07 m/s before the horizontal line kisses 50 J. The
+track beside it makes each guess physical: at 5 m/s the ghost flag
+sits at 2.5 m; at 7.07 m/s, 5.0 m.
+
+**What accumulates.** Five flags on the curve; four shaded steps with
+their areas; the two halfway markers (the wrong 5.0 and the right
+7.07) both left standing, labelled. Ledger: *v*, *E*, *E gap from
+previous flag*, *strip distance*.
+
+**The failure state.** A "does it flatten?" lever extends the axes to
+12 m/s: the student drags the bead past 10 hunting for the curve
+easing off, and it reads 121, 144 — steeper still, with the caption
+from the checked spec: *it never flattens*. The expectation fails,
+not the rig.
+
+**The prediction.** *Half of 100 J is 50 J. The speed that carries
+50 J is…*
+1. 5.0 m/s — half the top speed.
+2. About 7.1 m/s. ✔
+3. 2.5 m/s.
+4. 50 J is off this curve.
+Reveal: at 5.0 m/s the drop-line hits 25 J — halfway along is a
+quarter of the way up. Energy halves at v/√2, not v/2.
+
+**The misconception it confronts.** *"A curve that gets steeper must
+eventually level off"* — the extension lever lets the student go look,
+and it does not. *"Halfway along the speed axis is halfway up the
+energy axis"* — the halfway hunt stages the error and leaves both
+markers up as the trophy.
+
+**Real numbers.** E = v² for the 2.0 kg trolley: flags at 2, 4, 6, 8,
+10 m/s read 4, 16, 36, 64, 100 J; gaps 12, 20, 28, 36 J (the spec's
+"that one step cost 28 J, seven whole first points" is the 6→8 gap).
+Step-ruler strips from 0: 4, 12, 20, 28 J. Half energy at 10/√2 =
+7.07 m/s. Strip distances E/10 m. Extension: 11 m/s → 121 J, 12 →
+144 J.
+
+---
+
+### B1.5 — Applying kinetic energy to a collision scenario
+
+**Subtopic.** B1.5 *Applying kinetic energy to a collision scenario*
+(`g8b1-thirty-and-sixty`).
+
+**The question.** The same car hits the same wall at 30 km/h and at
+60 km/h. How many times worse is the second crash — twice?
+
+**The scene.** The **Crash rig** dressed as a road-safety test house:
+twin lanes into one instrumented wall, each lane carrying a 1 200 kg
+car body (a proper car shell — bonnet, cabin, windscreen — over the
+sled chassis) with a belted dummy. The wall's face on each lane is a
+grid of *deformation cells*, each cell a 2 000 J honeycomb cube that
+crushes and stays crushed, so the wall itself is the energy meter:
+count the flattened cells. Lane L's speed is pinned at 30 km/h (a
+sealed dial); lane R's dial is the student's (10–120 km/h, default
+60). Each car has an energy bar over it (orange) and a *crash clock*
+in ms. Both cars carry crush rulers along the bonnet: the front 0.5 m
+is marked in cm. A g-meter on each dummy's chest with a red line at
+30 g. Instrument column: *crash energy vs speed* graph accumulating
+one point per lane per firing, and the ledger.
+
+**What the student does.**
+1. Fire both lanes together (one plunger).
+- Run 1: R at 60 km/h.
+- Run 2 (change R): 90 km/h.
+- Run 3 (find "twice the crash"): the student hunts the R dial for
+  the speed that flattens exactly *twice* lane L's cells — trying 60
+  first is expected and wrong; closing in lands on ≈ 42 km/h.
+
+**What they see happen.** Run 1: lane L folds its bonnet through
+0.5 m and flattens 21 cells; the g-meter touches 7.1 g — firm but
+green. Lane R at 60, *twice the speed on the same car*: 83 cells
+flatten — a slab of wall four times as wide — the crush ruler
+vanishes entirely, the g-meter slams to 28.3 g, brushing the red
+line, and the cabin's windscreen crazes. The two walls stand side by
+side afterwards: 21 crushed cubes against 83. Run 2 at 90: 188
+cells, 63.7 g, deep into the red — the deformation reaches the cabin
+firewall, the dummy's readout flags "not survivable", and the car is
+written off on screen. Run 3 resolves the title: doubling the *crash*
+needs only 42 km/h, and 60 km/h — "just double the town limit" — was
+never twice the crash; it was four times.
+
+**What accumulates.** The energy-vs-speed graph grows the student's
+own steepening curve (41 667 J at 30 pinned every run; 166 667 at
+60; 375 000 at 90; 83 333 found at 42); the walls keep their crushed
+cells between runs as a bar chart made of wreckage. Ledger: *speed*,
+*energy (J)*, *cells (≈ E/2 000)*, *crush force (kN)*, *peak g*,
+*× the 30 km/h crash* — the last column reading 1.0, 4.0, 9.0, 2.0.
+
+**The failure state.** Run 2's cabin intrusion: with only 0.5 m of
+crush available, 375 000 J demands 750 kN and 63.7 g — past the 30 g
+line the dummy's meter holds red, and the "not survivable" flag is
+the rig telling the truth the campaign posters compress.
+
+**The prediction.** *Lane L crushes 21 wall cells at 30 km/h. Lane R
+at 60 km/h will crush about…*
+1. 42 cells — twice the speed, twice the crash.
+2. 63 cells.
+3. 83 cells — four times. ✔
+4. 21 cells — same car, same wall.
+Reveal: count them: 83. Kinetic energy carries the square of the
+speed, and the wall keeps the receipts.
+
+**The misconception it confronts.** *"Twice the speed is twice as
+dangerous"* — the two walls stand as a 1:4 monument, and run 3 pins
+"twice as dangerous" to 42 km/h. *"A crash at any speed puts the
+same load on the car"* — the g-meter spans 7.1 to 63.7 g across the
+same car and wall.
+
+**Real numbers.** v(m/s) = km/h ÷ 3.6. E = ½·1200·v²: 30 km/h →
+41 667 J; 60 → 166 667 J; 90 → 375 000 J; 42.4 → 83 333 J. Cells ≈
+E / 2 000 J: 21, 83, 188, 42. Average crush force = E / 0.5 m: 83,
+333, 750, 167 kN. Deceleration = v²/(2·0.5·9.81): 7.1, 28.3, 63.7,
+14.1 g; red line 30 g. ×-the-30-crash = (v/30)². Crush slider range
+kept from spec (0.1–1.2 m) as an advanced control, default 0.5 m.
+
+---
