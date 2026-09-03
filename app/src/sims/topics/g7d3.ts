@@ -268,7 +268,7 @@ const CYCLES_AND_FLOWS: ArchetypeSpec = {
     },
   ],
   variables: [
-    { key: "steps", label: "Meals since the producers (trophic steps)", min: 0, max: 5, step: 1, default: 0 },
+    { key: "steps", label: "Meals since the producers (trophic steps)", min: 0, max: 5, step: 1, default: 1 },
     { key: "transferPercent", label: "Energy passed on at each meal (per cent)", min: 2, max: 25, step: 1, default: 10 },
   ],
   /*

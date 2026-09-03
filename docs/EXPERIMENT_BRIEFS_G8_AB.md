@@ -3797,3 +3797,459 @@ Test tube: 0 % — energy into new glass surfaces, fragments and
 the crack.
 
 ---
+
+## Topic B4 — Energy conservation across a system
+
+The topic's own instrument, built once: the **boundary box** — a resizable
+rectangle the student drags around any part of a scene, with a live meter
+reading "inside the box: … J". Only energy inside counts; energy crossing
+the edge is flagged at the crossing point. B4.1 introduces it on the
+bench; B4.2 scales it to a valley; B4.3 zooms it into a bike wheel; B4.4
+runs it over a bouncing ball; B4.5 hands it to the student as an audit
+tool.
+
+### B4.1 — Energy is conserved
+
+**Subtopic.** B4.1 *Energy is conserved* (`g8b4-close-the-box`).
+
+**The question.** A trolley is launched with 5.00 J and coasts to a stop.
+Its energy meter reads zero. Draw a box around enough of the world that
+nothing has gone missing.
+
+**The scene.** A 5 m carpet runner on the lab floor, side camera. At the
+left, a spring launcher (its coil visibly compressed, a plaque: "holding
+5.00 J"); on the runner, a 2.5 kg trolley with hard wheels; along the
+runner, metre marks. The air is drawn — faint drifting motes that swirl
+when the trolley passes. Thermal view toggle: the wheels and the carpet
+track behind them warm faintly as it rolls; the launcher's coil, the
+axle bearings, everything has a temperature. Overlaid on it all, the
+**boundary box**: drag its corners anywhere; its meter totals every
+energy form inside (motion, spring store, thermal above ambient, sound
+in flight) and its edges spark wherever energy is crossing them.
+Instrument column: *"inside the box" vs time* graph, one line per box
+choice, plus the ledger.
+
+**What the student does.**
+1. Draw a box. Press the launcher's trigger. Watch the meter and its
+   line for the 4-odd seconds of the roll and beyond.
+- Run 1 (box = trolley only): a tight box that travels with the
+  trolley.
+- Run 2 (grow it): box around trolley + the whole carpet runner + the
+  air above it — but the launcher left outside.
+- Run 3 (close it properly): the box takes in the launcher too, wall
+  to wall.
+
+**What they see happen.** Run 1: the meter starts at 0 (the spring's
+joules are outside), jumps to 5.00 as the launch crosses the edge —
+the entry sparked and flagged "+5.00 J in" — then *falls* all the way
+back to 0 over 4.08 m of coasting, the edges sparking continuously at
+the wheels: energy is streaming out of a box that holds only the
+trolley. The line on the graph is a rise and a long sag. Run 2: the
+launch still arrives as a +5.00 J crossing, but after that the line
+runs *flat*: the 4.90 J the carpet and wheels take, and the 0.10 J
+the air takes, are all still inside — the thermal view shows exactly
+where, a warm 4-metre stripe and two warm axles. Run 3: the line is
+flat at 5.00 J from before the trigger to after the stop: first in
+the coil, then split between motion and a growing thermal residue,
+finally all residue — one horizontal line, no crossings, nothing
+made, nothing lost.
+
+**What accumulates.** Three "inside the box" lines: a sag, a
+step-then-flat, and a dead-flat — the same event, three boundaries.
+The ledger itemises run 3's final 5.00 J: carpet and wheel flex
+≈ 4.88 J, axle bearings a share of it, air 0.10 J, sound well under
+a millijoule — quoting the checked audit.
+
+**The failure state.** The sagging line of run 1 is the failure, named
+at its cause: a boundary that cuts through the story. A "find the
+leak" pointer invites the student to click the sparking edge; it
+zooms to the wheel-carpet contact where the joules are leaving as
+warmth.
+
+**The prediction.** *The trolley has stopped. The 5.00 J is…*
+1. Used up — moving took effort.
+2. Destroyed by friction.
+3. All still there, as warmth spread through carpet, wheels and air. ✔
+4. Back in the spring.
+Reveal: run 3's line never left 5.00. Warm the box's contents by what
+the thermal view shows and the books close to the joule.
+
+**The misconception it confronts.** *"The trolley used up its
+energy"* and *"Friction destroys energy"* — destruction would look
+like run 3's line falling, and it never falls; only badly drawn boxes
+sag, and the sag always matches a sparking edge you can go and
+inspect.
+
+**Real numbers.** Launch: ½ × 2.5 × 2.0² = 5.00 J. Rolling
+resistance ≈ 0.05 × 2.5 × 9.81 = 1.23 N; travel = 5.00/1.23 =
+4.08 m; coast time ≈ 4.1 s. Air drag ½ × 1.225 × 0.01 × 1.0 × 2.0²
+≈ 0.025 N → ≈ 0.10 J over the run. Sound < 1 mJ. Stepped: v decays
+under 1.23 N; thermal deposition per tick = F·v dt, laid along the
+contact patch.
+
+---
+
+### B4.2 — Tracking energy through a multi-step system
+
+**Subtopic.** B4.2 *Tracking energy through a multi-step system*
+(`g8b4-water-to-wall-socket`).
+
+**The question.** Forty-nine megawatts of falling water enter the top
+of the mountain. Thirty-nine and a half come out of the wall sockets
+in town. Track the journey step by step — and find the missing 9.6 MW
+*somewhere*, because they did not vanish.
+
+**The scene.** A valley in cutaway, three-quarter camera: a reservoir
+50 m above a turbine hall; the *intake gate* (a wheel the student
+turns, flow 0–100 m³/s, with a gauge in m³/s); the penstock running
+down the rock; a Francis turbine spinning in the hall; the generator
+on its shaft; a transformer yard; 400 kV lines marching to a town of
+lit windows (a counter: "homes supplied at 1.2 kW: …"). Through it
+all flows the hero instrument: the *power ribbon* — a broad band,
+49.05 MW wide at the top, that visibly narrows at each stage as a
+thin red-warm wisp peels off into the surroundings, each wisp
+labelled in MW and each peel-point instrumented with a clip-on
+*thermal probe* socket. The boundary box is available at valley
+scale. Instrument column: a stage table (in / out / kept %) filling
+as the probes go in, and the ledger.
+
+**What the student does.**
+1. Spin the gate to 100 m³/s. Watch the ribbon establish.
+2. Clip the thermal probe onto each peel-point in turn: penstock
+   wall, draft-tube water, generator hall air, transformer and line.
+- Run 1: full flow, all four probes placed, the table completed.
+- Run 2 (change the flow): 50 m³/s, table again.
+- Run 3 (spend one upgrade): a workshop offers ONE improvement —
+  penstock relined (95 → 98 %) or turbine re-bladed (92 → 95 %);
+  the student picks, the crew installs it, and the run measures
+  what the town actually gained.
+
+**What they see happen.** Run 1: the ribbon narrows 49.05 → 46.60 →
+42.87 → 42.01 → 39.49 MW, and each probe finds the peeled wisp *as
+heat where it went*: the penstock wall a fraction of a degree warm
+along its length; the draft-tube water stirred and warmed by 3.7 MW;
+the generator hall needing its fans (0.86 MW of warm air); the lines
+faintly warm across the valley (2.52 MW). The town counter reads
+32 900 homes. Nothing labelled "lost" — every wisp is followed to a
+warm somewhere. Run 2: half the water, half the ribbon everywhere
+(24.5 in, 19.75 out), but the *kept %* column unchanged: efficiency
+is the plant's shape, not its throughput. Run 3: either upgrade
+widens the town's ribbon by a hair over 1.25 MW — about a thousand
+more lit homes on the counter — and the stage table shows exactly
+which wisp thinned.
+
+**What accumulates.** The completed stage table (95, 92, 98, 94 %,
+compounding to 80.5 %); probe readings pinned at four warm places;
+the homes counter across runs; ledger rows for flow, delivered MW,
+and overall %.
+
+**The failure state.** Spin the gate shut: the ribbon dies from the
+top, the turbine freewheels down, the town browns out window by
+window and the counter falls to zero — the plant *moves* power and
+has none of its own to give. The boundary box around the whole
+valley still balances: reservoir store simply stops converting.
+
+**The prediction.** *The generator is "98 % efficient". The other
+2 % is…*
+1. Destroyed in the windings.
+2. Still electricity, leaking to earth.
+3. Heat in the generator hall — which is why the hall has cooling
+   fans. ✔
+4. Rounding error.
+Reveal: the probe on the hall reads 0.86 MW of warm air at full
+flow. Every "loss" in the table is findable with the same probe;
+none of them is a disappearance.
+
+**The misconception it confronts.** *"Energy is lost at each stage
+of a power station"* — each peeled wisp is chased to its warm
+destination on screen. *"A power station creates electricity"* —
+the shut gate kills the town: nothing upstream, nothing out; the
+plant converts 80.5 % of what the reservoir sends and creates
+nothing.
+
+**Real numbers.** 100 m³/s = 100 000 kg/s falling 50 m: 100 000 ×
+9.81 × 50 = 49.05 MW. Stages: penstock 95 % → 46.60 MW (water
+≈ 30 m/s at the bottom); turbine 92 % → 42.87 MW (3.7 MW stirs the
+draft-tube water); generator 98 % → 42.01 MW (0.86 MW to the
+hall); transformer + line 94 % → 39.49 MW (line heating ∝ I², the
+reason for 400 kV). Overall 80.5 %; homes = 39.49 MW / 1.2 kW ≈
+32 900. Upgrades: penstock→98 % delivers 40.74 MW; turbine→95 %
+delivers 40.78 MW.
+
+---
+
+### B4.3 — Dissipation as spreading out, not disappearing
+
+**Subtopic.** B4.3 *Dissipation as spreading out, not disappearing*
+(`g8b4-spread-not-gone`).
+
+**The question.** One hard stop on a bike turns 2 880 J of motion
+into heat. Follow that heat for five minutes — it never disappears,
+so why can you never have it back?
+
+**The scene.** A street, side camera: a bike with a 90 kg
+rider-and-bike total rolling at 8 m/s; rim brakes with visible
+pads; a brake lever drawn large at bottom-left for the student's
+hand. The hero view: a *thermal camera toggle* that re-renders the
+whole scene in temperature colours (scale 20–35 °C, rim inset
+scaled 20–90 °C). A *time-lapse dial* (1× / 60×) because spreading
+is slow. Fixed to the scene, the *temperature ladder*: four rungs
+labelled "the same 2 880 J, held by…" — one 0.3 kg rim (+10.7 °C),
+1 kg of passing air (+2.9 °C), the whole street of air
+(+0.001 °C), the town (unmeasurable) — each rung lighting as the
+heat actually reaches that spread. And a hand crank on the rear
+wheel labelled "wind it back up from the warm air", with a joule
+meter reading what it recovers. Instrument column: *rim temperature
+vs time* graph and an energy stack (motion / rim / near air / far
+air) whose total is pinned at 2 880 J per stop; ledger.
+
+**What the student does.**
+- Run 1: squeeze the lever to a full stop (2 s). Watch the rim in
+  thermal view.
+- Run 2: spin the time-lapse to 60× and watch five minutes of
+  spreading.
+- Run 3 (downhill stops): a hill profile loads; the rider remounts
+  and brakes to a stop repeatedly without cooling gaps — squeeze,
+  roll, squeeze — while the rim graph climbs a staircase.
+- Any time: try the crank.
+
+**What they see happen.** Run 1: the pads flare in thermal view;
+the rim ring blooms to 30.7 °C (+10.7) in two seconds; the energy
+stack pours motion → rim while the total stands still; the squeal
+draws a little waveform (its energy labelled: well under a joule).
+Run 2, time-lapsed: the rim's glow feeds a plume that drifts and
+dilutes; the rim line droops back toward 20 °C as the near-air rung
+lights (+2.9 °C for the first kilogram), then the far-air rung
+(+0.001 °C); by five minutes the scene's thermal view is almost
+uniform again — *and the stack still totals 2 880 J*, now all in
+the faint bottom band. The crank, tried at any point: the meter
+reads 0.00 J recovered — turning it only warms the bearing a
+little more (its own joules join the band; the meter counts
+*net* recovery and goes slightly negative). Run 3: each stop adds
++10.7 °C faster than the air can take it away; on the fourth
+squeeze the rim passes 60 °C — a "too hot to touch" flag and a
+faint pad-fade wobble in the lever — the staircase graph showing
+heat arriving in steps and leaving as a slow decay.
+
+**What accumulates.** The rim's temperature history across all
+runs; the ladder's four lit rungs with their four temperatures for
+one energy; the stack's constant total against its ever-lower
+concentration; ledger rows per stop: *speed*, *joules converted*,
+*rim ΔT*, *crank recovery (always 0.00)*.
+
+**The failure state.** The over-hot rim of run 3 — dissipation's
+one-way street run against, deliberately: heat you cannot shed
+fast enough is the same heat you can never gather back.
+
+**The prediction.** *Five minutes after the stop, the 2 880 J
+is…*
+1. Gone — the room ate it.
+2. Still all present, spread so thin no part of it can push the
+   bike again. ✔
+3. Back in the rim, slowly.
+4. Turned into sound.
+Reveal: the stack still totals 2 880 J and the crank still reads
+0.00. Conserved and useless are compatible; that pairing is what
+"dissipated" means.
+
+**The misconception it confronts.** *"Friction destroys energy"*
+— the pinned stack total through every squeeze. *"Heat that
+spreads out has been lost from the universe"* — the ladder shows
+it found, rung by rung, at ever-smaller temperatures; the crank
+shows why "still here" and "recoverable" are different claims.
+
+**Real numbers.** ½ × 90 × 8² = 2 880 J per stop from 8 m/s
+(4 m/s² over 8 m, 2 s). Rim: 0.3 kg aluminium, c = 900 J/kg·K →
+ΔT = 2 880/(0.3 × 900) = 10.7 °C. First kilogram of air, c =
+1 005: ΔT = 2.9 °C. Street-scale air: ~0.001 °C; town:
+unmeasurable. Downhill staircase: +10.7 °C per stop minus
+Newton-cooling decay (τ ≈ 90 s); 60 °C flag on the fourth
+consecutive stop. Squeal ≪ 1 J.
+
+---
+
+### B4.4 — Applying conservation to a bouncing ball
+
+**Subtopic.** B4.4 *Applying conservation to a bouncing ball*
+(`g8b4-bounce-after-bounce`).
+
+**The question.** A dropped ball bounces lower and lower and then
+lies still. Did its energy run out — and could you have predicted
+every single bounce height from the first?
+
+**The scene.** The **Stand and drop rig** with a tall clear column
+over a hard floor tile: a 60 g tennis ball on the electromagnet
+(release height clamp 0.2–3.0 m), a cm scale up the column, and a
+*bounce comb* — a rack of thin peak-marker fingers that latch at
+each successive rebound apex, leaving a physical decay envelope in
+the scene. A material dial sets e (0.20–0.95; tennis-ball default
+0.75). Sound: each impact ticks, quieter as the heights shrink,
+the ticks crowding together exactly as real bounces do. Energy
+stack beside the column: motion/store trading at the top, and a
+red thermal band growing from the bottom *by a fixed fraction of
+what remains, every bounce*. The boundary box sits around column,
+ball and floor. Instrument column: *apex height vs bounce number*
+graph (with a log-scale toggle that straightens the decay), a
+*predicted next apex* chip the student sets before each bounce,
+and the ledger.
+
+**What the student does.**
+1. Set drop height and e. Before releasing: dial a prediction for
+   the first rebound apex into the chip. Release. The comb latches
+   the truth next to the chip.
+2. Predict the *fifth* apex from the first (chip again), then let
+   the whole sequence run out — bounces crowding, ticks
+   accelerating, ball finally still.
+- Run 1: h = 1.50 m, e = 0.75.
+- Run 2 (change e): 0.95.
+- Run 3 (change e): 0.20.
+
+**What they see happen.** Run 1: first rebound 0.844 m (56 % of
+the drop), then 0.475, 0.267, 0.150, 0.084 — under 10 cm by the
+fifth; the comb's fingers draw a geometric staircase and the ball
+is flat on the tile within four seconds, ticks blurring together
+at the end. The stack: each impact moves a fixed 44 % of what's
+left into the red band; the total never moves; the ball at rest
+sits under a stack that is all red — 0.883 J, present and
+accounted for, none of it coming back. Run 2 at 0.95: twenty-odd
+bounces, still audibly ticking at the window's end, comb fingers
+packed like a fine comb. Run 3 at 0.20: one 6 cm hop and done —
+the whole story in under a second. The log toggle turns every
+comb envelope into a straight line whose slope is 2 ln e.
+
+**What accumulates.** Three comb envelopes standing in the scene;
+three straight lines on the log graph with their slopes; the
+prediction chips beside the latched truths; ledger: *e*, *drop*,
+*apex 1 predicted / measured*, *apex 5 predicted / measured*,
+*bounces to < 10 cm predicted / counted*.
+
+**The failure state.** The ball's final stillness played against
+a full energy meter: a "wake it up" prod (a poker the student can
+nudge the resting ball with) moves it a centimetre and lets it
+settle — the red band will not run backward. Also the prediction
+chip's honest misses: at e = 0.95 most students under-predict
+bounce counts wildly, and the counted 27 stands against their
+guess.
+
+**The prediction.** *(the predict-before-run chip, formalised)*
+*First rebound from 1.50 m at e = 0.75 will reach…*
+1. 1.13 m — three quarters of the drop.
+2. 0.844 m — e² of the drop. ✔
+3. 0.75 m — exactly half.
+4. 1.50 m — bounces repeat until worn out.
+Reveal: e is a ratio of *speeds*; heights go as speed squared, so
+each apex is e² = 56 % of the last. One number predicts the whole
+staircase — the comb agrees finger by finger.
+
+**The misconception it confronts.** *"A ball loses energy because
+gravity gets stronger each bounce"* — gravity's 9.81 is printed
+on the column and never changes; the log-line's constant slope
+pins the loss to the *impacts*, equal fractions every time. *"A
+ball that stops bouncing has run out of energy"* — the stack
+under the still ball reads 0.883 J, all red: not run out,
+relocated beyond recall.
+
+**Real numbers.** Drop 1.50 m: arrival √(2gh) = 5.43 m/s, energy
+0.06 × 9.81 × 1.50 = 0.883 J. Apex n = h·e²ⁿ; kept per bounce
+e² (56.25 % at 0.75); to heat per bounce 1 − e². Bounce count to
+< 0.10 m: ln(0.1/h)/(2 ln e) → 4.7 (so the 5th is under) at
+0.75; ≈ 26.4 at 0.95; < 1 at 0.20. Bounce durations shrink ×e
+each time (√(2h′/g)), giving the accelerating tick rhythm.
+
+---
+
+### B4.5 — Conservation as a check on a claim
+
+**Subtopic.** B4.5 *Conservation as a check on a claim*
+(`g8b4-does-it-add-up`).
+
+**The question.** Six devices, each with a confident advert. You
+have three probes and one law. Which claims survive an audit?
+
+**The scene.** The *auditor's bench*: a long counter under gallery
+lighting with six curtained alcoves, each curtain printed with its
+device's advertising slogan. The student's toolkit, on a belt:
+an **input probe** (clips to any power inlet, reads W or J), an
+**output probe** (reads what leaves — light, motion, heat), and
+the audit's soul, the **environment probe** (a broad paddle that
+reads energy arriving from or leaving to the surroundings). Each
+alcove has a verdict slot taking one of two brass stamps: PASSES
+THE AUDIT / BREAKS CONSERVATION. The devices behind the curtains,
+each drawn *exactly as advertised* and running: ① a magnet motor
+"running on nothing forever"; ② an LED lamp "400 lumens from
+4 W"; ③ a heat pump "1 kW in, 3 kW of heat out"; ④ a wonder-ball
+"bounces to 1.2 m from a 1.0 m drop"; ⑤ a quartz clock "two years
+on one AA cell"; ⑥ a wind-up toy "goes further on every run".
+Instrument column: the audit table (claimed in / measured in /
+measured out / environment flow / verdict) and the ledger.
+
+**What the student does.** Open each curtain, watch the device do
+what its slogan says (the ball really does climb to 1.2 m; the
+toy really does go further each run), then probe all three
+channels and stamp. The three runs of the lab loop are the three
+*hard* audits: ③, ④ and ⑥; the other three are the warm-up.
+
+**What they see happen.** ② LED: in 4.0 W; out 1.2 W of light +
+2.8 W of warm heatsink; environment 0. Books close — PASSES. ⑤
+clock: one AA holds 14 000 J; the movement sips 0.2 mW; 14 000 /
+0.0002 = 7 × 10⁷ s ≈ 2.2 years — PASSES, no mystery. ③ heat pump:
+in 1.0 kW, out 3.0 kW — the audit *fails* on two probes, and
+first-time stampers reach for BREAKS — until the environment
+paddle, held to the outdoor coil, finds 2.0 kW streaming in from
+the cold morning air: moved, not made — PASSES, and the stamp
+slot engraves "pumps, not creates". ④ wonder-ball: out-climbs
+its drop by 20 % while all three probes read nothing arriving —
+no plug, no spring under the floor, no warm inlet; the extra
+m·g·0.2 has no source anywhere the paddle can find — BREAKS (and
+the B3.2 release line, drawn faintly across the alcove, is being
+crossed on screen). ① magnet motor: probes find no input — and
+then the device does what every one ever built has done: turns,
+slows, stops; a force-along-the-loop meter integrates to zero
+around any closed path — BREAKS as a *claim* (the curtain's
+"forever"), with the stalled rotor as evidence. ⑥ wind-up toy:
+the input probe on the key reads the same ½kx² every wind; the
+runs nevertheless lengthen on screen; distance × friction force
+exceeds the wound-in joules by run three — BREAKS, the deficit
+printed.
+
+**What accumulates.** The audit table, six rows, three PASSES and
+three BREAKS, each verdict resting on a probe reading the student
+took; the environment column doing the deciding in every hard
+case — 0 for the ball (damning), +2.0 kW for the heat pump
+(saving). The stamps stay in their slots as the scene's record.
+
+**The failure state.** Stamping the heat pump BREAKS on two
+probes: the slot rejects the stamp with a spring — "one probe
+missing" — until the environment paddle has been placed at least
+once. The audit teaches its own method: the books include the
+surroundings or they are not books.
+
+**The prediction.** *The heat pump delivers 3 kW of heat for 1 kW
+of electricity. Conservation says…*
+1. Impossible — 2 kW from nowhere.
+2. Possible only if it is 33 % efficient somehow.
+3. Fine, if 2 kW of heat is entering from somewhere else — go and
+   find it. ✔
+4. Fine — heat is not really energy.
+Reveal: the paddle on the outdoor coil reads 2.0 kW arriving from
+the cold air. 1 + 2 = 3, every second. A mover can beat 100 % of
+its *electricity*; nothing beats 100 % of its *inputs*.
+
+**The misconception it confronts.** *"A machine can be more than
+100 % efficient"* — the ball and the toy, drawn exactly as their
+adverts insist, stand on the bench as visible impossibilities
+whose missing source three probes fail to find. *"Any device
+that outputs more heat than the electricity it draws must be a
+fraud"* — the heat pump's audit, which nearly every student
+initially stamps wrong, and the paddle that redeems it.
+
+**Real numbers.** LED: 400 lm / 4 W = 100 lm/W (ordinary for a
+good LED); ≈ 1.2 W light + 2.8 W heat. Heat pump: 1 kW electric
++ 2 kW pumped from outdoor air = 3 kW delivered. Wonder-ball:
+rebound needs m·g·1.2 against m·g·1.0 supplied — a 20 % sourceless
+surplus. Quartz clock: AA ≈ 14 000 J at 0.2 mW → 7 × 10⁷ s ≈ 2.2
+years. Magnet motor: ∮F·ds = 0 around any closed loop — no energy
+per cycle; observed behaviour: turns, then stalls. Wind-up toy:
+fixed ½kx² per wind; friction work per run can at best equal it.
+
+---

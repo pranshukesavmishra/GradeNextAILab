@@ -154,14 +154,18 @@ const SWING_AND_GRAPH: ArchetypeSpec = {
     { key: "mass", label: "Mass of the bob (g)", min: 20, max: 500, step: 10, default: 100 },
   ],
   // The small-swing pendulum period, T = 2 pi root(L/g) with g = 9.81 m/s2.
-  // Mass is a control here on purpose: it appears on the panel and changes
-  // nothing, which is the point.
+  // Mass is a control here on purpose: it moves the bob's weight and the
+  // energy of the swing, and moves the timing columns not at all — the null
+  // result on the period is the point.
   measure: (v) => {
     const period = 2 * Math.PI * Math.sqrt(v.length / 9.81);
+    const kg = v.mass / 1000;
     return {
       periodS: period,
       twentySwingsS: 20 * period,
       swingsPerMinute: 60 / period,
+      bobWeightN: kg * 9.81,
+      swingEnergyMillijoules: 1000 * kg * 9.81 * v.length * (1 - Math.cos(0.4)),
     };
   },
   plot: { x: "length", y: "periodS", xLabel: "String length (m)", yLabel: "Time for one swing (s)" },
