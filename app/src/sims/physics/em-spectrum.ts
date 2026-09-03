@@ -69,6 +69,18 @@ export function photonEnergyEV(wavelength: number): number {
 export const IONIZING_EV = 10;
 
 /**
+ * Fraction of the on-screen ruler occupied by the visible band — the number
+ * the whole zoom exercise is about. At full width it is under a hundredth;
+ * zoomed right in on the rainbow it approaches one.
+ */
+export function visibleShare(logCenter: number, span: number): number {
+  const lo = logCenter + span / 2;
+  const hi = logCenter - span / 2;
+  const overlap = Math.min(lo, Math.log10(7e-7)) - Math.max(hi, Math.log10(3.8e-7));
+  return Math.max(0, overlap) / Math.max(span, 1e-9);
+}
+
+/**
  * The colour a wavelength of visible light actually looks, from the standard
  * piecewise approximation to the CIE response.
  *
@@ -174,6 +186,11 @@ const model: SimModel<State> = {
         key: "fLambda", label: "Frequency × wavelength", quantity: q(frequencyOf(lambda) * lambda, "velocity"),
         unit: "m/s", semantic: "velocity", graphable: true, bands: ["6-8", "9-12"],
       },
+      {
+        key: "visibleShare", label: "Of the screen that is visible light",
+        quantity: q(visibleShare(params.logWavelength as number, params.zoom as number), "percent"),
+        unit: "%", semantic: "light", graphable: true, bands: ["6-8", "9-12"],
+      },
     ];
   },
 
@@ -191,6 +208,7 @@ const model: SimModel<State> = {
       band: band.key,
       bandLabel: band.label,
       visible: band.key === "visible",
+      visibleShare: visibleShare(params.logWavelength as number, params.zoom as number),
       ionizing: ev >= IONIZING_EV,
       use: band.use,
       sizeLike: sizeReference(lambda),
@@ -428,9 +446,10 @@ function render(rc: RenderContext<State>) {
     size: 15, color: theme.ink, weight: 800,
   });
   if (band !== "3-5") {
-    caption(ctx, 12, 42, `showing ${span.toFixed(1)} powers of ten`, theme, {
-      size: 11, color: theme.inkSoft,
-    });
+    const share = visibleShare(logL, span) * 100;
+    caption(ctx, 12, 42,
+      `showing ${span.toFixed(1)} powers of ten — visible light is ${share.toFixed(share >= 10 ? 0 : 1)}% of this screen`,
+      theme, { size: 11, color: theme.inkSoft });
   }
   vignette(ctx, width, height, 0.18);
 }

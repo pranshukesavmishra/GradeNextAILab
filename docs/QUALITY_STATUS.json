@@ -20,14 +20,6 @@
       "tested": 4
     },
     {
-      "id": "phys.em-spectrum",
-      "subject": "physics",
-      "unresponsive": [
-        "zoom"
-      ],
-      "tested": 2
-    },
-    {
       "id": "phys.forces",
       "subject": "physics",
       "unresponsive": [
