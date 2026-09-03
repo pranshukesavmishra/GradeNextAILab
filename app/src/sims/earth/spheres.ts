@@ -395,6 +395,14 @@ const model: SimModel<State> = {
         semantic: "producer", graphable: true,
       },
       {
+        key: "nextTransfer", label: "Next transfer in",
+        quantity: q(
+          state.complete ? 0 : (STEP_SECONDS - (state.t % STEP_SECONDS)) / (params.rate as number),
+          "time",
+        ),
+        unit: "s", semantic: "time", graphable: false,
+      },
+      {
         key: "matterOut", label: "Matter leaving the system",
         quantity: q(crossingCount(event, state.fired, boundary, "matter"), "count"),
         semantic: "mass", graphable: true, bands: ["6-8", "9-12"],
@@ -429,6 +437,10 @@ const model: SimModel<State> = {
       boundary,
       stepsFired: state.fired,
       stepsTotal: event.steps.length,
+      eventTime: state.t,
+      nextTransferS: state.complete
+        ? 0
+        : (STEP_SECONDS - (state.t % STEP_SECONDS)) / (params.rate as number),
       complete: state.complete,
       spheresTouched: order.length,
       allFourTouched: order.length === 4,

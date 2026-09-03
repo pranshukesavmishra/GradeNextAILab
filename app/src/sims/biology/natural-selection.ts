@@ -91,6 +91,8 @@ interface State {
   caughtLight: number;
   caughtDark: number;
   starved: number;
+  /** Babies born with a flipped fur gene since the founding. */
+  mutants: number;
   peakLightFraction: number;
 }
 
@@ -119,6 +121,7 @@ function buildPopulation(params: ParamValues, rng: Rng): State {
     caughtLight: 0,
     caughtDark: 0,
     starved: 0,
+    mutants: 0,
     peakLightFraction: frac,
   };
 }
@@ -219,6 +222,7 @@ const model: SimModel<State> = {
     let histGen = state.histGen;
     let histLight = state.histLight;
     let histPop = state.histPop;
+    let mutants = state.mutants;
     let population = survivors;
 
     if (genClock >= GEN_SECONDS) {
@@ -235,7 +239,9 @@ const model: SimModel<State> = {
         if (rng.chance(extra)) litter += 1;
         for (let k = 0; k < litter && next.length < MAX_BUNNIES; k++) {
           // Offspring inherit the parent's allele; mutation flips it rarely.
-          const allele = rng.chance(mutation) ? 1 - parent.allele : parent.allele;
+          const flipped = rng.chance(mutation);
+          if (flipped) mutants++;
+          const allele = flipped ? 1 - parent.allele : parent.allele;
           next.push({
             x: parent.x, y: parent.y, dir: rng.range(0, Math.PI * 2), allele,
           });
@@ -269,11 +275,12 @@ const model: SimModel<State> = {
       caughtLight,
       caughtDark,
       starved,
+      mutants,
       peakLightFraction: Math.max(state.peakLightFraction, frac),
     };
   },
 
-  readouts(state) {
+  readouts(state, params) {
     const n = state.bunnies.length;
     const light = lightFraction(state.bunnies);
     return [
@@ -301,6 +308,13 @@ const model: SimModel<State> = {
         key: "caughtDark", label: "Dark bunnies caught", quantity: q(state.caughtDark, "count"),
         semantic: "decomposer", graphable: false, bands: ["9-12"],
       },
+      {
+        // Why mutation alone is slow, as a number: at this population and this
+        // rate, how many babies per generation arrive with a flipped fur gene.
+        key: "mutantsExpected", label: "New variants expected per generation",
+        quantity: q(n * OFFSPRING * (params.mutationRate as number), "count"),
+        semantic: "producer", graphable: true, bands: ["6-8", "9-12"],
+      },
     ];
   },
 
@@ -318,6 +332,8 @@ const model: SimModel<State> = {
       caughtLight: state.caughtLight,
       caughtDark: state.caughtDark,
       starved: state.starved,
+      mutantBirths: state.mutants,
+      expectedMutantsPerGeneration: n * OFFSPRING * (params.mutationRate as number),
     };
   },
 };

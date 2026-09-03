@@ -28,22 +28,6 @@
       "tested": 4
     },
     {
-      "id": "bio.natural-selection",
-      "subject": "biology",
-      "unresponsive": [
-        "mutationRate"
-      ],
-      "tested": 4
-    },
-    {
-      "id": "earth.spheres",
-      "subject": "earth",
-      "unresponsive": [
-        "rate"
-      ],
-      "tested": 1
-    },
-    {
       "id": "earth.water-cycle",
       "subject": "earth",
       "unresponsive": [
