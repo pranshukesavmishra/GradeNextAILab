@@ -28,14 +28,6 @@
       "tested": 4
     },
     {
-      "id": "bio.homology",
-      "subject": "biology",
-      "unresponsive": [
-        "align"
-      ],
-      "tested": 2
-    },
-    {
       "id": "bio.human-impact",
       "subject": "biology",
       "unresponsive": [

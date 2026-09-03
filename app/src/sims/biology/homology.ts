@@ -221,9 +221,12 @@ const model: SimModel<State> = {
     const target = params.align as number;
     const auto = params.autoAlign as boolean;
     // With auto-align on, the limbs breathe between poses so the stage is
-    // never a still diagram.
+    // never a still diagram — until the slider leaves zero, which takes the
+    // pose into the student's hands; returning it to zero resumes the sweep.
     const t = state.t + dt;
-    const align = auto ? 0.5 - 0.5 * Math.cos(t * 0.55) : state.align + (target - state.align) * Math.min(1, dt * 4);
+    const align = auto && target === 0
+      ? 0.5 - 0.5 * Math.cos(t * 0.55)
+      : state.align + (target - state.align) * Math.min(1, dt * 4);
     const stageTarget = params.stage as number;
     const stage = params.view === "embryos" && auto
       ? 0.5 - 0.5 * Math.cos(t * 0.4)
@@ -811,7 +814,7 @@ export const homologySim: SimManifest<State> = {
     },
     autoAlign: {
       type: "boolean", label: "Sweep automatically", default: true,
-      help: "Turn it off to hold the limbs wherever you want them.",
+      help: "Turn it off — or move the slider off zero — to hold the limbs where you want them.",
     },
     highlight: {
       type: "option", label: "Highlight one bone",
