@@ -35,3 +35,21 @@ docs/QUALITY_STATUS.json are the evidence trail. Experience types: full
 experimental simulation / interactive scientific visualization / interactive
 mathematical model / structure exploration / reference content — reference
 content is never called a simulation.
+
+## ADR-5 · The Rig Engine is the scene engine (2026-09-03)
+Four independent architect designs (physics, pedagogy, visual, scale lenses)
+were judged by three independent judges: unanimous for the physics design,
+the Rig Engine, with mandatory grafts from the pedagogy design (predict gate,
+continuous-run mode, confront-from-own-runs labs) and named pieces of the
+visual and scale designs. Deciding argument: bindings receive (state, params)
+and never a time parameter, so the condemned wall-clock-decoration failure is
+unwritable at the type level rather than discouraged by review. The full spec
+is docs/SCENE_ENGINE_SPEC.md (definitive; builders implement from it alone).
+Key contours: engine code in app/src/engine/rig/ (additive; existing
+engine/types.ts untouched apart from §2.6 seam changes), shared physics kits
+in engine/models/, actor registry wrapping the surviving 2D/3D kits, prebuilt
+rigs in sims/rigs/, one file per experiment in sims/experiments/<topic>/,
+two-tier lint mapping the founder's seven-point bar to machine checks run per
+experiment in CI, migration keeps buildSim coexisting with buildExperiment
+with a visible burndown via manifest.engine. Budget ~6.0M tokens with the
+verifier pass protected — never cut verification to fit construction.

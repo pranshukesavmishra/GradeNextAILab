@@ -234,6 +234,13 @@ const model: SimModel<State> = {
         semantic: "producer", graphable: true, bands: ["6-8", "9-12"],
       },
       {
+        // What protection guarantees: even if farmland swallowed every free
+        // hectare, the protected fraction alone sustains this share of species.
+        key: "speciesFloor", label: "Species secured by protection",
+        quantity: q(speciesRemaining(params.protectLand as number), "percent"), unit: "%",
+        semantic: "producer", graphable: true, bands: ["6-8", "9-12"],
+      },
+      {
         // Explore mode has no clock: it reports the present day.
         key: "year", label: "Year",
         quantity: q(params.mode === "history" ? state.year : 2024, "count"),
@@ -259,6 +266,8 @@ const model: SimModel<State> = {
       habitatFraction: habitat,
       speciesFraction: species,
       speciesLostPercent: (1 - species) * 100,
+      protectedFraction: params.protectLand as number,
+      speciesFloorFraction: speciesRemaining(params.protectLand as number),
       cumulativeGt: state.cumulativeGt,
       projected: Boolean(m.row.projected),
       mode: params.mode as string,

@@ -28,14 +28,6 @@
       "tested": 4
     },
     {
-      "id": "bio.human-impact",
-      "subject": "biology",
-      "unresponsive": [
-        "protectLand"
-      ],
-      "tested": 4
-    },
-    {
       "id": "bio.natural-selection",
       "subject": "biology",
       "unresponsive": [
