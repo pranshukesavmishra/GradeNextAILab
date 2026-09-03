@@ -28,14 +28,6 @@
       "tested": 4
     },
     {
-      "id": "chem.ph",
-      "subject": "chemistry",
-      "unresponsive": [
-        "titrantConc"
-      ],
-      "tested": 3
-    },
-    {
       "id": "bio.artificial-selection",
       "subject": "biology",
       "unresponsive": [

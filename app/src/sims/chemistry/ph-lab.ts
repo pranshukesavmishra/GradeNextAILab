@@ -657,7 +657,7 @@ function render(rc: RenderContext<State>) {
   /* ---- callouts, in the clear strip between glassware and console ---- */
   const calloutX = width * 0.315;
   callout(ctx, cx, jawY + M * 0.11, calloutX, height * 0.14,
-    params.titrant === "acid" ? "0.1 M HCl" : "0.1 M NaOH", theme,
+    `${(params.titrantConc as number).toFixed(2)} M ${params.titrant === "acid" ? "HCl" : "NaOH"}`, theme,
     { sub: "in the burette", side: "right", accent: titrantColour });
   callout(ctx, cx + flaskW * 0.18, surfaceY + (benchY - surfaceY) * 0.45,
     calloutX, height * 0.55, contents.label, theme,
@@ -874,10 +874,10 @@ export const phLabSim: SimManifest<State> = {
     titrant: {
       type: "option", label: "In the burette",
       options: [
-        { value: "acid", label: "Acid — 0.1 M HCl (strong)" },
-        { value: "base", label: "Base — 0.1 M NaOH (strong)" },
+        { value: "acid", label: "Acid — HCl (strong)" },
+        { value: "base", label: "Base — NaOH (strong)" },
       ],
-      default: "acid",
+      default: "base",
       bands: ["6-8", "9-12"],
     },
     volumeAdded: {
