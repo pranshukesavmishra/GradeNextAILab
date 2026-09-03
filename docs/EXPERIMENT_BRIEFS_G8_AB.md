@@ -2938,3 +2938,425 @@ E / 2 000 J: 21, 83, 188, 42. Average crush force = E / 0.5 m: 83,
 kept from spec (0.1–1.2 m) as an advanced control, default 0.5 m.
 
 ---
+
+## Topic B2 — Potential energy in a system
+
+B2.1 and B2.3 use the **Stand and drop rig** in its tall variant (the same
+kit built 3.0 m high, cm scale up the column); B2.2 and B2.4 use the
+**Spring bench**; B2.5 uses the **Pendulum**. The topic's shared
+instrument is the two-colour energy bar pair — *store* (blue) and *motion*
+(orange) — drawn beside every apparatus at the same joules-per-pixel
+scale, so a store filled in one brief reads identically when it drains in
+another.
+
+### B2.1 — Gravitational potential energy
+
+**Subtopic.** B2.1 *Gravitational potential energy*
+(`g8b2-lift-it-and-hold`).
+
+**The question.** Winding a mass up a stand is work. Where has that work
+gone while the mass just hangs there — and can you get all of it back?
+
+**The scene.** The tall Stand rig, side camera. Up the 3.0 m column runs
+a cm scale; a *crank winch* is bolted to the column's foot, its cord
+running over a top pulley down to a cradle holding a 1.2 kg mass (slabs
+allow 2.4 kg). The crank handle is the student's: dragging it in circles
+lifts the cradle 10 cm per turn, and the cord visibly bears the load —
+a small inline tension gauge reads 11.77 N as it climbs. On the crank, a
+*work meter*: a dial totting up force × distance as joules, ticking as
+the handle turns. A ratchet pawl clicks every turn; release the handle
+and the mass *stays*, the work meter frozen, the blue store bar beside
+the column standing at the meter's figure. At the column's foot: a clay
+landing bed and a light gate one bob-height above it. A release lever
+trips the cradle. Instrument column: *stored energy vs height* graph
+(one point per hold), the bar pair, ledger.
+
+**What the student does.**
+1. Crank the mass up, watching the work meter; stop at the target
+   height; let go of the crank (the ratchet holds); *wait* — a held
+   beat in which nothing moves and the blue bar just stands there.
+2. Pull the release lever. The mass falls; the gate reads its arrival
+   speed; the clay takes a crater.
+- Run 1: 1.2 kg to 2.5 m.
+- Run 2 (change the height): 1.2 kg to 1.25 m.
+- Run 3 (change the mass): 2.4 kg to 2.5 m.
+
+**What they see happen.** Cranking is priced: every full turn costs the
+same effort and adds the same 1.18 J — the work meter climbs linearly,
+21 turns to 2.5 m, 29.4 J. The held beat is the subtopic: effort has
+stopped, nothing moves, and the energy is plainly *somewhere* — the
+blue bar holds 29.4 J against the ratchet's pawl. On release, the blue
+bar drains into orange exactly as the height scale unwinds; the gate
+reads 7.00 m/s; the crater is measured by a depth probe. Run 2: half
+the height, half the turns, half the store — and a gate reading of
+4.95 m/s, not half of 7. Run 3: double mass doubles the tension gauge
+(23.5 N), doubles the meter (58.9 J), doubles the crater — but the
+gate reads the *same* 7.00 m/s: twice the energy arrived in twice the
+mass.
+
+**What accumulates.** Store-vs-height points forming two straight lines
+through the origin — the 1.2 kg line and, after run 3, the first point
+of a steeper 2.4 kg line; craters left in the clay row per run, depth
+ordered by joules, not by speed. Ledger: *mass*, *height*, *turns*,
+*work in (J)*, *store (J)*, *gate speed*, *speed² / 2g check (m)* —
+the last column giving back the height every time.
+
+**The failure state.** Crank 2.4 kg to the column's 3.0 m top and
+release: 70.6 J bottoms the clay bed out — the probe hits the bench
+through it, the bench dents, and the over-range flag says the meter
+(the clay) has a floor. Separately, holding the crank *without*
+engaging the ratchet and letting the handle slip: the mass runs back
+down, spinning the crank backwards, and the work meter runs *down* to
+zero — the store was never in the student's arm; it was in the lifted
+arrangement, and lowering un-stores it.
+
+**The prediction.** *Double the mass, same 2.5 m. The landing speed
+will be…*
+1. Twice — twice the energy.
+2. The same 7.00 m/s. ✔
+3. Less — heavier falls slower.
+4. √2 times more.
+Reveal: twice the joules landed in twice the kilograms. v = √(2gh) has
+no mass in it; the crater, which counts joules, is what doubled.
+
+**The misconception it confronts.** *"A heavy object stores more energy
+however high it is"* — the 2.4 kg mass parked in its cradle at 0 cm
+shows a blue bar at exactly 0 J beside run 2's lighter-but-lifted
+29.4 J… corrected: 14.7 J. *"Potential energy is something inside the
+object itself"* — the work meter's backward run when lowering, and the
+tension gauge showing the Earth pulling through the cord the whole
+time, put the store in the lifted *pair*; B2.3 finishes the argument.
+
+**Real numbers.** Weight = m·g: 11.77 N (1.2 kg), 23.5 N (2.4 kg).
+Store = m·g·h: 29.43 J (1.2 × 9.81 × 2.5); per metre = m·g = 11.77 J.
+Landing speed = √(2gh): 7.00 m/s from 2.5 m, 4.95 from 1.25 m — mass
+absent. Fall time = √(2h/g): 0.714 s from 2.5 m. Crank: 10 cm/turn,
+1.18 J/turn at 1.2 kg. Spec ranges kept: h 0–12 m and m 0.1–20 kg
+exist as an off-bench "tower mode" toggle for the graph only.
+
+---
+
+### B2.2 — Elastic potential energy
+
+**Subtopic.** B2.2 *Elastic potential energy* (`g8b2-stretch-and-store`).
+
+**The question.** The first centimetre of stretch is nearly free and the
+tenth is hard work. So what does *twice* the stretch store?
+
+**The scene.** The **Spring bench**, side camera. A steel spring lies
+horizontal, one end on a wall bracket, the other on a *draw handle*
+with an inline force gauge (0–80 N); under the spring, a metre rule
+marked in cm from the natural-length zero. The handle latches at any
+extension. At the zero mark, a swivel dock holds a 50 g steel ball; a
+*launch tube* rises from the dock — a clear vertical tube 4.0 m tall
+with a height scale and a soft cap at the top. Beside the bench, the
+force-vs-extension graph draws live as the handle moves, the area
+under the line shading green (the elastic store); the green bar joins
+the bar pair. A k-swap rack holds three springs: k = 60, 120 (default),
+240 N/m, each visibly different in coil weight. Instrument column:
+*height reached vs extension* graph and ledger.
+
+**What the student does.**
+1. Drag the handle out against the gauge; feel the line climb; latch.
+2. Press the trigger: the spring fires the ball up the tube; a ring
+   marker sticks at the peak height.
+- Run 1: k = 120, pull to 9.0 cm.
+- Run 2 (double the stretch): 18.0 cm.
+- Run 3 (change the spring): k = 240, back to 9.0 cm.
+
+**What they see happen.** Run 1: the gauge reads 10.8 N at latch; the
+shaded triangle holds 0.49 J; the ball pops up to 0.99 m and falls
+back. Run 2: the gauge reads 21.6 N — the *pull* doubled — but the
+shaded triangle is four times the area (1.94 J), and the ball sails
+to 3.96 m, kissing the top of the tube: double the stretch, four
+times the height, on a scale the student squints up at. Run 3: the
+stiff spring at the same 9 cm doubles the triangle's height but not
+its base — 0.97 J, 1.98 m: stiffness doubles the store; stretch
+squares it.
+
+**What accumulates.** Peak rings left on the tube at 0.99, 3.96,
+1.98 m; three shaded F-x triangles overlaid; height-vs-extension
+points bending upward. Ledger: *k*, *x*, *pull at latch (N)*,
+*store ½kx² (J)*, *launch speed*, *height*, *height ÷ run 1's*.
+
+**The failure state.** Pull the default spring to 25 cm: 3.75 J wants
+7.65 m and the tube has 4.0 — the ball cracks into the soft cap at
+8.5 m/s, drops back, and the ledger splits the energy: "3.75 J
+stored; 1.96 J of climb used; the rest returned to the cap and the
+fall." The rig's range, found by exceeding it.
+
+**The prediction.** *9 cm of stretch sent the ball to about 1 m.
+18 cm will send it to about…*
+1. 2 m — double the stretch, double the height.
+2. 4 m. ✔
+3. 1.4 m.
+4. 8 m.
+Reveal: the ring sits at 3.96 m. The store is the *area* of the F-x
+triangle, and doubling both the base and the height of a triangle
+quadruples it.
+
+**The misconception it confronts.** *"Stretching twice as far stores
+twice the energy"* — the tube answers vertically, 0.99 against
+3.96 m. *"A stiff spring always stores more energy than a soft one"*
+— a run 3 coda invites the soft k = 60 spring pulled to 25 cm
+(1.88 J) against the stiff k = 240 at 9 cm (0.97 J): the soft spring
+wins on screen, because x is squared and k is not.
+
+**Real numbers.** Store = ½kx²; pull = kx. Defaults from the spec:
+k = 120, x = 0.15 → 18 N and 1.35 J, launch √(2E/0.05) = 7.35 m/s,
+height E/(0.05·9.81) = 2.75 m. Runs: (120, 0.09) → 0.486 J, 0.99 m;
+(120, 0.18) → 1.944 J, 3.96 m; (240, 0.09) → 0.972 J, 1.98 m; (120,
+0.25) → 3.75 J vs the tube's 1.96 J ceiling. Ranges kept: x 0–0.40 m,
+k 20–400 N/m.
+
+---
+
+### B2.3 — Potential energy as a property of a system
+
+**Subtopic.** B2.3 *Potential energy as a property of a system*
+(`g8b2-whose-energy-is-it`).
+
+**The question.** The label says "29 J stored". Stored *in what*? Can
+you change the store without ever touching the mass?
+
+**The scene.** The tall Stand rig rebuilt around a hole: the 1.2 kg
+mass hangs from its clamp 1.0 m above a *platform* with a light gate
+at platform level; the platform is a **trapdoor** — a hinged pair of
+doors with a lever — and through it, 1.5 m further down, lies the
+floor with a second light gate and the clay bed (total drop 2.5 m).
+To the right, a second station: a clear tube holding two ring magnets
+north-to-north, the upper one floating on repulsion; a plunger can
+press it down, with a work meter and a gap scale in mm. To the left,
+the third station: the 3.0 kg trolley from Unit B rolling at 1.5 m/s
+in a small oval (its orange bar reading 3.4 J as it goes). The key
+prop: **energy labels** — physical tags reading "… J stored" that the
+student must pin somewhere. A tag pinned to a single object springs
+off ("with respect to what?"); a tag *stretched* between two things
+(mass↔platform, mass↔floor, magnet↔magnet) locks on as a bracket and
+computes its own number. Instrument column: ledger and the bar pairs.
+
+**What the student does.**
+- Run 1 (doors shut): pin the bracket label mass↔platform (it reads
+  11.8 J); release; the platform gate reads the arrival speed.
+- Run 2 (doors open): reset the same mass to the same clamp; pull the
+  trapdoor lever — *touching only the door* — and watch the bracket
+  labels: mass↔platform still 11.8 J but greyed (nothing to land on);
+  mass↔floor now live at 29.4 J. Release; the floor gate reads.
+- Run 3 (the magnet gap): press the floating magnet down 3 cm against
+  the plunger's work meter; latch; pin the bracket magnet↔magnet; then
+  *remove the lower magnet* with tongs — the floater drops dead and
+  every label attached to the pair evaporates.
+
+**What they see happen.** Run 1: 4.43 m/s at the platform. Run 2: the
+same object, same clamp, same height above the *bench* — and it
+arrives at the floor gate at 7.00 m/s carrying 29.4 J. The extra
+17.7 J was granted by a lever the mass never felt: the store was
+never "in" the mass; it lives in the mass-and-where-it-can-fall
+arrangement, and opening the doors changed the arrangement. Run 3
+seals it: the magnet store visibly needs *both* magnets — take one
+away and the number does not transfer to the survivor; it ceases to
+exist.
+
+**What accumulates.** The ledger's sorting question, answered by
+test rather than by opinion — a column "*could you change the store
+without touching it?*": trapdoor mass YES (the lever), magnet pair
+YES (move the partner), rolling trolley NO (its 3.4 J of motion
+cannot be altered except through the trolley itself). Bracket labels
+remain pinned across the scene as the diagram the student built.
+
+**The failure state.** The springing-off tag: every attempt to pin a
+store on a lone object fails in the hand, including the seductive one
+— pinning "29.4 J" on the mass itself while it hangs. The rig's
+refusal *is* the content.
+
+**The prediction.** *Same mass, same clamp. You open the trapdoor
+underneath it, touching only the lever. The stored energy…*
+1. Cannot change — nothing touched the mass.
+2. Rises from 11.8 to 29.4 J: the arrangement changed. ✔
+3. Falls to zero — the platform is gone.
+4. Stays 11.8 J but the fall gets faster.
+Reveal: the floor gate read 7.00 m/s = 29.4 J delivered. A store is a
+fact about the mass *and* the Earth *and* what lies between; doors
+count.
+
+**The misconception it confronts.** *"Potential energy is stored
+inside a single object"* — the tags will not stick to one. *"A
+stationary object has no energy at all"* — the hanging mass's blue
+bracket reads 29.4 J while its orange bar reads 0; the two bars name
+different facts.
+
+**Real numbers.** From the spec's checked set: clamped 1.2 kg at
+2.5 m ↔ 29.4 J with the Earth; at 1.0 m ↔ 11.77 J; arrivals
+√(2gh) = 4.43 and 7.00 m/s. Magnet pair: pressing 3 cm stores the
+plunger meter's ~0.5 J in the gap (spec's squashed-spring analogue:
+8 cm at k = 200 → 0.64 J is quoted on the station's plate). Trolley:
+½ × 3.0 × 1.5² = 3.4 J, its own wherever it goes.
+
+---
+
+### B2.4 — Modeling potential energy as an arrangement changes
+
+**Subtopic.** B2.4 *Modeling potential energy as an arrangement
+changes* (`g8b2-ten-centimetres-more`).
+
+**The question.** Four identical pulls, ten centimetres each. Why does
+the fourth one cost seven times what the first did?
+
+**The scene.** The **Spring bench** fitted with a *ratchet drawbar*:
+the handle now moves in exact 10 cm clicks — drag, clunk, latch —
+against the k = 150 N/m spring. Instruments per click: the inline
+force gauge (reads the holding force at each latch: 15, 30, 45,
+60 N), and a *click till* — a receipt printer that stamps one paper
+slip per click with the work that click cost, the slips accumulating
+on a spike in order. The F-x graph draws live, and each click's strip
+of new area is shaded in its own tint, so the graph becomes four
+bands of visibly growing area. A ghost meter runs alongside: the
+*flat-price counter*, which believes every click costs what the first
+one did and prints its own faded slips (0.75 J, 0.75 J, …) for
+contrast. Instrument column: *store vs extension* curve accumulating
+a point per click; ledger.
+
+**What the student does.**
+- Run 1: four clicks out, reading the gauge and collecting the four
+  slips: 0.75, 2.25, 3.75, 5.25 J (the flat-price ghost printing its
+  wrong 0.75s beside them).
+- Run 2 (reverse it): four clicks *back*, one at a time — each click
+  returns exactly its slip's joules to the drawbar (the till prints
+  refunds in green), ending at zero.
+- Run 3 (read the force story): out again, but pausing at each latch
+  to pin the gauge reading onto the graph — 15, 30, 45, 60 N — and
+  watch the strips' growth track the force they were pulled against.
+
+**What they see happen.** The receipts disagree with the ghost from
+click two onward, and by click four the spike holds 0.75 + 2.25 +
+3.75 + 5.25 = 12.00 J against the ghost's 3.00 — a 4:1 gap printed on
+paper. The graph shows why with no algebra: each strip is a trapezoid
+whose left edge starts at the force the last click *ended* on; the
+strips grow because the force grew, and the force grew because the
+spring is further from its natural shape. The refunds of run 2 make
+the store's bookkeeping exact in both directions.
+
+**What accumulates.** The slip spike (the odd-number-spaced costs),
+the four-band graph, the store-vs-extension points curving upward
+(0.75, 3.00, 6.75, 12.00 J), and a ledger column *cost of this click
+÷ cost of click 1* reading 1, 3, 5, 7.
+
+**The failure state.** Yank the drawbar past the fourth latch toward
+a fifth (0.50 m): the pawl slips at 0.45 m — the spring snaps back
+along the bench, the drawbar cracks against the zero stop, all
+12-plus joules land in one bang and shiver, and the till prints a
+single red slip: "returned: everything, at once." Storage is
+reversible; the *rate* of return is a design decision, as Unit A's
+crash briefs said from the other side.
+
+**The prediction.** *Click one cost 0.75 J. Click four will cost…*
+1. 0.75 J — same distance, same price.
+2. 3.00 J.
+3. 5.25 J — you are pulling against 45 N before it even starts. ✔
+4. 12.00 J.
+Reveal: the slip says 5.25 J. Equal distances are not equal work when
+the force you pull against has been growing the whole way.
+
+**The misconception it confronts.** *"Each equal pull adds the same
+energy to the spring"* — the flat-price ghost is that belief given a
+meter, and it is 9 J short by click four. *"The force needed stays
+the same as a spring is stretched"* — the gauge is read aloud at
+every latch: 15, 30, 45, 60 N.
+
+**Real numbers.** k = 150 N/m. Holding force at latches: kx = 15,
+30, 45, 60 N. Store at latches: ½kx² = 0.75, 3.00, 6.75, 12.00 J.
+Click costs (differences): 0.75, 2.25, 3.75, 5.25 J — each 1.50 J
+more than the last; cost of click n = ½k(x_n² − x_{n−1}²) =
+15x + 0.75 J. Ratios to click one: 1, 3, 5, 7.
+
+---
+
+### B2.5 — Potential and kinetic energy trading off
+
+**Subtopic.** B2.5 *Potential and kinetic energy trading off*
+(`g8b2-swing-and-trade`).
+
+**The question.** Nothing pushes a pendulum downhill and nothing hauls
+it back up. What exactly is being traded, and does the total ever
+change?
+
+**The scene.** The **Pendulum**: a 2.0 kg brass bob on a 1.8 m string
+from a beam, side camera framing the full swing. At the pivot, a
+large protractor with a drag-to-set release finger; behind the swing,
+a faint height grid with its zero at the bob's lowest point; at the
+bottom of the arc, a light gate. The bob leaves a *speed-tinted
+trail* (deep blue when slow, hot orange at the bottom) that fades
+over a few swings. Beside the rig, the topic's bar pair at full
+size: blue store and orange motion, with a black *total* tick at
+10.34 J that never moves. A clamp-on *peg* can be fixed to the beam's
+post 0.9 m below the pivot, in the string's path. Force-arrow toggle:
+shows only the two real forces on the bob (string tension, weight).
+Instrument column: *store and motion vs time* graph (two braided
+lines) and the ledger.
+
+**What the student does.**
+1. Drag the bob up to an angle on the protractor's finger; let go.
+2. Watch three swings; read the gate each pass.
+- Run 1: release at 45°.
+- Run 2 (change the release): 30°.
+- Run 3 (change the path, not the energy): 45° again, with the peg
+  clamped in — the string catches it at the bottom and the bob whips
+  round a tighter arc on the far side.
+
+**What they see happen.** Run 1: the bob is 0.527 m up the height
+grid holding 10.34 J of blue and none of orange; as it falls the two
+bars pour one into the other — passing 30° the split is 4.73/5.61,
+at the bottom 0/10.34 and the gate stamps 3.22 m/s — and the far
+side rebuilds the blue to a whisker under 45°. The braided graph
+shows two lines crossing and re-crossing while their sum rides the
+black tick like a rail. Run 2: a shallower version — bottom speed
+2.17 m/s, total parked at 4.73 J — the trade scales with the
+release, the totals differ, the *rule* does not. Run 3 is the
+showpiece: the string snags the peg at the bottom, the arc tightens,
+the far-side path is completely different — and the bob climbs to
+*the same height* as run 1's, 0.527 m on the grid, a wider angle on
+a shorter string. The grid, not the protractor, is what the energy
+answers to.
+
+**What accumulates.** Gate stamps per pass (3.22, 3.22, 3.21… the
+slow leak visible in the third decimal); braided graphs for each
+release; run 3's two different arcs peaking on one height line,
+drawn over each other. Ledger: *release angle*, *height (m)*,
+*total (J)*, *bottom speed predicted √(2gh)*, *bottom speed
+measured*, *far-side height*.
+
+**The failure state.** Left swinging for 60 s, the envelope decays:
+each far side loses a few millijoules to the air and the pivot (the
+trail's fade made quantitative — the braided sum drifts a hair's
+width below the black tick, flagged "leaking to the room: it never
+comes back"). And releasing above 80° with a slack-string warning:
+the string goes slack at the top of the far swing, the bob falls
+inside the arc for a beat — a real pendulum's real limit.
+
+**The prediction.** *The peg catches the string at the bottom, so
+the far-side arc is short and steep. The bob will rise to…*
+1. The same 45° angle it left from.
+2. The same height it left from, at a wider angle. ✔
+3. Half the height — the peg took half.
+4. Higher — the tighter circle slings it up.
+Reveal: run 1 and run 3 peak on the same grid line, 0.527 m. The
+trade is heights for speeds; angles and arcs are just the route.
+
+**The misconception it confronts.** *"The pendulum gains energy as
+it speeds up"* — the braided sum never leaves the black tick while
+speed comes and goes. *"The bob is pushed downwards by something as
+it swings"* — the force toggle shows exactly two arrows, tension
+and weight, and nowhere a pusher; the speeding-up is the blue bar's
+spending, not a third force's shove.
+
+**Real numbers.** L = 1.8 m, m = 2.0 kg. Release 45°: drop
+h = L(1 − cos 45°) = 0.527 m; total = mgh = 10.34 J; bottom speed
+√(2gh) = 3.22 m/s (mass cancels); period (small-angle) 2π√(L/g) =
+2.69 s. At 30° on the way down from 45°: store 4.73 J, motion
+5.61 J, speed 2.37 m/s — still summing 10.34. Release 30°: h =
+0.241 m, total 4.73 J, bottom 2.17 m/s. Peg at 0.9 m: far-side
+radius 0.9 m, same 0.527 m rise → far angle cos⁻¹(1 − 0.527/0.9) ≈
+65°. Leak per swing: a few mJ (spec: air and pivot warmth, gone for
+good).
+
+---
