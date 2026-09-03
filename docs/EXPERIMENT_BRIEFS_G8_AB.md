@@ -3022,7 +3022,7 @@ no mass in it; the crater, which counts joules, is what doubled.
 **The misconception it confronts.** *"A heavy object stores more energy
 however high it is"* — the 2.4 kg mass parked in its cradle at 0 cm
 shows a blue bar at exactly 0 J beside run 2's lighter-but-lifted
-29.4 J… corrected: 14.7 J. *"Potential energy is something inside the
+14.7 J. *"Potential energy is something inside the
 object itself"* — the work meter's backward run when lowering, and the
 tension gauge showing the Earth pulling through the cord the whole
 time, put the store in the lifted *pair*; B2.3 finishes the argument.
