@@ -1,28 +1,21 @@
 # Next work queue — highest value first
 
-1. **Finish the three in-flight streams** (see AI_PROGRESS.md table): resume
-   architecture workflow, audit workflow, briefs agent. Everything below
-   depends on the first two.
-2. **Read `docs/SCENE_ENGINE_SPEC.md` when it lands**; sanity-check it against
-   REBUILD_BRIEF.md's seven points; record the decision in
-   `docs/ARCHITECTURE_DECISIONS.md`; then implement the engine core (one
-   engineer/agent, `app/src/engine/scene/` or as the spec directs) with unit
-   tests before any flagship.
-3. **Flagship rebuilds** (master brief phase 3), each to the acceptance gate,
-   each visually QA'd by driving controls and reading screenshots:
-   projectile (upgrade), collisions (upgrade), forces, energy, waves, optics,
-   circuits (needs real circuit solver), gas laws, ecosystem, probability.
-   Use `docs/EXPERIMENT_BRIEFS_G8_AB.md` for the mechanics/energy ones.
-4. ~~Quality gate command~~ DONE: `npm run lab:quality` runs wire-topics
-   --check, wire-curriculum --check, tsc, vitest incl. the acceptance harness.
-   Remaining: triage the 19-sim unresponsive-control queue in
-   `docs/QUALITY_STATUS.json` (fix real dead controls; expose the missing
-   readout where the null effect is the physics), then promote the causal
-   sweep from a report to an assertion.
-5. **Audit-driven catalogue plan**: when `docs/AUDIT.md` + manifest land,
-   group the 521 archetype subtopics by target engine and schedule rebuild
-   waves (engines first, then configurations).
-6. Teacher mode, instruments-as-probes, accessibility pass, performance pass —
-   after the engine exists (they hang off its APIs).
+1. **G6 Unit A build (ACTIVE)** — the founder's experiment book at
+   docs/experiment-specs/G6-UnitA/ is the authoritative spec: 27 experiments
+   (A1x5, A2x5, A3x5, A4x6, A5x6). A1.1 "Unplug the Aquarium" is being built
+   first as the unit exemplar; the remaining topics fan out to its pattern,
+   one owner agent per topic, each experiment verified (unit tests + the
+   acceptance gate + npm run build) before the next. Register in registry.ts,
+   link the curriculum subtopic, id scheme "g6.a1-1", files under
+   app/src/sims/g6/.
+2. **After G6-A is done and the founder approves**: ask for the next unit
+   package; do not start a unit without its book.
+3. **Kept-37 enhancements** — only on the founder's explicit suggestions;
+   the 37 are otherwise frozen (ADR-6).
+4. **Unresponsive-control queue** — 1 of 37 remains (phys.collisions massB,
+   physics-at-defaults case); fold into any founder-approved collisions
+   enhancement rather than touching the frozen sim now.
+5. **Rig Engine (ADR-5)** — shared machinery adopted incrementally as kits
+   emerge from unit builds; not a prerequisite (ADR-7).
 
-Blocked: Grades 1-5 and 9-12 need syllabus PDFs from the founder.
+Blocked: further unit packages come from the founder one at a time.
