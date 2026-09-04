@@ -28,14 +28,6 @@
       "tested": 4
     },
     {
-      "id": "earth.water-cycle",
-      "subject": "earth",
-      "unresponsive": [
-        "vegetation"
-      ],
-      "tested": 4
-    },
-    {
       "id": "math.probability",
       "subject": "math",
       "unresponsive": [

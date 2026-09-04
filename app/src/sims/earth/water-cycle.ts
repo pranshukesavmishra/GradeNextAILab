@@ -241,9 +241,7 @@ function nextStage(
     case "river":
       return { stage: "ocean", toX: SHORE_X - 0.05, toY: SEA_Y + 0.08 };
     case "soil": {
-      // Two thirds of land evapotranspiration is transpiration through plants,
-      // and more vegetation moves that share further still.
-      if (rng.next() < 0.35 + veg * 0.4) {
+      if (rng.next() < transpirationShare(veg)) {
         return { stage: "plant", toX: x, toY: terrainY(x) - 0.045 };
       }
       return { stage: "groundwater", toX: x - 0.05, toY: terrainY(x) + 0.14 };
@@ -274,6 +272,16 @@ function startMolecule(): Molecule {
 /** Evaporation depends on how much sunlight there is: no Sun, no cycle. */
 export function evaporationFlux(sunPower: number): number {
   return TOTAL_EVAP * Math.max(0, sunPower);
+}
+
+/**
+ * The share of soil water that leaves through plants rather than seeping down
+ * to groundwater. Two thirds of land evapotranspiration is transpiration, and
+ * more vegetation moves that share further still. The molecule's soil branch
+ * and the transpiration flux readout both draw on this one number.
+ */
+export function transpirationShare(vegetation: number): number {
+  return 0.35 + vegetation * 0.4;
 }
 
 /**
@@ -388,6 +396,15 @@ const model: SimModel<State> = {
         semantic: "liquid", graphable: true,
       },
       {
+        key: "transpiration", label: "Transpiration (thousand km³/yr)",
+        quantity: q(
+          (LAND_ET * transpirationShare(params.vegetation as number)
+            * Math.max(0, params.sunPower as number)) / 1000,
+          "ratio",
+        ),
+        semantic: "producer", graphable: true, bands: ["6-8", "9-12"],
+      },
+      {
         key: "atmStore", label: "Water in the air (km³)",
         quantity: q(state.atmosphereKm3, "ratio"),
         semantic: "gas", graphable: true, bands: ["6-8", "9-12"],
@@ -424,6 +441,7 @@ const model: SimModel<State> = {
     const gravity = params.gravity as number;
     const tau = gravity > 0 ? ATMOSPHERE_RESIDENCE_YEARS / gravity : Infinity;
     const sum = RESERVOIRS.reduce((s, r) => s + reservoirPercent(r.key), 0);
+    const share = transpirationShare(params.vegetation as number);
     return {
       oceanPercent: reservoirPercent("ocean"),
       icePercent: reservoirPercent("ice") + reservoirPercent("permafrost"),
@@ -434,6 +452,8 @@ const model: SimModel<State> = {
       totalWaterKm3: TOTAL_WATER_KM3,
       evaporation: state.lastEvap,
       precipitation: state.lastPrecip,
+      transpiration: LAND_ET * share * Math.max(0, params.sunPower as number),
+      transpirationShareOfSoil: share,
       atmosphereStoreKm3: state.atmosphereKm3,
       atmosphereResidenceDays: Number.isFinite(tau) ? tau * DAYS_PER_YEAR : 0,
       oceanResidenceYears: OCEAN_RESIDENCE_YEARS,
