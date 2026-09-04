@@ -81,3 +81,24 @@ readouts, labs from the spec's scenarios — passing the acceptance gate.
 The Rig Engine spec (ADR-5) remains the reference for shared machinery
 (actors, cues, run records) and is adopted incrementally as shared kits
 emerge, not as a prerequisite for unit builds.
+
+## ADR-8 · Standing quality mandate and the revert rule (2026-09-04, founder)
+The founder has delegated all build-method and model-assignment decisions,
+under one absolute constraint: THE QUALITY AND LEVEL OF WORK MUST NEVER
+DECREASE. This mandate outranks every efficiency measure. Enforcement is
+structural, at every decision point, not a memory:
+1. Every builder-agent prompt carries the quality bar verbatim (spec
+   fidelity, real causal model, every control alive, honest measurements,
+   failure states, tests) — no agent builds without it.
+2. Every finished experiment passes, in order: its own science tests, the
+   full acceptance gate, a production build, and a TOP-MODEL review against
+   the founder's spec before it is committed. A review failure means rework;
+   two failures escalate the experiment to a stronger model.
+3. The efficiency measures in play (Sonnet builder lanes, shared engines,
+   distilled builder guide, topic batching, effort tuning, leaner duplicate
+   verification) are all quality-neutral or quality-raising BY DESIGN; none
+   removes a gate.
+4. THE REVERT RULE: at the first sign of quality slipping — a review
+   rejection pattern, a gate weakening, founder dissatisfaction — the change
+   responsible is rolled back strictly and immediately to the last proven
+   method, and the rollback is recorded here. Speed is never a defense.
