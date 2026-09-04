@@ -51,7 +51,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "v = 120 m ÷ 15 s",
           answer: "8 m/s",
         },
-        sims: ["phys.motion-graphs", "phys.projectile"],
+        sims: ["phys.motion-graphs"],
         note:
           "Unless the speed is steady, this gives the average over the whole interval, " +
           "not the speed at any one instant. The speedometer reading and the journey " +
@@ -148,7 +148,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "a = (24 m/s − 0 m/s) ÷ 6 s",
           answer: "4 m/s²",
         },
-        sims: ["phys.motion-graphs", "phys.forces"],
+        sims: ["phys.motion-graphs"],
         note:
           "A negative acceleration does not always mean slowing down — it means the " +
           "acceleration points backwards along the chosen positive direction. An object " +
@@ -197,7 +197,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "v = (60 m − 15 m) ÷ (20 s − 5 s)",
           answer: "3 m/s",
         },
-        sims: ["phys.motion-graphs", "math.derivatives"],
+        sims: ["phys.motion-graphs"],
         note:
           "A flat line means stopped, not missing data. A curved line means the speed is " +
           "changing, so a single gradient describes only the tangent at one instant.",
@@ -220,7 +220,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "a = (16 m/s − 4 m/s) ÷ (8 s − 2 s)",
           answer: "2 m/s²",
         },
-        sims: ["phys.motion-graphs", "math.derivatives"],
+        sims: ["phys.motion-graphs"],
         note:
           "The two graph types look alike and mean opposite things. A horizontal line on " +
           "a distance-time graph is an object at rest; a horizontal line on a " +
@@ -281,7 +281,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "Fₙₑₜ = 250 N − 90 N",
           answer: "160 N forwards",
         },
-        sims: ["phys.forces"],
+        sims: [],
         note:
           "Balanced forces do not mean stopped — they mean no change in motion. A car at " +
           "a steady 30 m/s on a level road has a resultant force of zero.",
@@ -304,7 +304,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "a = 6 N ÷ 2 kg",
           answer: "3 m/s²",
         },
-        sims: ["phys.forces", "phys.collisions"],
+        sims: ["phys.collisions"],
         note:
           "F is the resultant force, never just the force you happen to be pushing with. " +
           "If you push a box with 20 N and friction holds it back with 20 N, F is zero " +
@@ -328,7 +328,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "W = 6 kg × 9.8 N/kg",
           answer: "58.8 N",
         },
-        sims: ["phys.gravity", "phys.fields"],
+        sims: [],
         note:
           "Mass is not weight. A 6 kg bag is still 6 kg on the Moon, but with g of about " +
           "1.6 N/kg it weighs roughly 10 N there instead of 59 N — about a sixth as much. " +
@@ -350,7 +350,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "F₁ = 150 N backwards on the water, so F₂ = 150 N forwards on the swimmer",
           answer: "150 N forwards on the swimmer",
         },
-        sims: ["phys.collisions", "phys.forces"],
+        sims: ["phys.collisions"],
         note:
           "The two forces in the pair act on different objects, which is why they never " +
           "cancel each other. In a truck-and-car collision both feel the same size of " +
@@ -426,7 +426,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "P = 600 N ÷ 0.03 m²",
           answer: "20000 Pa",
         },
-        sims: ["earth.atmosphere", "chem.gas-laws"],
+        sims: ["chem.gas-laws"],
         note:
           "The same force gives a different pressure on a different area — that is the " +
           "whole point of snowshoes, drawing pins and knife blades. One pascal is one " +
@@ -451,7 +451,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "g = 18.5 N ÷ 5 kg",
           answer: "3.7 N/kg",
         },
-        sims: ["phys.gravity", "phys.fields"],
+        sims: [],
         note:
           "A field is a property of the space, not of the object you put in it. The value " +
           "of g at a place is the same whether you hang 1 kg or 100 kg there.",
@@ -476,7 +476,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "F = 40 N ÷ 2² = 40 N ÷ 4",
           answer: "10 N",
         },
-        sims: ["phys.gravity", "phys.fields"],
+        sims: [],
         note:
           "At this level you are expected to use the pattern, not the constant. Gravity " +
           "is always attractive and never switches off — the force between two students " +
@@ -502,7 +502,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "F = 0.60 N × 2² = 0.60 N × 4",
           answer: "2.4 N",
         },
-        sims: ["phys.electric-force", "phys.fields"],
+        sims: [],
         note:
           "This has the same inverse-square shape as gravity, with one crucial " +
           "difference: charge comes in two kinds, so this force can repel as well as " +
@@ -525,7 +525,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "B ∝ 100 turns ÷ 50 turns",
           answer: "2 times the field strength",
         },
-        sims: ["phys.magnetism", "phys.fields"],
+        sims: [],
         note:
           "The sign here is ∝ (proportional to), not =. The iron core matters more than " +
           "either factor and is not in this relationship at all, so use it to compare " +
@@ -561,7 +561,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "KE = ½ × 1200 kg × (20 m/s)²",
           answer: "240000 J",
         },
-        sims: ["phys.kinetic-energy", "phys.collisions", "phys.energy-skate"],
+        sims: ["phys.kinetic-energy", "phys.collisions"],
         note:
           "Double the mass and the kinetic energy doubles; double the speed and it " +
           "quadruples. That asymmetry is the physics behind speed limits — a crash at " +
@@ -586,7 +586,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "PE = 2 kg × 9.8 N/kg × 1.5 m",
           answer: "29.4 J",
         },
-        sims: ["phys.energy-skate", "phys.pendulum"],
+        sims: ["phys.pendulum"],
         note:
           "Height is measured from whatever level you decide to call zero, so the value " +
           "of PE depends on that choice. Only the change in PE has physical meaning, and " +
@@ -610,7 +610,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "Eₑ = ½ × 200 N/m × (0.10 m)²",
           answer: "1.0 J",
         },
-        sims: ["phys.energy-skate"],
+        sims: [],
         note:
           "Grade 8 usually meets this as a pattern rather than a calculation: stretch it " +
           "twice as far and it stores four times the energy. It stops being true once the " +
@@ -633,7 +633,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "KE gained = 50 kg × 9.8 N/kg × 4 m",
           answer: "1960 J",
         },
-        sims: ["phys.energy-skate", "phys.pendulum", "phys.collisions"],
+        sims: ["phys.pendulum", "phys.collisions"],
         note:
           "This clean swap only holds when friction and air resistance are negligible. " +
           "In the real world some energy always ends up as thermal energy in the ramp, " +
@@ -658,7 +658,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "v = √(2 × 9.8 N/kg × 5 m)",
           answer: "9.9 m/s",
         },
-        sims: ["phys.energy-skate", "phys.pendulum"],
+        sims: ["phys.pendulum"],
         note:
           "Mass has vanished from the formula, so a heavy and a light ball reach the same " +
           "speed from the same height. Only the vertical drop counts — the shape of the " +
@@ -682,7 +682,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "W = 25 N × 3 m",
           answer: "75 J",
         },
-        sims: ["phys.forces", "phys.energy-skate"],
+        sims: [],
         note:
           "No movement means no work, however tiring it feels — holding a heavy bag still " +
           "does zero joules of work in physics. The distance must also be along the force: " +
@@ -706,7 +706,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "P = 3000 J ÷ 20 s",
           answer: "150 W",
         },
-        sims: ["phys.circuits", "phys.energy-skate"],
+        sims: [],
         note:
           "Power is a rate, not an amount. Two lifts that raise the same load to the same " +
           "floor do identical work; the faster one is simply more powerful. One watt is " +
@@ -730,7 +730,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "efficiency = 350 J ÷ 500 J × 100",
           answer: "70%",
         },
-        sims: ["phys.energy-skate", "phys.heat-transfer"],
+        sims: ["phys.heat-transfer"],
         note:
           "Efficiency can never exceed 100%. The missing 30% has not been destroyed — it " +
           "has been dissipated as thermal energy and sound, which is why the motor gets " +
@@ -963,7 +963,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "I = 6 V ÷ 3 Ω",
           answer: "2 A",
         },
-        sims: ["phys.circuits"],
+        sims: [],
         note:
           "A battery supplies a fixed voltage, not a fixed current — the circuit decides " +
           "the current. Resistance is not 'used up' either: the same current flows into " +
@@ -987,7 +987,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "Q = 0.5 A × 60 s",
           answer: "30 C",
         },
-        sims: ["phys.circuits", "phys.electric-force"],
+        sims: [],
         note:
           "One ampere is one coulomb of charge passing each second, so current is a rate " +
           "and charge is an amount. The charge is not consumed on its way round — it " +
@@ -1011,7 +1011,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "P = 12 V × 2 A",
           answer: "24 W",
         },
-        sims: ["phys.circuits"],
+        sims: [],
         note:
           "Power is the rate of energy transfer, so a 24 W motor uses 24 J every second. " +
           "Multiply by the running time in seconds to get the energy in joules.",
@@ -1034,7 +1034,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "R = 4 Ω + 6 Ω",
           answer: "10 Ω",
         },
-        sims: ["phys.circuits"],
+        sims: [],
         note:
           "Adding a bulb in series raises the total resistance, so every bulb in the loop " +
           "dims. In parallel the opposite happens — each new branch gives the current " +
@@ -1058,7 +1058,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "I = 0.3 A + 0.5 A",
           answer: "0.8 A from the battery",
         },
-        sims: ["phys.circuits"],
+        sims: [],
         note:
           "Charge is conserved at every junction: whatever flows in must flow out. This " +
           "is why the current thins out where the circuit splits and recombines where the " +
@@ -1166,7 +1166,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "V₂ = 2.0 L × (600 K ÷ 300 K)",
           answer: "4.0 L",
         },
-        sims: ["chem.gas-laws", "earth.atmosphere"],
+        sims: ["chem.gas-laws"],
         note:
           "Temperatures must be in kelvin. Doubling from 20 °C to 40 °C is nothing like " +
           "doubling the temperature — in kelvin it is 293 K to 313 K, a rise of under 7%, " +
@@ -1190,7 +1190,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "A = 6 + 8",
           answer: "14, so this is carbon-14",
         },
-        sims: ["chem.build-atom", "chem.periodic-table"],
+        sims: ["chem.build-atom"],
         note:
           "Change Z and you have a different element; change only N and you have an " +
           "isotope of the same element. In a neutral atom the number of electrons equals " +
@@ -1214,7 +1214,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "% element = (16 g ÷ 18 g) × 100",
           answer: "88.9% oxygen by mass",
         },
-        sims: ["chem.molecules", "chem.periodic-table"],
+        sims: ["chem.molecules"],
         note:
           "Percent by mass is not percent by atom count. Water is 88.9% oxygen by mass " +
           "but two of its three atoms are hydrogen — hydrogen atoms are simply very light.",
@@ -1238,7 +1238,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "M = (2 × 1.0) + (1 × 16.0)",
           answer: "18.0",
         },
-        sims: ["chem.molecules", "chem.periodic-table"],
+        sims: ["chem.molecules"],
         note:
           "Read the subscripts carefully — the 2 in H₂O applies only to the hydrogen. " +
           "Formula mass has no unit at this level; it is a comparison against a standard " +
@@ -1694,7 +1694,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "age = 3 × 1.3 billion years",
           answer: "3.9 billion years",
         },
-        sims: ["earth.radiometric", "earth.strata"],
+        sims: ["earth.radiometric"],
         note:
           "Radiometric dating gives the age of the mineral's crystallisation, not of the " +
           "fossil lying beside it. Sedimentary rock is dated indirectly, by dating igneous " +
@@ -1812,7 +1812,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "ΔT = −6.5 °C/km × 3 km",
           answer: "−19.5 °C, so the summit is about 20 degrees colder",
         },
-        sims: ["earth.atmosphere", "earth.unequal-heating"],
+        sims: ["earth.unequal-heating"],
         note:
           "Higher does not mean closer to the Sun in any way that matters — air thins with " +
           "altitude, so it holds less energy and radiates it away faster. The figure is an " +
@@ -1920,7 +1920,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "left: 6 C, 12 H, 18 O — right: 6 C, 12 H, 18 O",
           answer: "balanced — the plant rearranges atoms, it does not make them",
         },
-        sims: ["bio.photosynthesis", "bio.carbon-cycle", "bio.cell"],
+        sims: ["bio.carbon-cycle", "bio.cell"],
         note:
           "Almost all of a tree's dry mass came out of the air, not the soil — the carbon " +
           "in every C₆H₁₂O₆ arrived as CO₂. Light is an energy input, not a reactant, " +
@@ -1946,7 +1946,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "the products of one are the reactants of the other, atom for atom",
           answer: "the two processes are chemical opposites linked in a cycle",
         },
-        sims: ["bio.photosynthesis", "bio.carbon-cycle", "bio.cell"],
+        sims: ["bio.carbon-cycle", "bio.cell"],
         note:
           "Respiration is not breathing. It happens inside cells, in every living thing, " +
           "day and night — plants respire too, which is why a sealed plant in the dark " +
@@ -1969,7 +1969,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "energy passed on = 10000 kJ × 0.10",
           answer: "1000 kJ reaching the herbivores",
         },
-        sims: ["bio.food-web", "bio.ecosystem"],
+        sims: ["bio.ecosystem"],
         note:
           "The other 90% is not destroyed. Most is released as heat during respiration, " +
           "and the rest leaves in waste or in parts nobody eats. This is why food chains " +
@@ -1994,7 +1994,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "growth rate = (120 + 10) − (45 + 25)",
           answer: "60 more deer per year",
         },
-        sims: ["bio.ecosystem", "bio.human-impact"],
+        sims: ["bio.ecosystem"],
         note:
           "A positive growth rate cannot continue indefinitely. Once a limiting resource " +
           "runs short the population levels off near the carrying capacity, and a " +
@@ -2019,7 +2019,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "r = 60 ÷ 1500 × 100",
           answer: "4% per year",
         },
-        sims: ["bio.ecosystem", "bio.human-impact"],
+        sims: ["bio.ecosystem"],
         note:
           "A steady percentage means the numbers added grow every year, because the " +
           "population it is a percentage of is growing too. That is what makes a graph of " +
@@ -2043,7 +2043,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "impact = 500000 people × 350 L per day",
           answer: "175000000 L per day",
         },
-        sims: ["bio.human-impact", "bio.ecosystem"],
+        sims: ["bio.ecosystem"],
         note:
           "Both factors matter, which is why arguments that blame only population or only " +
           "lifestyle are incomplete. Halving per-person use offsets a doubling of the " +
@@ -2162,7 +2162,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "probability = 3 ÷ 4",
           answer: "0.75, a 75% chance of the dominant trait",
         },
-        sims: ["bio.heredity", "math.probability"],
+        sims: ["bio.heredity"],
         note:
           "A 3:1 ratio is a probability, not a guarantee. Four offspring can easily come " +
           "out 4:0 — in the same way four coin tosses need not give two heads. Large " +
@@ -2198,7 +2198,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "mean = (12.1 + 11.8 + 12.4 + 12.1) ÷ 4",
           answer: "12.1 s",
         },
-        sims: ["math.probability"],
+        sims: [],
         note:
           "Repeating and averaging reduces random error but does nothing about a " +
           "systematic one — a stopwatch started late every time gives a precise wrong " +
@@ -2222,7 +2222,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "part = 15 ÷ 100 × 60",
           answer: "9 g",
         },
-        sims: ["math.fractions"],
+        sims: [],
         note:
           "Always ask 'percentage of what?'. 15% of the sample and 15% of the container " +
           "are different amounts, and percentages of different wholes must never be added " +
@@ -2292,7 +2292,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "c = 3 × 400 ÷ 250",
           answer: "4.8 spoons",
         },
-        sims: ["math.fractions"],
+        sims: [],
         note:
           "Keep matching quantities in matching positions — mixing up which number belongs " +
           "on top is the usual mistake. Check the answer for sense: more water must need " +
@@ -2319,7 +2319,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "m = (30 − 10) ÷ (6 − 2)",
           answer: "5 units up for every 1 across",
         },
-        sims: ["math.functions", "math.derivatives", "phys.motion-graphs"],
+        sims: ["phys.motion-graphs"],
         note:
           "In science a gradient always carries units taken from the axes — metres per " +
           "second on a distance-time graph, degrees per minute on a heating curve. Use two " +
@@ -2344,7 +2344,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "rate = 45 bubbles ÷ 300 s",
           answer: "0.15 bubbles per second",
         },
-        sims: ["bio.photosynthesis", "math.derivatives"],
+        sims: [],
         note:
           "Every rate needs its time unit stated — per second, per year, per million years " +
           "— or the number means nothing. Comparing rates fairly means measuring over the " +
@@ -2411,7 +2411,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "P = 1 ÷ 4",
           answer: "0.25, a 25% chance",
         },
-        sims: ["math.probability", "bio.heredity"],
+        sims: ["bio.heredity"],
         note:
           "A probability of 0.25 says nothing about what the next single event will do. " +
           "It also assumes the outcomes really are equally likely — the reason a hazard " +
@@ -2484,7 +2484,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "C = 2 × 3.1416 × 5 cm",
           answer: "31.4 cm",
         },
-        sims: ["math.unit-circle"],
+        sims: [],
         note:
           "Watch which one you have been given — using the diameter where the formula " +
           "wants the radius doubles the answer. Pi has no unit, so the circumference " +
@@ -2508,7 +2508,7 @@ export const FORMULA_GROUPS: FormulaGroup[] = [
           working: "A = 3.1416 × (5 cm)²",
           answer: "78.5 cm²",
         },
-        sims: ["math.unit-circle"],
+        sims: [],
         note:
           "Square the radius first, then multiply by pi — squaring the whole product gives " +
           "a wildly wrong answer. Doubling the radius quadruples the area, which is why a " +

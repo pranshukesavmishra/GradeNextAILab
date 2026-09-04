@@ -62,7 +62,9 @@ let src = readFileSync(REGISTRY, "utf8");
 //    place at the position of the first one.
 const importRe = /import \{[^}]*\} from "\.\/topics\/[^"]+";\n/g;
 const found = [...src.matchAll(importRe)];
-const generated = perFile.map((p) => importBlock(p.module, p.names)).join("\n") + "\n";
+const generated = perFile.length
+  ? perFile.map((p) => importBlock(p.module, p.names)).join("\n") + "\n"
+  : "";
 if (found.length) {
   const first = found[0].index;
   src = src.slice(0, first) + src.slice(first).replace(importRe, "");

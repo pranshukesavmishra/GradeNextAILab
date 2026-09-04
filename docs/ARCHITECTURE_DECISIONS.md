@@ -53,3 +53,31 @@ two-tier lint mapping the founder's seven-point bar to machine checks run per
 experiment in CI, migration keeps buildSim coexisting with buildExperiment
 with a visible burndown via manifest.engine. Budget ~6.0M tokens with the
 verifier pass protected — never cut verification to fit construction.
+
+## ADR-6 · Catalog reset to the founder's keep-list (2026-09-04)
+The founder reviewed the deployed catalog and kept exactly 37 simulations
+(11 earth, 9 physics, 9 biology, 8 chemistry — list in AI_PROGRESS.md);
+everything else was judged not good enough and ordered removed and rebuilt.
+Actions: all 521 archetype topic files deleted (their science is preserved in
+git history and the audit); 20 hand-written sims and all 5 math sims removed
+from the registry; curriculum subtopic links (521) and formula links (57) to
+removed sims dropped. Files that other code depends on (projectile: engine
+tests; periodic-table: molecules + chem tests; and the other unregistered
+hand-written sims) STAY ON DISK as unregistered rebuild seeds — they are not
+in the product. The kept 37 are frozen as-is per the founder ("keep them as
+they are"); improvements only on the founder's suggestion. wire-topics.mjs
+fixed to be idempotent at zero topic files.
+
+## ADR-7 · Unit rebuilds are founder-spec-driven, hand-written on the proven engine (2026-09-04)
+The founder now supplies per-unit experiment books (first:
+docs/experiment-specs/G6-UnitA/ — 28 specs, each with scene, objects, causal
+model, controls, scenarios, measurements in a fixed nine-part format, plus a
+machine-readable JSON). Rebuild order follows these packages, G6 Unit A
+first, next unit only when the current one is done. Each experiment is built
+the way the 37 keepers are built — a hand-written SimManifest/SimModel file
+with a real integrated model (stock-and-flow, agent-based, state machine,
+process balance as the spec directs), real controls, measured-not-scripted
+readouts, labs from the spec's scenarios — passing the acceptance gate.
+The Rig Engine spec (ADR-5) remains the reference for shared machinery
+(actors, cues, run records) and is adopted incrementally as shared kits
+emerge, not as a prerequisite for unit builds.

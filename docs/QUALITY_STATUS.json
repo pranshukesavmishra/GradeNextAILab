@@ -1,16 +1,8 @@
 {
   "generated": "by app/src/sims/acceptance.test.ts — do not edit by hand",
-  "simCount": 582,
+  "simCount": 37,
   "hardInvariants": "asserted in CI: finite readouts, clock advances, determinism, clean reset",
   "unresponsiveControls": [
-    {
-      "id": "phys.circuits",
-      "subject": "physics",
-      "unresponsive": [
-        "bulbCount"
-      ],
-      "tested": 4
-    },
     {
       "id": "phys.collisions",
       "subject": "physics",
@@ -18,22 +10,6 @@
         "massB"
       ],
       "tested": 4
-    },
-    {
-      "id": "phys.forces",
-      "subject": "physics",
-      "unresponsive": [
-        "friction"
-      ],
-      "tested": 4
-    },
-    {
-      "id": "math.probability",
-      "subject": "math",
-      "unresponsive": [
-        "sectors"
-      ],
-      "tested": 1
     }
   ]
 }
