@@ -40,6 +40,20 @@ import { unequalHeatingSim } from "./earth/unequal-heating";
 import { waterCycleSim } from "./earth/water-cycle";
 import { weatherSim } from "./earth/weather";
 import { unplugAquariumSim } from "./g6/a1-1-unplug-the-aquarium";
+import { bikeInsideBikeSim } from "./g6/a1-2-the-bike-inside-the-bike";
+import { whereYouDrawTheLineSim } from "./g6/a2-1-where-you-draw-the-line";
+import { threeJarsOneLampSim } from "./g6/a2-2-three-jars-one-lamp";
+import { experimentYouCannotRunSim } from "./g6/a3-1-the-experiment-you-cannot-run";
+import { diagramThatRunsSim } from "./g6/a3-2-the-diagram-that-runs";
+import { twoBaysSim } from "./g6/a3-3-two-bays";
+import { flattenedSierraSim } from "./g6/a3-4-the-model-that-flattened-the-sierra";
+import { peelThePlanetSim } from "./g6/a4-1-peel-the-planet";
+import { hydrosphereSim } from "./g6/a4-2-ninety-seven-two-and-a-splash";
+import { rideTheBalloonSim } from "./g6/a4-3-ride-the-balloon";
+import { benchThatBitesSim } from "./g6/a5-1-the-bench-that-bites";
+import { fourChambersSim } from "./g6/a5-2-four-chambers-one-question";
+import { readItRightSim } from "./g6/a5-3-read-it-right";
+import { plottingBenchSim } from "./g6/a5-4-the-plotting-bench";
 
 
 
@@ -91,6 +105,20 @@ export const SIMS: AnySim[] = [
   weatherSim,
   // Grade 6 · Unit A rebuild — one dedicated experiment per subtopic.
   unplugAquariumSim,
+  bikeInsideBikeSim,
+  whereYouDrawTheLineSim,
+  threeJarsOneLampSim,
+  experimentYouCannotRunSim,
+  diagramThatRunsSim,
+  twoBaysSim,
+  flattenedSierraSim,
+  peelThePlanetSim,
+  hydrosphereSim,
+  rideTheBalloonSim,
+  benchThatBitesSim,
+  fourChambersSim,
+  readItRightSim,
+  plottingBenchSim,
 /* TEMP-G7E-VERIFY-START */
 /* TEMP-G7E-VERIFY-END */
 ];

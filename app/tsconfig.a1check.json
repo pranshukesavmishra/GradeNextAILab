@@ -1,4 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "include": ["src/sims/g6/_a1work.ts", "src/engine", "src/ui", "vite.config.ts"]
-}
