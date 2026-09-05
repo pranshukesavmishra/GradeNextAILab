@@ -55,6 +55,17 @@ const TEST_THEME = {
  */
 function stubContext(): CanvasRenderingContext2D {
   const store: Record<string, unknown> = {};
+  // The scene kit shades every surface with a gradient, so a fake canvas has
+  // to hand one back. Its stops are checked too: an undefined colour in a
+  // gradient is exactly as invisible on a real canvas as an undefined fill.
+  const gradient = {
+    addColorStop(offset: number, color: string) {
+      if (!Number.isFinite(offset)) throw new Error("addColorStop offset is not finite");
+      if (typeof color !== "string" || color.length === 0) {
+        throw new Error("addColorStop received a non-colour");
+      }
+    },
+  };
   return new Proxy(store, {
     get(target, prop: string) {
       if (prop === "measureText") return () => ({ width: 24 });
@@ -68,6 +79,7 @@ function stubContext(): CanvasRenderingContext2D {
             throw new Error(`${prop} received a non-finite argument`);
           }
         }
+        if (prop === "createLinearGradient" || prop === "createRadialGradient") return gradient;
         return undefined;
       };
     },

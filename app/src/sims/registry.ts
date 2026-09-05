@@ -1,59 +1,126 @@
 import type { AnySim, GradeBand, Subject } from "@engine/types";
-import { circuitsSim } from "./physics/circuits";
-import { energySkateSim } from "./physics/energy-skate";
-import { forcesSim } from "./physics/forces";
+
+/* TEMP-G7E-VERIFY-START */
+/* TEMP-G7E-VERIFY-END */
+import { collisionsSim } from "./physics/collisions";
+import { emSpectrumSim } from "./physics/em-spectrum";
+import { heatTransferSim } from "./physics/heat-transfer";
+import { kineticEnergySim } from "./physics/kinetic-energy";
+import { motionGraphsSim } from "./physics/motion-graphs";
 import { opticsSim } from "./physics/optics";
 import { pendulumSim } from "./physics/pendulum";
-import { projectileSim } from "./physics/projectile";
+import { soundSim } from "./physics/sound";
 import { wavesSim } from "./physics/waves";
-import { fractionsSim } from "./math/fractions";
-import { functionGrapherSim } from "./math/function-grapher";
-import { probabilitySim } from "./math/probability";
-import { unitCircleSim } from "./math/unit-circle";
-import { derivativesSim } from "./math/derivatives";
-import { statesOfMatterSim } from "./chemistry/states-of-matter";
+import { buildAtomSim } from "./chemistry/build-atom";
+import { conservationSim } from "./chemistry/conservation";
+import { gasLawsSim } from "./chemistry/gas-laws";
+import { heatingCurveSim } from "./chemistry/heating-curve";
+import { moleculesSim } from "./chemistry/molecules";
 import { phLabSim } from "./chemistry/ph-lab";
 import { reactionsSim } from "./chemistry/reactions";
-import { buildAtomSim } from "./chemistry/build-atom";
-import { gasLawsSim } from "./chemistry/gas-laws";
+import { statesOfMatterSim } from "./chemistry/states-of-matter";
+import { artificialSelectionSim } from "./biology/artificial-selection";
+import { bodySystemsSim } from "./biology/body-systems";
+import { carbonCycleSim } from "./biology/carbon-cycle";
+import { cellSim } from "./biology/cell";
 import { ecosystemSim } from "./biology/ecosystem";
+import { hereditySim } from "./biology/heredity";
+import { mutationsSim } from "./biology/mutations";
 import { naturalSelectionSim } from "./biology/natural-selection";
-import { photosynthesisSim } from "./biology/photosynthesis";
+import { symbiosisSim } from "./biology/symbiosis";
+import { erosionSim } from "./earth/erosion";
+import { frontsSim } from "./earth/fronts";
 import { moonPhasesSim } from "./earth/moon-phases";
-import { seasonsSim } from "./earth/seasons";
 import { plateTectonicsSim } from "./earth/plate-tectonics";
+import { radiometricSim } from "./earth/radiometric";
+import { rockCycleSim } from "./earth/rock-cycle";
+import { seasonsSim } from "./earth/seasons";
+import { spheresSim } from "./earth/spheres";
+import { unequalHeatingSim } from "./earth/unequal-heating";
+import { waterCycleSim } from "./earth/water-cycle";
+import { weatherSim } from "./earth/weather";
+import { unplugAquariumSim } from "./g6/a1-1-unplug-the-aquarium";
+import { bikeInsideBikeSim } from "./g6/a1-2-the-bike-inside-the-bike";
+import { whereYouDrawTheLineSim } from "./g6/a2-1-where-you-draw-the-line";
+import { threeJarsOneLampSim } from "./g6/a2-2-three-jars-one-lamp";
+import { experimentYouCannotRunSim } from "./g6/a3-1-the-experiment-you-cannot-run";
+import { diagramThatRunsSim } from "./g6/a3-2-the-diagram-that-runs";
+import { twoBaysSim } from "./g6/a3-3-two-bays";
+import { flattenedSierraSim } from "./g6/a3-4-the-model-that-flattened-the-sierra";
+import { peelThePlanetSim } from "./g6/a4-1-peel-the-planet";
+import { hydrosphereSim } from "./g6/a4-2-ninety-seven-two-and-a-splash";
+import { rideTheBalloonSim } from "./g6/a4-3-ride-the-balloon";
+import { benchThatBitesSim } from "./g6/a5-1-the-bench-that-bites";
+import { fourChambersSim } from "./g6/a5-2-four-chambers-one-question";
+import { readItRightSim } from "./g6/a5-3-read-it-right";
+import { plottingBenchSim } from "./g6/a5-4-the-plotting-bench";
+
+
 
 /**
  * The simulation registry.
  *
  * Every sim is a self-contained manifest. Adding one to this array is the only
- * wiring required: the catalog, search, standards filtering, labs, and
- * challenges all read from the manifest.
+ * wiring required: the catalog, the course library, search, standards
+ * filtering, labs, and challenges all read from the manifest.
  */
 export const SIMS: AnySim[] = [
-  projectileSim,
-  forcesSim,
-  pendulumSim,
-  energySkateSim,
-  circuitsSim,
-  wavesSim,
+
+  collisionsSim,
+  emSpectrumSim,
+  heatTransferSim,
+  kineticEnergySim,
+  motionGraphsSim,
   opticsSim,
-  fractionsSim,
-  functionGrapherSim,
-  probabilitySim,
-  unitCircleSim,
-  derivativesSim,
-  statesOfMatterSim,
+  pendulumSim,
+  soundSim,
+  wavesSim,
+  buildAtomSim,
+  conservationSim,
+  gasLawsSim,
+  heatingCurveSim,
+  moleculesSim,
   phLabSim,
   reactionsSim,
-  buildAtomSim,
-  gasLawsSim,
+  statesOfMatterSim,
+  artificialSelectionSim,
+  bodySystemsSim,
+  carbonCycleSim,
+  cellSim,
   ecosystemSim,
+  hereditySim,
+  mutationsSim,
   naturalSelectionSim,
-  photosynthesisSim,
+  symbiosisSim,
+  erosionSim,
+  frontsSim,
   moonPhasesSim,
-  seasonsSim,
   plateTectonicsSim,
+  radiometricSim,
+  rockCycleSim,
+  seasonsSim,
+  spheresSim,
+  unequalHeatingSim,
+  waterCycleSim,
+  weatherSim,
+  // Grade 6 · Unit A rebuild — one dedicated experiment per subtopic.
+  unplugAquariumSim,
+  bikeInsideBikeSim,
+  whereYouDrawTheLineSim,
+  threeJarsOneLampSim,
+  experimentYouCannotRunSim,
+  diagramThatRunsSim,
+  twoBaysSim,
+  flattenedSierraSim,
+  peelThePlanetSim,
+  hydrosphereSim,
+  rideTheBalloonSim,
+  benchThatBitesSim,
+  fourChambersSim,
+  readItRightSim,
+  plottingBenchSim,
+/* TEMP-G7E-VERIFY-START */
+/* TEMP-G7E-VERIFY-END */
 ];
 
 export function getSim(id: string): AnySim | undefined {

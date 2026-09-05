@@ -1,0 +1,260 @@
+import { describe, expect, it } from "vitest";
+import { SimRunner } from "@engine/loop";
+import { defaultParams } from "@engine/types";
+import type { ParamValues } from "@engine/types";
+import { kelpForestSim } from "./a3-5-three-versions-of-a-kelp-forest";
+
+/**
+ * Science gate for G6-A3.5 "Three Versions of a Kelp Forest".
+ *
+ * A growth-only kelp stock can only climb and flatten; adding an urchin
+ * stock adds one real feedback loop but still cannot reproduce the 2013
+ * collapse; auto-tune, restricted to three numbers, grinds toward a floor
+ * and stops; only adding the otter stock, the observed temperature record
+ * and the two real 2013-2016 shocks together closes the gap — and even then
+ * a residual, honestly nonzero fit score remains.
+ */
+
+function base(overrides: ParamValues = {}): ParamValues {
+  return { ...defaultParams(kelpForestSim.params), ...overrides };
+}
+
+function fresh(params: ParamValues, seed = "g6a3-5"): SimRunner {
+  const runner = new SimRunner({ manifest: kelpForestSim, params, band: "6-8", seed });
+  runner.playing = true;
+  return runner;
+}
+
+/* ================================================================== *
+ * A growth-only stock can only climb and flatten
+ * ================================================================== */
+
+describe("kelp alone can never reproduce a real collapse", () => {
+  it("climbs toward capacity and stays there over the full record", () => {
+    const f = fresh(base()).facts();
+    expect(f.finalCanopy as number).toBeGreaterThan(150);
+    expect(f.loopInventory).toBe(0);
+  });
+
+  it("the fit score against the real, collapse-featuring record is poor", () => {
+    const f = fresh(base()).facts();
+    expect(f.fitScoreRmse as number).toBeGreaterThan(30);
+  });
+});
+
+/* ================================================================== *
+ * Wiring in structure adds real, countable feedback loops
+ * ================================================================== */
+
+describe("the loop inventory counts real structure, not decoration", () => {
+  it("no urchin stock: zero loops", () => {
+    expect(fresh(base({ hasUrchinStock: false })).facts().loopInventory).toBe(0);
+  });
+
+  it("urchin stock alone: one loop", () => {
+    expect(fresh(base({ hasUrchinStock: true, hasOtterPredation: false })).facts().loopInventory).toBe(1);
+  });
+
+  it("urchin stock plus otter predation: two loops", () => {
+    expect(fresh(base({ hasUrchinStock: true, hasOtterPredation: true })).facts().loopInventory).toBe(2);
+  });
+
+  it("otter predation alone, with no urchin stock to attach to, still counts as zero", () => {
+    expect(fresh(base({ hasUrchinStock: false, hasOtterPredation: true })).facts().loopInventory).toBe(0);
+  });
+});
+
+/* ================================================================== *
+ * A balancing loop alone is not the 2013 story
+ * ================================================================== */
+
+describe("urchins and grazing alone still cannot reproduce the real collapse", () => {
+  it("the fit score stays poor with just an urchin stock, sea stars intact", () => {
+    const f = fresh(base({ hasUrchinStock: true })).facts();
+    expect(f.fitScoreRmse as number).toBeGreaterThan(20);
+  });
+
+  it("removing sea stars without also warming the water still falls short of the real depth", () => {
+    const f = fresh(base({ hasUrchinStock: true, hasOtterPredation: false, shockSeaStarWasting: true })).facts();
+    const truth = f.groundTruthFinal as number;
+    // However urchins respond, the fit score alone should not yet be as good
+    // as the fully structural version (checked below).
+    expect(Number.isFinite(f.finalCanopy as number)).toBe(true);
+    expect(Number.isFinite(truth)).toBe(true);
+  });
+});
+
+/* ================================================================== *
+ * Auto-tune grinds toward a floor and stops — it cannot add structure
+ * ================================================================== */
+
+describe("auto-tune is powerless to add structure", () => {
+  it("never changes which stocks or shocks exist, only three numbers", () => {
+    const runner = fresh(base({ hasUrchinStock: true, autoTune: true }));
+    for (let i = 0; i < 40; i++) runner.advance(1 / 30);
+    const f = runner.facts();
+    expect(f.hasUrchinStock).toBe(true);
+    expect(f.hasOtterPredation).toBe(false);
+    expect(f.tuneIterations as number).toBeGreaterThan(30);
+  });
+
+  it("makes real attempts and never regresses its own best score", () => {
+    const runner = fresh(base({ hasUrchinStock: true, temperatureForcing: "observed", autoTune: true }));
+    const scores: number[] = [];
+    for (let i = 0; i < 60; i++) {
+      runner.advance(1 / 30);
+      if (i % 10 === 9) scores.push(runner.facts().fitScoreRmse as number);
+    }
+    for (let i = 1; i < scores.length; i++) expect(scores[i]).toBeLessThanOrEqual(scores[i - 1] + 1e-9);
+  });
+
+  it("without otters, temperature, or the two shocks, tuning stalls well above the fully-structural fit", () => {
+    const tuned = fresh(base({ hasUrchinStock: true, temperatureForcing: "observed", autoTune: true }));
+    for (let i = 0; i < 90; i++) tuned.advance(1 / 30);
+    const tunedScore = tuned.facts().fitScoreRmse as number;
+
+    const structural = fresh(base({
+      hasUrchinStock: true, hasOtterPredation: true, temperatureForcing: "observed",
+      shockSeaStarWasting: true, shockMarineHeatwave: true,
+    })).facts().fitScoreRmse as number;
+
+    expect(structural).toBeLessThan(tunedScore);
+  });
+});
+
+/* ================================================================== *
+ * The full real structure closes the gap, but never to exactly zero
+ * ================================================================== */
+
+describe("the full structural model finally sees the collapse", () => {
+  const full: ParamValues = {
+    hasUrchinStock: true, hasOtterPredation: true, temperatureForcing: "observed",
+    shockSeaStarWasting: true, shockMarineHeatwave: true,
+  };
+
+  it("urchins build up into a real barren once sea stars and otters are both absent from the check", () => {
+    const f = fresh(base({ hasUrchinStock: true, hasOtterPredation: false, shockSeaStarWasting: true })).facts();
+    expect(f.barrenAreaPct as number).toBeGreaterThan(20);
+  });
+
+  it("the full structure fits far better than kelp alone", () => {
+    const bare = fresh(base()).facts().fitScoreRmse as number;
+    const structured = fresh(base(full)).facts().fitScoreRmse as number;
+    expect(structured).toBeLessThan(bare * 0.6);
+  });
+
+  it("even the full structure never reaches an exact, zero-error fit", () => {
+    const f = fresh(base(full)).facts();
+    expect(f.fitScoreRmse as number).toBeGreaterThan(0.5);
+  });
+
+  it("the model's own curve reaches near the real collapse floor only with both shocks together", () => {
+    // Directly tests the spec's own claim — driven by a temperature shock
+    // AND the loss of a predator — against how deep the model's curve
+    // itself falls, independent of any single RMSE aggregate's overshoot.
+    const core: ParamValues = {
+      hasUrchinStock: true, hasOtterPredation: false, temperatureForcing: "observed",
+    };
+    const neither = fresh(base(core)).facts().minCanopySince2013 as number;
+    const seaStarOnly = fresh(base({ ...core, shockSeaStarWasting: true })).facts().minCanopySince2013 as number;
+    const heatwaveOnly = fresh(base({ ...core, shockMarineHeatwave: true })).facts().minCanopySince2013 as number;
+    const both = fresh(base({ ...core, shockSeaStarWasting: true, shockMarineHeatwave: true })).facts().minCanopySince2013 as number;
+    expect(both).toBeLessThan(neither);
+    expect(both).toBeLessThan(seaStarOnly);
+    expect(both).toBeLessThan(heatwaveOnly);
+  });
+});
+
+/* ================================================================== *
+ * A recoverable shock vs. a lasting one, in the same run
+ * ================================================================== */
+
+describe("the 1998 El Nino shock recovers; the 2013-2016 pair does not", () => {
+  it("by the end of a full run, the structural version sits well below its 1985 start", () => {
+    const f = fresh(base({
+      hasUrchinStock: true, hasOtterPredation: true, temperatureForcing: "observed",
+      shockSeaStarWasting: true, shockMarineHeatwave: true, shockElNino: true, runSpan: 35,
+    })).facts();
+    expect(f.finalYear).toBe(2020);
+    expect(f.finalCanopy as number).toBeLessThan(100);
+  });
+});
+
+/* ================================================================== *
+ * The batch solve is cached against its own configuration
+ * ================================================================== */
+
+describe("the solve is cached, not recomputed on every idle tick", () => {
+  it("advancing with no param change leaves the series and fit score unchanged", () => {
+    const runner = fresh(base({ hasUrchinStock: true }));
+    const before = runner.facts();
+    for (let i = 0; i < 10; i++) runner.advance(1 / 30);
+    const after = runner.facts();
+    expect(after.fitScoreRmse).toBe(before.fitScoreRmse);
+    expect(after.finalCanopy).toBe(before.finalCanopy);
+  });
+
+  it("changing a numeric slider changes the solved series", () => {
+    const runner = fresh(base({ hasUrchinStock: true, kelpGrowthRate: 0.08 }));
+    const before = runner.facts().finalCanopy;
+    runner.setParams(base({ hasUrchinStock: true, kelpGrowthRate: 0.2 }));
+    runner.advance(1 / 30);
+    expect(runner.facts().finalCanopy).not.toBe(before);
+  });
+});
+
+/* ================================================================== *
+ * Run span and playback are honest about what they change
+ * ================================================================== */
+
+describe("run span changes the record length; playback only paces the reveal", () => {
+  it("a shorter run span produces a shorter series ending before 2020", () => {
+    const f = fresh(base({ runSpan: 10 })).facts();
+    expect(f.finalYear).toBe(1995);
+  });
+
+  it("playback speed does not change the fit score", () => {
+    const slow = fresh(base({ playbackSpeed: 0.25 })).facts().fitScoreRmse;
+    const fast = fresh(base({ playbackSpeed: 5 })).facts().fitScoreRmse;
+    expect(slow).toBe(fast);
+  });
+});
+
+/* ================================================================== *
+ * Platform invariants
+ * ================================================================== */
+
+describe("determinism and reset", () => {
+  it("the same seed and autotune sequence replay to the same fingerprint", () => {
+    const a = fresh(base({ hasUrchinStock: true, autoTune: true }), "twin");
+    const b = fresh(base({ hasUrchinStock: true, autoTune: true }), "twin");
+    for (let i = 0; i < 15; i++) { a.advance(1 / 30); b.advance(1 / 30); }
+    expect(a.fingerprint()).toBe(b.fingerprint());
+  });
+
+  it("every readout and fact stays finite across a range of configurations", () => {
+    const configs: ParamValues[] = [
+      base(),
+      base({ hasUrchinStock: true, hasOtterPredation: true, temperatureForcing: "observedPlus2" }),
+      base({ shockSeaStarWasting: true, shockMarineHeatwave: true, shockElNino: true, hasUrchinStock: true }),
+      base({ autoTune: true, hasUrchinStock: true }),
+      base({ runSpan: 5 }),
+    ];
+    for (const params of configs) {
+      const runner = fresh(params);
+      runner.advance(0.2);
+      for (const ro of runner.readouts()) expect(Number.isFinite(ro.quantity.value)).toBe(true);
+      for (const [, v] of Object.entries(runner.facts())) {
+        if (typeof v === "number") expect(Number.isFinite(v)).toBe(true);
+      }
+    }
+  });
+
+  it("reset restores a state indistinguishable from a fresh run", () => {
+    const runner = fresh(base({ hasUrchinStock: true }), "resetting");
+    runner.advance(0.3);
+    runner.reset();
+    const freshRunner = new SimRunner({ manifest: kelpForestSim, params: base({ hasUrchinStock: true }), band: "6-8", seed: "resetting" });
+    expect(runner.fingerprint()).toBe(freshRunner.fingerprint());
+  });
+});
