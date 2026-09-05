@@ -18,7 +18,7 @@ export const GRADE_6: GradeCurriculum = {
         {
           code: "A1", title: "Systems and subsystems",
           subtopics: [
-            { code: "A1.1", title: "What makes a system a system", sims: [] },
+            { code: "A1.1", title: "What makes a system a system", sims: ["g6.a1-1"] },
             { code: "A1.2", title: "Subsystems nested within systems", sims: [] },
             { code: "A1.3", title: "Interactions among a system's parts", sims: [] },
             { code: "A1.4", title: "Emergent properties", sims: [] },

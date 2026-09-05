@@ -39,6 +39,7 @@ import { spheresSim } from "./earth/spheres";
 import { unequalHeatingSim } from "./earth/unequal-heating";
 import { waterCycleSim } from "./earth/water-cycle";
 import { weatherSim } from "./earth/weather";
+import { unplugAquariumSim } from "./g6/a1-1-unplug-the-aquarium";
 
 
 
@@ -88,6 +89,8 @@ export const SIMS: AnySim[] = [
   unequalHeatingSim,
   waterCycleSim,
   weatherSim,
+  // Grade 6 · Unit A rebuild — one dedicated experiment per subtopic.
+  unplugAquariumSim,
 /* TEMP-G7E-VERIFY-START */
 /* TEMP-G7E-VERIFY-END */
 ];

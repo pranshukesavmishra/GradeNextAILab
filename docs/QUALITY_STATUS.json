@@ -1,6 +1,6 @@
 {
   "generated": "by app/src/sims/acceptance.test.ts — do not edit by hand",
-  "simCount": 37,
+  "simCount": 38,
   "hardInvariants": "asserted in CI: finite readouts, clock advances, determinism, clean reset",
   "unresponsiveControls": [
     {
