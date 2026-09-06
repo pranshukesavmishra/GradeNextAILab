@@ -125,7 +125,7 @@ const HISTORY_MAX = 700; // a little over 120 s at 6 Hz sampling
 
 function buildWorld(): State {
   return {
-    t: 0, crankDeg: 0, blockTempC: AMBIENT_C, fuelUsedL: 0,
+    t: 0, crankDeg: 0, blockTempC: WARM_START_C, fuelUsedL: 0,
     seized: false, seizeAtT: -1, derateStartAtT: -1, histT: [], histBlockC: [],
   };
 }
@@ -661,7 +661,7 @@ const BASE_SETUP: ParamValues = {
 export const onTheDynoSim: SimManifest<State> = {
   id: "g6.a2-3",
   title: "On the Dyno: In One End, Out the Other",
-  tagline: "Run a single-cylinder engine on a dynamometer and watch every joule of fuel energy leave through one of four named exits.",
+  tagline: "Run an engine on a dynamometer and name everything that goes in and everything that comes out — including the outputs nobody asked for.",
   subject: "engineering",
   bands: ["6-8"],
   grades: [6],

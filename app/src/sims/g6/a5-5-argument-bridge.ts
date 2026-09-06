@@ -192,46 +192,45 @@ function valueOf(quantity: Quantity, day: number, hour: number, depthM: number):
   return salinityPsu(day);
 }
 
-/** How close `h` is to the window [a,b] on a 24h clock, 0 = inside it. */
-function hourDistance(h: number, a: number, b: number): number {
-  if (h >= a && h <= b) return 0;
-  return Math.min(Math.abs(h - a), Math.abs(h - b), 24 - Math.abs(h - a), 24 - Math.abs(h - b));
-}
+/**
+ * Which quantity a claim's asserted mechanism runs on, in this model — a
+ * structural fact about what the words mean, exactly like a chart type
+ * declaring which column types it accepts. `null` names no mechanism at all.
+ */
+const CLAIM_MECHANISM: Record<ClaimId, Quantity | null> = {
+  vague: null,
+  lowOxygenDawn: "oxygen",
+  fertiliser: "nitrate",
+  tooHot: "temperature",
+  algaeEatFish: null, // predation has no channel in this model whatsoever
+};
 
 /**
- * Relevance, 0-100: how much this specific reading actually bears on whether
- * the claim explains the fish kill — genuinely a function of what it
- * measures, when and where, never a hardcoded per-scenario number.
+ * Relevance, 0-100: how much THIS card's own number would have changed the
+ * modelled death toll — a real sensitivity, read off `perturbedTotalDeaths`,
+ * never an authored weight. The claim only ever gates WHICH quantity is even
+ * a candidate for its mechanism; once a card passes that gate, its score is
+ * whatever the counterfactual actually says.
  */
-function relevanceForClaim(quantity: Quantity, day: number, hour: number, depthM: number, value: number, claim: ClaimId): number {
-  if (claim === "algaeEatFish") return 5; // mechanistically nonsensical: nothing supports it
-  const dawnWindow = 1 - clamp01(hourDistance(hour, 2, 7) / 10);
-  const nearKill = 1 - clamp01(Math.min(Math.abs(day - (-1)), Math.abs(day - 0)) / 10);
-  const depthFactor = 0.5 + 0.5 * clamp01(depthM / 3.5);
+function relevanceForClaim(quantity: Quantity, day: number, hour: number, claim: ClaimId): number {
+  if (claim === "algaeEatFish") return 5; // no predation pathway exists to be sensitive to
+  const wanted = CLAIM_MECHANISM[claim];
+  if (wanted && quantity !== wanted) return 8; // the wrong quantity for this claim's mechanism entirely
+  if (quantity === "salinity") return 4; // never part of any claim's mortality pathway — see the rebuttal check instead
 
-  if (claim === "vague") {
-    // Names no mechanism: capped well short of a passing plank, whatever it is.
-    return Math.round(Math.min(42, 55 * nearKill));
-  }
-  if (claim === "lowOxygenDawn") {
-    if (quantity !== "oxygen") return 8;
-    const anomaly = clamp01((SAFE_O2 - value) / SAFE_O2);
-    return Math.round(100 * dawnWindow * nearKill * depthFactor * (0.25 + 0.75 * anomaly));
-  }
-  if (claim === "fertiliser") {
-    if (quantity !== "nitrate") return 8;
-    // Real and causally upstream, but indirect — capped below a clean pass.
-    return Math.round(58 * nearKill);
-  }
-  // tooHot
-  if (quantity !== "temperature") return 8;
-  return Math.round(64 * nearKill);
+  const base = totalDeaths();
+  const perturbed = perturbedTotalDeaths(quantity, day, hour);
+  const sensitivity = base > 0 ? clamp01(Math.abs(base - perturbed) / base) : 0;
+  const score = Math.round(sensitivity * 100);
+  // A claim naming no mechanism cannot be more than moderately supported by
+  // any single reading, however sensitive — that ceiling is what "vague" means.
+  return claim === "vague" ? Math.min(42, score) : score;
 }
 
 function cardsFor(claim: ClaimId) {
   return CARD_DEFS.map((c) => {
     const value = valueOf(c.quantity, c.day, c.hour, c.depthM);
-    return { ...c, value, relevance: relevanceForClaim(c.quantity, c.day, c.hour, c.depthM, value, claim) };
+    return { ...c, value, relevance: relevanceForClaim(c.quantity, c.day, c.hour, claim) };
   });
 }
 
