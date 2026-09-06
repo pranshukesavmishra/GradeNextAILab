@@ -71,17 +71,16 @@ const K = 273.15;
 
 /** Rainfall suitability, 0-1: full inside the biome's real range, falling off
  *  outside it — this is what makes a biome painted outside its range thin. */
-/** A biome falls off to zero suitability this many mm past its own optimal
- *  range boundary — fixed rather than scaled to the range's own width, so a
- *  wide-tolerance biome like redwood still genuinely stresses in true desert
- *  rainfall instead of reading as comfortable anywhere the slider can reach. */
-const RAIN_STRESS_SPAN_MM = 500;
-
+/** Suitability falls off over a span scaled to the biome's own optimal
+ *  range — a narrow-range specialist like Mojave scrub is genuinely more
+ *  sensitive per millimetre than a wide-tolerance generalist like redwood,
+ *  which is the real, biologically honest reason the two differ at all. */
 function rainSuitability(biome: Biome, rainfallMm: number): number {
   const [lo, hi] = BIOMES[biome].rainOptimalMm;
   if (rainfallMm >= lo && rainfallMm <= hi) return 1;
   const dist = rainfallMm < lo ? lo - rainfallMm : rainfallMm - hi;
-  return clamp01(1 - dist / RAIN_STRESS_SPAN_MM);
+  const span = Math.max(100, hi - lo);
+  return clamp01(1 - dist / span);
 }
 
 function co2Modifier(co2ppm: number): number {
@@ -237,11 +236,12 @@ const model: SimModel<State> = {
       const spec = BIOMES[p.biome];
       const rainfall = params.rainfall as number;
       const suitability = rainSuitability(p.biome, rainfall);
-      // Maturity relaxes toward a target set by growing conditions: full
-      // maturity when suitable, real drought dieback when it is not.
-      const target = suitability > 0.4 ? 1 : 0.15;
+      // Maturity relaxes toward the site's own rainfall suitability, smoothly
+      // — a patch outside its range does not just grow slower, it settles at
+      // a genuinely lower standing maturity, which is what "thins and dies
+      // back" means for a stock that cannot go negative.
       const rate = 1 / spec.maturationYr;
-      p.maturity = clamp01(p.maturity + (target - p.maturity) * rate * dtYr);
+      p.maturity = clamp01(p.maturity + (suitability - p.maturity) * rate * dtYr);
 
       const flows = patchFlows(p, params);
       netCTotal += flows.net;

@@ -5,6 +5,54 @@ import type { ParamValues } from "@engine/types";
 import { livingSkinSim } from "./a4-4-the-living-skin";
 
 /**
+ * A canvas context that records nothing and refuses nothing, so the render
+ * function can be exercised in Node — same pattern as math.test.ts and
+ * physics.test.ts. A missing helper, a bad arity, or an import from the
+ * wrong module (mixHex genuinely lives in @ui/draw, not @ui/scene, and a
+ * sibling sim shipped that exact mistake silently until this kind of check
+ * caught it) surfaces here as a thrown error instead of a blank stage.
+ */
+function stubContext(): CanvasRenderingContext2D {
+  const target: Record<string, unknown> = {};
+  return new Proxy(target, {
+    get(store, prop: string) {
+      if (prop === "measureText") return () => ({ width: 24 });
+      if (prop === "canvas") return { width: 900, height: 520 };
+      if (prop in store) return store[prop];
+      return () => undefined;
+    },
+    set(store, prop: string, value) {
+      if ((prop === "fillStyle" || prop === "strokeStyle") && value === undefined) {
+        throw new Error(`${prop} was set to undefined`);
+      }
+      store[prop] = value;
+      return true;
+    },
+  }) as unknown as CanvasRenderingContext2D;
+}
+
+const SCI_KEYS = new Set([
+  "velocity", "acceleration", "force", "momentum",
+  "energy-kinetic", "energy-potential", "energy-thermal", "energy-total",
+  "charge-pos", "charge-neg", "field", "current",
+  "cold", "hot", "mass", "distance", "time",
+  "acid", "neutral", "base", "solid", "liquid", "gas",
+  "producer", "primary-consumer", "secondary-consumer", "decomposer",
+  "light", "wave",
+]);
+
+const TEST_THEME = {
+  surface: "#ffffff", surfaceAlt: "#eeeeee", ink: "#111111", inkSoft: "#555555",
+  line: "#dddddd", grid: "#eeeeee", accent: "#0d7c86",
+  sci: new Proxy({} as Record<string, string>, {
+    get: (_t, key: string) => {
+      if (!SCI_KEYS.has(key)) return "#888888"; // this sim's own semantic keys are its business
+      return "#888888";
+    },
+  }),
+};
+
+/**
  * Science gate for G6-A4.4 "The Living Skin: Painting Life onto Bare Rock".
  *
  * The honesty rule this sim exists to uphold is that photosynthesis and
@@ -174,5 +222,31 @@ describe("determinism and reset", () => {
   it("raising coverage with a brush selected genuinely plants new, growing patches", () => {
     const f = factsAfter({ patchCoverage: 0.5, biomeBrush: "grassland" }, 0.1);
     expect(f.coverageFraction as number).toBeCloseTo(0.5, 1);
+  });
+});
+
+describe("render never throws, at every option value and every view", () => {
+  it("draws cleanly across every band, every dropdown option, wide and cramped", () => {
+    const combos: ParamValues[] = [{}];
+    for (const [key, spec] of Object.entries(livingSkinSim.params)) {
+      if (spec.type !== "option") continue;
+      for (const option of spec.options) combos.push({ [key]: option.value });
+    }
+    for (const overrides of combos) {
+      for (const band of livingSkinSim.bands) {
+        const params = { ...defaultParams(livingSkinSim.params), ...overrides };
+        const runner = new SimRunner({ manifest: livingSkinSim, params, band, seed: "draw" });
+        runner.playing = true;
+        for (let i = 0; i < 90; i++) runner.advance(1 / 60);
+        const overlays: Record<string, boolean> = {};
+        for (const o of livingSkinSim.overlays ?? []) overlays[o.key] = o.default;
+        for (const [w, h] of [[900, 520], [320, 240]] as const) {
+          expect(() => livingSkinSim.render({
+            ctx: stubContext(), state: runner.getState(), params, band,
+            width: w, height: h, overlays, alpha: 0.5, theme: TEST_THEME, time: runner.time,
+          })).not.toThrow();
+        }
+      }
+    }
   });
 });

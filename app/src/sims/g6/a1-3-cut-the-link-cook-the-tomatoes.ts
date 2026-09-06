@@ -407,15 +407,21 @@ const model: SimModel<State> = {
     const loops = findLoops(params);
     const balancing = loops.filter((l) => l.sign < 0).length;
     const reinforcing = loops.filter((l) => l.sign > 0).length;
+    // Spec: "computed from the last three peaks; blank until three peaks
+    // exist" — nothing is ever estimated from a single crossing.
     let period = -1, amplitude = -1;
-    if (state.peakMin.length >= 2) {
+    if (state.peakMin.length >= 3) {
       const diffs: number[] = [];
       for (let i = 1; i < state.peakMin.length; i++) diffs.push(state.peakMin[i] - state.peakMin[i - 1]);
       period = diffs.reduce((a, b) => a + b, 0) / diffs.length;
-    }
-    if (state.peakVal.length >= 1 && state.troughVal.length >= 1) {
-      const p = state.peakVal[state.peakVal.length - 1], t = state.troughVal[state.troughVal.length - 1];
-      amplitude = Math.abs(p - t);
+      if (state.troughVal.length >= 2) {
+        const swings: number[] = [];
+        for (let i = 0; i < state.troughVal.length; i++) {
+          const peak = state.peakVal[Math.min(i, state.peakVal.length - 1)];
+          swings.push(Math.abs(peak - state.troughVal[i]));
+        }
+        amplitude = swings.reduce((a, b) => a + b, 0) / swings.length;
+      }
     }
     return {
       day: state.min / 1440,
@@ -795,8 +801,8 @@ export const cutTheLinkSim: SimManifest<State> = {
           id: "run", phase: "measure", title: "Run one simulated day",
           instruction: "Run to at least hour 20 and record peak air temperature and peak humidity.",
           requireData: 1,
-          check: { describe: "At least 20 hours simulated, yield still on track", test: (v) => (v.facts.hour as number) >= 0 && (v.facts.day as number) >= 0.8 && v.facts.yieldOk === true },
-          hints: ["Time compression is 120x by default — a day passes in about 12 real minutes."],
+          check: { describe: "At least 20 hours simulated, every arrow still doing its job", test: (v) => (v.facts.day as number) >= 0.8 && (v.facts.balancingLoops as number) >= 2 },
+          hints: ["Time compression is 120x by default — a day passes in about 12 real minutes.", "A hot Central Valley July day is genuinely hard on tomatoes even with everything working — watch the stress counter climb and ask what would make it worse."],
         },
         {
           id: "loops", phase: "analyze", title: "Read the loop list",
@@ -917,7 +923,7 @@ export const cutTheLinkSim: SimManifest<State> = {
           id: "run", phase: "measure", title: "Run to 14:00 and record",
           instruction: "Run until the clock reads 14:00 and record leaf temperature and soil water.",
           requireData: 1,
-          check: { describe: "Soil water has run low and leaf temperature is elevated", test: (v) => (v.facts.soilWater as number) < 2 && (v.facts.leafTempC as number) > 30 },
+          check: { describe: "Soil water has run low and leaf temperature is elevated", test: (v) => (v.facts.soilWater as number) < 4 && (v.facts.leafTempC as number) > 40 },
           hints: ["Soil water only ever goes down here — irrigation is at zero for this whole lab."],
         },
         {
@@ -940,17 +946,21 @@ export const cutTheLinkSim: SimManifest<State> = {
     {
       id: "survive-the-cut",
       title: "Survive the cut",
-      brief: "With temp -> vent cut for the whole day, keep heat stress under the 400 °C·min yield budget using only the other controls.",
+      brief: "With temp -> vent cut for the whole day, use the other controls to keep accumulated heat stress well below what an unmitigated cut produces.",
       bands: ["6-8"],
-      setup: { ...BASE_SETUP, linkTempVent: false, shadeDeployed: true, irrigation: 8 },
+      setup: { ...BASE_SETUP, linkTempVent: false },
       goal: {
-        describe: "A full day passes with temp -> vent cut and the yield badge still green",
-        test: (v) => (v.facts.day as number) >= 1 && v.params.linkTempVent === false && v.facts.yieldOk === true,
+        describe: "A full day passes with temp -> vent cut and stress held under 11 500 C.min",
+        test: (v) => (v.facts.day as number) >= 1 && v.params.linkTempVent === false && (v.facts.stressAccum as number) < 11500,
       },
       stars: {
-        two: { describe: "Also keep peak leaf temperature under 40 C", test: (v) => (v.facts.day as number) >= 1 && v.facts.yieldOk === true && (v.facts.leafTempC as number) < 40 },
+        two: {
+          describe: "Under 10 000 C.min — genuinely close to what shade and full irrigation together can buy back",
+          test: (v) => (v.facts.day as number) >= 1 && v.params.linkTempVent === false && (v.facts.stressAccum as number) < 10000,
+        },
       },
       hints: [
+        "An unmitigated cut runs to roughly 14 900 C.min over a day — that is the number you are beating.",
         "Shade and irrigation are both real couplings that do not run through the cut arrow at all.",
         "Manual venting is still an option if you switch the vent mode.",
       ],
@@ -958,16 +968,19 @@ export const cutTheLinkSim: SimManifest<State> = {
     {
       id: "tame-the-oscillation",
       title: "Tame the oscillation",
-      brief: "Starting from the 25-minute delayed vent link, find a shorter delay that keeps the temperature swing under 4 C.",
+      brief: "Starting from the 25-minute delayed vent link, shorten the delay until the measured period drops well below what 25 minutes produces.",
       bands: ["6-8"],
       setup: { ...BASE_SETUP, selectedLink: "tempVent", linkDelayMin: 25 },
       goal: {
-        describe: "A measured amplitude under 4 C, with the link still delayed rather than cut",
-        test: (v) => v.facts.oscAmplitudeValid === true && (v.facts.oscAmplitudeC as number) < 4 && v.params.linkTempVent === true,
+        describe: "A measured period under 35 minutes, with delay at 3 minutes or less and the link still intact",
+        test: (v) =>
+          v.facts.oscPeriodValid === true && (v.facts.oscPeriodMin as number) < 35 &&
+          v.params.selectedLink === "tempVent" && (v.params.linkDelayMin as number) <= 3 &&
+          v.params.linkTempVent === true,
       },
       hints: [
-        "You cannot make the greenhouse respond instantly — only shrink the lag until the loop stops overshooting so badly.",
-        "The gain on the same arrow is also worth trying.",
+        "A 25-minute delay settles into a period of 40 minutes or more — that is the number you are shrinking.",
+        "You cannot make the greenhouse respond instantly, and the loop keeps cycling even at short delay — but a shorter delay cycles faster.",
       ],
     },
   ],

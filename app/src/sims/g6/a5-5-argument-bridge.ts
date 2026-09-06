@@ -1,5 +1,5 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
-import { q, clamp01 as clampFrac } from "@engine/units";
+import { q } from "@engine/units";
 import { roundRect } from "@ui/draw";
 import { badge, caption, clamp01, glow, hexA, isDarkTheme, particleField, softShadow, vignette, type Particle } from "@ui/scene";
 
@@ -48,9 +48,14 @@ function matCoverFrac(day: number): number {
   return MAT_MAX * Math.exp(-day * 0.9);
 }
 
-/** Farm outfall nitrate, mg/L: rising over the two weeks, driving the mat. */
-function nitrateMgL(day: number): number {
-  return 0.15 + 2.3 / (1 + Math.exp(-0.9 * (day + 5)));
+/**
+ * Farm outfall nitrate, mg/L: rising over the two weeks, driving the mat, and
+ * genuinely diluting with distance downstream from the outfall (site 0 m).
+ */
+function nitrateMgL(day: number, siteM = 0): number {
+  const atOutfall = 0.15 + 2.3 / (1 + Math.exp(-0.9 * (day + 5)));
+  const baseline = 0.12;
+  return baseline + (atOutfall - baseline) * Math.exp(-siteM / 200);
 }
 
 /** Water temperature, degrees C: a mild two-week warming trend. */
@@ -63,13 +68,17 @@ function salinityPsu(_day: number): number {
   return 0.4;
 }
 
-/** Dissolved oxygen, mg/L: diurnal swing that gets worse as the mat thickens. */
-function trueOxygen(day: number, hour: number, depthM: number): number {
-  const mat = matCoverFrac(day);
+/**
+ * Dissolved oxygen, mg/L: diurnal swing that gets worse as the mat thickens.
+ * The mat itself hugs the north bank near the outfall (site 0 m), so its
+ * effect on the diurnal swing genuinely fades with distance from there.
+ */
+function trueOxygen(day: number, hour: number, depthM: number, siteM = 0): number {
+  const matLocal = matCoverFrac(day) * clamp01(1 - siteM / 400);
   const sat = o2Saturation(waterTempC(day));
   const diel = Math.cos((2 * Math.PI * (hour - 16)) / 24); // +1 at 16:00, -1 near 04:00
-  const swing = mat * 6.5;
-  const base = sat - mat * 1.5;
+  const swing = matLocal * 6.5;
+  const base = sat - matLocal * 1.5;
   const depthPenalty = depthM * 0.6;
   return Math.max(0.2, base + swing * diel - depthPenalty);
 }
@@ -202,10 +211,11 @@ const model: SimModel<State> = {
     const day = params.timelineDay as number;
     const hour = params.timelineHour as number;
     const depth = params.sampleDepthM as number;
+    const site = params.sampleSiteM as number;
     const rec = recordFor(day);
     return [
-      { key: "oxygenNow", label: "Oxygen at sample point", unit: "mg/L", quantity: q(trueOxygen(day, hour, depth), "concentration"), semantic: "cold", graphable: true },
-      { key: "nitrateNow", label: "Nitrate", unit: "mg/L", quantity: q(nitrateMgL(day), "concentration"), semantic: "acid", graphable: true },
+      { key: "oxygenNow", label: "Oxygen at sample point (mg/L)", quantity: q(trueOxygen(day, hour, depth, site), "ratio"), semantic: "cold", graphable: true },
+      { key: "nitrateNow", label: "Nitrate (mg/L)", quantity: q(nitrateMgL(day, site), "ratio"), semantic: "acid", graphable: true },
       { key: "tempNow", label: "Temperature", unit: "°C", quantity: q(waterTempC(day) + 273.15, "temperature"), semantic: "hot", graphable: true },
       { key: "matCover", label: "Algae mat cover", quantity: q(matCoverFrac(day), "percent"), semantic: "producer", graphable: true },
       { key: "survivors", label: "Fish surviving", quantity: q(rec.survivors, "population"), semantic: "primary-consumer", graphable: true },
@@ -217,6 +227,7 @@ const model: SimModel<State> = {
     const day = params.timelineDay as number;
     const hour = params.timelineHour as number;
     const depth = params.sampleDepthM as number;
+    const site = params.sampleSiteM as number;
     const cards = cardsFor(claim);
     const placed = cards.filter((c) => params[`evidence${cap(c.key)}`] === true);
     const argumentStrength = placed.length ? placed.reduce((s, c) => s + c.relevance, 0) / placed.length : 0;
@@ -229,8 +240,8 @@ const model: SimModel<State> = {
     const rec = recordFor(day);
     return {
       claim,
-      oxygenNow: trueOxygen(day, hour, depth),
-      nitrateNow: nitrateMgL(day),
+      oxygenNow: trueOxygen(day, hour, depth, site),
+      nitrateNow: nitrateMgL(day, site),
       tempNow: waterTempC(day),
       matCoverPct: matCoverFrac(day) * 100,
       salinityNow: salinityPsu(day),
@@ -274,7 +285,7 @@ function claimStrength(params: ParamValues): number {
   const relevance = placed.reduce((s, c) => s + c.relevance, 0) / placed.length;
   const specificity = claim === "vague" ? 0.5 : claim === "algaeEatFish" ? 0.2 : 1.0;
   const rebuttalPenalty = params.rebuttalBot === true && !placed.some((c) => c.key === "salinity") ? 0.6 : 1.0;
-  return Math.round(clampFrac(relevance * specificity * rebuttalPenalty) / 100 * relevance);
+  return Math.round(Math.max(0, Math.min(100, relevance * specificity * rebuttalPenalty)));
 }
 
 /* ------------------------------------------------------------------ *

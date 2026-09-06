@@ -58,10 +58,15 @@ const O2_PER_FUEL_MOL = 12.5;
 const CO2_PER_FUEL_MOL = 8;
 const H2O_PER_FUEL_MOL = 9;
 
-// Real dry-air composition, by mass: ~23.14% O2, the rest treated as N2 —
-// the same simplification the aquarium and jar sims use for "everything else
-// in air", since neither argon nor trace CO2 changes this sim's lesson.
-const AIR_O2_MASS_FRAC = 0.2314;
+// Real dry air is ~23.14% O2 by mass, the rest treated as N2 — the same
+// simplification the aquarium and jar sims use for "everything else in air",
+// since neither argon nor trace CO2 changes this sim's lesson. That figure
+// and octane's famous 14.7:1 stoichiometric ratio are each independently
+// rounded real-world numbers, so pinning both at once would leave the
+// default AFR slightly rich; deriving the mass fraction from the reaction
+// and AFR_STOICH instead keeps the two spec-fixed numbers exactly
+// consistent with each other.
+const AIR_O2_MASS_FRAC = (O2_PER_FUEL_MOL * M_O2_KG) / (AFR_STOICH * M_FUEL_KG);
 const AIR_N2_MASS_FRAC = 1 - AIR_O2_MASS_FRAC;
 const AIR_DENSITY_KG_M3 = 1.2;
 
@@ -266,14 +271,15 @@ const model: SimModel<State> = {
     const SUB_S = 0.05;
     const n = Math.max(1, Math.round(dt / SUB_S));
     const subDt = dt / n;
-    let lastResult: DynoResult | null = null;
 
     for (let i = 0; i < n; i++) {
-      const effBlockTemp = seized ? blockTempC : blockTempC;
-      const r = solveDyno(throttleFrac, loadNm, afr, timingDeg, effBlockTemp, disconnects);
-      lastResult = r;
+      if (seized) break; // a seized engine's block cools passively, nothing else changes
+      const r = solveDyno(throttleFrac, loadNm, afr, timingDeg, blockTempC, disconnects);
 
-      const heatToBlockW = disconnects.coolant === undefined ? 0 : r.releasedW * COOLANT_HEAT_FRAC * (r.running || r.releasedW > 0 ? 1 : 0);
+      // Heat generation depends only on whether combustion is releasing
+      // energy — NOT on whether the coolant is connected, which is the
+      // entire point of the blocked-coolant failure below.
+      const heatToBlockW = r.releasedW * COOLANT_HEAT_FRAC;
       const coolantHeatW = disconnects.coolant
         ? 0
         : COOLANT_UA_PER_LPM * coolantLpm * Math.max(0, blockTempC - AMBIENT_C);
@@ -282,19 +288,11 @@ const model: SimModel<State> = {
       blockTempC += ((heatToBlockW - coolantHeatW - passiveW) / BLOCK_THERMAL_MASS_J_C) * subDt;
       blockTempC = Math.max(AMBIENT_C, blockTempC);
 
-      if (!seized && blockTempC >= DERATE_START_C && derateStartAtT < 0) derateStartAtT = t0 + i * subDt;
-      if (!seized && blockTempC >= SEIZE_C) { seized = true; seizeAtT = t0 + i * subDt; }
+      if (blockTempC >= DERATE_START_C && derateStartAtT < 0) derateStartAtT = t0 + i * subDt;
+      if (blockTempC >= SEIZE_C) { seized = true; seizeAtT = t0 + i * subDt; }
 
       fuelUsedL += (r.mFuelKgS / FUEL_DENSITY_KG_L) * subDt;
       if (r.rpm > 0) crankDeg = (crankDeg + ((r.rpm / 60) * 360) * subDt) % 720;
-
-      // Stash the two thermal terms onto the result so the outer scope
-      // (readouts/facts/render) can report exactly what this tick computed.
-      lastResult = {
-        ...r,
-        coolantHeatW,
-        frictionW: Math.max(0, r.releasedW - r.shaftPowerW - r.exhaustHeatW - coolantHeatW),
-      };
     }
 
     return {
@@ -302,8 +300,7 @@ const model: SimModel<State> = {
       seized, seizeAtT, derateStartAtT,
       histT: sampled(state.histT, t0 + dt),
       histBlockC: sampledPush(state.histBlockC, blockTempC, state.histT.length >= HISTORY_MAX),
-      _last: lastResult,
-    } as State & { _last: DynoResult | null };
+    };
   },
 
   readouts(state, params) {
@@ -368,13 +365,15 @@ const model: SimModel<State> = {
  *  fresh (never stale) whenever readouts/facts run before any tick has —
  *  e.g. at t=0, straight out of init(). */
 function currentResult(state: State, params: ParamValues): DynoResult {
-  const withLast = state as State & { _last?: DynoResult | null };
-  if (withLast._last) return withLast._last;
+  const disconnects = disconnectsOf(params);
   const r = solveDyno(
     params.throttle as number, params.dynoLoad as number, params.afr as number,
-    params.sparkTiming as number, state.blockTempC, disconnectsOf(params),
+    params.sparkTiming as number, state.blockTempC, disconnects,
   );
-  const coolantHeatW = disconnectsOf(params).coolant
+  // The same formula step() integrates with, evaluated fresh against the
+  // persisted end-of-tick block temperature — so a control changed while
+  // paused (no new tick yet) is reflected immediately, never a tick stale.
+  const coolantHeatW = disconnects.coolant
     ? 0
     : COOLANT_UA_PER_LPM * (params.coolantFlow as number) * Math.max(0, state.blockTempC - AMBIENT_C);
   return { ...r, coolantHeatW, frictionW: Math.max(0, r.releasedW - r.shaftPowerW - r.exhaustHeatW - coolantHeatW) };
