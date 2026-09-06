@@ -448,6 +448,7 @@ const model: SimModel<State> = {
       oscAmplitudeValid: amplitude >= 0,
       heaterOn: state.heaterOn,
       lit: dayCurve(clockHours(state.min)) > 0.02,
+      co2GrowthBoost: linkGate("co2Growth", params) * state.linkLag[6],
     };
   },
 };

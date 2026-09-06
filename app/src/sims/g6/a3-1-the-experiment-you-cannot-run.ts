@@ -1142,11 +1142,11 @@ export const experimentYouCannotRunSim: SimManifest<State> = {
         {
           id: "conclude",
           phase: "conclude",
-          title: "Explain the bet",
-          instruction: "Finish in your own words.",
+          title: "Say why we model at all",
+          instruction: "Across all four cases this unit is really asking one question: why do scientists build models in the first place? The plain answer — \"We model what we cannot rewind, reach, or risk.\"",
           write: {
-            prompt: "You would bet real money on this whiteboard's miss distance. Explain why 'no size, no risk, no distance' is exactly what makes that possible.",
-            placeholder: "Because the equations never had to ...",
+            prompt: "Using this asteroid and at least one other case from today, explain what that sentence means in your own words: what could you not rewind, reach, or risk about the real thing?",
+            placeholder: "With the asteroid, I could not ... With the snowpack/magma/redwood, I could not ...",
           },
         },
       ],
