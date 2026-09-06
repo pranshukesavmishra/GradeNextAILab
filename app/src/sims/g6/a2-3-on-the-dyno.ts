@@ -89,8 +89,14 @@ const FRICTION_LOAD_NM = 0.6;  // the engine's own internal drag, a floor under 
 const COOLANT_HEAT_FRAC = 0.30;   // share of released energy that conducts into the block at all
 const COOLANT_UA_PER_LPM = 3.6;   // W per °C per L/min — how effectively flow carries heat away
 const PASSIVE_UA_W_PER_C = 2.2;   // finned-casing convection to the room, always present
-const BLOCK_THERMAL_MASS_J_C = 9000; // an aluminium block's own heat capacity
+// A small block's own heat capacity, chosen so a blocked coolant loop
+// derates within tens of seconds and seizes within a couple of minutes —
+// the timescale the spec's own 10-120 s run duration control implies,
+// rather than the (also defensible, but far too slow to watch) many
+// minutes a literal ~15 kg aluminium casting would actually take.
+const BLOCK_THERMAL_MASS_J_C = 1000;
 const AMBIENT_C = 20;
+const WARM_START_C = 70; // the rig has already been idling before the run — not stone cold
 const DERATE_START_C = 120;   // spec: "temperature climbs, and the engine derates"
 const SEIZE_C = 210;          // spec: "then seizes"
 

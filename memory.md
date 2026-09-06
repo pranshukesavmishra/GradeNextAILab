@@ -97,12 +97,10 @@ arrows are testable predictions"; a5-3 "state a measurement as a number, a
 unit and an uncertainty". Law 2 holds on the shipped set. Re-run the same
 check on each new experiment at wire time (pipeline step 4).
 
-**PENDING CLEANUP (do when shell is available)**: delete stale pre-rebuild
-dead files in app/src/sims/g6/ — a1.ts, a2.ts, _a1.draft.ts, _a2.draft.ts,
-_c1.draft.ts, _c2.draft.ts. Verified unreferenced (no imports anywhere in
-src/). They are archetype-era leftovers whose taglines overlap the new
-experiments and could mislead a builder; git history keeps them. After
-deleting: tsc + vitest, commit, push.
+**Stale-file cleanup: DONE** (2026-09-06). The six archetype-era leftovers
+in app/src/sims/g6/ (a1.ts, a2.ts, _a1/_a2/_c1/_c2.draft.ts) are deleted —
+unreferenced dead code whose taglines overlapped the new experiments. Gate
+green after removal (778 tests, tsc clean).
 
 **Next actions, in order**:
 1. Verify on-disk work (vitest), commit+push what's green.
