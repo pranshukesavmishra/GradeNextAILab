@@ -79,8 +79,30 @@ processes/compression/repeats, a3-2 compression, a3-3 runLengthDays, a4-1
 magnitude, a4-3 ascentRateTarget, a5-1 sash, a5-4 yAxisMax; phys.collisions
 massB waits on founder-approved enhancement).
 
-**Retroactive subtopic-alignment audit** (law 2): after Unit A completes,
-review all 15+12 against "does it teach its subtopic"; fix gaps.
+**Retroactive subtopic-alignment audit** (law 2) — FIRST PASS DONE
+(2026-09-06, orchestrator, tagline/intent level): all 15 shipped experiments
+read as genuinely aligned to their subtopics. Spot checks: a1-2 severs parts
+and failure climbs the containment tree (nested subsystems); a2-1 moves a
+boundary and flows change column with no rate moving (drawing a boundary);
+a2-2 "closed does not mean nothing gets in" (open vs closed); a3-4 pays for
+every process skipped (what a model leaves out); a5-2 fair test judged by a
+real number (variables and fair tests); a5-4 catches the axis doing the
+arguing (organizing and graphing data). SECOND PASS ALSO DONE at learningGoals
+level (2026-09-06): every shipped experiment states its subtopic's idea
+explicitly as a goal — a1-1 "say what turns a collection of parts into a
+system: parts, interactions, and a function they maintain together"; a1-2
+"describe a bicycle as a system of subsystems"; a3-1 "explain why a model
+exists: to do what reality forbids"; a3-2 "treat a flowchart as a model whose
+arrows are testable predictions"; a5-3 "state a measurement as a number, a
+unit and an uncertainty". Law 2 holds on the shipped set. Re-run the same
+check on each new experiment at wire time (pipeline step 4).
+
+**PENDING CLEANUP (do when shell is available)**: delete stale pre-rebuild
+dead files in app/src/sims/g6/ — a1.ts, a2.ts, _a1.draft.ts, _a2.draft.ts,
+_c1.draft.ts, _c2.draft.ts. Verified unreferenced (no imports anywhere in
+src/). They are archetype-era leftovers whose taglines overlap the new
+experiments and could mislead a builder; git history keeps them. After
+deleting: tsc + vitest, commit, push.
 
 **Next actions, in order**:
 1. Verify on-disk work (vitest), commit+push what's green.

@@ -109,15 +109,60 @@ function recordFor(day: number): DayRecord {
   const clamped = Math.max(DAY_MIN, Math.min(DAY_MAX, Math.round(day)));
   return TIMELINE[clamped - DAY_MIN];
 }
-function survivorsAt(day: number): number {
-  return recordFor(day).survivors;
-}
 function totalDeaths(): number {
   return POP0 - TIMELINE[TIMELINE.length - 1].survivors;
 }
 function firstCrashDay(): number {
   const hit = TIMELINE.find((r) => r.deaths > 0);
   return hit ? hit.day : DAY_MAX + 1;
+}
+
+/**
+ * The same mortality rule, recomputed with ONE specific reading forced to a
+ * safe/neutral value — the counterfactual a relevance score is actually
+ * measuring. This is what lets the fit meter be computed, not scripted: a
+ * card is relevant exactly as much as changing its own number would have
+ * changed the death toll, nothing more and nothing less.
+ *
+ *   - an oxygen card neutralises only its own hour, on its own day —
+ *     unless that hour was inside the crash streak, nothing changes;
+ *   - a nitrate or algae card neutralises that one day's mat contribution
+ *     to the oxygen budget — a single day's worth of a fourteen-day,
+ *     cumulative process, so on its own it moves very little;
+ *   - a temperature card neutralises that one day's saturation offset,
+ *     which this model makes a small, secondary effect.
+ */
+function perturbedTotalDeaths(quantity: Quantity, day: number, hour: number): number {
+  let survivors = POP0;
+  for (let d = DAY_MIN; d <= DAY_MAX; d++) {
+    let streak = 0, worst = 0;
+    for (let h = 0; h < 24; h++) {
+      const hits = d === day && (quantity !== "oxygen" || h === hour);
+      let o2: number;
+      if (hits && quantity === "oxygen") {
+        o2 = SAFE_O2;
+      } else if (hits && (quantity === "nitrate" || quantity === "algae")) {
+        const matFactor = MAT_START; // that day's mat contribution neutralised
+        const sat = o2Saturation(waterTempC(d));
+        const diel = Math.cos((2 * Math.PI * (h - 16)) / 24);
+        o2 = Math.max(0.2, sat - matFactor * 1.5 + matFactor * 6.5 * diel - BOTTOM_DEPTH_M * 0.6);
+      } else if (hits && quantity === "temperature") {
+        const matFactor = matCoverFrac(d);
+        const sat = o2Saturation(20); // that day's temperature offset neutralised
+        const diel = Math.cos((2 * Math.PI * (h - 16)) / 24);
+        o2 = Math.max(0.2, sat - matFactor * 1.5 + matFactor * 6.5 * diel - BOTTOM_DEPTH_M * 0.6);
+      } else {
+        o2 = trueOxygen(d, h, BOTTOM_DEPTH_M);
+      }
+      streak = o2 < DEATH_O2 ? streak + 1 : 0;
+      if (h <= 9) worst = Math.max(worst, streak);
+    }
+    const crashHours = Math.max(0, worst - DEATH_HOURS);
+    const mortalityFrac = clamp01(crashHours * 0.09);
+    const deaths = Math.min(survivors, Math.round(survivors * mortalityFrac));
+    survivors -= deaths;
+  }
+  return POP0 - survivors;
 }
 
 /* ------------------------------------------------------------------ *

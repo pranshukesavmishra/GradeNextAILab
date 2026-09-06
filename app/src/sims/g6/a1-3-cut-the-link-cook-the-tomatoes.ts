@@ -327,8 +327,14 @@ function substep(s: State, dtMin: number, params: ParamValues): void {
   s.co2 = clamp(s.co2 + (co2Inject - co2Vent - co2Uptake) * dtMin, 300, 1500);
 
   // --- leaf stress, integrated ---------------------------------------------
+  // CO2 enrichment's real, measurable effect: a well-fed leaf tolerates heat
+  // a little better (enhanced photosynthetic capacity offsets some of the
+  // stress of an open stoma), which is exactly what the CO2 -> growth arrow
+  // is for. Cut it and enrichment still fills the tank, but buys the plant
+  // nothing — the arrow, not the gas, is what this scenario is testing.
+  const growthBoost = linkGate("co2Growth", params) * s.linkLag[6]; // 0..~1
   const leaf = leafTempOf(s, params);
-  s.stressAccum += Math.max(0, leaf - LEAF_STRESS_C) * dtMin;
+  s.stressAccum += (Math.max(0, leaf - LEAF_STRESS_C) / (1 + 0.35 * growthBoost)) * dtMin;
 
   // --- peak/trough detection for the oscillation readout -------------------
   const delta = s.airTemp - s.lastAirTemp;
