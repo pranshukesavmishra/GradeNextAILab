@@ -49,14 +49,19 @@ const CAPACITY = 200;     // km2, a realistic regional carrying capacity
 
 const URCHIN_CAPACITY = 60;   // thousand urchins, a food-limited ceiling
 const URCHIN_GROWTH_SCALE = 6; // converts the grazing-rate slider into an urchin growth rate
-const GRAZE_IMPACT_SCALE = 5;  // converts the same slider into kelp-loss impact
+const GRAZE_IMPACT_SCALE = 7;  // converts the same slider into kelp-loss impact
+const GRAZE_HALF_SAT = 30;     // km2 — urchins cannot graze kelp that is not there (Type II)
 const OTTER_COUNT = 20;        // a mid-range raft size, per spec's 6-60 instanced otters
 
-const SEASTAR_RATE = 0.02;     // /day, background urchin check while sea stars are healthy
-const SEASTAR_RESIDUAL = 0.002; // /day, after the 2013 wasting event — mostly gone
+const SEASTAR_RATE = 0.035;    // /day, background urchin check while sea stars are healthy
+const SEASTAR_RESIDUAL = 0.003; // /day, after the 2013 wasting event — mostly gone
 
-const HEATWAVE_ANOMALY_C = 3.5; // "The Blob", 2014-2016
+const HEATWAVE_ANOMALY_C = 2.8; // "The Blob", 2014-2016
 const ELNINO_LOSS_RATE = 0.15;  // /day of direct storm loss during the 1998 window
+const REFUGIA_GROWTH = 0.5;     // km2/day background recruitment toward open space —
+                                 // real spore dispersal from refugia, and what keeps a
+                                 // barren a real, low, nonzero floor rather than a
+                                 // mathematical trap at exactly zero
 
 const BARREN_U_REF = 35; // thousand urchins at which the reef reads fully barren
 
