@@ -209,9 +209,8 @@ function solveDyno(
   // to how hot the block is — never a fixed share of the fuel energy, so
   // coolant = 0 really does mean zero coolant heat, structurally.
   // (computed by the caller, which owns the block's thermal state; here we
-  // only report the combustion-side "released, minus shaft, minus exhaust"
-  // residual available to be split between coolant and friction.)
-  const remainderW = Math.max(0, releasedW - shaftPowerW - exhaustHeatW);
+  // only report the combustion-side terms — coolant heat and friction are
+  // filled in afterward from the persisted block temperature.)
 
   const effectiveLoad = Math.max(loadNm, FRICTION_LOAD_NM);
   const omegaRadS = running && shaftPowerW > 1 ? shaftPowerW / effectiveLoad : 0;
@@ -982,7 +981,7 @@ export const onTheDynoSim: SimManifest<State> = {
       title: "Reach the efficiency ceiling",
       brief: "Tune spark timing and air-fuel ratio to get thermal efficiency as close to the 30% ceiling as this rig allows.",
       bands: ["6-8"],
-      setup: { ...BASE_SETUP },
+      setup: { ...BASE_SETUP, sparkTiming: -5, afr: 18 },
       goal: {
         describe: "Thermal efficiency at or above 25%",
         test: (v) => (v.facts.efficiencyPct as number) >= 25 && v.facts.running === true,

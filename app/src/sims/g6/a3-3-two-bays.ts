@@ -688,10 +688,10 @@ export const twoBaysSim: SimManifest<State> = {
           id: "conclude",
           phase: "conclude",
           title: "Say why the overlay matters",
-          instruction: "Finish in your own words.",
+          instruction: "The founder's own summary of this whole unit: \"A physical model can surprise me and a digital model cannot, but only the digital one lets me change the Bay before lunch.\"",
           write: {
-            prompt: "Why is it more honest to run a model with its known distortions labelled than to hide them?",
-            placeholder: "Labelling the distortion lets you ...",
+            prompt: "Explain that sentence using today's run: name one real surprise the physical basin gave you, and one thing the digital solver let you change that the physical basin never could.",
+            placeholder: "The physical basin surprised me with ... The digital solver let me change ...",
           },
         },
       ],

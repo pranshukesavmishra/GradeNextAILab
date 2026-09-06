@@ -238,7 +238,7 @@ function leafTempOf(s: State, params: ParamValues): number {
   const idx2 = 2; // transpirationHumidity
   const gate2 = linkGate("transpirationHumidity", params);
   const cooling = gate2 * s.linkLag[idx2];
-  return s.airTemp + clamp(3.2 * solarLoad - 55 * cooling, -2.5, 7);
+  return s.airTemp + clamp(3.2 * solarLoad - 500 * cooling, -2.5, 7);
 }
 
 function clamp(v: number, lo: number, hi: number): number { return Math.min(hi, Math.max(lo, v)); }
@@ -957,17 +957,17 @@ export const cutTheLinkSim: SimManifest<State> = {
       bands: ["6-8"],
       setup: { ...BASE_SETUP, linkTempVent: false },
       goal: {
-        describe: "A full day passes with temp -> vent cut and stress held under 11 500 C.min",
-        test: (v) => (v.facts.day as number) >= 1 && v.params.linkTempVent === false && (v.facts.stressAccum as number) < 11500,
+        describe: "A full day passes with temp -> vent cut and stress held under 6 000 C.min",
+        test: (v) => (v.facts.day as number) >= 1 && v.params.linkTempVent === false && (v.facts.stressAccum as number) < 6000,
       },
       stars: {
         two: {
-          describe: "Under 10 000 C.min — genuinely close to what shade and full irrigation together can buy back",
-          test: (v) => (v.facts.day as number) >= 1 && v.params.linkTempVent === false && (v.facts.stressAccum as number) < 10000,
+          describe: "Under 5 200 C.min — genuinely close to what shade and full irrigation together can buy back",
+          test: (v) => (v.facts.day as number) >= 1 && v.params.linkTempVent === false && (v.facts.stressAccum as number) < 5200,
         },
       },
       hints: [
-        "An unmitigated cut runs to roughly 14 900 C.min over a day — that is the number you are beating.",
+        "An unmitigated cut runs to roughly 8 700 C.min over a day — that is the number you are beating.",
         "Shade and irrigation are both real couplings that do not run through the cut arrow at all.",
         "Manual venting is still an option if you switch the vent mode.",
       ],

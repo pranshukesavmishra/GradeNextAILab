@@ -13,19 +13,39 @@ import { livingSkinSim } from "./a4-4-the-living-skin";
  * caught it) surfaces here as a thrown error instead of a blank stage.
  */
 function stubContext(): CanvasRenderingContext2D {
-  const target: Record<string, unknown> = {};
-  return new Proxy(target, {
-    get(store, prop: string) {
+  const store: Record<string, unknown> = {};
+  // The scene kit shades every surface with a gradient (vignette, sphere,
+  // glow...), so a fake canvas has to hand one back, with stops checked the
+  // same way a real fill would be. Non-finite coordinates are rejected too —
+  // a NaN silently draws nothing on a real canvas, the hardest bug to find.
+  const gradient = {
+    addColorStop(offset: number, color: string) {
+      if (!Number.isFinite(offset)) throw new Error("addColorStop offset is not finite");
+      if (typeof color !== "string" || color.length === 0) {
+        throw new Error("addColorStop received a non-colour");
+      }
+    },
+  };
+  return new Proxy(store, {
+    get(target, prop: string) {
       if (prop === "measureText") return () => ({ width: 24 });
       if (prop === "canvas") return { width: 900, height: 520 };
-      if (prop in store) return store[prop];
-      return () => undefined;
+      if (prop in target) return target[prop];
+      return (...args: unknown[]) => {
+        for (const arg of args) {
+          if (typeof arg === "number" && !Number.isFinite(arg)) {
+            throw new Error(`${prop} received a non-finite argument`);
+          }
+        }
+        if (prop === "createLinearGradient" || prop === "createRadialGradient") return gradient;
+        return undefined;
+      };
     },
-    set(store, prop: string, value) {
+    set(target, prop: string, value) {
       if ((prop === "fillStyle" || prop === "strokeStyle") && value === undefined) {
         throw new Error(`${prop} was set to undefined`);
       }
-      store[prop] = value;
+      target[prop] = value;
       return true;
     },
   }) as unknown as CanvasRenderingContext2D;

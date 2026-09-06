@@ -726,10 +726,10 @@ export const flattenedSierraSim: SimManifest<State> = {
           id: "conclude",
           phase: "conclude",
           title: "Name the omitted process",
-          instruction: "Finish in your own words.",
+          instruction: "This unit's own plain rule: \"Every model leaves things out on purpose, and I should be able to name what mine left out and what that cost me.\"",
           write: {
-            prompt: "Answer the scenario's own question: which omitted process explains the miss?",
-            placeholder: "The missing process is ...",
+            prompt: "Answer the scenario's own question — which omitted process explains the miss — and then say what that omission cost you, in mean absolute error.",
+            placeholder: "The missing process is ..., and leaving it out cost about ... mm of error.",
           },
         },
       ],

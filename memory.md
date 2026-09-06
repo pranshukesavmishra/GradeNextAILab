@@ -53,6 +53,12 @@ progress, build log) — this file is the entry point and the law.
 - Never recreate scratch tsconfigs (root tsconfig excludes src/sims/g6 for
   unregistered drafts by design; registered sims get checked via the registry
   import). Never Read agent .output transcripts (context overflow).
+- **NEVER `git add -A` blindly while lanes are live.** It sweeps mid-edit lane
+  files and scratch (`_diag*.test.ts`, `_debug*.test.ts`) into a commit and
+  turns CI red — this happened once (2026-09-06) and cost a red build. Before
+  any commit: `git status --short`, delete lane scratch (underscore-prefixed
+  test files are never shippable), run the gate, and only then add. Vitest
+  runs `_*` test files even though tsconfig excludes `_*` from typecheck.
 - Incremental saves always: files land on disk as they're finished so a limit
   kill loses minutes, not hours. Commit+push at every verified increment.
 - On resume: read this file, check `git status --short` + docs/G6A_BUILD_LOG.md

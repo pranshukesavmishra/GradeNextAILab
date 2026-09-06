@@ -867,10 +867,10 @@ export const diagramThatRunsSim: SimManifest<State> = {
           id: "conclude",
           phase: "conclude",
           title: "Say why notation is a choice",
-          instruction: "Finish in your own words.",
+          instruction: "This whole unit comes down to one plain sentence: \"A flowchart is a model, and its arrows are predictions I can test.\"",
           write: {
-            prompt: "Why is picking a notation a real decision about what you can find out, not just a style choice?",
-            placeholder: "Because each notation ...",
+            prompt: "Explain that sentence using today's plant: name one arrow in your diagram, and say what real, checkable prediction that arrow makes about the water.",
+            placeholder: "The arrow from ... to ... predicts that ..., which I tested by ...",
           },
         },
       ],

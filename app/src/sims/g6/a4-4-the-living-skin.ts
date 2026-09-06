@@ -496,12 +496,13 @@ const BASE_SETUP: ParamValues = {
 export const livingSkinSim: SimManifest<State> = {
   id: "g6.a4-4",
   title: "The Living Skin: Painting Life onto Bare Rock",
-  tagline: "Paint biomes onto bare rock and watch two real carbon flows — never one — decide whether life is storing carbon or burning it back.",
+  tagline: "Paint biomes onto bare rock and see that life is not a layer sitting on the Earth — it is one of the flows that builds it, carbon in, carbon back out, rock into soil.",
   subject: "biology",
   bands: ["6-8"],
   grades: [6],
   standards: { ngss: ["MS-LS2-3", "MS-ESS2-1"] },
   learningGoals: [
+    "State the biosphere's one big idea: life is not a layer on top of the Earth, it is a flow running through air, rock and living tissue at once.",
     "State that photosynthesis and respiration run at once, and net storage is their small difference.",
     "Explain that root and soil respiration accelerate the chemical weathering that builds soil.",
     "Predict when warming can flip an ecosystem from a net carbon sink to a net source.",
@@ -641,11 +642,11 @@ export const livingSkinSim: SimManifest<State> = {
         {
           id: "conclude",
           phase: "conclude",
-          title: "Separate the two pipes",
-          instruction: "Say which pipe stopped and which did not.",
+          title: "Life is a flow, not a layer",
+          instruction: "Say which pipe stopped and which did not, and what that proves about what life actually is.",
           write: {
-            prompt: "Which pipe stopped completely, and which kept running without any life at all?",
-            placeholder: "The air-to-life pipe ..., but the rock-weathering pipe ...",
+            prompt: "Which pipe stopped completely, and which kept running without any life at all? Finish in one sentence: is life a layer sitting on the Earth, or something else?",
+            placeholder: "The air-to-life pipe ..., but the rock-weathering pipe ... . So life is not a layer on the Earth, it is ...",
           },
         },
       ],
