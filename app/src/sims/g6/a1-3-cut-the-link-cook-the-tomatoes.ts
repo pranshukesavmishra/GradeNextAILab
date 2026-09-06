@@ -814,8 +814,8 @@ export const cutTheLinkSim: SimManifest<State> = {
           id: "conclude", phase: "conclude", title: "Say which loop matters most",
           instruction: "Answer the lab's question.",
           write: {
-            prompt: "Name every closed loop you found. Which one does the most work holding temperature down on a hot day?",
-            placeholder: "The loops are ... The one that matters most for temperature is ... because ...",
+            prompt: "Name every closed loop you found, say which one does the most work holding temperature down, and finish this: none of these parts do anything alone — what actually holds the temperature down is...",
+            placeholder: "The loops are ... The one that matters most is ... because ... What actually holds the temperature down is not the vent or the sensor by itself, but ...",
           },
         },
       ],
@@ -896,8 +896,8 @@ export const cutTheLinkSim: SimManifest<State> = {
           id: "conclude", phase: "conclude", title: "Delay versus damage",
           instruction: "Answer the lab's question.",
           write: {
-            prompt: "Describe the shape of the temperature trace, and state its period and amplitude in your own words.",
-            placeholder: "Instead of settling, the temperature now ... with a period of about ... minutes and a swing of about ... degrees.",
+            prompt: "Describe the shape of the temperature trace with its period and amplitude, then say what this proves about interactions: an interaction is not just present or cut — what other quality does it have, and why does that quality alone change the whole tunnel's behaviour?",
+            placeholder: "Instead of settling, the temperature now ... with a period of about ... minutes and a swing of about ... degrees. This proves an interaction also has a ..., and changing only that — nothing else — was enough to ...",
           },
         },
       ],

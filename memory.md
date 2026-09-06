@@ -92,3 +92,65 @@ review all 15+12 against "does it teach its subtopic"; fix gaps.
 
 **After Unit A**: founder sends next unit book one at a time; where no book,
 I design each subtopic's experiment myself (law 4) at keeper quality.
+
+## OPERATING STRUCTURE (full system — any orchestrator model resumes from here)
+
+**Model policy.** The orchestrator runs on the session model — Opus 5 at high
+effort is an approved configuration for long fast runs. Builder lanes run on
+Sonnet 5. Escalate one experiment to Opus 5 when its lane fails verification
+twice or the physics is unusually hard. QUALITY IS ENFORCED BY THE GATES, NOT
+BY THE MODEL: every experiment passes the same science tests, acceptance gate,
+typecheck, build, and orchestrator review whatever model built it. If quality
+ever slips under any configuration, ADR-8's revert rule fires: roll back to
+the last proven setup immediately and record it here.
+
+**Roles.**
+- Orchestrator (this session): owns registry/curriculum wiring, the gates,
+  commits/pushes, memory.md STATE, lane resumes, reviews, founder contact.
+- Builder lanes: one owner per topic, files only, incremental, log per finish.
+- Reviewer (orchestrator, or an Opus agent for big waves): checks each
+  finished experiment against the RUBRIC below before it is wired in.
+
+**Per-experiment pipeline** (never skip a step):
+1. DESIGN — from the founder's spec book if one exists; else I design it:
+   read the subtopic in app/src/curriculum/grade*.ts, research what the
+   subtopic means a student must learn, choose the one most interactive
+   experiment that teaches exactly that, write a short nine-part design
+   (name, scene, objects, causal model with real constants, controls,
+   scenarios, measurements, failure state, the fraud to avoid) into
+   docs/experiment-specs/<unit>/SELF/<code>.md BEFORE building.
+2. BUILD — per docs/BUILDER_GUIDE.md, to the keeper bar.
+3. VERIFY — own science tests + vitest + tsc green from app/.
+4. ALIGN — law 2 check: labs and conclusions walk the student to the
+   subtopic's idea, stated plainly.
+5. WIRE — orchestrator registers + links curriculum.
+6. GATE — full vitest + tsc (+ npm run build each wave); triage any
+   unresponsive-control entry immediately or assign it to the lane.
+7. SHIP — commit, push, update STATE here.
+
+**RUBRIC (orchestrator review before wiring):**
+- Teaches its subtopic (law 2) — the decisive question.
+- Real model: constants sourced, couplings per design, no closed-form
+  positions, no wall-clock physics, honesty rule enforced structurally.
+- Every control measurably alive; readouts/facts finite always.
+- Labs predict-first, checks on facts a student can actually cause.
+- Scene shows the whole apparatus, cause drawn on objects, failure visible.
+- Matches keeper style; no emoji; theme-aware.
+Reject → back to lane with the specific gap; two rejections → escalate model.
+
+**Roadmap.**
+1. Finish G6 Unit A (12 remaining; lanes live).
+2. Retroactive alignment audit of all 27 (law 2).
+3. Next units in founder order, one at a time. If the founder sends a book →
+   it is ground truth. If not → I design each subtopic per pipeline step 1,
+   using app/src/curriculum/grade6.ts (units B-F), grade7.ts, grade8.ts as
+   the subtopic source. Curriculum subtopics without sims show as planned;
+   never attach a wrong-fit sim just to fill a slot.
+4. Each unit ends with: unit report to founder, alignment audit, STATE update.
+
+**Long-run efficiency levers (all active).**
+Distilled reading (BUILDER_GUIDE + exemplar only) · topic batching · Sonnet
+lanes · central wiring · single verification chain (lane → gate → CI) ·
+incremental commits · memory.md resume (a limit reset costs ~zero context) ·
+shared scene kits extracted when two experiments duplicate machinery (kit code
+goes in app/src/ui/, unit-tested, then both use it).
