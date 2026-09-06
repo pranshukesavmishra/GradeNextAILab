@@ -72,7 +72,8 @@ Updated: 2026-09-06, after limit reset.
 **Live and green on the site** (52 registered sims, CI green at head e742c86+):
 - The 37 keepers (frozen).
 - G6 Unit A: 15 of 27 done, registered, tested, pushed —
-  a1-1 (exemplar), a1-2, a2-1, a2-2, a3-1..a3-4, a4-1..a4-3, a5-1..a5-4.
+  a1-1 (exemplar), a1-2, a2-1, a2-2, a3-1..a3-4, a4-1..a4-4, a5-1..a5-4.
+  (16 of 27 — a4-4 The Living Skin landed 2026-09-06.)
 
 **On disk, uncommitted right now**: mid-build a1-3, a2-3, a4-4, a5-5 (sims
 modified); revived tests a3-5.test.ts, a4-4.test.ts (were .wip, lanes fixed
