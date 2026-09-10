@@ -1734,42 +1734,42 @@
        {
         "code": "A1.1",
         "title": "Reviewing the particle model",
-        "idea": "",
-        "design": "",
+        "idea": "Matter behaves as it does because it is made of particles in constant motion.",
+        "design": "Three-phase particle box driven by a real Lennard-Jones potential and Maxwell-Boltzmann speeds: student sets temperature and pressure and watches state emerge from the potential, never from a switch. Measures mean free path, density, diffusion coefficient. Fraud to avoid: sprites shuffled at a speed set by a slider.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.2",
         "title": "Why chemistry needs a sharper picture",
-        "idea": "",
-        "design": "",
+        "idea": "The simple particle model cannot explain why substances react \u2014 you need what is inside the particle.",
+        "design": "Two-model bench: the same reaction run under a featureless-sphere model and an atom-with-structure model; the sphere model measurably fails to predict fixed mass ratios, and the student sees exactly which observation breaks it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.3",
         "title": "Evidence that particles are real",
-        "idea": "",
-        "design": "",
+        "idea": "Particles are real because their motion leaves measurable, quantitative traces.",
+        "design": "Brownian microscope with a real random walk: student measures mean-square displacement against time and particle radius, gets the linear MSD-vs-t law, and extracts Avogadro's number from Einstein's relation \u2014 a number, not a claim.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.4",
         "title": "Particles versus atoms",
-        "idea": "",
-        "design": "",
+        "idea": "An atom is the smallest piece of an element; a particle in a gas may be a molecule of several atoms.",
+        "design": "Dissociation bench: student heats a diatomic gas past its bond energy and watches particle count double while mass stays fixed; measures both. This distinction is the whole subtopic.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.5",
         "title": "Scale of the atom",
-        "idea": "",
-        "design": "",
+        "idea": "Atoms are about 0.1 nm across and the nucleus is 100000 times smaller still.",
+        "design": "True-scale zoom with a break glyph: student flies from a 1 mm grain to the nucleus with an honest metric ruler, and at the atom scale the nucleus is genuinely a dot 5 orders of magnitude down. Measures each step in metres.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1779,50 +1779,50 @@
        {
         "code": "A2.1",
         "title": "Protons, neutrons and electrons",
-        "idea": "",
-        "design": "",
+        "idea": "Three particles build every atom: protons and neutrons in the nucleus, electrons outside.",
+        "design": "Assembly bench with real masses and charges: student adds each particle and watches mass (1.673e-27, 1.675e-27, 9.11e-31 kg) and net charge update; the electron's negligible mass share is measured, not asserted.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.2",
         "title": "Atomic number defines the element",
-        "idea": "",
-        "design": "",
+        "idea": "Change the proton number and you have changed the element itself.",
+        "design": "Transmutation bench: student adds or removes protons and the element identity, chemical behaviour and spectral lines all change together; removing one from carbon genuinely produces boron chemistry in the reaction test.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.3",
         "title": "Mass number and isotopes",
-        "idea": "",
-        "design": "",
+        "idea": "Isotopes share chemistry but differ in mass, and average atomic mass is a weighted average.",
+        "design": "Mass spectrometer: real magnetic deflection r = mv/qB separates isotopes onto a detector; student reads the peaks and abundances and computes the weighted average, matching the periodic table value they can look up.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.4",
         "title": "Building the model \u2014 early evidence",
-        "idea": "",
-        "design": "",
+        "idea": "Rutherford's scattering forced the nucleus into existence: most alpha particles pass, a few bounce back.",
+        "design": "Gold-foil rig with real Rutherford cross-section (1/sin^4(theta/2)): student fires thousands of alphas and counts deflections by angle; the plum-pudding model, selectable, measurably cannot produce the large-angle events. Fraud: a scripted 'bounce'.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.5",
         "title": "Building the model \u2014 from shells to a cloud",
-        "idea": "",
-        "design": "",
+        "idea": "Electrons occupy shells with definite energies, better described as clouds of probability.",
+        "design": "Spectral bench: student excites hydrogen and measures emission wavelengths, gets the Balmer series exactly, and derives the energy levels; then views the orbital as a probability cloud sampled from the real radial distribution.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.6",
         "title": "Why the model kept changing",
-        "idea": "",
-        "design": "",
+        "idea": "Models change when new evidence arrives that the old model cannot explain.",
+        "design": "Model timeline as a testbed: student runs each historical model against each historical experiment and finds exactly which pairing fails. The verdict is computed from whether the model reproduces the data.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1832,42 +1832,42 @@
        {
         "code": "A3.1",
         "title": "Reading a cell of the periodic table",
-        "idea": "",
-        "design": "",
+        "idea": "A periodic-table cell packs the element's identity, mass and structure into a few numbers.",
+        "design": "Cell reader: student picks any element and the cell's numbers drive a live atom build and a property lookup; changing the number in the cell changes the atom, proving what each figure means.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A3.2",
         "title": "Groups and periods",
-        "idea": "",
-        "design": "",
+        "idea": "Elements in a group behave alike because their outer electron count is alike.",
+        "design": "Group bench: student reacts group 1 and group 17 elements with the same partner and measures reaction energy and product formula, finding the pattern follows the outer electrons \u2014 visible in the built atom.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A3.3",
         "title": "Metals, non-metals and metalloids",
-        "idea": "",
-        "design": "",
+        "idea": "Metals conduct and bend, non-metals do not, and metalloids sit between.",
+        "design": "Property bench: student tests conductivity, malleability and lustre on real samples with real values (conductivity spanning 10^7 to 10^-15 S/m) and places each element on the measured boundary.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A3.4",
         "title": "Why the table is organized this way",
-        "idea": "",
-        "design": "",
+        "idea": "The table is arranged so that repeating properties line up in columns.",
+        "design": "Sorting bench: student sorts 40 elements by mass and by measured property, and the periodic pattern emerges from their own ordering \u2014 Mendeleev's insight, rediscovered, including the gaps that predict unknown elements.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A3.5",
         "title": "Reactivity patterns across the table",
-        "idea": "",
-        "design": "",
+        "idea": "Reactivity trends run down groups and across periods, and they follow structure.",
+        "design": "Reactivity bench: student runs the same reaction across a group and measures rate and energy released; the trend follows ionisation energy, which is shown from real data alongside.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1877,42 +1877,42 @@
        {
         "code": "A4.1",
         "title": "Element, compound and mixture",
-        "idea": "",
-        "design": "",
+        "idea": "Elements have one kind of atom, compounds have atoms bonded in fixed ratios, mixtures have neither.",
+        "design": "Separation bench: student attempts physical separation (filtration, distillation, magnet) then chemical; mixtures yield to physical means, compounds do not. The classification is computed from what actually separated.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A4.2",
         "title": "Reading a chemical formula",
-        "idea": "",
-        "design": "",
+        "idea": "A formula states exactly which atoms are present and how many.",
+        "design": "Formula reader: student types a formula and the molecule is built atom by atom, with a running mass; an impossible formula genuinely fails to assemble with a named reason.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A4.3",
         "title": "Subscripts versus coefficients",
-        "idea": "",
-        "design": "",
+        "idea": "A subscript is inside the molecule; a coefficient counts whole molecules.",
+        "design": "Counting bench: student manipulates 2H2O versus H2O2 and the built structures differ completely; atom tallies and masses are computed from the actual assembled molecules.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A4.4",
         "title": "Counting atoms in a formula",
-        "idea": "",
-        "design": "",
+        "idea": "You can count every atom in a formula, including inside brackets.",
+        "design": "Tally bench with real polyatomic formulas like Ca(NO3)2: student counts, then the model assembles and counts independently, and disagreement is shown atom by atom.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A4.5",
         "title": "Modeling a molecule from its formula",
-        "idea": "",
-        "design": "",
+        "idea": "A formula is enough to build the molecule's real shape.",
+        "design": "VSEPR builder: student enters a formula and the geometry follows real electron-pair repulsion (bent water at 104.5 degrees, tetrahedral methane at 109.5); measures bond angles against reference values.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1922,42 +1922,42 @@
        {
         "code": "A5.1",
         "title": "Ball-and-stick models",
-        "idea": "",
-        "design": "",
+        "idea": "A ball-and-stick model shows connectivity and angles clearly.",
+        "design": "Model bench: student builds with balls and sticks and measures bond angles and lengths against real values; the model's strength (geometry visible) and weakness (empty space exaggerated) are both measured.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A5.2",
         "title": "Space-filling models",
-        "idea": "",
-        "design": "",
+        "idea": "A space-filling model shows the real size and packing of a molecule.",
+        "design": "Same molecule, van der Waals radii applied: student measures molecular volume and sees why the ball-and-stick view misleads about packing. Both models are shown from the same underlying coordinates.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A5.3",
         "title": "When there is no single molecule",
-        "idea": "",
-        "design": "",
+        "idea": "Some substances are one endless lattice, with no molecule to point to.",
+        "design": "Lattice bench: student builds NaCl and diamond and discovers there is no repeating 'molecule' \u2014 only a unit cell and a ratio. Measures coordination number and density from the built lattice.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A5.4",
         "title": "Comparing molecular and lattice structures",
-        "idea": "",
-        "design": "",
+        "idea": "Molecular substances melt easily; lattices do not, and structure explains why.",
+        "design": "Melting bench: student heats a molecular solid and an ionic lattice with real lattice and intermolecular energies, and measures the melting points that result (sugar ~186 C, salt 801 C) from the bonds being broken.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A5.5",
         "title": "Choosing the right model for the job",
-        "idea": "",
-        "design": "",
+        "idea": "The right model is the one that answers your question, and every model hides something.",
+        "design": "Model-choice bench: student is asked four questions (shape, size, packing, reactivity) and must pick a model; the wrong choice measurably fails to answer, and the failure is shown.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -1972,42 +1972,42 @@
        {
         "code": "B1.1",
         "title": "Physical changes",
-        "idea": "",
-        "design": "",
+        "idea": "In a physical change the substance is the same afterwards \u2014 only its form changed.",
+        "design": "Change bench: student melts, dissolves, crushes; the model tracks molecular identity throughout, and a reversal test recovers the original substance with mass and properties measured before and after.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.2",
         "title": "Chemical changes",
-        "idea": "",
-        "design": "",
+        "idea": "In a chemical change atoms are rearranged into different substances.",
+        "design": "Reaction bench with real bond energies: student runs combustion and precipitation; bonds break and form, and the products' measured properties differ from the reactants'. Atom counts are conserved throughout, visibly.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.3",
         "title": "Cases that are easy to confuse",
-        "idea": "",
-        "design": "",
+        "idea": "Some changes look chemical but are not \u2014 dissolving and melting fool people.",
+        "design": "Confusable cases: salt dissolving, wax melting, iron rusting, sugar caramelising, all measured with the same tests (recoverability, property change, energy). The classification is computed from the test results, never labelled.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.4",
         "title": "Properties before and after",
-        "idea": "",
-        "design": "",
+        "idea": "Comparing properties before and after tells you whether a new substance exists.",
+        "design": "Property table bench: student measures density, melting point, conductivity, colour before and after and computes the verdict from their own table.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.5",
         "title": "Reversibility as a clue, not a rule",
-        "idea": "",
-        "design": "",
+        "idea": "Easy reversal suggests a physical change, but some chemical changes reverse too.",
+        "design": "Reversibility bench: student attempts reversal on several changes, including a genuinely reversible reaction (hydrated copper sulfate); discovers the rule has exceptions, measured.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2017,42 +2017,42 @@
        {
         "code": "B2.1",
         "title": "Signs a reaction may have occurred",
-        "idea": "",
-        "design": "",
+        "idea": "Gas, colour change, precipitate, temperature change and light hint at a reaction.",
+        "design": "Signs bench: five real reactions each showing different signs; student records which signs appear, and also meets a physical change that produces a sign (boiling makes bubbles) \u2014 the trap is the lesson.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.2",
         "title": "Analyzing property data before and after",
-        "idea": "",
-        "design": "",
+        "idea": "Property data before and after is stronger evidence than appearance.",
+        "design": "Data bench: student collects the full property set for reactants and products and identifies which properties actually changed, computed from their rows.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.3",
         "title": "Identifying an unknown from a property table",
-        "idea": "",
-        "design": "",
+        "idea": "An unknown can be identified by matching its measured properties to a reference table.",
+        "design": "Identification bench: student measures density, melting point, solubility and flame colour of an unknown and matches against a real reference; ambiguous matches require another measurement.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.4",
         "title": "Why appearance alone is not proof",
-        "idea": "",
-        "design": "",
+        "idea": "Appearance can lie \u2014 dry ice smokes without reacting.",
+        "design": "Deception bench: several convincing-looking non-reactions; student must apply property tests to see through each. The model rewards measurement over looking.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.5",
         "title": "Naming a reaction from what goes in and comes out",
-        "idea": "",
-        "design": "",
+        "idea": "A reaction is named by what goes in and comes out: synthesis, decomposition, combustion and the rest.",
+        "design": "Naming bench: student runs reactions and classifies from the actual reactant and product counts, computed from the balanced equation the model produced.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2062,42 +2062,42 @@
        {
         "code": "B3.1",
         "title": "Mass before and after, in a closed container",
-        "idea": "",
-        "design": "",
+        "idea": "In a sealed container the mass never changes, however violent the reaction.",
+        "design": "Sealed-vessel balance: real reaction inside a closed flask on a balance reading to 0.001 g; student runs vigorous reactions and the mass is flat to the last decimal. Bit-for-bit conservation is enforced structurally.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.2",
         "title": "Mass before and after, in an open container",
-        "idea": "",
-        "design": "",
+        "idea": "In an open container mass seems to change because gas left or joined.",
+        "design": "Open-vessel balance: same reactions uncapped; student measures the loss, captures the gas, weighs it and recovers the missing mass exactly.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.3",
         "title": "Atom-counting diagrams",
-        "idea": "",
-        "design": "",
+        "idea": "Drawing the atoms before and after shows nothing is created or destroyed.",
+        "design": "Atom-counting bench: student builds the before and after molecules; the tally per element must match, and the model shows the mismatch when the student's equation is unbalanced.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.4",
         "title": "Why mass conservation follows from atom conservation",
-        "idea": "",
-        "design": "",
+        "idea": "Mass is conserved because atoms are conserved \u2014 that is the whole reason.",
+        "design": "Linked bench: student changes the atom count directly and watches mass follow exactly; the two are the same fact viewed twice, and the model refuses to let them diverge.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.5",
         "title": "Applying conservation to an unfamiliar reaction",
-        "idea": "",
-        "design": "",
+        "idea": "The rule holds for reactions you have never seen before.",
+        "design": "Unfamiliar-reaction bench: student is given a novel reaction and must predict the missing mass; the prediction is checked against the model's own conserved atoms.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2107,42 +2107,42 @@
        {
         "code": "B4.1",
         "title": "Energy added and particle motion, revisited",
-        "idea": "",
-        "design": "",
+        "idea": "Adding energy makes particles move faster \u2014 until they start breaking free.",
+        "design": "Heating bench with the particle box: student adds measured joules and reads mean kinetic energy and temperature rising, then sees energy going into separation rather than speed at the transition.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.2",
         "title": "Forces between particles",
-        "idea": "",
-        "design": "",
+        "idea": "Forces between particles decide whether a substance is solid, liquid or gas at a given temperature.",
+        "design": "Force bench: student sets intermolecular attraction strength and measures the melting and boiling points that result; real substances are provided as presets to compare.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.3",
         "title": "Reading a heating curve",
-        "idea": "",
-        "design": "",
+        "idea": "A heating curve's plateaus are where energy goes into changing state, not raising temperature.",
+        "design": "Heating-curve bench: constant power heater, real specific and latent heats; student plots temperature vs energy added and measures both slopes and both plateau lengths, deriving latent heat from their own data.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.4",
         "title": "Why temperature plateaus during a state change",
-        "idea": "",
-        "design": "",
+        "idea": "Temperature stalls during a state change because the energy is breaking bonds.",
+        "design": "Same bench with the energy ledger split live: student watches the joules routed to separation while kinetic energy holds constant, measured in real time.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.5",
         "title": "Predicting a heating curve for a new substance",
-        "idea": "",
-        "design": "",
+        "idea": "If you know a substance's constants you can predict its curve before heating it.",
+        "design": "Prediction bench: student is given specific and latent heats for a new substance, predicts the curve, then runs it and measures the error in their prediction.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2152,42 +2152,42 @@
        {
         "code": "B5.1",
         "title": "Petroleum and plastics",
-        "idea": "",
-        "design": "",
+        "idea": "Plastics are built from petroleum molecules rearranged into long chains.",
+        "design": "Polymer bench: student links monomers into chains and measures how chain length changes melting point and strength, with real values for polyethylene.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.2",
         "title": "Ores and alloys",
-        "idea": "",
-        "design": "",
+        "idea": "An alloy is a mixture engineered to beat both its parents.",
+        "design": "Alloy bench: student mixes metals and measures hardness and melting point; real steel and bronze data show the alloy outperforming both pure metals, which is the surprise.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.3",
         "title": "Medicines and synthetic fibers",
-        "idea": "",
-        "design": "",
+        "idea": "Synthetic molecules are designed for a job and tested against it.",
+        "design": "Design bench: student modifies a molecule's structure and measures the property it was designed for, seeing the structure-property link directly.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.4",
         "title": "Benefit and cost of a synthetic material",
-        "idea": "",
-        "design": "",
+        "idea": "Every synthetic material buys a benefit at a measurable cost.",
+        "design": "Lifecycle bench: student weighs performance against energy, emissions and persistence with real numbers, and the trade-off is computed, never asserted.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.5",
         "title": "Comparing a natural and synthetic alternative",
-        "idea": "",
-        "design": "",
+        "idea": "A fair comparison needs the same measurements on both alternatives.",
+        "design": "Comparison bench: cotton vs polyester, or steel vs timber, measured on identical criteria the student sets; the winner changes with the criteria, which is the point.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2197,42 +2197,42 @@
        {
         "code": "B6.1",
         "title": "Criteria and constraints",
-        "idea": "",
-        "design": "",
+        "idea": "A design problem is only real once its target is a number.",
+        "design": "Brief bench: student states the temperature change, time and cost limits; vague goals are refused by the model.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B6.2",
         "title": "Choosing a chemical process",
-        "idea": "",
-        "design": "",
+        "idea": "Different chemical processes release or absorb different amounts of energy.",
+        "design": "Process bench: real enthalpies for several reactions (CaCl2 dissolution, ammonium nitrate, iron oxidation); student measures the temperature change each produces in a fixed mass of water.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B6.3",
         "title": "Collecting temperature data",
-        "idea": "",
-        "design": "",
+        "idea": "The device's verdict is the temperature-time data it produces.",
+        "design": "Test rig: student runs their chosen process in their built device and records the real curve against their stated criterion.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B6.4",
         "title": "Modifying the design",
-        "idea": "",
-        "design": "",
+        "idea": "Redesign means changing what the data showed was failing.",
+        "design": "Iteration bench: losses are itemised in watts (conduction, evaporation, mass of reagent); student changes the failing term and retests.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B6.5",
         "title": "Reporting the final design",
-        "idea": "",
-        "design": "",
+        "idea": "A report states what was built, what was measured, and whether the target was met.",
+        "design": "Report bench: student assembles claim, their own recorded data and reasoning; the fit is computed from whether their data supports their claim.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -2247,42 +2247,42 @@
        {
         "code": "C1.1",
         "title": "Naming the inputs",
-        "idea": "",
-        "design": "",
+        "idea": "Photosynthesis takes in carbon dioxide, water and light \u2014 nothing else.",
+        "design": "Input-starvation chamber: student removes CO2 (with soda lime), water, or light one at a time from a live leaf running a real light-response and Calvin-cycle model, and measures oxygen output collapsing for each. The input list is proved by subtraction, not stated.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.2",
         "title": "Naming the outputs",
-        "idea": "",
-        "design": "",
+        "idea": "It puts out sugar and oxygen, and the oxygen can be caught and measured.",
+        "design": "Gas-capture rig: real O2 evolution from Elodea under water; student counts bubbles and measures volume against light intensity, and tests the gas with a glowing splint. Sugar is measured by iodine on the leaf.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.3",
         "title": "Where in the cell this happens",
-        "idea": "",
-        "design": "",
+        "idea": "It happens in chloroplasts, which is why only green parts do it.",
+        "design": "Variegated-leaf experiment: student runs a real starch test on a leaf with green and white regions; only the chloroplast-bearing regions test positive, measured region by region.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.4",
         "title": "Photosynthesis as atoms rearranged",
-        "idea": "",
-        "design": "",
+        "idea": "The atoms are not created \u2014 six CO2 and six H2O are rearranged into one sugar and six O2.",
+        "design": "Atom-tracking bench: student labels the carbon and oxygen atoms and follows them into products; the tally must balance, and the model shows exactly which oxygen atoms come from water (they do) versus CO2 (they don't) \u2014 the isotope result that settled it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.5",
         "title": "Conditions that affect the rate",
-        "idea": "",
-        "design": "",
+        "idea": "Rate rises with light and CO2 until something else becomes the limit.",
+        "design": "Limiting-factor bench: real light-response curve saturating near 400 umol/m2/s, plus CO2 and temperature; student raises one factor and measures the rate plateauing, then raises the true limiter and watches it climb again.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2292,42 +2292,42 @@
        {
         "code": "C2.1",
         "title": "The intuitive but wrong answer",
-        "idea": "",
-        "design": "",
+        "idea": "Most people think a plant's mass comes from soil \u2014 it is worth testing.",
+        "design": "Prediction bench: student commits to a source of plant mass before any data, and the commitment is recorded so the later evidence has something to overturn.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.2",
         "title": "Van Helmont's willow tree experiment",
-        "idea": "",
-        "design": "",
+        "idea": "Van Helmont grew a tree for five years and the soil barely changed.",
+        "design": "Van Helmont rig on a real mass budget: student plants a 2.3 kg willow in 90.7 kg of soil, waters it for five simulated years, and weighs both; tree gains ~74 kg, soil loses ~57 g. The numbers are the historic ones, recomputed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.3",
         "title": "What the soil-mass evidence actually shows",
-        "idea": "",
-        "design": "",
+        "idea": "The soil evidence rules out soil \u2014 but it does not by itself name the source.",
+        "design": "Inference bench: student states what the mass data does and does not prove; the model accepts only conclusions the data supports, and rejects 'therefore water' as premature, which was Van Helmont's own error.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.4",
         "title": "Building the case for air and water",
-        "idea": "",
-        "design": "",
+        "idea": "Air and water together account for the mass, and each can be tested.",
+        "design": "Isotope and gas bench: student runs labelled CO2 and labelled water and measures where each element ends up in the sugar and the oxygen; the carbon route is proved.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.5",
         "title": "Evaluating, not asserting, the conclusion",
-        "idea": "",
-        "design": "",
+        "idea": "A conclusion is judged by the evidence behind it, not by how sensible it sounds.",
+        "design": "Evaluation bench: student scores several conclusions against the assembled evidence; the score is computed from evidential fit, and a true-but-unsupported claim scores badly.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2337,42 +2337,42 @@
        {
         "code": "C3.1",
         "title": "Naming the inputs",
-        "idea": "",
-        "design": "",
+        "idea": "Respiration takes in sugar and oxygen.",
+        "design": "Respirometer: real O2 consumption by germinating seeds or yeast; student measures uptake against temperature and substrate, with a killed control that consumes nothing.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.2",
         "title": "Naming the outputs",
-        "idea": "",
-        "design": "",
+        "idea": "It gives out carbon dioxide, water and usable energy.",
+        "design": "Output bench: student traps CO2 with limewater and measures the temperature rise in an insulated flask, quantifying energy released per gram of substrate against real values.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.3",
         "title": "Where in the cell this happens",
-        "idea": "",
-        "design": "",
+        "idea": "It happens in mitochondria, in plant and animal cells alike.",
+        "design": "Cell-fraction bench: student separates organelles and measures which fraction consumes oxygen; only the mitochondrial fraction does, measured.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.4",
         "title": "Comparing photosynthesis and respiration side by side",
-        "idea": "",
-        "design": "",
+        "idea": "Respiration is photosynthesis run backwards, in atoms and in energy.",
+        "design": "Side-by-side bench: both equations run live on the same atom pool; student sees inputs and outputs mirror exactly, and measures that energy is released in one and stored in the other.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.5",
         "title": "Respiration in plants and animals alike",
-        "idea": "",
-        "design": "",
+        "idea": "Plants respire too \u2014 all the time, including in the dark.",
+        "design": "Day-night bench: student measures a plant's net gas exchange around the clock and finds respiration never stops; the compensation point is measured directly.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2382,42 +2382,42 @@
        {
         "code": "C4.1",
         "title": "Modeling a food molecule broken down",
-        "idea": "",
-        "design": "",
+        "idea": "A food molecule is broken into smaller pieces, atom by atom.",
+        "design": "Molecule-breaking bench: student takes glucose apart step by step and the model tracks every atom; nothing may vanish.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.2",
         "title": "Modeling the atoms rearranged into products",
-        "idea": "",
-        "design": "",
+        "idea": "Those atoms are reassembled into carbon dioxide and water.",
+        "design": "Reassembly bench: student builds the products from the freed atoms and finds the counts come out exactly right, with the balanced equation as the result of their own build.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.3",
         "title": "Energy released, not created",
-        "idea": "",
-        "design": "",
+        "idea": "The energy was already in the bonds \u2014 respiration releases it, it does not make it.",
+        "design": "Bond-energy ledger: real bond enthalpies; student sums bonds broken and bonds formed and finds the difference equals the energy released, measured in kJ/mol.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.4",
         "title": "Comparing respiration to a familiar reaction",
-        "idea": "",
-        "design": "",
+        "idea": "Respiration and burning are the same chemistry at different speeds.",
+        "design": "Two-rate bench: student burns glucose and respires glucose in the same model; identical products and energy, wildly different rates and control. Measures both.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.5",
         "title": "Applying the model to an unfamiliar food molecule",
-        "idea": "",
-        "design": "",
+        "idea": "The same model works for fats and proteins, with different numbers.",
+        "design": "New-substrate bench: student applies the method to a fat and measures the higher energy per gram (~37 vs ~17 kJ/g), computed from its bonds.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2427,42 +2427,42 @@
        {
         "code": "C5.1",
         "title": "A carbon atom enters a plant",
-        "idea": "",
-        "design": "",
+        "idea": "A carbon atom enters a plant as carbon dioxide and becomes sugar.",
+        "design": "Tagged-atom bench: student tags one carbon and follows it through the Calvin cycle into a real sugar molecule, timed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.2",
         "title": "A carbon atom moves into an animal",
-        "idea": "",
-        "design": "",
+        "idea": "Eating moves that carbon into an animal's own molecules.",
+        "design": "Feeding bench: student follows the tagged carbon through digestion into animal tissue, measuring how much is incorporated versus respired.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.3",
         "title": "A carbon atom returns to the air",
-        "idea": "",
-        "design": "",
+        "idea": "Respiration and decay return it to the air.",
+        "design": "Return bench: student follows the tagged carbon out through breath or decomposition, and the loop closes measurably.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.4",
         "title": "Photosynthesis and respiration as linked opposite processes",
-        "idea": "",
-        "design": "",
+        "idea": "The two processes are opposite halves of one cycle.",
+        "design": "Cycle bench: both processes on one carbon pool; student measures the flux each way and finds the balance point.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.5",
         "title": "Why plants run both processes",
-        "idea": "",
-        "design": "",
+        "idea": "A plant must respire because photosynthesis only runs in light.",
+        "design": "Necessity bench: student switches off plant respiration in the model and the plant dies overnight, measured \u2014 showing why it cannot rely on photosynthesis alone.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -2477,42 +2477,42 @@
        {
         "code": "D1.1",
         "title": "Limiting resources",
-        "idea": "",
-        "design": "",
+        "idea": "A population is capped by whatever resource runs out first.",
+        "design": "Limiting-resource bench: real logistic growth with several resources; student raises one and the population stalls until the true limiter is raised. Liebig's law emerges from measurement.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.2",
         "title": "Carrying capacity",
-        "idea": "",
-        "design": "",
+        "idea": "Carrying capacity is the population a habitat can sustain indefinitely.",
+        "design": "Capacity bench: student runs a population past K and measures the overshoot, crash and recovery; K is computed from the resource supply, never typed in.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.3",
         "title": "Reading real population data",
-        "idea": "",
-        "design": "",
+        "idea": "Real population data is noisy, and the pattern must be found in it.",
+        "design": "Real-data bench: student works with actual lynx-hare style series, smooths, and extracts period and amplitude from their own analysis.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.4",
         "title": "Predicting the response to scarcity",
-        "idea": "",
-        "design": "",
+        "idea": "When a resource becomes scarce, the population responds with a lag.",
+        "design": "Scarcity bench: student cuts a resource and measures the delay before the population responds, and the overshoot that the delay causes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.5",
         "title": "Competition for the same limiting resource",
-        "idea": "",
-        "design": "",
+        "idea": "Two species needing the same limited resource cannot both win.",
+        "design": "Competition bench: real Lotka-Volterra competition; student sets overlap and measures exclusion or coexistence, finding the niche-difference threshold.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2522,42 +2522,42 @@
        {
         "code": "D2.1",
         "title": "Producers, consumers and decomposers",
-        "idea": "",
-        "design": "",
+        "idea": "Producers make food, consumers take it, decomposers return it.",
+        "design": "Role bench: student assigns roles by measuring what each organism consumes and produces; removing decomposers genuinely locks nutrients up, measured.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.2",
         "title": "From food chain to food web",
-        "idea": "",
-        "design": "",
+        "idea": "Real feeding relationships form a web, not a line.",
+        "design": "Web bench: student builds a web from feeding observations and then removes one species, measuring which others actually change \u2014 the web predicts, the chain does not.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.3",
         "title": "Trophic levels",
-        "idea": "",
-        "design": "",
+        "idea": "Trophic level counts how many steps from the producer.",
+        "design": "Level bench: student assigns levels from the web they built and finds omnivores occupy fractional levels \u2014 computed from diet fractions.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.4",
         "title": "Why energy decreases at each level",
-        "idea": "",
-        "design": "",
+        "idea": "Only about a tenth of the energy passes to the next level; the rest is respired or lost.",
+        "design": "Energy-transfer bench: student measures energy in and out at each level with real efficiencies (~10%) and finds where the rest went (respiration, waste, uneaten).",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.5",
         "title": "Reading an energy pyramid",
-        "idea": "",
-        "design": "",
+        "idea": "The pyramid's shape is a consequence of that loss.",
+        "design": "Pyramid bench: student builds the pyramid from their own measured transfers and discovers why long food chains are rare \u2014 the top level runs out of energy, computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2567,42 +2567,42 @@
        {
         "code": "D3.1",
         "title": "Matter cycling between organisms and the environment",
-        "idea": "",
-        "design": "",
+        "idea": "Atoms cycle between living things and the environment endlessly.",
+        "design": "Cycling bench: student tags atoms and follows them out of and back into organisms; the atom count in the closed system never changes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.2",
         "title": "Decomposers closing the loop",
-        "idea": "",
-        "design": "",
+        "idea": "Without decomposers the loop breaks and nutrients lock up in dead matter.",
+        "design": "Decomposer bench: student removes decomposers and measures nutrients accumulating in litter while the living pool starves.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.3",
         "title": "The carbon cycle, introduced",
-        "idea": "",
-        "design": "",
+        "idea": "Carbon moves through photosynthesis, respiration, decay and burial.",
+        "design": "Carbon-cycle bench: real reservoir sizes and fluxes; student perturbs one flux and measures where the carbon accumulates.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.4",
         "title": "The nitrogen cycle, introduced",
-        "idea": "",
-        "design": "",
+        "idea": "Nitrogen must be fixed before life can use it, and returned as gas.",
+        "design": "Nitrogen bench: fixation, nitrification, uptake and denitrification as real rates; student removes fixers and measures the crash.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.5",
         "title": "Modeling matter and energy together",
-        "idea": "",
-        "design": "",
+        "idea": "Matter cycles but energy flows one way \u2014 that asymmetry is the key idea.",
+        "design": "Combined bench: student tracks a matter tracer (which loops) and an energy tracer (which degrades and exits) in the same ecosystem, and the model structurally forbids energy from looping.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2612,42 +2612,42 @@
        {
         "code": "D4.1",
         "title": "Competition and predation",
-        "idea": "",
-        "design": "",
+        "idea": "Competition and predation both limit populations, by different mechanisms.",
+        "design": "Interaction bench: real predator-prey and competition models side by side; student measures the different signatures each leaves in the population curves.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.2",
         "title": "Mutualism, commensalism and parasitism",
-        "idea": "",
-        "design": "",
+        "idea": "Some relationships help one, both, or one at the other's cost.",
+        "design": "Symbiosis bench: student measures each partner's fitness with and without the other, and the relationship type is computed from the two signs, never labelled.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.3",
         "title": "The same pattern in very different ecosystems",
-        "idea": "",
-        "design": "",
+        "idea": "The same interaction patterns appear in ecosystems that look nothing alike.",
+        "design": "Cross-ecosystem bench: coral reef, prairie and gut microbiome running the same interaction mathematics; student finds the shared pattern by measurement.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.4",
         "title": "Interactions that shift over time or condition",
-        "idea": "",
-        "design": "",
+        "idea": "A relationship can change type when conditions change.",
+        "design": "Context bench: a mutualism that becomes parasitic under stress, driven by a real cost-benefit model; student finds the tipping condition.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.5",
         "title": "Interaction patterns and population change",
-        "idea": "",
-        "design": "",
+        "idea": "Interaction strength shows up directly in how populations move.",
+        "design": "Coupling bench: student changes interaction strength and measures the resulting oscillation amplitude and period.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2657,42 +2657,42 @@
        {
         "code": "D5.1",
         "title": "Physical disruptions",
-        "idea": "",
-        "design": "",
+        "idea": "Fire, flood and storm reset an ecosystem physically.",
+        "design": "Disruption bench: student applies a real disturbance of measured intensity and records which populations survive and how the structure changes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.2",
         "title": "Biological disruptions",
-        "idea": "",
-        "design": "",
+        "idea": "An invasive species or disease can disrupt as thoroughly as a storm.",
+        "design": "Invasion bench: student introduces a species with real competitive parameters and measures the native decline and any extinction.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.3",
         "title": "Constructing an argument from evidence",
-        "idea": "",
-        "design": "",
+        "idea": "An argument from evidence names the claim, the data and the link.",
+        "design": "Argument bench: student builds a case for what caused an observed ecosystem change; the fit is computed from whether the cited data discriminates between causes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.4",
         "title": "Succession after a disruption",
-        "idea": "",
-        "design": "",
+        "idea": "After a disruption the community rebuilds in a predictable sequence.",
+        "design": "Succession bench: real succession model with facilitation; student runs decades and measures species turnover and the time to a mature community.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.5",
         "title": "Short-term versus long-term change",
-        "idea": "",
-        "design": "",
+        "idea": "Some effects fade in a season; others last a century.",
+        "design": "Timescale bench: student measures recovery times for different variables (population, soil, canopy) and finds they differ by orders of magnitude.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2702,42 +2702,42 @@
        {
         "code": "D6.1",
         "title": "Naming ecosystem services",
-        "idea": "",
-        "design": "",
+        "idea": "Ecosystems do measurable work for people: water, pollination, soil, carbon.",
+        "design": "Services bench: student switches off a service (pollinators, wetlands) and measures the cost in yield or flood volume, in real units.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D6.2",
         "title": "Threats to biodiversity",
-        "idea": "",
-        "design": "",
+        "idea": "Habitat loss, overuse, pollution and invasives each reduce diversity.",
+        "design": "Threat bench: student applies each threat at measured intensity and records species lost, finding which threat this ecosystem is most sensitive to.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D6.3",
         "title": "Named solution categories",
-        "idea": "",
-        "design": "",
+        "idea": "Protection, restoration, corridors and regulation are the standard tools.",
+        "design": "Solution bench: student deploys each with real cost and effect and measures outcomes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D6.4",
         "title": "Evaluating competing solutions",
-        "idea": "",
-        "design": "",
+        "idea": "Solutions are compared by scoring them on criteria you state first.",
+        "design": "Scoring bench: student sets criteria and weights, and the ranking is computed from their own weights applied to measured outcomes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D6.5",
         "title": "A biodiversity solution for a real ecosystem",
-        "idea": "",
-        "design": "",
+        "idea": "A real ecosystem needs a solution fitted to its specific threats.",
+        "design": "Case bench: a real ecosystem with its actual threat profile; student designs and tests a solution and measures diversity over decades.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -2752,42 +2752,42 @@
        {
         "code": "E1.1",
         "title": "Igneous rock",
-        "idea": "",
-        "design": "",
+        "idea": "Igneous rock forms when melt cools, and cooling rate sets the crystal size.",
+        "design": "Crystallisation bench: real nucleation-and-growth model; student sets cooling rate and measures the crystal size that results (fast quench = glass, slow plutonic = centimetre crystals), then identifies unknown samples by measuring their grains. Fraud: crystal size assigned by a label.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.2",
         "title": "Sedimentary rock",
-        "idea": "",
-        "design": "",
+        "idea": "Sedimentary rock is built from pieces laid down in layers and cemented.",
+        "design": "Deposition tank: real settling by Stokes' law, so grain size sorts by current speed; student varies flow, watches beds form, then compacts and cements them and measures porosity lost.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.3",
         "title": "Metamorphic rock",
-        "idea": "",
-        "design": "",
+        "idea": "Heat and pressure recrystallise rock without melting it.",
+        "design": "Metamorphism press: real pressure-temperature grid with mineral stability fields; student takes shale up the grid and measures the sequence slate-phyllite-schist-gneiss appearing at the right conditions, with foliation aligning perpendicular to stress.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.4",
         "title": "Identifying a sample from evidence",
-        "idea": "",
-        "design": "",
+        "idea": "A rock's texture and minerals reveal how it formed.",
+        "design": "Identification bench: student measures grain size, sorting, layering, foliation and mineral content on unknown samples and the classification is computed from their measurements, never given.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.5",
         "title": "The energy that drives the cycle",
-        "idea": "",
-        "design": "",
+        "idea": "The cycle runs on Earth's internal heat and the Sun's energy at the surface.",
+        "design": "Driver bench: student switches off internal heat (no melting, no uplift) or solar energy (no weathering, no transport) and measures which parts of the cycle stop.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2797,42 +2797,42 @@
        {
         "code": "E2.1",
         "title": "Physical weathering",
-        "idea": "",
-        "design": "",
+        "idea": "Physical weathering breaks rock into pieces without changing its chemistry.",
+        "design": "Freeze-thaw rig: real 9% expansion of freezing water in a measured crack; student cycles temperature and measures crack growth and the number of cycles to failure, with rock strength as a real parameter.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.2",
         "title": "Chemical weathering",
-        "idea": "",
-        "design": "",
+        "idea": "Chemical weathering changes the minerals themselves.",
+        "design": "Dissolution bench: real carbonic-acid attack on limestone with rate depending on pH, temperature and surface area; student measures mass loss over time and finds surface area dominates.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.3",
         "title": "Agents of erosion",
-        "idea": "",
-        "design": "",
+        "idea": "Water, wind, ice and gravity all move sediment, each with its own signature.",
+        "design": "Agent bench: student measures the sorting, rounding and distance each agent produces, and identifies an unknown deposit from those measurements.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.4",
         "title": "Where sediment ends up",
-        "idea": "",
-        "design": "",
+        "idea": "Sediment stops where the current can no longer carry it.",
+        "design": "Deposition bench: real competence-vs-velocity relation; student slows a current and measures which grain size drops out where, building a delta or alluvial fan from the physics.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.5",
         "title": "Soil formation",
-        "idea": "",
-        "design": "",
+        "idea": "Soil is weathered rock plus organic matter, and it takes centuries.",
+        "design": "Soil bench: real weathering and organic accumulation rates; student runs centuries and measures horizon development, then measures how fast erosion can undo it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2842,42 +2842,42 @@
        {
         "code": "E3.1",
         "title": "Fast processes",
-        "idea": "",
-        "design": "",
+        "idea": "Some geological changes happen in seconds.",
+        "design": "Fast-process bench: earthquake slip, landslide, eruption at real rates; student measures displacement and duration.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.2",
         "title": "Slow processes",
-        "idea": "",
-        "design": "",
+        "idea": "Others take millions of years, at millimetres per year.",
+        "design": "Slow-process bench: student measures uplift and plate motion at real rates (~5 cm/yr) and extrapolates to mountain building \u2014 the arithmetic is startling and student-computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.3",
         "title": "Constructing an explanation from rock layers",
-        "idea": "",
-        "design": "",
+        "idea": "Rock layers record a sequence you can read.",
+        "design": "Strata bench: student applies superposition, cross-cutting and inclusions to a real section and derives the event order, checked against the model's own history.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.4",
         "title": "Combining fast and slow in one explanation",
-        "idea": "",
-        "design": "",
+        "idea": "A real landscape is fast events written on slow ones.",
+        "design": "Combined bench: student runs slow uplift with occasional fast events and measures the resulting landscape, finding neither alone explains it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.5",
         "title": "Spatial scale, from outcrop to continent",
-        "idea": "",
-        "design": "",
+        "idea": "The same processes look different at outcrop and continent scale.",
+        "design": "Scale bench: student zooms from hand sample to continent with honest scale bars and measures how a feature's apparent shape changes with the scale of observation.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2887,42 +2887,42 @@
        {
         "code": "E4.1",
         "title": "Matching coastlines and rock types",
-        "idea": "",
-        "design": "",
+        "idea": "Coastlines and rock belts match across oceans.",
+        "design": "Fit bench: student drags continents on a real spherical fit and measures the misfit in degrees at the continental shelf, discovering the shelf edge fits better than the coastline.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.2",
         "title": "Matching fossil distributions",
-        "idea": "",
-        "design": "",
+        "idea": "The same fossils appear on now-separated continents.",
+        "design": "Fossil bench: real Mesosaurus, Glossopteris, Lystrosaurus distributions; student plots them and measures how the ranges close when continents are reassembled.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.3",
         "title": "Seafloor age and magnetic striping",
-        "idea": "",
-        "design": "",
+        "idea": "The seafloor is youngest at the ridge and magnetically striped.",
+        "design": "Magnetic bench: real reversal timescale; student runs a magnetometer traverse and measures the symmetric stripes, then computes spreading rate from stripe width and reversal dates \u2014 a real velocity from their own data.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.4",
         "title": "Analyzing plate motion data",
-        "idea": "",
-        "design": "",
+        "idea": "GPS and seafloor data give plate speeds you can calculate.",
+        "design": "Motion bench: student measures displacement over time from real station data and computes velocity vectors, then checks them against the ridge-derived rate.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.5",
         "title": "Reconstructing a simplified history",
-        "idea": "",
-        "design": "",
+        "idea": "Running the motions backwards reconstructs the past.",
+        "design": "Reconstruction bench: student runs plate velocities backwards and measures how well continents reassemble at 200 Ma, with misfit computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2932,42 +2932,42 @@
        {
         "code": "E5.1",
         "title": "Divergent boundaries",
-        "idea": "",
-        "design": "",
+        "idea": "Plates pulling apart make new crust and rift valleys.",
+        "design": "Divergent bench: real spreading with magma supply; student measures new crust created per year and watches a rift become an ocean.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.2",
         "title": "Convergent boundaries",
-        "idea": "",
-        "design": "",
+        "idea": "Plates colliding build mountains or dive under, depending on density.",
+        "design": "Convergent bench: real density contrast decides subduction versus collision; student sets crust types and measures the mountain height or trench depth and the earthquake depth profile that results.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.3",
         "title": "Transform boundaries",
-        "idea": "",
-        "design": "",
+        "idea": "Plates sliding past each other lock and then jump.",
+        "design": "Transform bench: real stick-slip with elastic strain accumulation; student watches strain build and release as earthquakes whose magnitude follows the accumulated slip deficit.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.4",
         "title": "Why hazards cluster at boundaries",
-        "idea": "",
-        "design": "",
+        "idea": "Hazards cluster at boundaries because that is where the stress is released.",
+        "design": "Hazard-map bench: student plots their own modelled earthquakes and volcanoes and measures how tightly they follow the boundaries.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.5",
         "title": "Reading a plate-boundary map",
-        "idea": "",
-        "design": "",
+        "idea": "A boundary map can be read to predict what a place will experience.",
+        "design": "Map bench: student reads a real plate map and predicts hazard type for named locations; the prediction is checked against the model's own physics.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -2977,42 +2977,42 @@
        {
         "code": "E6.1",
         "title": "Mineral resources",
-        "idea": "",
-        "design": "",
+        "idea": "Ore deposits form where specific processes concentrated a metal.",
+        "design": "Ore bench: real hydrothermal and magmatic concentration; student runs the process and measures the enrichment factor over crustal average.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.2",
         "title": "Energy resources",
-        "idea": "",
-        "design": "",
+        "idea": "Fossil fuels need burial, heat and time in the right sequence.",
+        "design": "Fuel bench: real burial-history model; student varies burial depth and time and measures whether oil, gas or nothing forms \u2014 the oil window is discovered by measurement.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.3",
         "title": "Groundwater as a resource",
-        "idea": "",
-        "design": "",
+        "idea": "Groundwater sits in pore space and moves slowly.",
+        "design": "Aquifer bench: real Darcy flow with measured porosity and permeability; student pumps and measures drawdown and recharge time.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.4",
         "title": "Renewable versus nonrenewable resources",
-        "idea": "",
-        "design": "",
+        "idea": "Renewable means replaced on a human timescale \u2014 measured against use rate.",
+        "design": "Rate bench: student compares formation rate against extraction rate for each resource and the classification is computed from the ratio.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.5",
         "title": "Constructing an explanation for resource distribution",
-        "idea": "",
-        "design": "",
+        "idea": "Resources are uneven because the processes that made them were uneven.",
+        "design": "Distribution bench: student runs the formation processes across a model continent and measures where deposits end up, explaining a real distribution map.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -3027,42 +3027,42 @@
        {
         "code": "F1.1",
         "title": "Geologic hazards",
-        "idea": "",
-        "design": "",
+        "idea": "Earthquakes, volcanoes and landslides come from Earth's internal energy.",
+        "design": "Geologic-hazard bench: real magnitude-frequency (Gutenberg-Richter) and energy release; student measures shaking intensity against distance and ground type.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.2",
         "title": "Weather-driven hazards",
-        "idea": "",
-        "design": "",
+        "idea": "Storms, floods and droughts come from atmospheric energy.",
+        "design": "Weather-hazard bench: real storm energetics; student measures rainfall intensity, flood volume and the return period of each event.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.3",
         "title": "Tsunamis as a linked hazard",
-        "idea": "",
-        "design": "",
+        "idea": "A tsunami is one hazard triggering another.",
+        "design": "Tsunami bench: real shallow-water wave speed sqrt(gh); student sets seafloor displacement and measures wave speed, arrival time and run-up height at a coast.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.4",
         "title": "California's own hazard profile",
-        "idea": "",
-        "design": "",
+        "idea": "California's hazards follow directly from its geology and climate.",
+        "design": "State bench: real fault map, fire climate and coastal exposure; student measures the hazard profile at named locations from the underlying physics.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.5",
         "title": "A hazard's reach and duration",
-        "idea": "",
-        "design": "",
+        "idea": "Hazards differ in how far they reach and how long they last.",
+        "design": "Reach bench: student measures footprint and duration for each hazard type and builds a comparison from their own runs.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3072,42 +3072,42 @@
        {
         "code": "F2.1",
         "title": "Frequency and location of past events",
-        "idea": "",
-        "design": "",
+        "idea": "Past events show where and how often hazards strike.",
+        "design": "Catalogue bench: student works with a real event catalogue and computes frequency by location and magnitude.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.2",
         "title": "Probability, not certainty",
-        "idea": "",
-        "design": "",
+        "idea": "Forecasts give probability, never certainty.",
+        "design": "Probability bench: student computes annual probability from recurrence and then runs many simulated decades, seeing the difference between a 2% annual chance and a guarantee.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.3",
         "title": "Reading a hazard map",
-        "idea": "",
-        "design": "",
+        "idea": "A hazard map turns that probability into a picture you can act on.",
+        "design": "Map bench: student builds a hazard map from their computed probabilities and reads risk for specific sites.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.4",
         "title": "Early warning systems",
-        "idea": "",
-        "design": "",
+        "idea": "Warning systems buy seconds or minutes by outrunning the hazard.",
+        "design": "Warning bench: real P-wave versus S-wave speeds; student measures the warning time available at each distance and finds the blind zone near the epicentre.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.5",
         "title": "Using data to forecast and inform mitigation",
-        "idea": "",
-        "design": "",
+        "idea": "Forecasts are only useful if they change what people build and do.",
+        "design": "Application bench: student applies a forecast to a mitigation decision and measures the damage avoided.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3117,42 +3117,42 @@
        {
         "code": "F3.1",
         "title": "From vague want to measurable target",
-        "idea": "",
-        "design": "",
+        "idea": "A vague want becomes a solvable problem when it gets a number.",
+        "design": "Target bench: student converts 'make it safer' into a measurable target; the model refuses to score anything vaguer.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.2",
         "title": "Criteria versus constraints",
-        "idea": "",
-        "design": "",
+        "idea": "Criteria are what you want; constraints are what you cannot exceed.",
+        "design": "Definition bench: student separates the two for a real problem, and the model tests whether each entry is actually one or the other.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.3",
         "title": "Who the solution must protect",
-        "idea": "",
-        "design": "",
+        "idea": "A solution must name who it protects \u2014 and who it does not.",
+        "design": "Coverage bench: student defines the protected population and measures who falls outside their solution's reach.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.4",
         "title": "Trade-offs already visible in the problem statement",
-        "idea": "",
-        "design": "",
+        "idea": "Trade-offs are visible in the problem statement before any design exists.",
+        "design": "Trade-off bench: student states criteria and the model shows which pairs are in tension, computed from the physics.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.5",
         "title": "Defining a real mitigation problem",
-        "idea": "",
-        "design": "",
+        "idea": "A well-defined problem makes the next steps obvious.",
+        "design": "Full-definition bench: student writes a complete problem statement for a real California hazard and it is scored for measurability and completeness.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3162,42 +3162,42 @@
        {
         "code": "F4.1",
         "title": "Generating more than one candidate",
-        "idea": "",
-        "design": "",
+        "idea": "One idea is not a design process; you need alternatives to compare.",
+        "design": "Generation bench: student produces several genuinely different candidates and the model refuses to score a single one.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.2",
         "title": "A systematic scoring process",
-        "idea": "",
-        "design": "",
+        "idea": "Scoring makes comparison honest by using the same criteria on every design.",
+        "design": "Matrix bench: student scores all candidates on their stated criteria and weights; the ranking is computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.3",
         "title": "Analyzing test data across designs",
-        "idea": "",
-        "design": "",
+        "idea": "Test data decides, not preference.",
+        "design": "Test bench: each candidate is run through the same hazard model and measured; the data may contradict the student's favourite, which is the lesson.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.4",
         "title": "Combining the best characteristics of each",
-        "idea": "",
-        "design": "",
+        "idea": "The best solution often combines the strengths of several.",
+        "design": "Hybrid bench: student combines features and measures whether the hybrid genuinely beats its parents \u2014 sometimes it does not.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.5",
         "title": "Presenting a recommendation with evidence",
-        "idea": "",
-        "design": "",
+        "idea": "A recommendation states the choice, the evidence and the trade-off accepted.",
+        "design": "Recommendation bench: student presents with their own data; the fit is computed from whether the evidence supports the choice.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3207,42 +3207,42 @@
        {
         "code": "F5.1",
         "title": "Developing a model to generate data",
-        "idea": "",
-        "design": "",
+        "idea": "A model lets you test a design before building it.",
+        "design": "Model bench: student builds a testable model of their mitigation and validates it against a known case before trusting it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.2",
         "title": "A first round of testing",
-        "idea": "",
-        "design": "",
+        "idea": "The first test tells you where the design fails.",
+        "design": "Round-one bench: student runs the hazard against their design and measures the failure mode and its threshold.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.3",
         "title": "Modifying and retesting",
-        "idea": "",
-        "design": "",
+        "idea": "You modify the failing part and test again under the same conditions.",
+        "design": "Iteration bench: identical hazard conditions enforced so improvements are comparable; the model refuses to compare runs with different inputs.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.4",
         "title": "Naming the trade-off in each improvement",
-        "idea": "",
-        "design": "",
+        "idea": "Every improvement costs something \u2014 usually money, mass or another risk.",
+        "design": "Trade bench: student measures the cost of each improvement in the stated currency and finds the knee of the curve.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.5",
         "title": "Converging on an optimized design",
-        "idea": "",
-        "design": "",
+        "idea": "Optimisation ends when further change costs more than it gains.",
+        "design": "Convergence bench: student iterates until measured improvement per unit cost falls below their stated threshold, and the stopping point is computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
