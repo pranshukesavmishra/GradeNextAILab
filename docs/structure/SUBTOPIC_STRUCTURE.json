@@ -1,0 +1,4770 @@
+{
+ "generated": "from src/curriculum/grade*.ts \u2014 regenerate with scripts/build-structure.mjs",
+ "note": "One entry per curriculum subtopic. 'idea' = the ONE thing the student must learn (founder law 2). 'design' = the experiment that teaches it. Designs are written unit by unit before building; never fake one to fill a slot.",
+ "grades": {
+  "6": {
+   "A": {
+    "title": "Systems and Subsystems",
+    "topics": {
+     "A1": {
+      "title": "Systems and subsystems",
+      "subtopics": [
+       {
+        "code": "A1.1",
+        "title": "What makes a system a system",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a1-1",
+        "status": "built"
+       },
+       {
+        "code": "A1.2",
+        "title": "Subsystems nested within systems",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a1-2",
+        "status": "built"
+       },
+       {
+        "code": "A1.3",
+        "title": "Interactions among a system's parts",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.4",
+        "title": "Emergent properties",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.5",
+        "title": "Systems across scales, from a cell to a planet",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A2": {
+      "title": "Boundaries, inputs and outputs",
+      "subtopics": [
+       {
+        "code": "A2.1",
+        "title": "Drawing a system's boundary",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a2-1",
+        "status": "built"
+       },
+       {
+        "code": "A2.2",
+        "title": "Open vs closed systems",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a2-2",
+        "status": "built"
+       },
+       {
+        "code": "A2.3",
+        "title": "Inputs and outputs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.4",
+        "title": "Tracing matter and energy through a system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.5",
+        "title": "Choosing a boundary for a purpose",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A3": {
+      "title": "Models of systems",
+      "subtopics": [
+       {
+        "code": "A3.1",
+        "title": "Why scientists build models",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a3-1",
+        "status": "built"
+       },
+       {
+        "code": "A3.2",
+        "title": "Diagrams and flowcharts as models",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a3-2",
+        "status": "built"
+       },
+       {
+        "code": "A3.3",
+        "title": "Physical and digital models",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a3-3",
+        "status": "built"
+       },
+       {
+        "code": "A3.4",
+        "title": "What a model leaves out on purpose",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a3-4",
+        "status": "built"
+       },
+       {
+        "code": "A3.5",
+        "title": "Building and revising a model of a system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A4": {
+      "title": "Earth as a system",
+      "subtopics": [
+       {
+        "code": "A4.1",
+        "title": "The geosphere",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a4-1",
+        "status": "built"
+       },
+       {
+        "code": "A4.2",
+        "title": "The hydrosphere",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a4-2",
+        "status": "built"
+       },
+       {
+        "code": "A4.3",
+        "title": "The atmosphere",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a4-3",
+        "status": "built"
+       },
+       {
+        "code": "A4.4",
+        "title": "The biosphere",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a4-4",
+        "status": "built"
+       },
+       {
+        "code": "A4.5",
+        "title": "Interactions among Earth's four spheres",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A4.6",
+        "title": "Modeling an Earth-system event",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A5": {
+      "title": "Investigation, measurement and evidence",
+      "subtopics": [
+       {
+        "code": "A5.1",
+        "title": "Lab safety and working like a scientist",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a5-1",
+        "status": "built"
+       },
+       {
+        "code": "A5.2",
+        "title": "Variables and fair tests",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a5-2",
+        "status": "built"
+       },
+       {
+        "code": "A5.3",
+        "title": "SI units and measurement",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a5-3",
+        "status": "built"
+       },
+       {
+        "code": "A5.4",
+        "title": "Organizing and graphing data",
+        "idea": "",
+        "design": "",
+        "sim": "g6.a5-4",
+        "status": "built"
+       },
+       {
+        "code": "A5.5",
+        "title": "Claim, evidence and reasoning",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A5.6",
+        "title": "Designing an investigation of a system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "B": {
+    "title": "Cells, Bodies and Senses",
+    "topics": {
+     "B1": {
+      "title": "Cells: the basic unit of life",
+      "subtopics": [
+       {
+        "code": "B1.1",
+        "title": "Cell theory",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.2",
+        "title": "Discovering cells",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.3",
+        "title": "Living vs nonliving",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.4",
+        "title": "Unicellular organisms",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.5",
+        "title": "Multicellular organisms",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.6",
+        "title": "Microscopic scale",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B2": {
+      "title": "Cell structure and function",
+      "subtopics": [
+       {
+        "code": "B2.1",
+        "title": "Cell membrane",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.2",
+        "title": "Cell wall",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.3",
+        "title": "Nucleus",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.4",
+        "title": "Mitochondria",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.5",
+        "title": "Chloroplasts",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.6",
+        "title": "Relating structure to whole-cell function",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B3": {
+      "title": "Levels of organization",
+      "subtopics": [
+       {
+        "code": "B3.1",
+        "title": "The organizational hierarchy",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.2",
+        "title": "Cell specialization",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.3",
+        "title": "Tissues",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.4",
+        "title": "Organs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.5",
+        "title": "Organ systems",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.6",
+        "title": "The organism as the whole system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B4": {
+      "title": "Human body systems",
+      "subtopics": [
+       {
+        "code": "B4.1",
+        "title": "Digestive system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.2",
+        "title": "Excretory system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.3",
+        "title": "Circulatory system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.4",
+        "title": "Respiratory system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.5",
+        "title": "Muscular system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.6",
+        "title": "Nervous system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B5": {
+      "title": "Body systems working together",
+      "subtopics": [
+       {
+        "code": "B5.1",
+        "title": "Digestion and circulation together",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.2",
+        "title": "Circulation and respiration together",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.3",
+        "title": "Nervous and muscular systems together",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.4",
+        "title": "The excretory system and internal balance",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.5",
+        "title": "Case study: the body during exercise",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.6",
+        "title": "Interactions among body systems, generalized",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B6": {
+      "title": "Sensory systems and information processing",
+      "subtopics": [
+       {
+        "code": "B6.1",
+        "title": "Sensory receptors and stimuli",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B6.2",
+        "title": "The path of a signal to the brain",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B6.3",
+        "title": "Processing information in the brain",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B6.4",
+        "title": "Voluntary and reflex responses",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B6.5",
+        "title": "Memory and stored information",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B6.6",
+        "title": "Stimulus to response to memory, together",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "C": {
+    "title": "Energy, Heat and Thermal Systems",
+    "topics": {
+     "C1": {
+      "title": "Energy and its forms",
+      "subtopics": [
+       {
+        "code": "C1.1",
+        "title": "Forms of energy",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.2",
+        "title": "Kinetic energy",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.3",
+        "title": "Potential energy",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.4",
+        "title": "Energy transfer and transformation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.5",
+        "title": "Conservation of energy, introduced",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.6",
+        "title": "Tracking energy through everyday examples",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C2": {
+      "title": "Particles, temperature and thermal energy",
+      "subtopics": [
+       {
+        "code": "C2.1",
+        "title": "Matter is made of particles",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.2",
+        "title": "Evidence for particle motion",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.3",
+        "title": "Particle movement in solids, liquids and gases",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.4",
+        "title": "Temperature as average kinetic energy",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.5",
+        "title": "Temperature vs total thermal energy",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.6",
+        "title": "Measuring temperature",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C3": {
+      "title": "Thermal energy transfer",
+      "subtopics": [
+       {
+        "code": "C3.1",
+        "title": "Energy flows hot to cold",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.2",
+        "title": "Conduction",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.3",
+        "title": "Convection",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.4",
+        "title": "Radiation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.5",
+        "title": "Conductors and insulators",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.6",
+        "title": "Thermal equilibrium",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C4": {
+      "title": "Matter, mass and temperature change",
+      "subtopics": [
+       {
+        "code": "C4.1",
+        "title": "Effect of material type on temperature change",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.2",
+        "title": "Effect of mass on temperature change",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.3",
+        "title": "Planning a fair test investigation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.4",
+        "title": "Collecting and organizing temperature-time data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.5",
+        "title": "Analyzing and interpreting data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.6",
+        "title": "Constructing an explanation from evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C5": {
+      "title": "Engineering with thermal energy",
+      "subtopics": [
+       {
+        "code": "C5.1",
+        "title": "Choosing materials to control heat transfer",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.2",
+        "title": "Defining the design problem",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.3",
+        "title": "Designing and building a device",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.4",
+        "title": "Testing a device and collecting data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.5",
+        "title": "Comparing competing designs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.6",
+        "title": "Redesigning based on evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "D": {
+    "title": "Water, Atmosphere and Weather",
+    "topics": {
+     "D1": {
+      "title": "Earth's water and the water cycle",
+      "subtopics": [
+       {
+        "code": "D1.1",
+        "title": "Earth's water reservoirs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.2",
+        "title": "Evaporation and condensation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.3",
+        "title": "Precipitation, runoff and infiltration",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.4",
+        "title": "Transpiration and the biological piece of the cycle",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.5",
+        "title": "Two drivers: solar energy and gravity",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.6",
+        "title": "Residence time and the water cycle as a system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D2": {
+      "title": "The atmosphere",
+      "subtopics": [
+       {
+        "code": "D2.1",
+        "title": "Composition of the atmosphere",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.2",
+        "title": "Layers of the atmosphere",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.3",
+        "title": "Air pressure",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.4",
+        "title": "Pressure, temperature and density together",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.5",
+        "title": "Why warm air rises",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D3": {
+      "title": "Weather variables and instruments",
+      "subtopics": [
+       {
+        "code": "D3.1",
+        "title": "Temperature",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.2",
+        "title": "Air pressure and the barometer",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.3",
+        "title": "Humidity and dew point",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.4",
+        "title": "Precipitation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.5",
+        "title": "Wind: speed and direction",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.6",
+        "title": "Reading a weather station together",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D4": {
+      "title": "Air masses and fronts",
+      "subtopics": [
+       {
+        "code": "D4.1",
+        "title": "Air masses and source regions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.2",
+        "title": "High- and low-pressure systems",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.3",
+        "title": "Cold fronts",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.4",
+        "title": "Warm fronts",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.5",
+        "title": "Occluded and stationary fronts",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.6",
+        "title": "Collecting data to track a front",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D5": {
+      "title": "Unequal heating of Earth",
+      "subtopics": [
+       {
+        "code": "D5.1",
+        "title": "Angle of sunlight and latitude",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.2",
+        "title": "Land versus water heating rates",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.3",
+        "title": "Altitude",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.4",
+        "title": "Albedo",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.5",
+        "title": "Day, night and the combined pattern",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D6": {
+      "title": "California's weather",
+      "subtopics": [
+       {
+        "code": "D6.1",
+        "title": "Coastal versus inland temperature patterns",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D6.2",
+        "title": "The marine layer and coastal fog",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D6.3",
+        "title": "The Sierra Nevada and rain shadow",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D6.4",
+        "title": "California's deserts",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D6.5",
+        "title": "The Pacific's moderating influence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D6.6",
+        "title": "Putting California's weather together",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "E": {
+    "title": "Regional Climate, Organisms and Heredity",
+    "topics": {
+     "E1": {
+      "title": "Weather versus climate",
+      "subtopics": [
+       {
+        "code": "E1.1",
+        "title": "Weather versus climate",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.2",
+        "title": "Building climate from weather data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.3",
+        "title": "Reading climate graphs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.4",
+        "title": "Reading climate maps",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.5",
+        "title": "Climate zones",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E2": {
+      "title": "Atmospheric and ocean circulation",
+      "subtopics": [
+       {
+        "code": "E2.1",
+        "title": "Convection cells from unequal heating",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.2",
+        "title": "Circulation cells and prevailing winds",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.3",
+        "title": "An introductory Coriolis effect",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.4",
+        "title": "Surface ocean currents",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.5",
+        "title": "Temperature, salinity and density in ocean water",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.6",
+        "title": "Heat redistribution: one combined model",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E3": {
+      "title": "Structures and behaviors for reproduction",
+      "subtopics": [
+       {
+        "code": "E3.1",
+        "title": "Courtship behavior",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.2",
+        "title": "Nesting and parental care",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.3",
+        "title": "Flower structures and pollen",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.4",
+        "title": "Pollination",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.5",
+        "title": "Seeds and dispersal",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E4": {
+      "title": "Environmental and genetic factors in growth",
+      "subtopics": [
+       {
+        "code": "E4.1",
+        "title": "Environmental factors in growth",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.2",
+        "title": "Testing an environmental factor",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.3",
+        "title": "Genetic differences and growth",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.4",
+        "title": "Comparing individuals across conditions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.5",
+        "title": "Separating genetic from environmental influence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E5": {
+      "title": "Sexual and asexual reproduction",
+      "subtopics": [
+       {
+        "code": "E5.1",
+        "title": "Sexual reproduction",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.2",
+        "title": "Why sexual offspring resemble but do not match parents",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.3",
+        "title": "Asexual reproduction",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.4",
+        "title": "Why asexual offspring are genetically identical",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.5",
+        "title": "Comparing the two strategies",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E6": {
+      "title": "Heredity and genetic variation",
+      "subtopics": [
+       {
+        "code": "E6.1",
+        "title": "Genes as inherited information",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.2",
+        "title": "Inheritance and variation among siblings",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.3",
+        "title": "Why sexual reproduction produces variation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.4",
+        "title": "Why asexual reproduction preserves identical information",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.5",
+        "title": "Simple inheritance diagrams",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.6",
+        "title": "An introductory Punnett square",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "F": {
+    "title": "Global Warming and Human Impact",
+    "topics": {
+     "F1": {
+      "title": "Earth's climate system",
+      "subtopics": [
+       {
+        "code": "F1.1",
+        "title": "The components of the climate system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.2",
+        "title": "Energy in and energy out",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.3",
+        "title": "The natural greenhouse effect, descriptively",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.4",
+        "title": "A feedback, introduced conceptually",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.5",
+        "title": "The climate system as interacting subsystems",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F2": {
+      "title": "Evidence of a changing climate",
+      "subtopics": [
+       {
+        "code": "F2.1",
+        "title": "Ice cores",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.2",
+        "title": "Tree rings and coral bands",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.3",
+        "title": "The instrumental record",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.4",
+        "title": "Sea level and sea ice",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.5",
+        "title": "The Keeling curve",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.6",
+        "title": "Why independent evidence agreeing is the whole argument",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F3": {
+      "title": "Causes: human activities and natural factors",
+      "subtopics": [
+       {
+        "code": "F3.1",
+        "title": "Greenhouse gases",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.2",
+        "title": "Fossil-fuel combustion and cement production",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.3",
+        "title": "Agriculture and land use",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.4",
+        "title": "Natural factors",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.5",
+        "title": "Comparing timescales",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F4": {
+      "title": "Correlation, causation and reading evidence",
+      "subtopics": [
+       {
+        "code": "F4.1",
+        "title": "Correlation versus causation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.2",
+        "title": "Reading a graph critically",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.3",
+        "title": "Applying this to climate data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.4",
+        "title": "Evaluating a claim using multiple lines of evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.5",
+        "title": "Spotting overstated and understated claims",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F5": {
+      "title": "Effects on living systems",
+      "subtopics": [
+       {
+        "code": "F5.1",
+        "title": "Habitat change",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.2",
+        "title": "Resource availability",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.3",
+        "title": "Plant growth and timing",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.4",
+        "title": "Animal behavior and range shifts",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.5",
+        "title": "Existing adaptations and their limits",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F6": {
+      "title": "Minimizing human impact",
+      "subtopics": [
+       {
+        "code": "F6.1",
+        "title": "Monitoring and indicators",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F6.2",
+        "title": "Mitigation and adaptation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F6.3",
+        "title": "Defining the problem, criteria and constraints",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F6.4",
+        "title": "Comparing and scoring alternatives",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F6.5",
+        "title": "Technical claims versus value judgements",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   }
+  },
+  "7": {
+   "A": {
+    "title": "Atoms and the Structure of Matter",
+    "topics": {
+     "A1": {
+      "title": "The particle model, refined",
+      "subtopics": [
+       {
+        "code": "A1.1",
+        "title": "Reviewing the particle model",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.2",
+        "title": "Why chemistry needs a sharper picture",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.3",
+        "title": "Evidence that particles are real",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.4",
+        "title": "Particles versus atoms",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.5",
+        "title": "Scale of the atom",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A2": {
+      "title": "Inside the atom",
+      "subtopics": [
+       {
+        "code": "A2.1",
+        "title": "Protons, neutrons and electrons",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.2",
+        "title": "Atomic number defines the element",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.3",
+        "title": "Mass number and isotopes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.4",
+        "title": "Building the model \u2014 early evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.5",
+        "title": "Building the model \u2014 from shells to a cloud",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.6",
+        "title": "Why the model kept changing",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A3": {
+      "title": "Elements and the periodic table",
+      "subtopics": [
+       {
+        "code": "A3.1",
+        "title": "Reading a cell of the periodic table",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A3.2",
+        "title": "Groups and periods",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A3.3",
+        "title": "Metals, non-metals and metalloids",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A3.4",
+        "title": "Why the table is organized this way",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A3.5",
+        "title": "Reactivity patterns across the table",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A4": {
+      "title": "Molecules, compounds and formulas",
+      "subtopics": [
+       {
+        "code": "A4.1",
+        "title": "Element, compound and mixture",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A4.2",
+        "title": "Reading a chemical formula",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A4.3",
+        "title": "Subscripts versus coefficients",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A4.4",
+        "title": "Counting atoms in a formula",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A4.5",
+        "title": "Modeling a molecule from its formula",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A5": {
+      "title": "Modeling extended structures",
+      "subtopics": [
+       {
+        "code": "A5.1",
+        "title": "Ball-and-stick models",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A5.2",
+        "title": "Space-filling models",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A5.3",
+        "title": "When there is no single molecule",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A5.4",
+        "title": "Comparing molecular and lattice structures",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A5.5",
+        "title": "Choosing the right model for the job",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "B": {
+    "title": "Chemical Reactions and Conservation of Matter",
+    "topics": {
+     "B1": {
+      "title": "Physical change versus chemical change",
+      "subtopics": [
+       {
+        "code": "B1.1",
+        "title": "Physical changes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.2",
+        "title": "Chemical changes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.3",
+        "title": "Cases that are easy to confuse",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.4",
+        "title": "Properties before and after",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.5",
+        "title": "Reversibility as a clue, not a rule",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B2": {
+      "title": "Evidence that a reaction happened",
+      "subtopics": [
+       {
+        "code": "B2.1",
+        "title": "Signs a reaction may have occurred",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.2",
+        "title": "Analyzing property data before and after",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.3",
+        "title": "Identifying an unknown from a property table",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.4",
+        "title": "Why appearance alone is not proof",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.5",
+        "title": "Naming a reaction from what goes in and comes out",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B3": {
+      "title": "Conservation of mass",
+      "subtopics": [
+       {
+        "code": "B3.1",
+        "title": "Mass before and after, in a closed container",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.2",
+        "title": "Mass before and after, in an open container",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.3",
+        "title": "Atom-counting diagrams",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.4",
+        "title": "Why mass conservation follows from atom conservation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.5",
+        "title": "Applying conservation to an unfamiliar reaction",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B4": {
+      "title": "Thermal energy, particles and states",
+      "subtopics": [
+       {
+        "code": "B4.1",
+        "title": "Energy added and particle motion, revisited",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.2",
+        "title": "Forces between particles",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.3",
+        "title": "Reading a heating curve",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.4",
+        "title": "Why temperature plateaus during a state change",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.5",
+        "title": "Predicting a heating curve for a new substance",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B5": {
+      "title": "Synthetic materials from natural resources",
+      "subtopics": [
+       {
+        "code": "B5.1",
+        "title": "Petroleum and plastics",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.2",
+        "title": "Ores and alloys",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.3",
+        "title": "Medicines and synthetic fibers",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.4",
+        "title": "Benefit and cost of a synthetic material",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.5",
+        "title": "Comparing a natural and synthetic alternative",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B6": {
+      "title": "Designing a thermal energy device",
+      "subtopics": [
+       {
+        "code": "B6.1",
+        "title": "Criteria and constraints",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B6.2",
+        "title": "Choosing a chemical process",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B6.3",
+        "title": "Collecting temperature data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B6.4",
+        "title": "Modifying the design",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B6.5",
+        "title": "Reporting the final design",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "C": {
+    "title": "The Chemistry of Being Alive",
+    "topics": {
+     "C1": {
+      "title": "Photosynthesis: inputs and outputs",
+      "subtopics": [
+       {
+        "code": "C1.1",
+        "title": "Naming the inputs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.2",
+        "title": "Naming the outputs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.3",
+        "title": "Where in the cell this happens",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.4",
+        "title": "Photosynthesis as atoms rearranged",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.5",
+        "title": "Conditions that affect the rate",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C2": {
+      "title": "Evidence for where a plant's mass comes from",
+      "subtopics": [
+       {
+        "code": "C2.1",
+        "title": "The intuitive but wrong answer",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.2",
+        "title": "Van Helmont's willow tree experiment",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.3",
+        "title": "What the soil-mass evidence actually shows",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.4",
+        "title": "Building the case for air and water",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.5",
+        "title": "Evaluating, not asserting, the conclusion",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C3": {
+      "title": "Cellular respiration",
+      "subtopics": [
+       {
+        "code": "C3.1",
+        "title": "Naming the inputs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.2",
+        "title": "Naming the outputs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.3",
+        "title": "Where in the cell this happens",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.4",
+        "title": "Comparing photosynthesis and respiration side by side",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.5",
+        "title": "Respiration in plants and animals alike",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C4": {
+      "title": "Food molecules rearranged",
+      "subtopics": [
+       {
+        "code": "C4.1",
+        "title": "Modeling a food molecule broken down",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.2",
+        "title": "Modeling the atoms rearranged into products",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.3",
+        "title": "Energy released, not created",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.4",
+        "title": "Comparing respiration to a familiar reaction",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.5",
+        "title": "Applying the model to an unfamiliar food molecule",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C5": {
+      "title": "Tracing carbon through an organism",
+      "subtopics": [
+       {
+        "code": "C5.1",
+        "title": "A carbon atom enters a plant",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.2",
+        "title": "A carbon atom moves into an animal",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.3",
+        "title": "A carbon atom returns to the air",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.4",
+        "title": "Photosynthesis and respiration as linked opposite processes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.5",
+        "title": "Why plants run both processes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "D": {
+    "title": "Matter and Energy in Ecosystems",
+    "topics": {
+     "D1": {
+      "title": "Resource availability and populations",
+      "subtopics": [
+       {
+        "code": "D1.1",
+        "title": "Limiting resources",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.2",
+        "title": "Carrying capacity",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.3",
+        "title": "Reading real population data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.4",
+        "title": "Predicting the response to scarcity",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.5",
+        "title": "Competition for the same limiting resource",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D2": {
+      "title": "Food webs and energy flow",
+      "subtopics": [
+       {
+        "code": "D2.1",
+        "title": "Producers, consumers and decomposers",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.2",
+        "title": "From food chain to food web",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.3",
+        "title": "Trophic levels",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.4",
+        "title": "Why energy decreases at each level",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.5",
+        "title": "Reading an energy pyramid",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D3": {
+      "title": "Cycling matter through an ecosystem",
+      "subtopics": [
+       {
+        "code": "D3.1",
+        "title": "Matter cycling between organisms and the environment",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.2",
+        "title": "Decomposers closing the loop",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.3",
+        "title": "The carbon cycle, introduced",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.4",
+        "title": "The nitrogen cycle, introduced",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.5",
+        "title": "Modeling matter and energy together",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D4": {
+      "title": "Patterns of interaction among organisms",
+      "subtopics": [
+       {
+        "code": "D4.1",
+        "title": "Competition and predation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.2",
+        "title": "Mutualism, commensalism and parasitism",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.3",
+        "title": "The same pattern in very different ecosystems",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.4",
+        "title": "Interactions that shift over time or condition",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.5",
+        "title": "Interaction patterns and population change",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D5": {
+      "title": "Ecosystem disruption and change",
+      "subtopics": [
+       {
+        "code": "D5.1",
+        "title": "Physical disruptions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.2",
+        "title": "Biological disruptions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.3",
+        "title": "Constructing an argument from evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.4",
+        "title": "Succession after a disruption",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.5",
+        "title": "Short-term versus long-term change",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D6": {
+      "title": "Biodiversity and ecosystem services",
+      "subtopics": [
+       {
+        "code": "D6.1",
+        "title": "Naming ecosystem services",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D6.2",
+        "title": "Threats to biodiversity",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D6.3",
+        "title": "Named solution categories",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D6.4",
+        "title": "Evaluating competing solutions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D6.5",
+        "title": "A biodiversity solution for a real ecosystem",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "E": {
+    "title": "Earth's Materials and Moving Plates",
+    "topics": {
+     "E1": {
+      "title": "The rock cycle",
+      "subtopics": [
+       {
+        "code": "E1.1",
+        "title": "Igneous rock",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.2",
+        "title": "Sedimentary rock",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.3",
+        "title": "Metamorphic rock",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.4",
+        "title": "Identifying a sample from evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.5",
+        "title": "The energy that drives the cycle",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E2": {
+      "title": "Weathering, erosion and deposition",
+      "subtopics": [
+       {
+        "code": "E2.1",
+        "title": "Physical weathering",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.2",
+        "title": "Chemical weathering",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.3",
+        "title": "Agents of erosion",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.4",
+        "title": "Where sediment ends up",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.5",
+        "title": "Soil formation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E3": {
+      "title": "Geoscience processes across time and scale",
+      "subtopics": [
+       {
+        "code": "E3.1",
+        "title": "Fast processes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.2",
+        "title": "Slow processes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.3",
+        "title": "Constructing an explanation from rock layers",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.4",
+        "title": "Combining fast and slow in one explanation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.5",
+        "title": "Spatial scale, from outcrop to continent",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E4": {
+      "title": "Evidence for plate motion",
+      "subtopics": [
+       {
+        "code": "E4.1",
+        "title": "Matching coastlines and rock types",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.2",
+        "title": "Matching fossil distributions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.3",
+        "title": "Seafloor age and magnetic striping",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.4",
+        "title": "Analyzing plate motion data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.5",
+        "title": "Reconstructing a simplified history",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E5": {
+      "title": "Plate boundaries and the landforms they build",
+      "subtopics": [
+       {
+        "code": "E5.1",
+        "title": "Divergent boundaries",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.2",
+        "title": "Convergent boundaries",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.3",
+        "title": "Transform boundaries",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.4",
+        "title": "Why hazards cluster at boundaries",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.5",
+        "title": "Reading a plate-boundary map",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E6": {
+      "title": "The uneven distribution of Earth's resources",
+      "subtopics": [
+       {
+        "code": "E6.1",
+        "title": "Mineral resources",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.2",
+        "title": "Energy resources",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.3",
+        "title": "Groundwater as a resource",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.4",
+        "title": "Renewable versus nonrenewable resources",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.5",
+        "title": "Constructing an explanation for resource distribution",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "F": {
+    "title": "Natural Hazards and Engineering Solutions",
+    "topics": {
+     "F1": {
+      "title": "Types of natural hazard",
+      "subtopics": [
+       {
+        "code": "F1.1",
+        "title": "Geologic hazards",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.2",
+        "title": "Weather-driven hazards",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.3",
+        "title": "Tsunamis as a linked hazard",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.4",
+        "title": "California's own hazard profile",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.5",
+        "title": "A hazard's reach and duration",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F2": {
+      "title": "Forecasting from hazard data",
+      "subtopics": [
+       {
+        "code": "F2.1",
+        "title": "Frequency and location of past events",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.2",
+        "title": "Probability, not certainty",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.3",
+        "title": "Reading a hazard map",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.4",
+        "title": "Early warning systems",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.5",
+        "title": "Using data to forecast and inform mitigation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F3": {
+      "title": "Defining a mitigation problem",
+      "subtopics": [
+       {
+        "code": "F3.1",
+        "title": "From vague want to measurable target",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.2",
+        "title": "Criteria versus constraints",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.3",
+        "title": "Who the solution must protect",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.4",
+        "title": "Trade-offs already visible in the problem statement",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.5",
+        "title": "Defining a real mitigation problem",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F4": {
+      "title": "Evaluating competing solutions",
+      "subtopics": [
+       {
+        "code": "F4.1",
+        "title": "Generating more than one candidate",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.2",
+        "title": "A systematic scoring process",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.3",
+        "title": "Analyzing test data across designs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.4",
+        "title": "Combining the best characteristics of each",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.5",
+        "title": "Presenting a recommendation with evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F5": {
+      "title": "Iterative testing and optimization",
+      "subtopics": [
+       {
+        "code": "F5.1",
+        "title": "Developing a model to generate data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.2",
+        "title": "A first round of testing",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.3",
+        "title": "Modifying and retesting",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.4",
+        "title": "Naming the trade-off in each improvement",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.5",
+        "title": "Converging on an optimized design",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   }
+  },
+  "8": {
+   "A": {
+    "title": "Motion, Forces and Collisions",
+    "topics": {
+     "A1": {
+      "title": "Describing motion",
+      "subtopics": [
+       {
+        "code": "A1.1",
+        "title": "Distance vs displacement",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.2",
+        "title": "Speed vs velocity",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.3",
+        "title": "Reading a position-time graph",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.4",
+        "title": "Reference frames",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A1.5",
+        "title": "Calculating average speed",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A2": {
+      "title": "Acceleration and motion graphs",
+      "subtopics": [
+       {
+        "code": "A2.1",
+        "title": "Acceleration as a rate of change",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.2",
+        "title": "Reading a velocity-time graph",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.3",
+        "title": "Constant vs changing acceleration",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.4",
+        "title": "Deceleration",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A2.5",
+        "title": "Connecting the two graph types",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A3": {
+      "title": "Newton's First Law",
+      "subtopics": [
+       {
+        "code": "A3.1",
+        "title": "Inertia",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A3.2",
+        "title": "Balanced vs unbalanced forces",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A3.3",
+        "title": "Free-body diagrams",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A3.4",
+        "title": "Friction as the reason intuition misleads",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A3.5",
+        "title": "Applying the First Law to everyday scenarios",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A4": {
+      "title": "Forces, mass and change in motion",
+      "subtopics": [
+       {
+        "code": "A4.1",
+        "title": "Planning a fair test of force and motion",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A4.2",
+        "title": "The qualitative force-mass-acceleration relationship",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A4.3",
+        "title": "Running the investigation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A4.4",
+        "title": "Comparing prediction to measured data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A4.5",
+        "title": "Communicating investigation results",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A5": {
+      "title": "Newton's Third Law and collisions",
+      "subtopics": [
+       {
+        "code": "A5.1",
+        "title": "Action-reaction pairs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A5.2",
+        "title": "Why the pair acts on different objects",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A5.3",
+        "title": "A common Third Law misconception",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A5.4",
+        "title": "Applying the law to a collision-safety design",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A5.5",
+        "title": "Testing the design against criteria",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "A6": {
+      "title": "Engineering a collision solution",
+      "subtopics": [
+       {
+        "code": "A6.1",
+        "title": "Defining criteria and constraints",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A6.2",
+        "title": "Crumple zones and impulse, conceptually",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A6.3",
+        "title": "Generating candidate solutions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A6.4",
+        "title": "Systematic evaluation of designs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "A6.5",
+        "title": "Reporting the best solution and its trade-offs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "B": {
+    "title": "Energy in Moving Systems",
+    "topics": {
+     "B1": {
+      "title": "Kinetic energy",
+      "subtopics": [
+       {
+        "code": "B1.1",
+        "title": "Kinetic energy and mass",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.2",
+        "title": "Kinetic energy and speed",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.3",
+        "title": "Why speed has the larger effect",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.4",
+        "title": "Interpreting the shape of the curve",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B1.5",
+        "title": "Applying kinetic energy to a collision scenario",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B2": {
+      "title": "Potential energy in a system",
+      "subtopics": [
+       {
+        "code": "B2.1",
+        "title": "Gravitational potential energy",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.2",
+        "title": "Elastic potential energy",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.3",
+        "title": "Potential energy as a property of a system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.4",
+        "title": "Modeling potential energy as an arrangement changes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B2.5",
+        "title": "Potential and kinetic energy trading off",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B3": {
+      "title": "Energy transfer in a collision",
+      "subtopics": [
+       {
+        "code": "B3.1",
+        "title": "Energy converted, not lost",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.2",
+        "title": "Elastic vs inelastic collisions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.3",
+        "title": "Tracing energy through a crash",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.4",
+        "title": "Safety design and energy conversion",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B3.5",
+        "title": "Comparing energy conversion across two collisions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B4": {
+      "title": "Energy conservation across a system",
+      "subtopics": [
+       {
+        "code": "B4.1",
+        "title": "Energy is conserved",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.2",
+        "title": "Tracking energy through a multi-step system",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.3",
+        "title": "Dissipation as spreading out, not disappearing",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.4",
+        "title": "Applying conservation to a bouncing ball",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B4.5",
+        "title": "Conservation as a check on a claim",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "B5": {
+      "title": "Modeling and iterative testing",
+      "subtopics": [
+       {
+        "code": "B5.1",
+        "title": "Developing a model to generate data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.2",
+        "title": "Running a first round of testing",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.3",
+        "title": "Modifying the model from test data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.4",
+        "title": "Naming the trade-off in each improvement",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "B5.5",
+        "title": "A second round of modification",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "C": {
+    "title": "Noncontact Forces and Fields",
+    "topics": {
+     "C1": {
+      "title": "Contact and noncontact forces",
+      "subtopics": [
+       {
+        "code": "C1.1",
+        "title": "Contact forces",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.2",
+        "title": "Noncontact forces",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.3",
+        "title": "Sorting real scenarios",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.4",
+        "title": "Attraction and repulsion",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C1.5",
+        "title": "Previewing the field idea",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C2": {
+      "title": "Electric forces",
+      "subtopics": [
+       {
+        "code": "C2.1",
+        "title": "Electric charge",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.2",
+        "title": "Asking questions about electric-force data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.3",
+        "title": "How distance affects the force",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.4",
+        "title": "How charge magnitude affects the force",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C2.5",
+        "title": "Static electricity and lightning",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C3": {
+      "title": "Magnetic forces and electromagnets",
+      "subtopics": [
+       {
+        "code": "C3.1",
+        "title": "Magnetic poles",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.2",
+        "title": "Magnetic materials",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.3",
+        "title": "Current produces a magnetic effect",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.4",
+        "title": "Building and varying a simple electromagnet",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C3.5",
+        "title": "Earth's magnetic field",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C4": {
+      "title": "Gravitational interactions",
+      "subtopics": [
+       {
+        "code": "C4.1",
+        "title": "Gravity is always attractive",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.2",
+        "title": "Gravity depends on mass and distance",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.3",
+        "title": "Why everyday gravity goes unnoticed",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.4",
+        "title": "Mass vs weight",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C4.5",
+        "title": "Applying the gravity argument to new cases",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "C5": {
+      "title": "Fields and action at a distance",
+      "subtopics": [
+       {
+        "code": "C5.1",
+        "title": "A field as something filling space",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.2",
+        "title": "Mapping a field",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.3",
+        "title": "Investigating evidence of fields",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.4",
+        "title": "Energy transferred across empty space",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "C5.5",
+        "title": "Fields as the unifying idea",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "D": {
+    "title": "Waves and Information",
+    "topics": {
+     "D1": {
+      "title": "Wave properties",
+      "subtopics": [
+       {
+        "code": "D1.1",
+        "title": "Amplitude, wavelength, frequency and period",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.2",
+        "title": "Wave speed",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.3",
+        "title": "Amplitude and the energy a wave carries",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.4",
+        "title": "Transverse and longitudinal waves",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D1.5",
+        "title": "Modeling wave behavior from data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D2": {
+      "title": "Reflection, absorption and transmission",
+      "subtopics": [
+       {
+        "code": "D2.1",
+        "title": "Three outcomes at a boundary",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.2",
+        "title": "Modeling absorption, reflection and transmission",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.3",
+        "title": "Why an object looks a particular color",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.4",
+        "title": "Refraction, introduced",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D2.5",
+        "title": "Reading a wave-material interaction from evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D3": {
+      "title": "Light and the electromagnetic spectrum",
+      "subtopics": [
+       {
+        "code": "D3.1",
+        "title": "Visible light as one narrow band",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.2",
+        "title": "Ordering the spectrum by wavelength and frequency",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.3",
+        "title": "A real use of each band",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.4",
+        "title": "Why the whole spectrum travels at the same speed in a vacuum",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D3.5",
+        "title": "Comparing energy across the spectrum",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D4": {
+      "title": "Sound",
+      "subtopics": [
+       {
+        "code": "D4.1",
+        "title": "Sound as a longitudinal wave needing a medium",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.2",
+        "title": "Pitch and loudness",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.3",
+        "title": "Speed of sound across media",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.4",
+        "title": "The ear and the range of human hearing",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D4.5",
+        "title": "Echo and ultrasound",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "D5": {
+      "title": "Analog and digital signals",
+      "subtopics": [
+       {
+        "code": "D5.1",
+        "title": "How each signal encodes information",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.2",
+        "title": "Why digitized signals are more reliable",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.3",
+        "title": "Noise and error correction, conceptually",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.4",
+        "title": "Analyzing competing communication designs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "D5.5",
+        "title": "Integrating a wave-based communication device",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "E": {
+    "title": "Space Systems and Deep Time",
+    "topics": {
+     "E1": {
+      "title": "The Earth-Sun-Moon system",
+      "subtopics": [
+       {
+        "code": "E1.1",
+        "title": "The lunar cycle",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.2",
+        "title": "Modeling lunar phases",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.3",
+        "title": "Solar and lunar eclipses",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.4",
+        "title": "Why an eclipse does not happen every month",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E1.5",
+        "title": "Tides",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E2": {
+      "title": "Seasons",
+      "subtopics": [
+       {
+        "code": "E2.1",
+        "title": "Axial tilt as the cause",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.2",
+        "title": "Angle of sunlight and day length",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.3",
+        "title": "Why the hemispheres are opposite",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.4",
+        "title": "Solstices and equinoxes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E2.5",
+        "title": "Modeling the seasonal cycle",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E3": {
+      "title": "Gravity in the solar system and galaxy",
+      "subtopics": [
+       {
+        "code": "E3.1",
+        "title": "Gravity holding orbits together",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.2",
+        "title": "Why an orbiting object neither falls in nor flies off",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.3",
+        "title": "The Sun's dominant mass",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.4",
+        "title": "Moons, asteroids and comets",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E3.5",
+        "title": "The Milky Way, introduced",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E4": {
+      "title": "The scale of the solar system",
+      "subtopics": [
+       {
+        "code": "E4.1",
+        "title": "The astronomical unit",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.2",
+        "title": "Analyzing size and distance data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.3",
+        "title": "Why a to-scale classroom model is nearly impossible",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.4",
+        "title": "Comparing planetary properties",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E4.5",
+        "title": "Building a scale representation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E5": {
+      "title": "Rock strata and the geologic time scale",
+      "subtopics": [
+       {
+        "code": "E5.1",
+        "title": "Superposition",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.2",
+        "title": "Index fossils and unconformities",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.3",
+        "title": "Reading strata as a record",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.4",
+        "title": "Eons, eras and periods",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E5.5",
+        "title": "Constructing an explanation from strata evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "E6": {
+      "title": "Dating Earth's history",
+      "subtopics": [
+       {
+        "code": "E6.1",
+        "title": "Relative vs absolute dating",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.2",
+        "title": "Radiometric dating, conceptually",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.3",
+        "title": "Combining relative and absolute evidence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.4",
+        "title": "The 4.6-billion-year figure",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "E6.5",
+        "title": "Evaluating a dating claim",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   },
+   "F": {
+    "title": "Evolution and Sustaining Biodiversity",
+    "topics": {
+     "F1": {
+      "title": "Mutations and genetic variation",
+      "subtopics": [
+       {
+        "code": "F1.1",
+        "title": "A mutation as a change to genetic information",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.2",
+        "title": "Beneficial, harmful and neutral outcomes",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.3",
+        "title": "Why most mutations are neutral",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.4",
+        "title": "Mutation as the ultimate source of variation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F1.5",
+        "title": "Tracing a trait to a mutation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F2": {
+      "title": "Fossil evidence of change over time",
+      "subtopics": [
+       {
+        "code": "F2.1",
+        "title": "How a fossil forms",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.2",
+        "title": "Order of appearance and extinction",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.3",
+        "title": "Transitional forms",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.4",
+        "title": "Placing fossils on the time scale",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F2.5",
+        "title": "Analyzing fossil-record data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F3": {
+      "title": "Anatomical and embryological evidence",
+      "subtopics": [
+       {
+        "code": "F3.1",
+        "title": "Homologous structures",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.2",
+        "title": "Analogous and vestigial structures",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.3",
+        "title": "Shared ancestry vs convergence",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.4",
+        "title": "Comparing early development across species",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F3.5",
+        "title": "Inferring evolutionary relationships",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F4": {
+      "title": "Natural selection",
+      "subtopics": [
+       {
+        "code": "F4.1",
+        "title": "Variation, survival and heritability",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.2",
+        "title": "A fully worked real case",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.3",
+        "title": "Differential survival and reproduction",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.4",
+        "title": "Selection acts on populations, never on an individual's lifetime",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F4.5",
+        "title": "Constructing an evidence-based explanation",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F5": {
+      "title": "Artificial selection and adaptation over time",
+      "subtopics": [
+       {
+        "code": "F5.1",
+        "title": "Selective breeding",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.2",
+        "title": "The same mechanism, a human selector",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.3",
+        "title": "Technologies influencing inheritance",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.4",
+        "title": "Tracking a trait's proportion across generations",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F5.5",
+        "title": "Predicting a population's future trait proportions",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     },
+     "F6": {
+      "title": "Human population, consumption and impact",
+      "subtopics": [
+       {
+        "code": "F6.1",
+        "title": "Population growth as one multiplier",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F6.2",
+        "title": "Per-capita consumption as the other multiplier",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F6.3",
+        "title": "Constructing an argument from real data",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F6.4",
+        "title": "Impact on biodiversity specifically",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       },
+       {
+        "code": "F6.5",
+        "title": "Presenting management options with trade-offs",
+        "idea": "",
+        "design": "",
+        "sim": null,
+        "status": "design pending"
+       }
+      ]
+     }
+    }
+   }
+  }
+ }
+}
