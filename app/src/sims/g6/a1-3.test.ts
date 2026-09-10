@@ -141,9 +141,12 @@ describe("CO2 -> growth is a genuine coupling, not a decoration", () => {
 
 describe("the honesty rule: a cut arrow changes only its own effect", () => {
   it("cutting shade -> solar gain leaves the shade toggle physically present but functionless", () => {
-    const shadeWorks = factsAfter({ shadeDeployed: true }, 6);
-    const shadeCut = factsAfter({ shadeDeployed: true, linkShadeSolar: false }, 6);
-    const noShadeAtAll = factsAfter({ shadeDeployed: false }, 6);
+    // Sampled at midday (hour 12) so the sun the shade is meant to block is
+    // actually up — the clock starts at midnight, and shade over a shorter,
+    // all-night window would trivially show no effect from either state.
+    const shadeWorks = factsAfter({ shadeDeployed: true }, 12);
+    const shadeCut = factsAfter({ shadeDeployed: true, linkShadeSolar: false }, 12);
+    const noShadeAtAll = factsAfter({ shadeDeployed: false }, 12);
     // A cut shade arrow behaves exactly as if no shade were deployed at all —
     // the cloth is drawn on stage, physically there, doing nothing.
     expect(Math.abs((shadeCut.airTempC as number) - (noShadeAtAll.airTempC as number))).toBeLessThan(0.05);

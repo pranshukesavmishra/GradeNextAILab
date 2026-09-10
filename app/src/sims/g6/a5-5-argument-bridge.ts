@@ -177,6 +177,7 @@ interface CardDef { key: string; quantity: Quantity; day: number; hour: number; 
 
 const CARD_DEFS: CardDef[] = [
   { key: "oxygenDawn", quantity: "oxygen", day: -1, hour: 5, depthM: 2.5, label: "O2 before dawn, under the mat" },
+  { key: "oxygenDawn2", quantity: "oxygen", day: -2, hour: 4, depthM: 2.5, label: "O2 before dawn, a second night" },
   { key: "oxygenNoon", quantity: "oxygen", day: -1, hour: 16, depthM: 0.5, label: "O2 at noon, surface" },
   { key: "nitrateOutfall", quantity: "nitrate", day: -1, hour: 12, depthM: 0.5, label: "Nitrate at the outfall, noon" },
   { key: "tempNoon", quantity: "temperature", day: -1, hour: 12, depthM: 0.5, label: "Temperature at noon" },
@@ -210,21 +211,22 @@ const CLAIM_MECHANISM: Record<ClaimId, Quantity | null> = {
  * modelled death toll — a real sensitivity, read off `perturbedTotalDeaths`,
  * never an authored weight. The claim only ever gates WHICH quantity is even
  * a candidate for its mechanism; once a card passes that gate, its score is
- * whatever the counterfactual actually says.
+ * whatever the counterfactual actually says. Claim-level ceilings (a vague
+ * claim, a claim whose named mechanism this model does not implement) are
+ * applied once to the COMBINED argument in `argumentStrength`, never here —
+ * capping each card individually let enough weak, non-zero cards multiply
+ * their way past a claim's honest ceiling when many were placed at once.
  */
 function relevanceForClaim(quantity: Quantity, day: number, hour: number, claim: ClaimId): number {
   if (claim === "algaeEatFish") return 5; // no predation pathway exists to be sensitive to
   const wanted = CLAIM_MECHANISM[claim];
-  if (wanted && quantity !== wanted) return 8; // the wrong quantity for this claim's mechanism entirely
+  if (wanted && quantity !== wanted) return 3; // the wrong quantity for this claim's mechanism entirely
   if (quantity === "salinity") return 4; // never part of any claim's mortality pathway — see the rebuttal check instead
 
   const base = totalDeaths();
   const perturbed = perturbedTotalDeaths(quantity, day, hour);
   const sensitivity = base > 0 ? clamp01(Math.abs(base - perturbed) / base) : 0;
-  const score = Math.round(sensitivity * 100);
-  // A claim naming no mechanism cannot be more than moderately supported by
-  // any single reading, however sensitive — that ceiling is what "vague" means.
-  return claim === "vague" ? Math.min(42, score) : score;
+  return Math.round(sensitivity * 100);
 }
 
 function cardsFor(claim: ClaimId) {
@@ -234,7 +236,29 @@ function cardsFor(claim: ClaimId) {
   });
 }
 
-const LOAD_BASE = 40; // minimum average relevance a 1x cart demands
+/** The claim's own honest ceiling on how strong ANY combination of evidence can make it look. */
+const CLAIM_CEILING: Record<ClaimId, number> = {
+  vague: 42,           // names no mechanism — capped however much true evidence piles on
+  fertiliser: 45,       // real upstream cause, wrong asserted mechanism (poisoning, not asphyxiation)
+  tooHot: 45,           // a genuine but minor contributor, overstated as the whole cause
+  algaeEatFish: 8,      // no mechanism at all
+  lowOxygenDawn: 100,   // the specific, correct claim — no artificial ceiling
+};
+
+/**
+ * Combined argument strength, 0-100: not an average (which a single strong
+ * card and a pile of weak ones would silently dilute) but the coverage many
+ * independent pieces of relevant evidence provide together — one very
+ * relevant card plus a second nearly-as-relevant one covers more of the
+ * question than either alone, exactly as two independent readings should.
+ */
+function combinedStrength(cards: { relevance: number }[], ceiling: number): number {
+  if (cards.length === 0) return 0;
+  const uncovered = cards.reduce((acc, c) => acc * (1 - c.relevance / 100), 1);
+  return Math.min(ceiling, Math.round((1 - uncovered) * 100));
+}
+
+const LOAD_BASE = 15; // minimum combined strength a 1x cart demands
 
 /* ------------------------------------------------------------------ *
  * State — a light animation clock; the history itself is fixed
@@ -274,7 +298,7 @@ const model: SimModel<State> = {
     const site = params.sampleSiteM as number;
     const cards = cardsFor(claim);
     const placed = cards.filter((c) => params[`evidence${cap(c.key)}`] === true);
-    const argumentStrength = placed.length ? placed.reduce((s, c) => s + c.relevance, 0) / placed.length : 0;
+    const argumentStrength = combinedStrength(placed, CLAIM_CEILING[claim]);
     const required = LOAD_BASE * (0.5 + 0.5 * (params.challengeWeight as number));
     const rebuttalNeeds = params.rebuttalBot === true;
     const hasSalinity = placed.some((c) => c.key === "salinity");
@@ -304,6 +328,7 @@ const model: SimModel<State> = {
       weakestRelevance: weakest ? weakest.relevance : 0,
       claimStrength: claimStrength(params),
       hasOxygenDawn: params.evidenceOxygenDawn === true,
+      hasOxygenDawn2: params.evidenceOxygenDawn2 === true,
       hasOxygenNoon: params.evidenceOxygenNoon === true,
       hasNitrateOutfall: params.evidenceNitrateOutfall === true,
       hasTempNoon: params.evidenceTempNoon === true,
@@ -326,10 +351,9 @@ function claimStrength(params: ParamValues): number {
   const cards = cardsFor(claim);
   const placed = cards.filter((c) => params[`evidence${cap(c.key)}`] === true);
   if (!placed.length) return 0;
-  const relevance = placed.reduce((s, c) => s + c.relevance, 0) / placed.length;
-  const specificity = claim === "vague" ? 0.5 : claim === "algaeEatFish" ? 0.2 : 1.0;
+  const strength = combinedStrength(placed, CLAIM_CEILING[claim]);
   const rebuttalPenalty = params.rebuttalBot === true && !placed.some((c) => c.key === "salinity") ? 0.6 : 1.0;
-  return Math.round(Math.max(0, Math.min(100, relevance * specificity * rebuttalPenalty)));
+  return Math.round(strength * rebuttalPenalty);
 }
 
 /* ------------------------------------------------------------------ *
@@ -413,7 +437,7 @@ function render(rc: RenderContext<State>) {
     ctx.setLineDash([]);
   }
 
-  const argumentStrength = placed.length ? placed.reduce((s, c) => s + c.relevance, 0) / placed.length : 0;
+  const argumentStrength = combinedStrength(placed, CLAIM_CEILING[claim]);
   const required = LOAD_BASE * (0.5 + 0.5 * (params.challengeWeight as number));
   const rebuttalOk = params.rebuttalBot !== true || placed.some((c) => c.key === "salinity");
   const crosses = placed.length > 0 && argumentStrength >= required && rebuttalOk;
@@ -451,7 +475,7 @@ function render(rc: RenderContext<State>) {
 
 const BASE_SETUP: ParamValues = {
   claim: "vague", sampleSiteM: 50, sampleDepthM: 0.5, timelineDay: 0, timelineHour: 5,
-  evidenceOxygenDawn: false, evidenceOxygenNoon: false, evidenceNitrateOutfall: false,
+  evidenceOxygenDawn: false, evidenceOxygenDawn2: false, evidenceOxygenNoon: false, evidenceNitrateOutfall: false,
   evidenceTempNoon: false, evidenceAlgaeCover: false, evidenceSalinity: false,
   challengeWeight: 2, rebuttalBot: true, revealCauseChain: false,
 };
@@ -496,6 +520,7 @@ export const argumentBridgeSim: SimManifest<State> = {
     timelineDay: { type: "number", label: "Timeline: day", kind: "count", min: -14, max: 2, step: 1, default: 0, help: "Day 0 is the kill." },
     timelineHour: { type: "number", label: "Timeline: hour", kind: "count", min: 0, max: 23, step: 1, default: 5, help: "The oxygen crash sits between about 02:00 and 07:00." },
     evidenceOxygenDawn: { type: "boolean", label: "Card: O2 before dawn, under the mat", default: false },
+    evidenceOxygenDawn2: { type: "boolean", label: "Card: O2 before dawn, a second night", default: false, help: "A second night's dawn reading — independent evidence covers more of the question than repeating the same one." },
     evidenceOxygenNoon: { type: "boolean", label: "Card: O2 at noon, surface", default: false },
     evidenceNitrateOutfall: { type: "boolean", label: "Card: nitrate at the outfall", default: false },
     evidenceTempNoon: { type: "boolean", label: "Card: temperature at noon", default: false },
@@ -659,7 +684,7 @@ export const argumentBridgeSim: SimManifest<State> = {
           phase: "measure",
           title: "Place it on the bridge",
           instruction: "Add the O2-before-dawn evidence card.",
-          check: { describe: "Dawn oxygen card placed, highly relevant to this claim", test: (v) => v.params.evidenceOxygenDawn === true && (v.facts.oxygenDawnRelevance as number) > 50 },
+          check: { describe: "Dawn oxygen card placed, genuinely relevant to this claim", test: (v) => v.params.evidenceOxygenDawn === true && (v.facts.oxygenDawnRelevance as number) > 20 },
         },
         {
           id: "compare-noon",
@@ -690,13 +715,13 @@ export const argumentBridgeSim: SimManifest<State> = {
       bands: ["6-8"],
       minutes: 15,
       standards: ["MS-LS2-4"],
-      setup: { ...BASE_SETUP, claim: "lowOxygenDawn", evidenceOxygenDawn: true, challengeWeight: 5, rebuttalBot: true },
+      setup: { ...BASE_SETUP, claim: "lowOxygenDawn", evidenceOxygenDawn: true, challengeWeight: 2, rebuttalBot: true },
       steps: [
         {
           id: "predict",
           phase: "hypothesis",
           title: "Predict the rebuttal",
-          instruction: "The dawn oxygen card is on the bridge, but the rebuttal bot is active at 5x weight.",
+          instruction: "The dawn oxygen card is on the bridge, strong enough on its own — but the rebuttal bot is active.",
           predict: {
             prompt: "Will the correct oxygen evidence alone survive the rebuttal?",
             options: ["Yes — it is the true cause", "No — the rebuttal specifically demands ruling out a separate alternative"],

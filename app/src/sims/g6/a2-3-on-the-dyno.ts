@@ -150,6 +150,11 @@ export interface DynoResult {
   fracBurned: number; unburntKgS: number;
   releasedW: number; efficiency: number; shaftPowerW: number;
   coolantHeatW: number; exhaustHeatW: number; frictionW: number;
+  /** The genuine flow × Δtemperature heat-transfer rate — what actually
+   *  governs the block's own temperature, and can stay positive for a
+   *  while after combustion stops. Distinct from `coolantHeatW`, which is
+   *  the same quantity capped to whatever the Sankey has left to give it. */
+  physicalCoolantW: number;
   exhaustMassKgS: number; exhaustTempC: number;
   rpm: number; torqueNm: number; running: boolean;
   derateFactor: number;
@@ -235,7 +240,7 @@ function solveDyno(
   return {
     mAirKgS, mFuelKgS, fuelEnergyInW, fracBurned, unburntKgS,
     releasedW, efficiency, shaftPowerW,
-    coolantHeatW: 0, exhaustHeatW, frictionW: 0, // filled in by the caller
+    coolantHeatW: 0, exhaustHeatW, frictionW: 0, physicalCoolantW: 0, // filled in by the caller
     exhaustMassKgS, exhaustTempC, rpm, torqueNm, running: running && rpm > 0,
     derateFactor,
     atomsC_in, atomsC_out, atomsH_in, atomsH_out, atomsO_in, atomsO_out, atomsN_in, atomsN_out,
@@ -349,6 +354,7 @@ const model: SimModel<State> = {
       releasedW: r.releasedW,
       shaftPowerW: r.shaftPowerW,
       coolantHeatW: r.coolantHeatW,
+      physicalCoolantW: r.physicalCoolantW,
       exhaustHeatW: r.exhaustHeatW,
       frictionW: r.frictionW,
       sankeySumW: sumOut,
@@ -366,22 +372,40 @@ const model: SimModel<State> = {
   },
 };
 
-/** The last tick's full solve, stashed on state during step() and recomputed
- *  fresh (never stale) whenever readouts/facts run before any tick has —
- *  e.g. at t=0, straight out of init(). */
+/**
+ * Recomputed fresh from the persisted end-of-tick block temperature and the
+ * CURRENT params every time — never stashed, so a control changed while
+ * paused (no new tick yet) is reflected immediately, never a tick stale.
+ *
+ * Two different "coolant heat" numbers matter here, and they answer two
+ * different questions. `physicalCoolantW` is the genuine heat-transfer law —
+ * flow times how far the block sits above ambient — and it is what actually
+ * governs the block's own temperature (see step()): it can keep drawing on
+ * heat stored in the block's thermal mass for a while after combustion
+ * stops, which is exactly what makes the coolant loop the output that lingers
+ * when an input is cut. The four-way Sankey, by contrast, is a claim about
+ * energy released THIS INSTANT by combustion, so its "coolant heat" entry —
+ * `coolantHeatW` below — is capped at whatever share of that instant's
+ * release is still unclaimed by shaft work and exhaust heat. That cap is
+ * what makes shaft + coolant + exhaust + friction sum to exactly the
+ * released energy always, by construction, with no tolerance to relax:
+ * friction is the final residual and the cap guarantees it up front that
+ * residual can never go negative.
+ */
 function currentResult(state: State, params: ParamValues): DynoResult {
   const disconnects = disconnectsOf(params);
   const r = solveDyno(
     params.throttle as number, params.dynoLoad as number, params.afr as number,
     params.sparkTiming as number, state.blockTempC, disconnects,
   );
-  // The same formula step() integrates with, evaluated fresh against the
-  // persisted end-of-tick block temperature — so a control changed while
-  // paused (no new tick yet) is reflected immediately, never a tick stale.
-  const coolantHeatW = disconnects.coolant
+  const physicalCoolantW = disconnects.coolant
     ? 0
     : COOLANT_UA_PER_LPM * (params.coolantFlow as number) * Math.max(0, state.blockTempC - AMBIENT_C);
-  return { ...r, coolantHeatW, frictionW: Math.max(0, r.releasedW - r.shaftPowerW - r.exhaustHeatW - coolantHeatW) };
+  const coolantHeatW = Math.min(physicalCoolantW, Math.max(0, r.releasedW - r.shaftPowerW - r.exhaustHeatW));
+  return {
+    ...r, coolantHeatW, physicalCoolantW,
+    frictionW: Math.max(0, r.releasedW - r.shaftPowerW - r.exhaustHeatW - coolantHeatW),
+  };
 }
 
 function sampled(hist: number[], t: number): number[] {
@@ -627,11 +651,20 @@ function render(rc: RenderContext<State>) {
   metal(ctx, radX, radY, radW, radH, "#5d6a76", { radius: 4 });
   caption(ctx, radX + radW / 2, radY + radH + 12, "radiator", theme, { align: "center", size: 9, color: theme.inkSoft });
   const disconnects = disconnectsOf(params);
-  if (!disconnects.coolant && r.coolantHeatW > 1) {
+  // The genuine physical flow, not the Sankey's ledgered share — the loop
+  // keeps visibly running warm on stored heat even an instant after the
+  // Sankey's own coolant bar has dropped to zero.
+  if (!disconnects.coolant && r.physicalCoolantW > 1) {
     dashFlow(ctx, [{ x: dynoX + dynoW, y: dynoY + dynoW * 0.35 }, { x: radX, y: radY + radH * 0.5 }], theme.sci["current"], rc.time * 20, { width: 2, dash: 5, gap: 5 });
   } else {
     arrow(ctx, dynoX + dynoW + 6, dynoY + dynoW * 0.35, radX - 6, radY + radH * 0.5, hexA(theme.inkSoft, 0.35), { width: 1.4, dashed: true });
   }
+  // The coolant loop's own reading: the real, physical heat-transfer rate,
+  // which can read warm even when the Sankey's ledgered coolant bar has
+  // already dropped to zero because nothing is being freshly released.
+  badge(ctx, radX + radW / 2, radY - 14, `${num(r.physicalCoolantW / 1000, 2)} kW`, theme, {
+    align: "center", color: theme.sci["current"], sub: "coolant loop",
+  });
 
   vignette(ctx, width, stageH, 0.12);
   ctx.restore();
@@ -794,7 +827,7 @@ export const onTheDynoSim: SimManifest<State> = {
     {
       id: "starve-one-input",
       title: "Starve one input",
-      question: "Cut one input and every output collapses. Which output keeps flowing for a while afterwards, and why?",
+      question: "Cut one input and every ledgered output collapses at once. What still leaves the rig for a while afterwards, and why doesn't the ledger count it?",
       bands: ["6-8"],
       minutes: 12,
       standards: ["MS-PS3-5"],
@@ -806,10 +839,14 @@ export const onTheDynoSim: SimManifest<State> = {
           title: "Predict first",
           instruction: "The air supply is about to be cut with everything else unchanged.",
           predict: {
-            prompt: "The instant air is cut, which output takes longest to reach zero?",
-            options: ["Shaft power", "Exhaust heat", "Coolant heat"],
-            correct: 2,
-            reveal: "Coolant heat. Combustion stops immediately, but the block is still hot from before, and the coolant keeps carrying that stored heat away for a while.",
+            prompt: "The instant air is cut, combustion stops. Does the block's coolant loop stop carrying heat away in that same instant?",
+            options: [
+              "Yes — no combustion means no heat anywhere",
+              "No — the block is still hot from before, and the coolant keeps draining that stored heat for a while",
+              "No — cutting air actually makes the coolant loop work harder",
+            ],
+            correct: 1,
+            reveal: "No. Combustion — and every output the Sankey ledgers — stops in that same instant, but the block itself does not cool instantly. Its coolant loop keeps carrying away real, measurable heat for a while, drawn from the metal's own stored warmth rather than from anything just released.",
           },
         },
         {
@@ -824,21 +861,21 @@ export const onTheDynoSim: SimManifest<State> = {
           id: "watch",
           phase: "measure",
           title: "Watch what keeps flowing",
-          instruction: "Record shaft power and coolant heat right after the cut.",
+          instruction: "Right after the cut, record shaft power (from the ledger) and the coolant loop's own heat reading (from the block panel, not the Sankey).",
           requireData: 2,
           check: {
-            describe: "Shaft power is zero while some coolant heat still leaves",
-            test: (v) => v.facts.shaftPowerW === 0,
+            describe: "Shaft power reads zero while the coolant loop is still measurably warm",
+            test: (v) => v.facts.shaftPowerW === 0 && (v.facts.physicalCoolantW as number) > 100,
           },
         },
         {
           id: "analyze",
           phase: "analyze",
           title: "Trace the lag",
-          instruction: "Look at the block-temperature graph across the cut.",
+          instruction: "Look at the block-temperature graph across the cut, and compare it with the Sankey's coolant-heat bar.",
           write: {
-            prompt: "Why does coolant heat not drop to zero at the same instant combustion does?",
-            placeholder: "The block itself is still ..., and the coolant is only responding to ...",
+            prompt: "The Sankey's coolant bar drops to zero the instant air is cut, but the block's coolant loop keeps running warm for tens of seconds. Why are those two readings allowed to disagree?",
+            placeholder: "The Sankey only ever counts heat from ..., released right now. The coolant loop itself is still responding to ...",
           },
         },
         {
@@ -847,8 +884,8 @@ export const onTheDynoSim: SimManifest<State> = {
           title: "One input, every output",
           instruction: "Answer the scenario's question in one sentence.",
           write: {
-            prompt: "Cutting a single input collapsed every output eventually. Name the one exception and explain it.",
-            placeholder: "Every output stopped except ..., briefly, because ...",
+            prompt: "Cutting a single input collapsed every ledgered output at once. Name the one thing that still measurably left the rig afterwards, and explain why it isn't a counterexample.",
+            placeholder: "The coolant loop kept carrying real heat away for a while, but that heat came from ..., not from anything the input supplied after the cut.",
           },
         },
       ],

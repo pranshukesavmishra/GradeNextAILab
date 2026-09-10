@@ -81,7 +81,12 @@ const IRRIG_MAX_MM_PER_MIN = 0.0085; // at the slider's top of 8 L/plant/day
 // the real mechanism a thermostat-and-motor pair has and what the spec's
 // scenario S3 relies on.
 const VENT_TEMP_ON = 5, VENT_TEMP_OFF = 1; // deg C above outside
-const VENT_HUM_SET = 75, VENT_HUM_SPAN = 20; // %RH, automatic vent's humidity leg
+// Calibrated against this tunnel's own achievable humidity range (a poorly
+// vented, actively transpiring tunnel settles in the 50-70 %RH band over a
+// day, never near the 75-95 % a much larger glasshouse might reach), so the
+// humidity leg is a real, engaged secondary loop rather than a threshold
+// this tunnel can never actually cross.
+const VENT_HUM_SET = 52, VENT_HUM_SPAN = 18; // %RH, automatic vent's humidity leg
 const HEATER_ON_C = 10, HEATER_SPAN = 6; // deg C, night frost-protection thermostat
 const HEATER_RATE_C_PER_MIN = 0.6;
 const SHADE_MAX_CUT = 0.4; // spec: shade cloth cuts solar gain by 40%

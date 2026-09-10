@@ -1,6 +1,6 @@
 {
- "generated": "from src/curriculum/grade*.ts \u2014 regenerate with scripts/build-structure.mjs",
- "note": "One entry per curriculum subtopic. 'idea' = the ONE thing the student must learn (founder law 2). 'design' = the experiment that teaches it. Designs are written unit by unit before building; never fake one to fill a slot.",
+ "generated": "from src/curriculum/grade*.ts \u2014 regenerate with the same script",
+ "note": "One entry per curriculum subtopic. 'idea' = the ONE thing the student must learn (founder law 2). 'design' = the experiment that teaches it. Codes repeat across grades, so designs are ALWAYS keyed grade+code, never code alone.",
  "grades": {
   "6": {
    "A": {
@@ -12,7 +12,7 @@
        {
         "code": "A1.1",
         "title": "What makes a system a system",
-        "idea": "",
+        "idea": "A system is parts that interact to keep a function going \u2014 unplug one and the function fails.",
         "design": "",
         "sim": "g6.a1-1",
         "status": "built"
@@ -20,7 +20,7 @@
        {
         "code": "A1.2",
         "title": "Subsystems nested within systems",
-        "idea": "",
+        "idea": "Systems nest: a failure climbs only the tree that contains it.",
         "design": "",
         "sim": "g6.a1-2",
         "status": "built"
@@ -28,26 +28,26 @@
        {
         "code": "A1.3",
         "title": "Interactions among a system's parts",
-        "idea": "",
+        "idea": "Parts interact through specific couplings; cut one arrow and only that interaction dies.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.4",
         "title": "Emergent properties",
-        "idea": "",
+        "idea": "Colony-level order emerges from private rules \u2014 nobody is in charge.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.5",
         "title": "Systems across scales, from a cell to a planet",
-        "idea": "",
+        "idea": "Levels couple upward only through real aggregation, so a change at one scale may vanish at another.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -57,7 +57,7 @@
        {
         "code": "A2.1",
         "title": "Drawing a system's boundary",
-        "idea": "",
+        "idea": "The boundary is an accounting choice: move it and flows change column without any rate changing.",
         "design": "",
         "sim": "g6.a2-1",
         "status": "built"
@@ -65,7 +65,7 @@
        {
         "code": "A2.2",
         "title": "Open vs closed systems",
-        "idea": "",
+        "idea": "Closed does not mean sealed \u2014 energy still crosses when matter cannot.",
         "design": "",
         "sim": "g6.a2-2",
         "status": "built"
@@ -73,26 +73,26 @@
        {
         "code": "A2.3",
         "title": "Inputs and outputs",
-        "idea": "",
+        "idea": "Everything entering a system leaves it, accounted for, through named exits.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.4",
         "title": "Tracing matter and energy through a system",
-        "idea": "",
+        "idea": "Matter cycles and is conserved; energy flows one way and degrades.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.5",
         "title": "Choosing a boundary for a purpose",
-        "idea": "",
+        "idea": "The boundary you choose decides the answer you get, so choose it for the question.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -102,7 +102,7 @@
        {
         "code": "A3.1",
         "title": "Why scientists build models",
-        "idea": "",
+        "idea": "Models exist to do what reality forbids: rewind, reach, or risk.",
         "design": "",
         "sim": "g6.a3-1",
         "status": "built"
@@ -110,7 +110,7 @@
        {
         "code": "A3.2",
         "title": "Diagrams and flowcharts as models",
-        "idea": "",
+        "idea": "A diagram is a model whose arrows are testable predictions.",
         "design": "",
         "sim": "g6.a3-2",
         "status": "built"
@@ -118,7 +118,7 @@
        {
         "code": "A3.3",
         "title": "Physical and digital models",
-        "idea": "",
+        "idea": "Physical and digital models fail in different directions.",
         "design": "",
         "sim": "g6.a3-3",
         "status": "built"
@@ -126,7 +126,7 @@
        {
         "code": "A3.4",
         "title": "What a model leaves out on purpose",
-        "idea": "",
+        "idea": "Every model leaves things out on purpose, and you pay for each omission.",
         "design": "",
         "sim": "g6.a3-4",
         "status": "built"
@@ -134,10 +134,10 @@
        {
         "code": "A3.5",
         "title": "Building and revising a model of a system",
-        "idea": "",
+        "idea": "A model earns trust by being revised until it reproduces reality.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -147,7 +147,7 @@
        {
         "code": "A4.1",
         "title": "The geosphere",
-        "idea": "",
+        "idea": "Earth's interior is read from where waves do and do not arrive.",
         "design": "",
         "sim": "g6.a4-1",
         "status": "built"
@@ -155,7 +155,7 @@
        {
         "code": "A4.2",
         "title": "The hydrosphere",
-        "idea": "",
+        "idea": "Almost all Earth's water is salt water, and fresh liquid water is a splash of the total.",
         "design": "",
         "sim": "g6.a4-2",
         "status": "built"
@@ -163,7 +163,7 @@
        {
         "code": "A4.3",
         "title": "The atmosphere",
-        "idea": "",
+        "idea": "The atmosphere thins with height, and most of its mass is close to the ground.",
         "design": "",
         "sim": "g6.a4-3",
         "status": "built"
@@ -171,7 +171,7 @@
        {
         "code": "A4.4",
         "title": "The biosphere",
-        "idea": "",
+        "idea": "Living cover changes rock, soil and carbon \u2014 and can store or release it.",
         "design": "",
         "sim": "g6.a4-4",
         "status": "built"
@@ -179,18 +179,18 @@
        {
         "code": "A4.5",
         "title": "Interactions among Earth's four spheres",
-        "idea": "",
+        "idea": "Pull one thread and the change travels only along real coupling arrows.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A4.6",
         "title": "Modeling an Earth-system event",
-        "idea": "",
+        "idea": "A single event can be modelled across decades if the couplings are real.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -200,7 +200,7 @@
        {
         "code": "A5.1",
         "title": "Lab safety and working like a scientist",
-        "idea": "",
+        "idea": "Safety is measurable: the gear you wear decides what actually reaches you.",
         "design": "",
         "sim": "g6.a5-1",
         "status": "built"
@@ -208,7 +208,7 @@
        {
         "code": "A5.2",
         "title": "Variables and fair tests",
-        "idea": "",
+        "idea": "A fair test changes one variable; a confounded one cannot be trusted, by a real number.",
         "design": "",
         "sim": "g6.a5-2",
         "status": "built"
@@ -216,7 +216,7 @@
        {
         "code": "A5.3",
         "title": "SI units and measurement",
-        "idea": "",
+        "idea": "A measurement is a number, a unit and an uncertainty \u2014 never a bare number.",
         "design": "",
         "sim": "g6.a5-3",
         "status": "built"
@@ -224,7 +224,7 @@
        {
         "code": "A5.4",
         "title": "Organizing and graphing data",
-        "idea": "",
+        "idea": "The chart you choose can argue for you \u2014 the axis does the arguing.",
         "design": "",
         "sim": "g6.a5-4",
         "status": "built"
@@ -232,18 +232,18 @@
        {
         "code": "A5.5",
         "title": "Claim, evidence and reasoning",
-        "idea": "",
+        "idea": "A claim is only as strong as evidence that actually bears on it.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A5.6",
         "title": "Designing an investigation of a system",
-        "idea": "",
+        "idea": "A plan's design flaws show up in its own results.",
         "design": "",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -258,50 +258,50 @@
        {
         "code": "B1.1",
         "title": "Cell theory",
-        "idea": "",
-        "design": "",
+        "idea": "Cell theory says every living thing is made of cells, cells come only from other cells, and the cell is the smallest living unit.",
+        "design": "Historical microscope bench: swap 1665 Hooke, 1674 Leeuwenhoek and modern optics over the same six specimens; resolving power (Abbe limit d=lambda/2NA) is real, so each scope reveals only what it physically can. Student builds cell theory from what is actually visible. Fraud to avoid: showing modern images through a 1665 lens.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.2",
         "title": "Discovering cells",
-        "idea": "",
-        "design": "",
+        "idea": "Cells were discovered because instruments got better, not because anyone reasoned them out.",
+        "design": "Same bench, driven by numerical aperture: student raises NA and wavelength and watches cork-cell walls resolve at ~1.4 um then bacteria at ~0.4 um. Measures smallest resolvable feature vs NA against the real curve. Fraud: a magnification slider that just scales a bitmap.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.3",
         "title": "Living vs nonliving",
-        "idea": "",
-        "design": "",
+        "idea": "Living things do seven measurable things; a candle or crystal does some but never all.",
+        "design": "Test bench: run respiration (CO2 with bromothymol), growth over days, response to stimulus, waste output on candle flame, salt crystal, seed, yeast. Each test is a real measurement over time; the verdict is computed from the tally, never labelled in advance.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.4",
         "title": "Unicellular organisms",
-        "idea": "",
-        "design": "",
+        "idea": "One cell can do everything an organism needs: eat, move, expel water, divide.",
+        "design": "Live Paramecium/Euglena under the objective: contractile vacuole fills and fires on a real osmotic clock (rate rises in fresh water), cilia drive real motion, food vacuoles form. Student times the vacuole against salinity. Fraud: a looping animation indifferent to the salt dial.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.5",
         "title": "Multicellular organisms",
-        "idea": "",
-        "design": "",
+        "idea": "Many cells let a body specialise \u2014 but only if they stay supplied.",
+        "design": "Diffusion-limited tissue: a slab of cells consuming oxygen with Fick's law supply from the surface; student adds thickness and watches the core go hypoxic at the real ~1 mm limit, then adds a vessel and sees it rescued. Measures depth of the living layer.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.6",
         "title": "Microscopic scale",
-        "idea": "",
-        "design": "",
+        "idea": "Cells are measured in micrometres, and scale is a ladder you can climb by tens.",
+        "design": "Zoom ladder with a true metric bar: 1 m human, 1 mm sand, 100 um egg, 10 um cell, 1 um bacterium, 100 nm virus, all at honest relative size with a break glyph when a step leaves the screen. Student places unknown specimens on the ladder by measuring them.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -311,50 +311,50 @@
        {
         "code": "B2.1",
         "title": "Cell membrane",
-        "idea": "",
-        "design": "",
+        "idea": "The membrane decides what crosses, and it lets water move to even out concentration.",
+        "design": "Osmosis bench: real semi-permeable membrane between two chambers, solute impermeant, water flux J = Lp*(sigma*RT*dC); student sets concentrations and watches level and cell volume change, plots flux vs gradient. A visible potato core shrinks or swells to match. Fraud: swelling that is not tied to the numbers.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.2",
         "title": "Cell wall",
-        "idea": "",
-        "design": "",
+        "idea": "A wall lets a plant cell take in water without bursting \u2014 turgor is a pressure you can read.",
+        "design": "Same osmosis rig with the wall toggled on: with the wall, turgor pressure climbs and flux stops at equilibrium; without it the animal cell lyses. Student reads turgor in kPa and finds the wilting point. The wall toggle is structural.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.3",
         "title": "Nucleus",
-        "idea": "",
-        "design": "",
+        "idea": "The nucleus holds the instructions; remove it and the cell runs down.",
+        "design": "Enucleation experiment on Acetabularia (the classic): student cuts and grafts, and the cap that regrows follows the nucleus's species, not the stalk's, on a real protein-decay clock. Measures days to cap and which form appears.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.4",
         "title": "Mitochondria",
-        "idea": "",
-        "design": "",
+        "idea": "Mitochondria release energy from food using oxygen, and hard-working cells hold more of them.",
+        "design": "Respirometer: cell type (muscle, liver, skin) sets mitochondrial density; student sets workload and reads real O2 consumption and CO2 output, ATP per second, and watches the deficit when demand outruns supply. Fraud: an ATP number not tied to O2 drawn.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.5",
         "title": "Chloroplasts",
-        "idea": "",
-        "design": "",
+        "idea": "Chloroplasts build sugar from light and CO2 \u2014 and respiration never stops underneath.",
+        "design": "Two-flow leaf chamber: photosynthesis follows a light-response curve, respiration runs day and night; student finds the compensation point where net O2 is zero. Measures net and gross rates separately \u2014 the whole lesson is that they are different.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.6",
         "title": "Relating structure to whole-cell function",
-        "idea": "",
-        "design": "",
+        "idea": "An organelle's shape is its job: fold a membrane and you buy surface area.",
+        "design": "Build-a-cell bench where each organelle's geometry feeds a real budget: cristae folding sets ATP ceiling, thylakoid stacking sets light capture, surface-to-volume sets exchange. Student assembles a cell for a stated job and tests it against a load. Fraud: decorative organelles.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -364,50 +364,50 @@
        {
         "code": "B3.1",
         "title": "The organizational hierarchy",
-        "idea": "",
-        "design": "",
+        "idea": "Life is organised in levels, and each level does something the level below cannot.",
+        "design": "Level ladder driven by one working body: student zooms cell to tissue to organ to system to organism, and at each level a real capability appears (one muscle cell twitches; a tissue lifts; an organ pumps). Measures force and flow at each level.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.2",
         "title": "Cell specialization",
-        "idea": "",
-        "design": "",
+        "idea": "Cells specialise, trading general ability for one job done well.",
+        "design": "Differentiation bench: a stem cell given signals becomes nerve, muscle, or red cell; each then scores on conduction speed, force, and oxygen carried. Student sees each specialist win one column and lose the others. Fraud: a specialist that is best at everything.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.3",
         "title": "Tissues",
-        "idea": "",
-        "design": "",
+        "idea": "A tissue is many like cells acting together, and together they pull harder than the sum suggests.",
+        "design": "Tissue pull rig: student adds aligned muscle fibres and measures force; alignment angle matters (cos theta), so a disordered sheet underperforms. Reads force in newtons against fibre count and alignment.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.4",
         "title": "Organs",
-        "idea": "",
-        "design": "",
+        "idea": "An organ is different tissues built into one machine with one job.",
+        "design": "Heart build: student assembles muscle, valve and conductive tissue; each missing piece produces a specific, named failure (no valves = backflow, no conduction = fibrillation) measured as cardiac output in L/min.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.5",
         "title": "Organ systems",
-        "idea": "",
-        "design": "",
+        "idea": "An organ system links organs into a supply chain, and a break anywhere starves the end.",
+        "design": "Whole-system loop with real flows: student severs one link and traces the shortfall downstream with measurements, never a message. Same chain-of-cause discipline as the aquarium exemplar.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.6",
         "title": "The organism as the whole system",
-        "idea": "",
-        "design": "",
+        "idea": "The organism is the level where all systems must balance at once.",
+        "design": "Whole-body dashboard: exercise load drives coupled circulatory, respiratory and thermal models; student must keep every variable in range at once and discovers the trade-offs. Failure states are real (hyperthermia, hypoxia).",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -417,50 +417,50 @@
        {
         "code": "B4.1",
         "title": "Digestive system",
-        "idea": "",
-        "design": "",
+        "idea": "Digestion breaks food into pieces small enough to cross into blood.",
+        "design": "Gut tube with real enzyme kinetics: amylase, pepsin at pH 2, lipase with bile; student sets pH and time and measures how much of each macronutrient is actually absorbed. Wrong pH genuinely stalls the enzyme. Fraud: absorption that ignores chemistry.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.2",
         "title": "Excretory system",
-        "idea": "",
-        "design": "",
+        "idea": "The kidney keeps what the body needs and dumps the rest, by filtering then reclaiming.",
+        "design": "Nephron bench: filtration by pressure, then reabsorption with real transport maxima (glucose Tm ~ 375 mg/min); student raises blood glucose and finds the spill point where sugar appears in urine. Measures filtrate and urine composition.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.3",
         "title": "Circulatory system",
-        "idea": "",
-        "design": "",
+        "idea": "Blood is a delivery loop, and pressure is what keeps it moving.",
+        "design": "Circulatory loop with resistance and compliance: student changes vessel radius and reads flow via Poiseuille (r^4 dependence is the lesson), sees pressure drop across beds and the failure when a vessel narrows.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.4",
         "title": "Respiratory system",
-        "idea": "",
-        "design": "",
+        "idea": "Breathing swaps gases across a huge folded surface driven by pressure differences.",
+        "design": "Lung bench: diaphragm sets thoracic pressure, air flows down the gradient, alveolar surface area sets diffusion; student compares healthy vs emphysema (fewer, larger alveoli) and measures O2 saturation reached per breath.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.5",
         "title": "Muscular system",
-        "idea": "",
-        "design": "",
+        "idea": "Muscles pull, never push, so they work in opposing pairs.",
+        "design": "Arm rig with real torque: student contracts biceps or triceps and measures joint angle, load lifted and torque; trying to push with a muscle simply does nothing. Fatigue accumulates on a real ATP budget.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.6",
         "title": "Nervous system",
-        "idea": "",
-        "design": "",
+        "idea": "Nerves carry fast electrical signals, and speed depends on the fibre.",
+        "design": "Conduction bench: student picks fibre diameter and myelination and measures real conduction velocity (myelinated ~50-120 m/s vs unmyelinated ~1 m/s) over a measured distance with a timer. Fraud: a fixed 'fast' animation.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -470,50 +470,50 @@
        {
         "code": "B5.1",
         "title": "Digestion and circulation together",
-        "idea": "",
-        "design": "",
+        "idea": "Digestion is pointless without circulation to carry the nutrients away.",
+        "design": "Coupled gut-blood model: absorbed glucose enters a bloodstream that distributes it; student cuts the blood supply to the villi and watches absorption itself stall (the gradient collapses). Measures glucose delivered to muscle.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.2",
         "title": "Circulation and respiration together",
-        "idea": "",
-        "design": "",
+        "idea": "Circulation and breathing form one oxygen chain from air to cell.",
+        "design": "Coupled loop: alveolar O2 -> haemoglobin saturation curve -> delivery to working muscle; student raises workload and finds which link limits first. Measures O2 delivered vs consumed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.3",
         "title": "Nervous and muscular systems together",
-        "idea": "",
-        "design": "",
+        "idea": "A movement is a signal that becomes a force.",
+        "design": "Catch-a-ball rig: real signal travel time down the arm plus muscle activation delay sets whether the hand closes in time; student changes distance and speed and measures the miss. Reaction time is computed, never fixed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.4",
         "title": "The excretory system and internal balance",
-        "idea": "",
-        "design": "",
+        "idea": "The body holds its internal conditions steady by constantly correcting them.",
+        "design": "Water-balance loop: intake, sweat, urine and ADH feedback with a real setpoint; student stresses it with heat or drinking and watches the correction, its lag, and the overshoot when the loop is slow.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.5",
         "title": "Case study: the body during exercise",
-        "idea": "",
-        "design": "",
+        "idea": "Under exercise every system shifts at once, and they must shift together.",
+        "design": "Exercise session: student sets intensity and duration; heart rate, ventilation, temperature, glycogen and lactate all run as coupled stocks. Reads the whole dashboard and finds the sustainable ceiling.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.6",
         "title": "Interactions among body systems, generalized",
-        "idea": "",
-        "design": "",
+        "idea": "Systems interact through shared quantities \u2014 cut one and the others feel it.",
+        "design": "Generalised body board: eight systems, explicit couplings; student cuts one coupling arrow and traces exactly which downstream measurements move and which do not. Same honesty rule as A1.3.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -523,50 +523,50 @@
        {
         "code": "B6.1",
         "title": "Sensory receptors and stimuli",
-        "idea": "",
-        "design": "",
+        "idea": "A receptor turns one kind of stimulus into a nerve signal, and it has a threshold.",
+        "design": "Receptor bench: student applies pressure, light, heat, sound at measured intensities; firing rate follows a real threshold-and-saturation curve per receptor type. Measures spikes per second vs stimulus.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B6.2",
         "title": "The path of a signal to the brain",
-        "idea": "",
-        "design": "",
+        "idea": "A signal travels a definite path and takes measurable time.",
+        "design": "Path tracer: stimulus at the fingertip, timed relay through nerve, spinal cord, brain; student measures total latency and sees which segment dominates. Distances and velocities are real.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B6.3",
         "title": "Processing information in the brain",
-        "idea": "",
-        "design": "",
+        "idea": "The brain interprets signals \u2014 the same input can be read two ways.",
+        "design": "Perception bench: identical sensory input, different context; student sees the interpretation flip while the input trace stays identical. The trace is shown so the student can verify the input never changed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B6.4",
         "title": "Voluntary and reflex responses",
-        "idea": "",
-        "design": "",
+        "idea": "A reflex skips the brain, which is why it is faster.",
+        "design": "Two-path rig: reflex arc through the cord vs voluntary path through the brain, both timed on real distances; student measures the ~100 ms difference. Fraud: labelling one 'fast' without timing it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B6.5",
         "title": "Memory and stored information",
-        "idea": "",
-        "design": "",
+        "idea": "Memory is stored information that decays unless it is rehearsed.",
+        "design": "Recall bench: real forgetting curve; student rehearses at chosen intervals and measures retention days later, discovering spacing beats cramming \u2014 computed, not asserted.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B6.6",
         "title": "Stimulus to response to memory, together",
-        "idea": "",
-        "design": "",
+        "idea": "Stimulus, response and memory form one loop that changes with experience.",
+        "design": "Full loop: repeated stimulus produces habituation or sensitisation via a real synaptic-strength model; student runs trials and measures the response changing over time.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -581,50 +581,50 @@
        {
         "code": "C1.1",
         "title": "Forms of energy",
-        "idea": "",
-        "design": "",
+        "idea": "Energy comes in forms that can be counted in joules, whatever the form.",
+        "design": "Energy audit bench: student tags kinetic, gravitational, elastic, thermal, chemical, electrical in one working machine; every tag reads joules from the model's own state, and the total is displayed. Fraud: labels not tied to state.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.2",
         "title": "Kinetic energy",
-        "idea": "",
-        "design": "",
+        "idea": "Kinetic energy grows with the square of speed \u2014 double the speed, quadruple the energy.",
+        "design": "Trolley and crush block: student launches at measured speeds and measures crush depth; the v-squared law emerges from the plotted runs, not from a formula on screen.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.3",
         "title": "Potential energy",
-        "idea": "",
-        "design": "",
+        "idea": "Stored energy depends on height (or stretch) and can be released on demand.",
+        "design": "Lift-and-drop rig plus spring bench: student lifts a mass a measured height, reads mgh, releases, and watches it convert; spring stores half-k-x-squared. Both measured from state.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.4",
         "title": "Energy transfer and transformation",
-        "idea": "",
-        "design": "",
+        "idea": "Energy transfers between objects and transforms between forms \u2014 usually several at once.",
+        "design": "Chain machine: hand crank to generator to bulb to warm air, each stage a real efficiency; student follows the joules and sees where they go at each step.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.5",
         "title": "Conservation of energy, introduced",
-        "idea": "",
-        "design": "",
+        "idea": "Energy is never lost \u2014 the total stays put once you count the heat.",
+        "design": "Closed-boundary experiment: student draws the boundary around the machine and the room; inside the full boundary the total is flat to the last joule, outside it appears to vanish. The ledger is computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.6",
         "title": "Tracking energy through everyday examples",
-        "idea": "",
-        "design": "",
+        "idea": "You can follow energy through any everyday chain if you keep a ledger.",
+        "design": "Everyday chains (toaster, bicycle, torch): student picks a chain and tracks joules through each stage with a real efficiency, ending at low-grade heat.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -634,50 +634,50 @@
        {
         "code": "C2.1",
         "title": "Matter is made of particles",
-        "idea": "",
-        "design": "",
+        "idea": "Everything is made of particles too small to see, and that explains what matter does.",
+        "design": "Brownian-motion microscope: real random-walk model where pollen jitter scales with temperature and particle size; student measures displacement vs time and finds the square-root law.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.2",
         "title": "Evidence for particle motion",
-        "idea": "",
-        "design": "",
+        "idea": "Particle motion is not a story \u2014 it leaves measurable traces.",
+        "design": "Diffusion race: scent or dye spreads with a real diffusion coefficient that rises with temperature and falls with molecular mass; student times arrival at a measured distance.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.3",
         "title": "Particle movement in solids, liquids and gases",
-        "idea": "",
-        "design": "",
+        "idea": "Solids, liquids and gases differ in how their particles are held and how they move.",
+        "design": "Particle box with real intermolecular potential: student sets temperature and watches the state change emerge from the model; measures mean free path, density and whether shape is retained.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.4",
         "title": "Temperature as average kinetic energy",
-        "idea": "",
-        "design": "",
+        "idea": "Temperature is the average kinetic energy of the particles.",
+        "design": "Speed-distribution bench: Maxwell-Boltzmann distribution live; student raises temperature and watches the whole distribution shift, and reads that average KE tracks absolute temperature exactly.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.5",
         "title": "Temperature vs total thermal energy",
-        "idea": "",
-        "design": "",
+        "idea": "A bathtub holds more thermal energy than a spark, even though the spark is hotter.",
+        "design": "Two-object comparison: student sets mass and temperature for a spark and a bath; reads temperature and total thermal energy separately and finds they rank oppositely. This IS the subtopic.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.6",
         "title": "Measuring temperature",
-        "idea": "",
-        "design": "",
+        "idea": "A thermometer reads its own temperature, once it has reached equilibrium with what it touches.",
+        "design": "Thermometer bench: real thermal mass and time constant; student plunges a cold thermometer into warm water and watches the reading approach the truth on an exponential, and sees a heavy probe cool a small sample.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -687,50 +687,50 @@
        {
         "code": "C3.1",
         "title": "Energy flows hot to cold",
-        "idea": "",
-        "design": "",
+        "idea": "Energy always flows from hotter to colder, never the reverse on its own.",
+        "design": "Two-block contact: real conduction; student sets both temperatures and finds the flow direction always follows the gradient, and stops at equality \u2014 never reverses.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.2",
         "title": "Conduction",
-        "idea": "",
-        "design": "",
+        "idea": "Conduction moves energy through a material without moving the material.",
+        "design": "Rod bench: Fourier's law with real conductivities; student times wax markers melting along copper, steel, glass and plots position vs time.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.3",
         "title": "Convection",
-        "idea": "",
-        "design": "",
+        "idea": "In fluids, warm parts rise and set up a circulating current.",
+        "design": "Convection tank: buoyancy from real density-temperature relation drives a cell; student heats one corner and traces the loop with dye, measuring speed vs heater power.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.4",
         "title": "Radiation",
-        "idea": "",
-        "design": "",
+        "idea": "Radiation crosses empty space and depends on surface and temperature.",
+        "design": "Vacuum-gap rig: Stefan-Boltzmann with emissivity; student compares black, white and shiny surfaces at measured temperatures and reads received power.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.5",
         "title": "Conductors and insulators",
-        "idea": "",
-        "design": "",
+        "idea": "Materials differ hugely in how well they pass heat, and that is why we choose them.",
+        "design": "Material comparison rig: same gradient, different samples; student ranks by measured heat flow and discovers metals and air differ by ~10000x.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.6",
         "title": "Thermal equilibrium",
-        "idea": "",
-        "design": "",
+        "idea": "Left alone, everything in contact ends at one temperature.",
+        "design": "Multi-body equilibrium: three objects of different mass, material and start temperature; student predicts the final shared temperature and checks it against the real weighted result.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -740,50 +740,50 @@
        {
         "code": "C4.1",
         "title": "Effect of material type on temperature change",
-        "idea": "",
-        "design": "",
+        "idea": "Different materials need different amounts of energy for the same temperature rise.",
+        "design": "Specific-heat bench: identical heater, identical mass, different materials; student measures the temperature-time slope for water, oil, aluminium, sand and derives c.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.2",
         "title": "Effect of mass on temperature change",
-        "idea": "",
-        "design": "",
+        "idea": "More mass means slower heating for the same heater.",
+        "design": "Mass series: same material and heater, varying mass; student plots slope vs mass and finds the inverse relation.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.3",
         "title": "Planning a fair test investigation",
-        "idea": "",
-        "design": "",
+        "idea": "A fair test changes one thing and holds everything else fixed.",
+        "design": "Fair-test planner over the same heater rig: student locks variables; the model genuinely confounds the result if two vary at once, and the confound is measured, not warned about.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.4",
         "title": "Collecting and organizing temperature-time data",
-        "idea": "",
-        "design": "",
+        "idea": "Good data collection means a table you can actually plot.",
+        "design": "Data bench: student chooses interval and duration and records real runs; too-coarse sampling genuinely hides the curve, and the miss is measurable.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.5",
         "title": "Analyzing and interpreting data",
-        "idea": "",
-        "design": "",
+        "idea": "Analysis means finding the pattern in the numbers, not eyeballing the picture.",
+        "design": "Analysis bench on the student's own runs: gradient, best fit and residuals computed from their recorded rows.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.6",
         "title": "Constructing an explanation from evidence",
-        "idea": "",
-        "design": "",
+        "idea": "An explanation must be built from the evidence you actually collected.",
+        "design": "Explanation builder: student assembles claim, evidence rows and reasoning; the fit is scored against whether the cited rows actually support the claim, computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -793,50 +793,50 @@
        {
         "code": "C5.1",
         "title": "Choosing materials to control heat transfer",
-        "idea": "",
-        "design": "",
+        "idea": "Choosing a material is choosing a heat-transfer rate.",
+        "design": "Material chooser feeding a real cup model: each choice sets conductivity, emissivity and thickness; student sees the predicted hold time before building.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.2",
         "title": "Defining the design problem",
-        "idea": "",
-        "design": "",
+        "idea": "A design problem is only solvable once criteria and constraints are stated as numbers.",
+        "design": "Brief bench: student sets target hold time, budget and size limits; the model refuses vague targets and scores only against the stated numbers.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.3",
         "title": "Designing and building a device",
-        "idea": "",
-        "design": "",
+        "idea": "Building means turning a specification into a thing that exists.",
+        "design": "Cup builder: layers, thickness, lid, gap; the assembled geometry feeds the real thermal model \u2014 every choice changes the measured curve.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.4",
         "title": "Testing a device and collecting data",
-        "idea": "",
-        "design": "",
+        "idea": "A test produces data, and the data is the verdict.",
+        "design": "Test rig: student runs their cup with a real thermometer and timer, recording the cooling curve against the stated criterion.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.5",
         "title": "Comparing competing designs",
-        "idea": "",
-        "design": "",
+        "idea": "Comparing designs means comparing measurements under identical conditions.",
+        "design": "Head-to-head: two student designs run in the same ambient with the same start temperature; the comparison is the measured curves.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.6",
         "title": "Redesigning based on evidence",
-        "idea": "",
-        "design": "",
+        "idea": "Redesign is evidence-driven: change what the data says is failing.",
+        "design": "Iteration bench: student sees where their loss happened (conduction vs radiation vs lid gap, itemised in watts) and changes that, then re-tests.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -851,50 +851,50 @@
        {
         "code": "D1.1",
         "title": "Earth's water reservoirs",
-        "idea": "",
-        "design": "",
+        "idea": "Almost all of Earth's water is ocean; the fresh liquid part is a sliver.",
+        "design": "Reservoir bench with true volumes (1.34e9 km3 ocean, ice, groundwater, lakes, atmosphere) drawn at honest relative scale with a break glyph; student pours between reservoirs and the totals must balance. Fraud: pie slices resized for legibility.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.2",
         "title": "Evaporation and condensation",
-        "idea": "",
-        "design": "",
+        "idea": "Water leaves a surface as vapour and returns as liquid when the air cannot hold it.",
+        "design": "Evaporation/condensation chamber: real saturation vapour pressure (Magnus), student sets temperature, humidity and wind and measures evaporation rate and the exact dew point where condensation starts.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.3",
         "title": "Precipitation, runoff and infiltration",
-        "idea": "",
-        "design": "",
+        "idea": "Rain that lands either runs off or soaks in, and the ground decides which.",
+        "design": "Rainfall plot: real infiltration (Horton) vs surface type; student sets intensity and soil and measures runoff vs infiltration split, and finds the intensity where the soil is overwhelmed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.4",
         "title": "Transpiration and the biological piece of the cycle",
-        "idea": "",
-        "design": "",
+        "idea": "Plants move a large share of the water from soil back to air.",
+        "design": "Transpiration bench: real stomatal conductance responding to light, humidity and wind; student compares bare soil, grass and a tree over a day and measures litres returned.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.5",
         "title": "Two drivers: solar energy and gravity",
-        "idea": "",
-        "design": "",
+        "idea": "Two forces drive the whole cycle: the Sun lifts water, gravity brings it down.",
+        "design": "Driver toggles: student turns off solar input or gravity and watches which half of the cycle stops; every flow is tagged with its driver. The cycle cannot run on one alone.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.6",
         "title": "Residence time and the water cycle as a system",
-        "idea": "",
-        "design": "",
+        "idea": "Water stays in some reservoirs for days and others for millennia.",
+        "design": "Residence-time bench: stock divided by outflow computed live; student tags a droplet and times its stay in atmosphere (~9 days) vs deep ocean (~1000 y). Measured, not stated.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -904,42 +904,42 @@
        {
         "code": "D2.1",
         "title": "Composition of the atmosphere",
-        "idea": "",
-        "design": "",
+        "idea": "Air is mostly nitrogen and oxygen, with trace gases that matter far beyond their share.",
+        "design": "Composition bench: student samples air, separates it, and measures each fraction; then removes a trace gas and sees its outsized effect in a coupled radiative model.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.2",
         "title": "Layers of the atmosphere",
-        "idea": "",
-        "design": "",
+        "idea": "The atmosphere has layers defined by whether temperature rises or falls with height.",
+        "design": "Ascent profile: real US Standard Atmosphere lapse rates; student flies a probe and plots temperature vs altitude, finding each inversion that defines a layer boundary.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.3",
         "title": "Air pressure",
-        "idea": "",
-        "design": "",
+        "idea": "Air has weight, and pressure is the weight of the air above you.",
+        "design": "Barometer bench: hydrostatic integration; student climbs and reads pressure falling, and measures the column mass above each altitude.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.4",
         "title": "Pressure, temperature and density together",
-        "idea": "",
-        "design": "",
+        "idea": "Pressure, temperature and density are locked together \u2014 fix two and the third follows.",
+        "design": "Gas-law bench for air parcels: student sets any two and the third is computed; tries to set all three and the model refuses. That refusal IS the lesson.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.5",
         "title": "Why warm air rises",
-        "idea": "",
-        "design": "",
+        "idea": "Warm air rises because it is less dense than the air around it.",
+        "design": "Buoyancy bench: parcel density from the ideal gas law vs environment; student heats a parcel and measures buoyant acceleration, and finds the neutral level where it stops.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -949,50 +949,50 @@
        {
         "code": "D3.1",
         "title": "Temperature",
-        "idea": "",
-        "design": "",
+        "idea": "Air temperature is measured in shade, because sunlight heats the thermometer, not the air.",
+        "design": "Thermometer siting rig: real radiative heating on the bulb; student compares sun-exposed vs screened readings and measures the error.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.2",
         "title": "Air pressure and the barometer",
-        "idea": "",
-        "design": "",
+        "idea": "A barometer's trend predicts weather better than its value.",
+        "design": "Barometer over a passing system: student records pressure over hours and finds falling pressure precedes the front, measured against the arriving weather.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.3",
         "title": "Humidity and dew point",
-        "idea": "",
-        "design": "",
+        "idea": "Dew point tells you when the air must give up its water.",
+        "design": "Wet/dry bulb bench: real psychrometry; student measures both and computes relative humidity and dew point, then cools the air to that point and watches condensation begin exactly there.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.4",
         "title": "Precipitation",
-        "idea": "",
-        "design": "",
+        "idea": "Rain is measured as a depth, and depth times area gives volume.",
+        "design": "Rain gauge: student collects over a storm, reads depth in mm, and computes the volume over a measured roof \u2014 the number is startling and computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.5",
         "title": "Wind: speed and direction",
-        "idea": "",
-        "design": "",
+        "idea": "Wind has both a speed and a direction, and both must be recorded.",
+        "design": "Anemometer and vane: real cup response; student measures speed and bearing over time and plots a wind rose from their own rows.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.6",
         "title": "Reading a weather station together",
-        "idea": "",
-        "design": "",
+        "idea": "A station's instruments together tell a story no single one can.",
+        "design": "Full station: student reads all instruments and must diagnose the incoming weather; the correct diagnosis needs at least three instruments to agree.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1002,50 +1002,50 @@
        {
         "code": "D4.1",
         "title": "Air masses and source regions",
-        "idea": "",
-        "design": "",
+        "idea": "An air mass takes on the character of where it formed.",
+        "design": "Source-region bench: student parks an air mass over ocean, desert or ice for a residence time and measures the temperature and humidity it acquires, then moves it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.2",
         "title": "High- and low-pressure systems",
-        "idea": "",
-        "design": "",
+        "idea": "Air spirals into lows and out of highs, and that decides the weather.",
+        "design": "Pressure-system bench: real pressure-gradient plus Coriolis; student sets a high or low and traces the circulation, measuring convergence and the cloud it causes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.3",
         "title": "Cold fronts",
-        "idea": "",
-        "design": "",
+        "idea": "A cold front shoves warm air up steeply, so the weather is violent and brief.",
+        "design": "Front bench: real frontal slope (~1:50) and lifting; student watches the cold wedge arrive and measures the temperature drop, pressure kick and rainfall burst.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.4",
         "title": "Warm fronts",
-        "idea": "",
-        "design": "",
+        "idea": "A warm front slides up gently, so the weather is long and mild.",
+        "design": "Same bench, shallow slope (~1:200): student measures the long approach, layered cloud sequence and steady rain, comparing directly against the cold-front run.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.5",
         "title": "Occluded and stationary fronts",
-        "idea": "",
-        "design": "",
+        "idea": "When a cold front catches a warm one, the warm air is lifted clear of the ground.",
+        "design": "Occlusion bench: two fronts with different speeds; student runs until the faster catches the slower and measures the warm sector being pinched off the surface.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.6",
         "title": "Collecting data to track a front",
-        "idea": "",
-        "design": "",
+        "idea": "You can track a front by taking readings at several places over time.",
+        "design": "Station network: student reads six stations hourly and plots the front's position and speed from their own data \u2014 the front is never drawn for them.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1055,42 +1055,42 @@
        {
         "code": "D5.1",
         "title": "Angle of sunlight and latitude",
-        "idea": "",
-        "design": "",
+        "idea": "Sunlight arriving at an angle spreads the same energy over more ground.",
+        "design": "Beam-spreading bench: real cosine law; student tilts the surface and measures irradiance in W/m2 and the lit area, finding the trade.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.2",
         "title": "Land versus water heating rates",
-        "idea": "",
-        "design": "",
+        "idea": "Water heats and cools far more slowly than land.",
+        "design": "Side-by-side heating: real specific heats and mixing depth; student runs a day-night cycle and measures the two temperature curves diverging.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.3",
         "title": "Altitude",
-        "idea": "",
-        "design": "",
+        "idea": "It gets colder as you go up, at a rate you can measure.",
+        "design": "Altitude transect: real lapse rate ~6.5 C/km; student measures temperature at stations up a mountain and derives the rate from their rows.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.4",
         "title": "Albedo",
-        "idea": "",
-        "design": "",
+        "idea": "Bright surfaces reflect sunlight; dark ones absorb it.",
+        "design": "Albedo bench: real albedos (snow 0.8, forest 0.15, ocean 0.06); student measures absorbed power and the temperature reached for each surface.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.5",
         "title": "Day, night and the combined pattern",
-        "idea": "",
-        "design": "",
+        "idea": "Heating and cooling combine over a day and a year to make the pattern we live in.",
+        "design": "Combined model: angle, albedo, thermal mass and day length together; student runs a full year at a chosen latitude and reads the seasonal curve out of it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1100,50 +1100,50 @@
        {
         "code": "D6.1",
         "title": "Coastal versus inland temperature patterns",
-        "idea": "",
-        "design": "",
+        "idea": "The coast stays mild while inland swings, because water moderates.",
+        "design": "California transect: coast, valley, desert with real thermal masses; student runs a summer day and measures the range at each site.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D6.2",
         "title": "The marine layer and coastal fog",
-        "idea": "",
-        "design": "",
+        "idea": "Fog forms when moist ocean air is cooled below its dew point.",
+        "design": "Marine-layer bench: real upwelling sea-surface temperature and dew point; student watches fog form exactly when the air crosses its dew point, and burn off when it warms.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D6.3",
         "title": "The Sierra Nevada and rain shadow",
-        "idea": "",
-        "design": "",
+        "idea": "Mountains wring rain out of air on the way up, leaving a dry shadow behind.",
+        "design": "Sierra transect: real orographic lifting and adiabatic cooling; student measures rainfall on the windward slope and the dryness beyond the crest.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D6.4",
         "title": "California's deserts",
-        "idea": "",
-        "design": "",
+        "idea": "Deserts are dry because of where the air has been, not because they are hot.",
+        "design": "Desert bench: student traces the air's history over the mountains and measures its remaining moisture on arrival.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D6.5",
         "title": "The Pacific's moderating influence",
-        "idea": "",
-        "design": "",
+        "idea": "The Pacific keeps California's coast within a narrow band all year.",
+        "design": "Ocean-influence bench: student toggles the ocean's thermal mass and measures how far the annual range widens without it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D6.6",
         "title": "Putting California's weather together",
-        "idea": "",
-        "design": "",
+        "idea": "California's weather is several effects stacked on one another.",
+        "design": "Combined state model: latitude, ocean, mountains and albedo all live; student explains a named city's climate by turning each effect off and measuring its contribution.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -1158,42 +1158,42 @@
        {
         "code": "E1.1",
         "title": "Weather versus climate",
-        "idea": "",
-        "design": "",
+        "idea": "Weather is what happens today; climate is the statistics of many years.",
+        "design": "Statistics bench: student samples a real daily series and computes 30-year means; watches a hot day fail to move the climate mean at all.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.2",
         "title": "Building climate from weather data",
-        "idea": "",
-        "design": "",
+        "idea": "Climate is built by averaging weather over decades.",
+        "design": "Aggregation bench: student picks an averaging window and watches variance fall as 1/sqrt(n); finds where the record stops being noise.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.3",
         "title": "Reading climate graphs",
-        "idea": "",
-        "design": "",
+        "idea": "A climate graph shows temperature and rainfall together, month by month.",
+        "design": "Climograph bench: student plots from real monthly rows and reads the wet and dry seasons off their own chart.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.4",
         "title": "Reading climate maps",
-        "idea": "",
-        "design": "",
+        "idea": "A climate map turns many stations into one picture, and interpolation can mislead.",
+        "design": "Map bench: student sees the interpolated field and the actual station points, and measures where interpolation invents detail.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.5",
         "title": "Climate zones",
-        "idea": "",
-        "design": "",
+        "idea": "Climate zones are defined by measured thresholds, not by looks.",
+        "design": "Koppen bench: student applies the real thresholds to their own data and classifies a site; a borderline site flips with a small change, which is the point.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1203,50 +1203,50 @@
        {
         "code": "E2.1",
         "title": "Convection cells from unequal heating",
-        "idea": "",
-        "design": "",
+        "idea": "Unequal heating makes air rise in one place and sink in another.",
+        "design": "Convection-cell tank: real buoyancy from a heated equator and cooled pole; student measures the cell that forms and its speed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.2",
         "title": "Circulation cells and prevailing winds",
-        "idea": "",
-        "design": "",
+        "idea": "Rotation breaks one big cell into three, giving the belts of prevailing wind.",
+        "design": "Rotating-frame bench: student raises rotation from zero and watches one cell split into three, measuring the wind direction in each belt.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.3",
         "title": "An introductory Coriolis effect",
-        "idea": "",
-        "design": "",
+        "idea": "On a spinning Earth, moving air and water curve.",
+        "design": "Coriolis bench: real deflection; student launches a parcel and measures the curvature against latitude, and finds it vanishes at the equator.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.4",
         "title": "Surface ocean currents",
-        "idea": "",
-        "design": "",
+        "idea": "Surface currents are driven by wind and steered by rotation and coasts.",
+        "design": "Current bench: wind stress plus Coriolis plus basin geometry; student measures the gyre that emerges and its western intensification.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.5",
         "title": "Temperature, salinity and density in ocean water",
-        "idea": "",
-        "design": "",
+        "idea": "Water's density depends on both temperature and salt, and that drives deep flow.",
+        "design": "Density bench: real equation of state; student sets temperature and salinity and measures density, then makes water sink by cooling or salting it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.6",
         "title": "Heat redistribution: one combined model",
-        "idea": "",
-        "design": "",
+        "idea": "Air and ocean together move heat from equator to poles.",
+        "design": "Combined transport model: student measures the heat carried by each and their total, and turns one off to see the pole-to-equator difference widen.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1256,42 +1256,42 @@
        {
         "code": "E3.1",
         "title": "Courtship behavior",
-        "idea": "",
-        "design": "",
+        "idea": "Courtship behaviour improves the odds of successful mating.",
+        "design": "Behaviour bench: real signalling model with cost and detectability; student sets display intensity and measures mating success against predation risk.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.2",
         "title": "Nesting and parental care",
-        "idea": "",
-        "design": "",
+        "idea": "Care after laying raises offspring survival at a cost to the parent.",
+        "design": "Care-tradeoff model: student allocates effort between clutch size and per-offspring care and measures surviving young \u2014 the optimum is found, not told.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.3",
         "title": "Flower structures and pollen",
-        "idea": "",
-        "design": "",
+        "idea": "Flower parts are built for one job: getting pollen from one plant to another.",
+        "design": "Flower bench: student examines real structures and tests which pollinator each fits; mismatch measurably fails to transfer pollen.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.4",
         "title": "Pollination",
-        "idea": "",
-        "design": "",
+        "idea": "Pollination is a transfer event with a measurable success rate.",
+        "design": "Pollination trial: real visitation and transfer probabilities; student changes pollinator abundance and measures seed set.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.5",
         "title": "Seeds and dispersal",
-        "idea": "",
-        "design": "",
+        "idea": "Seeds travel by wind, water, or animals, and the method sets the distance.",
+        "design": "Dispersal bench: real terminal velocity for winged seeds, flotation, and gut passage; student measures the dispersal distance distribution for each method.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1301,42 +1301,42 @@
        {
         "code": "E4.1",
         "title": "Environmental factors in growth",
-        "idea": "",
-        "design": "",
+        "idea": "The same seed grows differently in different conditions.",
+        "design": "Growth chamber: real light, water and nutrient response curves; student grows identical genotypes in different conditions and measures the difference.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.2",
         "title": "Testing an environmental factor",
-        "idea": "",
-        "design": "",
+        "idea": "To test one factor you must hold the others fixed.",
+        "design": "Four-chamber fair test on plants: the model genuinely confounds when two factors vary, and the confound is measured.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.3",
         "title": "Genetic differences and growth",
-        "idea": "",
-        "design": "",
+        "idea": "Some differences are in the seed, not the setting.",
+        "design": "Genotype comparison: student grows different genotypes in identical conditions and measures the spread that remains.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.4",
         "title": "Comparing individuals across conditions",
-        "idea": "",
-        "design": "",
+        "idea": "Comparing across conditions needs the same measurement every time.",
+        "design": "Protocol bench: student defines the measurement; inconsistent protocols produce measurably noisier comparisons.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.5",
         "title": "Separating genetic from environmental influence",
-        "idea": "",
-        "design": "",
+        "idea": "Separating nature from nurture takes a design that varies each on purpose.",
+        "design": "Two-factor design: student runs genotype x environment and reads the separate contributions and the interaction from their own grid.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1346,42 +1346,42 @@
        {
         "code": "E5.1",
         "title": "Sexual reproduction",
-        "idea": "",
-        "design": "",
+        "idea": "Sexual reproduction combines information from two parents.",
+        "design": "Gamete bench: real random assortment; student crosses parents and measures offspring variation across many trials.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.2",
         "title": "Why sexual offspring resemble but do not match parents",
-        "idea": "",
-        "design": "",
+        "idea": "Offspring resemble both parents but match neither.",
+        "design": "Trait bench: student measures parent and offspring traits over many crosses and plots the distribution that results.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.3",
         "title": "Asexual reproduction",
-        "idea": "",
-        "design": "",
+        "idea": "One parent can produce offspring alone.",
+        "design": "Asexual bench: budding, fragmentation, runners modelled with real rates; student measures population growth speed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.4",
         "title": "Why asexual offspring are genetically identical",
-        "idea": "",
-        "design": "",
+        "idea": "Asexual offspring carry identical information unless something mutates.",
+        "design": "Clone bench: student tracks a lineage and measures zero variation until a mutation event, whose rate is real.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.5",
         "title": "Comparing the two strategies",
-        "idea": "",
-        "design": "",
+        "idea": "Each strategy wins in a different environment.",
+        "design": "Head-to-head: stable vs changing environment with a real pathogen; student runs both strategies and measures which population survives, and finds it flips with conditions.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1391,50 +1391,50 @@
        {
         "code": "E6.1",
         "title": "Genes as inherited information",
-        "idea": "",
-        "design": "",
+        "idea": "Genes are instructions passed from parent to offspring.",
+        "design": "Information bench: student follows a gene through a cross and sees the trait it specifies appear in the offspring.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.2",
         "title": "Inheritance and variation among siblings",
-        "idea": "",
-        "design": "",
+        "idea": "Siblings differ because each got a different combination.",
+        "design": "Sibling bench: student generates many siblings from the same parents and measures the spread of combinations.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.3",
         "title": "Why sexual reproduction produces variation",
-        "idea": "",
-        "design": "",
+        "idea": "Variation comes from shuffling and recombining, not from blending.",
+        "design": "Shuffle bench: student watches independent assortment produce combinations, and sees a blending model fail to match the observed offspring.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.4",
         "title": "Why asexual reproduction preserves identical information",
-        "idea": "",
-        "design": "",
+        "idea": "Copying without shuffling preserves the information exactly.",
+        "design": "Copy bench: student compares sexual and asexual lineages side by side and measures variation in each.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.5",
         "title": "Simple inheritance diagrams",
-        "idea": "",
-        "design": "",
+        "idea": "A simple diagram can predict what offspring are possible.",
+        "design": "Diagram bench: student builds the cross diagram and predicts, then runs many offspring and checks their prediction against the counts.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.6",
         "title": "An introductory Punnett square",
-        "idea": "",
-        "design": "",
+        "idea": "A Punnett square gives proportions you can test by counting.",
+        "design": "Punnett bench: student fills the square, predicts ratios, then runs 400 offspring and compares predicted to counted \u2014 sampling noise is real and visible.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -1449,42 +1449,42 @@
        {
         "code": "F1.1",
         "title": "The components of the climate system",
-        "idea": "",
-        "design": "",
+        "idea": "The climate system is atmosphere, ocean, ice, land and life, all coupled.",
+        "design": "Component bench: five coupled stocks; student disables one and measures how the others drift.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.2",
         "title": "Energy in and energy out",
-        "idea": "",
-        "design": "",
+        "idea": "Earth's temperature settles where energy in equals energy out.",
+        "design": "Energy-balance model: real solar input, albedo and outgoing longwave; student changes one and watches the temperature find its new balance point.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.3",
         "title": "The natural greenhouse effect, descriptively",
-        "idea": "",
-        "design": "",
+        "idea": "Greenhouse gases let sunlight in and slow heat leaving.",
+        "design": "Two-stream radiative model: student sets gas concentration and measures outgoing longwave at the top of the atmosphere and the surface temperature that results.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.4",
         "title": "A feedback, introduced conceptually",
-        "idea": "",
-        "design": "",
+        "idea": "A feedback amplifies or damps whatever change starts it.",
+        "design": "Ice-albedo bench: real feedback loop; student nudges temperature and measures the amplification factor, then damps it and measures the difference.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.5",
         "title": "The climate system as interacting subsystems",
-        "idea": "",
-        "design": "",
+        "idea": "The parts interact, so a push anywhere shows up everywhere.",
+        "design": "Coupled board: student pushes one component and traces the response through the real coupling arrows, measuring lag at each.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1494,50 +1494,50 @@
        {
         "code": "F2.1",
         "title": "Ice cores",
-        "idea": "",
-        "design": "",
+        "idea": "Ice cores hold air from the past, so past CO2 can be measured, not guessed.",
+        "design": "Core bench: student drills, dates layers by counting, and measures CO2 from trapped bubbles against depth.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.2",
         "title": "Tree rings and coral bands",
-        "idea": "",
-        "design": "",
+        "idea": "Rings and bands record yearly conditions in living things.",
+        "design": "Ring bench: student measures ring widths against a real growth-climate response and reconstructs past years.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.3",
         "title": "The instrumental record",
-        "idea": "",
-        "design": "",
+        "idea": "Thermometer records show what has actually happened since they began.",
+        "design": "Record bench: student works with the real instrumental series, including station moves and gaps, and measures the trend with and without corrections.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.4",
         "title": "Sea level and sea ice",
-        "idea": "",
-        "design": "",
+        "idea": "Warming shows up in sea level and shrinking ice.",
+        "design": "Sea-level bench: thermal expansion plus melt, both computed; student attributes the measured rise between the two causes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.5",
         "title": "The Keeling curve",
-        "idea": "",
-        "design": "",
+        "idea": "The Keeling curve rises every year and breathes every year.",
+        "design": "Keeling bench: student plots real monthly CO2 and separates the seasonal cycle (northern plant growth) from the trend, measuring both.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.6",
         "title": "Why independent evidence agreeing is the whole argument",
-        "idea": "",
-        "design": "",
+        "idea": "Independent methods agreeing is what makes the conclusion strong.",
+        "design": "Convergence bench: student overlays independent proxies and measures their agreement; removing any one leaves the conclusion standing, which is the lesson.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1547,42 +1547,42 @@
        {
         "code": "F3.1",
         "title": "Greenhouse gases",
-        "idea": "",
-        "design": "",
+        "idea": "Different gases trap heat with different strength and lifetime.",
+        "design": "Gas comparison: real radiative efficiency and lifetime; student compares equal masses of CO2, methane and N2O over 20 and 100 years and measures the effect.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.2",
         "title": "Fossil-fuel combustion and cement production",
-        "idea": "",
-        "design": "",
+        "idea": "Burning fossil carbon moves carbon from rock to air.",
+        "design": "Combustion bench: real stoichiometry; student burns a measured mass of fuel and measures the CO2 produced and the carbon-reservoir shift.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.3",
         "title": "Agriculture and land use",
-        "idea": "",
-        "design": "",
+        "idea": "Farming and land clearing move carbon too.",
+        "design": "Land-use bench: student converts forest to farmland and measures the carbon released from biomass and soil over decades.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.4",
         "title": "Natural factors",
-        "idea": "",
-        "design": "",
+        "idea": "Volcanoes and solar changes act, but not on the scale or timing observed.",
+        "design": "Attribution bench: student adds real volcanic and solar forcing and measures how much of the observed trend they can and cannot explain.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.5",
         "title": "Comparing timescales",
-        "idea": "",
-        "design": "",
+        "idea": "Natural changes take millennia; this one has taken a century.",
+        "design": "Timescale bench: student plots ice-age transitions and the modern record on the same axis and measures the rates.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1592,42 +1592,42 @@
        {
         "code": "F4.1",
         "title": "Correlation versus causation",
-        "idea": "",
-        "design": "",
+        "idea": "Two things moving together does not mean one caused the other.",
+        "design": "Correlation bench: student is given real correlated pairs, some causal, some not, and must test with a mechanism and a controlled comparison.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.2",
         "title": "Reading a graph critically",
-        "idea": "",
-        "design": "",
+        "idea": "How a graph is drawn changes what it seems to say.",
+        "design": "Graph-critique bench: same rows, different axes and baselines; student measures the apparent effect each version conveys against the true value.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.3",
         "title": "Applying this to climate data",
-        "idea": "",
-        "design": "",
+        "idea": "Climate claims must be checked against the actual data.",
+        "design": "Claim-check bench: student tests specific claims against the real series and measures where each holds or fails.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.4",
         "title": "Evaluating a claim using multiple lines of evidence",
-        "idea": "",
-        "design": "",
+        "idea": "A claim gets strong when several independent lines agree.",
+        "design": "Evidence bench: student assembles lines of evidence and the strength is computed from their independence and agreement.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.5",
         "title": "Spotting overstated and understated claims",
-        "idea": "",
-        "design": "",
+        "idea": "Claims can overstate or understate; both are errors.",
+        "design": "Calibration bench: student compares a claim's stated magnitude against the measured one and scores the gap in both directions.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1637,42 +1637,42 @@
        {
         "code": "F5.1",
         "title": "Habitat change",
-        "idea": "",
-        "design": "",
+        "idea": "When conditions shift, habitat moves, shrinks or disappears.",
+        "design": "Habitat bench: real climate envelope for a species; student warms the model and measures the area that remains suitable.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.2",
         "title": "Resource availability",
-        "idea": "",
-        "design": "",
+        "idea": "Living things depend on resources that change with climate.",
+        "design": "Resource bench: student tracks water and food availability under a warming run and measures the population response.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.3",
         "title": "Plant growth and timing",
-        "idea": "",
-        "design": "",
+        "idea": "Plants respond to timing cues, and warming shifts the timing.",
+        "design": "Phenology bench: real growing-degree-day model; student warms the climate and measures how many days earlier budburst arrives.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.4",
         "title": "Animal behavior and range shifts",
-        "idea": "",
-        "design": "",
+        "idea": "Animals move, and their ranges shift with the conditions they need.",
+        "design": "Range bench: student runs a warming scenario and measures the range shift in km and where the species runs out of room.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.5",
         "title": "Existing adaptations and their limits",
-        "idea": "",
-        "design": "",
+        "idea": "Adaptations have limits, and change can outrun them.",
+        "design": "Limits bench: student compares the rate of change to the species' real tolerance and adaptation rate and finds the point where it cannot keep up.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -1682,42 +1682,42 @@
        {
         "code": "F6.1",
         "title": "Monitoring and indicators",
-        "idea": "",
-        "design": "",
+        "idea": "You cannot manage what you do not measure.",
+        "design": "Monitoring bench: student places sensors and finds the sampling density where the signal becomes detectable above noise.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F6.2",
         "title": "Mitigation and adaptation",
-        "idea": "",
-        "design": "",
+        "idea": "Mitigation reduces the cause; adaptation reduces the harm.",
+        "design": "Strategy bench: student allocates effort between the two and measures the outcome in emissions and in damage \u2014 both are computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F6.3",
         "title": "Defining the problem, criteria and constraints",
-        "idea": "",
-        "design": "",
+        "idea": "A solvable problem has criteria and constraints stated as numbers.",
+        "design": "Problem-definition bench: student states targets and limits; the model refuses vague goals and scores only against numbers.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F6.4",
         "title": "Comparing and scoring alternatives",
-        "idea": "",
-        "design": "",
+        "idea": "Alternatives are compared by scoring them against the same criteria.",
+        "design": "Scoring bench: student weighs alternatives against their own stated criteria; the ranking is computed from the weights they set.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F6.5",
         "title": "Technical claims versus value judgements",
-        "idea": "",
-        "design": "",
+        "idea": "Data can tell you what will happen; it cannot tell you what matters most.",
+        "design": "Values bench: student separates the technical result (computed) from the value judgement (theirs), and the model refuses to make the second for them.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }

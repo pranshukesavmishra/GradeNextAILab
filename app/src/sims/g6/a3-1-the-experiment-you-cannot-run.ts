@@ -323,11 +323,16 @@ const model: SimModel<State> = {
       cur.sensorPct = clampRange(truth + ctx.rng.normal(0, sd), 0, 100);
     }
 
-    // --- the model bench: compression is read directly as days/real-second
+    // --- the model bench clock: compression is read directly as days/real-
+    // second, and the clock ticks whether or not a medium is mounted yet —
+    // the dial sets the bench's own pace, which is real before you ever pick
+    // an apparatus to read it through.
     const medium = params.medium as Medium;
-    if (medium !== "none" && !cur.modelResolved) {
+    if (!cur.modelResolved) {
       const comp = params.compression as number;
       cur.modelDays = Math.min(def.durationDays, cur.modelDays + dt * comp);
+    }
+    if (medium !== "none" && !cur.modelResolved) {
       if (cur.modelDays >= def.durationDays - 1e-9) {
         cur.modelResolved = true;
         const n = Math.max(1, Math.round(params.repeats as number));
@@ -365,6 +370,15 @@ const model: SimModel<State> = {
     const toSI = (v: number) => (isKm ? v * 1000 : v);
     const removed = barriersRemoved(caseId, medium).length;
     const bias = cur.resolvedBias;
+    // A live planning preview — what Processes and Repeats would achieve
+    // under a representative (computational) medium right now, so both
+    // dials mean something before any medium is even mounted or any run has
+    // resolved. It never overwrites the frozen, real result once one exists.
+    const previewProcesses = Math.max(1, Math.round(params.processes as number));
+    const previewBias = systematicMagnitude(def, "computational", previewProcesses);
+    const previewRepeats = Math.max(1, Math.round(params.repeats as number));
+    const previewNoiseSD = MEDIUM_NOISE_FRAC.computational * def.caseSpread;
+    const previewSpread = previewRepeats <= 1 ? 0 : 2 * previewNoiseSD * Math.sqrt(2 * Math.log(previewRepeats));
 
     return [
       {
@@ -399,6 +413,14 @@ const model: SimModel<State> = {
       {
         key: "biasContribution", label: `Bias contribution (${unitSuffix})`,
         quantity: q(toSI(bias), kind), unit: isKm ? "km" : undefined, semantic: "hot",
+      },
+      {
+        key: "previewBias", label: `Planning preview — computational bias at this process count (${unitSuffix})`,
+        quantity: q(toSI(previewBias), kind), unit: isKm ? "km" : undefined, semantic: "hot", graphable: true,
+      },
+      {
+        key: "previewSpread", label: `Planning preview — typical computational spread at this repeat count (${unitSuffix})`,
+        quantity: q(toSI(previewSpread), kind), unit: isKm ? "km" : undefined, semantic: "velocity", graphable: true,
       },
       {
         key: "barriersRemoved", label: "Barriers removed", quantity: q(removed, "count"),

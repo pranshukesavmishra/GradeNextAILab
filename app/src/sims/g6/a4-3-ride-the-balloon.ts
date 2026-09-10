@@ -395,6 +395,13 @@ const model: SimModel<State> = {
       payloadMass: params.payloadMass as number,
       launchElevationM: state.launchElevM,
       airMass: state.airMass,
+      // The one thing the ascent-rate-target control actually changes: how
+      // densely the flight log samples. A higher assumed rate means less
+      // real time passes per 100 m of climb, so the log has to sample more
+      // often to still catch every 100 m mark — this is the control's real,
+      // spec-described consequence, measurable within seconds, unlike the
+      // physics itself which never depends on it.
+      flightLogRows: state.histAlt.length,
     };
   },
 };

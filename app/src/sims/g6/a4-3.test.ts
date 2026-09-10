@@ -223,11 +223,19 @@ describe("determinism and reset", () => {
     expect(runner.fingerprint()).toBe(fresh.fingerprint());
   });
 
-  it("the ascent-rate-target control changes log sampling density only, never the flight physics", () => {
+  it("the ascent-rate-target control changes log sampling density, never the flight physics", () => {
     const fine = factsAfter({ ascentRateTarget: 8 }, 200);
     const coarse = factsAfter({ ascentRateTarget: 1 }, 200);
     for (const key of ["altitudeM", "burst", "burstAltitudeKm", "temperatureC", "pressurePa"]) {
       expect(coarse[key], `fact ${key} moved with the sampling-only control`).toEqual(fine[key]);
     }
+    // Its real, honest, spec-described consequence: a denser flight log.
+    expect(fine.flightLogRows as number).toBeGreaterThan(coarse.flightLogRows as number);
+  });
+
+  it("the ascent-rate-target control's effect is measurable within seconds, not just over a full flight", () => {
+    const fine = factsAfter({ ascentRateTarget: 8 }, 4);
+    const coarse = factsAfter({ ascentRateTarget: 1 }, 4);
+    expect(fine.flightLogRows as number).toBeGreaterThan(coarse.flightLogRows as number);
   });
 });

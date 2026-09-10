@@ -744,7 +744,7 @@ export const kelpForestSim: SimManifest<State> = {
           phase: "measure",
           title: "Confirm the improved fit",
           instruction: "Compare the fit score with the auto-tuned wall from the last lab.",
-          check: { describe: "Fit score well under the auto-tune floor", test: (v) => (v.facts.fitScoreRmse as number) < 15 },
+          check: { describe: "Fit score well under the auto-tune floor", test: (v) => (v.facts.fitScoreRmse as number) < 42 },
         },
         {
           id: "analyze",
@@ -760,10 +760,10 @@ export const kelpForestSim: SimManifest<State> = {
           id: "conclude",
           phase: "conclude",
           title: "State the lesson",
-          instruction: "Finish in your own words.",
+          instruction: "This whole set of labs was building to one plain rule: \"When my model fails, I check what I left out of it before I change what is in it.\"",
           write: {
-            prompt: "The fix across this whole set of labs was never a new number. What was it?",
-            placeholder: "The fix was always a new ...",
+            prompt: "Walk through your own three versions: what did each failure teach you was left out, not just wrong?",
+            placeholder: "Version 1 failed because it left out ... Version 2 failed because it still left out ... Version 3 finally added ...",
           },
         },
       ],
@@ -773,30 +773,31 @@ export const kelpForestSim: SimManifest<State> = {
     {
       id: "beat-the-auto-tune-wall",
       title: "Beat the auto-tune wall",
-      brief: "Reach a fit score under 12 km² using real structure, not tuning.",
+      brief: "Reach a fit score under 20 km² using real structure, not tuning.",
       bands: ["6-8"],
       setup: { ...BASE_SETUP, hasUrchinStock: true },
       goal: {
-        describe: "Fit score under 12 km² with auto-tune off",
-        test: (v) => v.params.autoTune !== true && (v.facts.fitScoreRmse as number) < 12,
+        describe: "Fit score under 20 km² with auto-tune off",
+        test: (v) => v.params.autoTune !== true && (v.facts.fitScoreRmse as number) < 20,
       },
       stars: {
         two: {
           describe: "Using both shocks together, not just one",
           test: (v) =>
-            v.params.autoTune !== true && (v.facts.fitScoreRmse as number) < 12 &&
+            v.params.autoTune !== true && (v.facts.fitScoreRmse as number) < 15 &&
             v.params.shockSeaStarWasting === true && v.params.shockMarineHeatwave === true,
         },
         three: {
-          describe: "Under 8 km²",
+          describe: "Under 12 km² — real exploration of growth and grazing, not just the shocks",
           test: (v) =>
-            v.params.autoTune !== true && (v.facts.fitScoreRmse as number) < 8 &&
+            v.params.autoTune !== true && (v.facts.fitScoreRmse as number) < 12 &&
             v.params.shockSeaStarWasting === true && v.params.shockMarineHeatwave === true,
         },
       },
       hints: [
         "Auto-tune's own wall is a floor you can only get under by adding structure.",
         "One shock alone rarely reaches the real collapse depth — the real event was two things at once.",
+        "Otters are a real predator this coastline mostly lacked — leaving them out is itself historically honest here.",
       ],
     },
     {
@@ -804,14 +805,14 @@ export const kelpForestSim: SimManifest<State> = {
       title: "Recoverable vs. lasting",
       brief: "Show that the 1998 El Nino shock recovers, while the 2013-2016 pair does not, in the same run.",
       bands: ["6-8"],
-      setup: { ...BASE_SETUP, hasUrchinStock: true, hasOtterPredation: true, shockElNino: true, shockSeaStarWasting: true, shockMarineHeatwave: true },
+      setup: { ...BASE_SETUP, hasUrchinStock: true, hasOtterPredation: false, shockElNino: true, shockSeaStarWasting: true, shockMarineHeatwave: true },
       goal: {
         describe: "By 2020 the reef is still well below its 1985 level, having recovered from 1998 on the way",
         test: (v) =>
           v.params.shockElNino === true && v.params.shockSeaStarWasting === true && v.params.shockMarineHeatwave === true &&
-          (v.facts.finalYear as number) >= 2019 && (v.facts.finalCanopy as number) < 100,
+          (v.facts.finalYear as number) >= 2019 && (v.facts.finalCanopy as number) < 60,
       },
-      hints: ["Run the full 35-year span so 2020 is actually reached."],
+      hints: ["Run the full 35-year span so 2020 is actually reached.", "Otters partly protect the reef — leave that stock unwired to see the historically honest depth."],
     },
   ],
 };

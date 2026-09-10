@@ -38,14 +38,6 @@
       "tested": 4
     },
     {
-      "id": "g6.a4-3",
-      "subject": "earth",
-      "unresponsive": [
-        "ascentRateTarget"
-      ],
-      "tested": 4
-    },
-    {
       "id": "g6.a5-1",
       "subject": "chemistry",
       "unresponsive": [

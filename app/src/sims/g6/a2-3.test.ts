@@ -106,12 +106,17 @@ describe("S2 — starving the air input collapses every output but one, briefly"
     expect(f.exhaustHeatW).toBe(0);
   });
 
-  it("coolant heat keeps flowing right after the cut because the block is already warm, then fades", () => {
+  it("the coolant loop keeps carrying real heat right after the cut because the block is already warm, then fades — while the Sankey's ledgered coolant entry, which only ever counts heat released THIS instant, drops to zero at once", () => {
     const justAfter = factsAfter({ disconnectAir: true }, 0.2);
     const later = factsAfter({ disconnectAir: true }, 60);
-    expect(justAfter.coolantHeatW as number).toBeGreaterThan(500);
-    expect(later.coolantHeatW as number).toBeLessThan(justAfter.coolantHeatW as number);
+    // The genuine physical reading: real, measurable, fading heat.
+    expect(justAfter.physicalCoolantW as number).toBeGreaterThan(500);
+    expect(later.physicalCoolantW as number).toBeLessThan(justAfter.physicalCoolantW as number);
     expect(later.blockTempC as number).toBeLessThan(justAfter.blockTempC as number);
+    // The Sankey ledger: nothing was released, so nothing is counted —
+    // never a false "output" for energy that never actually left this way.
+    expect(justAfter.coolantHeatW).toBe(0);
+    expect(justAfter.sankeyClosesTo100).toBe(true);
   });
 
   it("cutting fuel instead is just as fatal to every output", () => {

@@ -23,11 +23,16 @@ progress, build log) — this file is the entry point and the law.
    Bench) and Chemistry (Heating Curve, Molecule Builder, Build an Atom,
    States of Matter, Gas Properties, Reaction Rates, Conservation of Mass,
    pH & Acid-Base Lab) — "build like these for all subtopics."
-4. **I design experiments myself** for each subtopic: research the subtopic,
-   decide the most fully functional, deeply interactive experiment that
-   teaches it, then build. The founder's unit spec books
-   (docs/experiment-specs/) are ground truth where they exist; where they
-   don't, I write the design first in the same nine-part spirit.
+4. **I design experiments myself, at an EXTRAORDINARY level** (founder,
+   2026-09-10: "i didn't like these so much... build and design at extra
+   ordinary level experiments and you can get help from these but think
+   yourself as i need very high level of experiments"). The founder's unit
+   books are now REFERENCE, not ground truth: read them for the subtopic and
+   for real numbers, then design something better — a deeper causal model, a
+   more physical interaction, a sharper measurement, a lesson that lands.
+   Exception: G6 Unit A's book was accepted as spec and is already built to.
+   Every design goes into docs/structure/SUBTOPIC_STRUCTURE.json before code.
+   Bar to clear: would this out-teach the founder's named keepers?
 5. **Never fake anything**: real integrated causal model, every control
    measurably alive, measurements computed from state, failure states shown,
    predict-first labs, deterministic and finite always. A fake simulation is

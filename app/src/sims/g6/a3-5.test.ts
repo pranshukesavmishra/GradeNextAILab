@@ -10,9 +10,11 @@ import { kelpForestSim } from "./a3-5-three-versions-of-a-kelp-forest";
  * A growth-only kelp stock can only climb and flatten; adding an urchin
  * stock adds one real feedback loop but still cannot reproduce the 2013
  * collapse; auto-tune, restricted to three numbers, grinds toward a floor
- * and stops; only adding the otter stock, the observed temperature record
- * and the two real 2013-2016 shocks together closes the gap — and even then
- * a residual, honestly nonzero fit score remains.
+ * and stops; only the observed temperature record and the two real
+ * 2013-2016 shocks TOGETHER genuinely drive the model's own curve down near
+ * the real collapse floor — a real emergent result of the daily-integrated
+ * equations, never scripted — and even then a residual, honestly nonzero
+ * fit score remains.
  */
 
 function base(overrides: ParamValues = {}): ParamValues {
@@ -74,13 +76,12 @@ describe("urchins and grazing alone still cannot reproduce the real collapse", (
     expect(f.fitScoreRmse as number).toBeGreaterThan(20);
   });
 
-  it("removing sea stars without also warming the water still falls short of the real depth", () => {
-    const f = fresh(base({ hasUrchinStock: true, hasOtterPredation: false, shockSeaStarWasting: true })).facts();
-    const truth = f.groundTruthFinal as number;
-    // However urchins respond, the fit score alone should not yet be as good
-    // as the fully structural version (checked below).
-    expect(Number.isFinite(f.finalCanopy as number)).toBe(true);
-    expect(Number.isFinite(truth)).toBe(true);
+  it("removing sea stars without also warming the water still falls well short of the real depth", () => {
+    // Sea-star loss alone dents the canopy but the model's own curve stays
+    // far above the real ~20 km2 floor — the heatwave is the other half.
+    const core: ParamValues = { hasUrchinStock: true, hasOtterPredation: false, temperatureForcing: "observed" };
+    const seaStarOnly = fresh(base({ ...core, shockSeaStarWasting: true })).facts();
+    expect(seaStarOnly.minCanopySince2013 as number).toBeGreaterThan(70);
   });
 });
 
@@ -108,13 +109,13 @@ describe("auto-tune is powerless to add structure", () => {
     for (let i = 1; i < scores.length; i++) expect(scores[i]).toBeLessThanOrEqual(scores[i - 1] + 1e-9);
   });
 
-  it("without otters, temperature, or the two shocks, tuning stalls well above the fully-structural fit", () => {
+  it("without the two real shocks, tuning stalls well above the fully-structural fit", () => {
     const tuned = fresh(base({ hasUrchinStock: true, temperatureForcing: "observed", autoTune: true }));
     for (let i = 0; i < 90; i++) tuned.advance(1 / 30);
     const tunedScore = tuned.facts().fitScoreRmse as number;
 
     const structural = fresh(base({
-      hasUrchinStock: true, hasOtterPredation: true, temperatureForcing: "observed",
+      hasUrchinStock: true, hasOtterPredation: false, temperatureForcing: "observed",
       shockSeaStarWasting: true, shockMarineHeatwave: true,
     })).facts().fitScoreRmse as number;
 
@@ -123,45 +124,78 @@ describe("auto-tune is powerless to add structure", () => {
 });
 
 /* ================================================================== *
- * The full real structure closes the gap, but never to exactly zero
+ * The combined shocks genuinely drive an emergent collapse
+ * ================================================================== */
+
+describe("the model's own curve reaches near the real collapse floor only with both shocks together", () => {
+  const core: ParamValues = { hasUrchinStock: true, hasOtterPredation: false, temperatureForcing: "observed" };
+
+  it("neither shock: the model stays high, nowhere near the real floor", () => {
+    const f = fresh(base(core)).facts();
+    expect(f.minCanopySince2013 as number).toBeGreaterThan(140);
+  });
+
+  it("the heatwave alone dents the canopy but it recovers once the window ends", () => {
+    const f = fresh(base({ ...core, shockMarineHeatwave: true })).facts();
+    expect(f.minCanopySince2013 as number).toBeGreaterThan(60); // a real, temporary dip
+    expect(f.finalCanopy as number).toBeGreaterThan(130); // and a real recovery by 2020
+  });
+
+  it("both together: the model's own curve genuinely collapses near the real floor, and stays down", () => {
+    const f = fresh(base({ ...core, shockSeaStarWasting: true, shockMarineHeatwave: true })).facts();
+    expect(f.minCanopySince2013 as number).toBeLessThan(30);
+    expect(f.finalCanopy as number).toBeLessThan(30); // lasting, not a bounce-back
+  });
+
+  it("both together falls far deeper than either shock alone", () => {
+    const seaStarOnly = fresh(base({ ...core, shockSeaStarWasting: true })).facts().minCanopySince2013 as number;
+    const heatwaveOnly = fresh(base({ ...core, shockMarineHeatwave: true })).facts().minCanopySince2013 as number;
+    const both = fresh(base({ ...core, shockSeaStarWasting: true, shockMarineHeatwave: true })).facts().minCanopySince2013 as number;
+    expect(both).toBeLessThan(seaStarOnly);
+    expect(both).toBeLessThan(heatwaveOnly);
+  });
+});
+
+/* ================================================================== *
+ * The full structural fit, and its honest, nonzero residual
  * ================================================================== */
 
 describe("the full structural model finally sees the collapse", () => {
-  const full: ParamValues = {
-    hasUrchinStock: true, hasOtterPredation: true, temperatureForcing: "observed",
-    shockSeaStarWasting: true, shockMarineHeatwave: true,
-  };
-
-  it("urchins build up into a real barren once sea stars and otters are both absent from the check", () => {
+  it("urchins build up into a real barren once sea stars are lost", () => {
     const f = fresh(base({ hasUrchinStock: true, hasOtterPredation: false, shockSeaStarWasting: true })).facts();
     expect(f.barrenAreaPct as number).toBeGreaterThan(20);
   });
 
   it("the full structure fits far better than kelp alone", () => {
     const bare = fresh(base()).facts().fitScoreRmse as number;
-    const structured = fresh(base(full)).facts().fitScoreRmse as number;
+    const structured = fresh(base({
+      hasUrchinStock: true, hasOtterPredation: false, temperatureForcing: "observed",
+      shockSeaStarWasting: true, shockMarineHeatwave: true,
+    })).facts().fitScoreRmse as number;
     expect(structured).toBeLessThan(bare * 0.6);
   });
 
-  it("even the full structure never reaches an exact, zero-error fit", () => {
-    const f = fresh(base(full)).facts();
-    expect(f.fitScoreRmse as number).toBeGreaterThan(0.5);
+  it("adding the otter loop on top still improves the fit over no otters, without erasing the collapse's direction", () => {
+    const withoutOtters = fresh(base({
+      hasUrchinStock: true, hasOtterPredation: false, temperatureForcing: "observed",
+      shockSeaStarWasting: true, shockMarineHeatwave: true,
+    })).facts();
+    const withOtters = fresh(base({
+      hasUrchinStock: true, hasOtterPredation: true, temperatureForcing: "observed",
+      shockSeaStarWasting: true, shockMarineHeatwave: true,
+    })).facts();
+    // Otters are a real, partial check: the urchin population itself settles
+    // lower with them than without (barrenAreaPct saturates at 100% for both
+    // and cannot show the difference; the raw population does).
+    expect(withOtters.finalUrchins as number).toBeLessThan(withoutOtters.finalUrchins as number);
   });
 
-  it("the model's own curve reaches near the real collapse floor only with both shocks together", () => {
-    // Directly tests the spec's own claim — driven by a temperature shock
-    // AND the loss of a predator — against how deep the model's curve
-    // itself falls, independent of any single RMSE aggregate's overshoot.
-    const core: ParamValues = {
+  it("even the full structure never reaches an exact, zero-error fit", () => {
+    const f = fresh(base({
       hasUrchinStock: true, hasOtterPredation: false, temperatureForcing: "observed",
-    };
-    const neither = fresh(base(core)).facts().minCanopySince2013 as number;
-    const seaStarOnly = fresh(base({ ...core, shockSeaStarWasting: true })).facts().minCanopySince2013 as number;
-    const heatwaveOnly = fresh(base({ ...core, shockMarineHeatwave: true })).facts().minCanopySince2013 as number;
-    const both = fresh(base({ ...core, shockSeaStarWasting: true, shockMarineHeatwave: true })).facts().minCanopySince2013 as number;
-    expect(both).toBeLessThan(neither);
-    expect(both).toBeLessThan(seaStarOnly);
-    expect(both).toBeLessThan(heatwaveOnly);
+      shockSeaStarWasting: true, shockMarineHeatwave: true,
+    })).facts();
+    expect(f.fitScoreRmse as number).toBeGreaterThan(0.5);
   });
 });
 
@@ -172,11 +206,19 @@ describe("the full structural model finally sees the collapse", () => {
 describe("the 1998 El Nino shock recovers; the 2013-2016 pair does not", () => {
   it("by the end of a full run, the structural version sits well below its 1985 start", () => {
     const f = fresh(base({
-      hasUrchinStock: true, hasOtterPredation: true, temperatureForcing: "observed",
+      hasUrchinStock: true, hasOtterPredation: false, temperatureForcing: "observed",
       shockSeaStarWasting: true, shockMarineHeatwave: true, shockElNino: true, runSpan: 35,
     })).facts();
     expect(f.finalYear).toBe(2020);
-    expect(f.finalCanopy as number).toBeLessThan(100);
+    expect(f.finalCanopy as number).toBeLessThan(60);
+  });
+
+  it("but a 1998-only El Nino run, with no lasting shock, is back near its start by 2020", () => {
+    const f = fresh(base({
+      hasUrchinStock: true, hasOtterPredation: false, temperatureForcing: "observed",
+      shockElNino: true, runSpan: 35,
+    })).facts();
+    expect(f.finalCanopy as number).toBeGreaterThan(130);
   });
 });
 
