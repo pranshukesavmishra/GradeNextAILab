@@ -104,10 +104,16 @@ function dailyStep(s: DayState, year: number, params: ParamValues, growth: numbe
   const T = baseTempAt(year, params.temperatureForcing as TempForcing) + (heatwaveOn ? HEATWAVE_ANOMALY_C : 0);
   const hasUrchins = params.hasUrchinStock === true;
 
-  const grazingLossOnKelp = hasUrchins ? grazing * GRAZE_IMPACT_SCALE * s.U : 0;
+  // Type II response: grazing pressure saturates with how much kelp is
+  // actually there to eat, so a barren settles at a real low floor instead
+  // of mathematically trapping the stock at an unrecoverable exact zero.
+  const grazingLossOnKelp = hasUrchins
+    ? grazing * GRAZE_IMPACT_SCALE * s.U * (s.K / (s.K + GRAZE_HALF_SAT))
+    : 0;
   const elninoOn = params.shockElNino === true && year >= 1997.8 && year <= 1998.4;
   const elninoLoss = elninoOn ? ELNINO_LOSS_RATE * s.K : 0;
-  const dK = growth * tempFactor(T) * s.K * (1 - s.K / CAPACITY) - grazingLossOnKelp - elninoLoss;
+  const refugia = REFUGIA_GROWTH * (1 - s.K / CAPACITY);
+  const dK = growth * tempFactor(T) * s.K * (1 - s.K / CAPACITY) - grazingLossOnKelp - elninoLoss + refugia;
 
   let dU = 0;
   if (hasUrchins) {

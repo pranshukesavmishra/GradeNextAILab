@@ -399,6 +399,25 @@ function amplitudeAt(distDeg: number, magnitude: number): number {
 }
 const DETECT_FLOOR = 0.01;
 
+/**
+ * The angular distance at which this magnitude's amplitude just crosses the
+ * station noise floor — real seismology calls this a quake's "felt radius".
+ * Unlike an actual arrival, it needs no travel time to measure: it is a
+ * direct, immediate reading of how far this size of event carries, which is
+ * exactly what the magnitude dial changes and the only way that change is
+ * honestly observable in the first seconds after a quake fires, long before
+ * any wave has actually finished crossing the globe to prove it.
+ */
+function detectionRangeDeg(magnitude: number): number {
+  if (amplitudeAt(180, magnitude) > DETECT_FLOOR) return 180;
+  let lo = 0, hi = 180;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (amplitudeAt(mid, magnitude) > DETECT_FLOOR) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
 /* ------------------------------------------------------------------ *
  * California drill sites — real, simplified rock sequences
  * ------------------------------------------------------------------ */
@@ -641,6 +660,11 @@ const model: SimModel<State> = {
         quantity: q(sample.pressurePa / 1e9, "ratio"), semantic: "force", graphable: true,
       },
       {
+        key: "feltRadius", label: "Felt radius of this magnitude", unit: "°",
+        quantity: q(detectionRangeDeg(params.magnitude as number), "angle"),
+        semantic: "wave", graphable: true,
+      },
+      {
         key: "quakes", label: "Quakes fired", quantity: q(state.quakeCount, "count"), semantic: "field",
       },
     ];
@@ -674,6 +698,7 @@ const model: SimModel<State> = {
     const stillInCrustAt10km = peelKm <= MOHO_KM ? true : false; // for the drill question at any site
     return {
       clockS: state.clockS,
+      feltRadiusDeg: detectionRangeDeg(params.magnitude as number),
       cycleS: state.cycleS,
       quakeCount: state.quakeCount,
       coreState: coreStateOf(params),
