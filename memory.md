@@ -82,27 +82,53 @@ clean, 1049/1049 vitest, npm run build clean):
   a3-2, a3-3, a3-4, a3-5, a4-1, a4-2, a4-3, a4-4, a4-5, a4-6, a5-1, a5-2,
   a5-3, a5-4, a5-5, a5-6.
 
-**Next actions, in order** (none started yet):
-1. Run the full retroactive law-2 alignment audit across all 27 Unit A
-   experiments: for each, does the scene/model/controls/labs/measurements
-   actually serve THAT subtopic's one learning goal (law 2, "very very
-   very important" per the founder), not just a generic simulation of the
-   general topic area. Read each experiment's own tagline/learningGoals
-   against its spec's subtopic_title and realisation text; flag anything
-   that reads generic or drifted, fix in place if the fix is small and
-   obvious, log for founder input if it would mean reinterpreting spec
-   intent (same discipline as a1-4's two logged-not-fixed gaps).
-2. Prepare and send the founder a Unit A completion report (what shipped,
-   what was reasoned/tuned vs. spec-literal, the handful of logged founder-
-   input-needed items: a1-4's colony-size tooltip and recruit-without-
-   dancing challenge, a4-6's two intentionally-unshipped dropdown events).
-3. Do NOT start Unit B without the founder's book for it, or design it per
+**Roadmap steps 1 (audit) and 2 (report) are DONE, same session as a4-6:**
+1. Retroactive law-2 alignment audit, all 27: cross-referenced every
+   experiment's own tagline/learningGoals against its spec entry's "the
+   student should be able to say" line — all 27 land on it, most in close
+   paraphrase or near-verbatim. Spot-checked one level deeper (actual test
+   assertions, not just manifest text) for four experiments not built in
+   this session — a1-1, a2-1, a4-1, a5-2 — confirming the stated claim is
+   something the model genuinely enforces. **Verdict: no corrections
+   needed anywhere.** Method and full per-topic ledger are in the
+   published report (next line) — do not redo this audit from scratch;
+   read that report first if picking this up later.
+2. Founder completion report published as an artifact:
+   https://claude.ai/code/artifact/96df29c3-fe90-4c1c-aa97-1f16bec62891
+   ("Unit A Completion") — full 27-row ledger by topic (A1-A5), the audit
+   writeup, and the three founder-input-needed items below, restated
+   there for the founder directly. NOTE: this session's wake-subscription
+   registration for that artifact failed (relay_unavailable via the
+   session gateway) — comments/edits on it will NOT wake this session;
+   check it manually (`Artifact` tool, action "comments") if picking this
+   thread back up and founder input is expected.
+
+**Next actions, in order**:
+1. Wait for the founder's response to the completion report before doing
+   anything else on this unit — the three flagged items (below) are
+   theirs to decide, not to guess at.
+2. Do NOT start Unit B without the founder's book for it, or design it per
    law 4 if told there isn't one.
-4. Optional low-priority cleanup noticed in passing, not yet actioned:
+3. Optional low-priority cleanup noticed in passing, not yet actioned:
    `app/src/sims/g6/_a45diag2.test.ts` is a leftover private diagnostic
    file from earlier a4-5 work (underscore-prefixed, still passes, not
    part of any real experiment's test suite) — safe to delete whenever
    convenient, deliberately left untouched while a4-6 was the live lane.
+
+**The three items flagged for founder input** (do not decide these
+unilaterally — Unit A's book is ground truth, law 4's exception):
+- a1-4: "Colony size" tooltip says convergence weakens as colony falls;
+  verified behaviour is the opposite (50-bee avg 77%, 600-bee avg 56%).
+  Fix the tooltip, or add a colony-size-aware harvest term to match it?
+- a1-4: the "recruit without dancing" challenge's hint implies odour-
+  following gets help from a richer patch; Rule 4 is richness-blind by
+  design per the five founder rules, so the challenge asymptotes near
+  20-25% however richness is set. Add a richness-scaled odour range
+  (a real effect, not currently in the five rules), or rewrite the goal?
+- a4-6: shipped only 2 of the spec's 4 "Event" dropdown options (Sierra
+  wildfire, Atmospheric river) — "Multi-year drought" and "Coastal
+  upwelling collapse" have no scene/object/model/scenario anywhere in the
+  spec to build against. Spec them out, or keep the dropdown at two?
 
 **g6.a4-6 "One Spark, Sixty Years: A Sierra Watershed" — the Unit A4
 capstone and the last of the 27, built from scratch** (2026-09-11): full
