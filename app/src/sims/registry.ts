@@ -41,6 +41,7 @@ import { waterCycleSim } from "./earth/water-cycle";
 import { weatherSim } from "./earth/weather";
 import { unplugAquariumSim } from "./g6/a1-1-unplug-the-aquarium";
 import { bikeInsideBikeSim } from "./g6/a1-2-the-bike-inside-the-bike";
+import { chloroplastToCoastlineSim } from "./g6/a1-5-from-chloroplast-to-coastline";
 import { cutTheLinkSim } from "./g6/a1-3-cut-the-link-cook-the-tomatoes";
 import { noBeeInChargeSim } from "./g6/a1-4-no-bee-is-in-charge";
 import { whereYouDrawTheLineSim } from "./g6/a2-1-where-you-draw-the-line";
@@ -115,6 +116,7 @@ export const SIMS: AnySim[] = [
   // Grade 6 · Unit A rebuild — one dedicated experiment per subtopic.
   unplugAquariumSim,
   bikeInsideBikeSim,
+  chloroplastToCoastlineSim,
   cutTheLinkSim,
   noBeeInChargeSim,
   whereYouDrawTheLineSim,

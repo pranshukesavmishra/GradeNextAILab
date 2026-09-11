@@ -74,39 +74,54 @@ progress, build log) — this file is the entry point and the law.
 
 Updated: 2026-09-11, after registering a wave of 5 + fixing a1-4 from scratch.
 
-**Live and green on the site** (61 registered sims, full gate green: tsc
-clean, 975/975 vitest, npm run build clean):
+**Live and green on the site** (62 registered sims, full gate green: tsc
+clean, 994/994 vitest, npm run build clean):
 - The 37 keepers (frozen).
-- G6 Unit A: 24 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
-  a1-3, a1-4, a2-1, a2-2, a2-3, a2-4, a3-1, a3-2, a3-3, a3-4, a3-5, a4-1,
-  a4-2, a4-3, a4-4, a4-5, a5-1, a5-2, a5-3, a5-4, a5-5, a5-6.
+- G6 Unit A: 25 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
+  a1-3, a1-4, a1-5, a2-1, a2-2, a2-3, a2-4, a3-1, a3-2, a3-3, a3-4, a3-5,
+  a4-1, a4-2, a4-3, a4-4, a4-5, a5-1, a5-2, a5-3, a5-4, a5-5, a5-6.
 
-**Remaining Unit A (3), none started**: a1-5, a2-5, a4-6. Every
-model-built-but-untested file left over from earlier lane passes (a2-4,
-a4-5, a5-6) is now landed — these three need the FULL pipeline from step 1
-(design), not just a missing test. Read app/src/curriculum/grade6.ts for
-each subtopic's exact title, then follow docs/BUILDER_GUIDE.md +
-the exemplar (a1-1) same as any from-scratch build; there is no founder
-book chapter for these beyond the subtopic title, so design per law 4.
+**Remaining Unit A (2), neither started**: a2-5, a4-6. Both have a founder
+spec entry in docs/experiment-specs/G6-UnitA/G6_UnitA.json (search
+`"subtopic_id": "A2.5"` / `"A4.6"`) — read the full entry (theme_scene,
+objects, model, controls, scenarios, activities, outputs, realisation)
+before designing, same as every other Unit A experiment; there is no
+"design myself from nothing" step here, the founder's book already covers
+these two, G6-A2.5 "Choosing a boundary for a purpose" and G6-A4.6
+"Modeling an Earth-system event".
 
-**Recipe that landed a2-4, a4-5 and a5-6** (each: a model built by an
-earlier lane pass, with no test): read the whole file once (check for a
-lane's own gitignored `_*.test.ts` scratch diagnostic first — reuse its
-param/fact names as a map, then delete it once superseded), diagnose real
-timing/scale via standalone vite-node scripts BEFORE writing assertions
-(residence times and multi-decade lags need the shared engine's own
-`MAX_FRAME_SECONDS` respected — advance in that increment in a loop, at
-the control's own max speed dial — empirically confirmed both correctness
-AND that it stays fast, tens of ms even for multi-year/decade runs), write
-the test against verified real behaviour, then register and gate. The gate
-found something every time but the last: a2-4 had 2 real model bugs
-(divide-by-zero at a control's own labelled minimum, a state flag never
-set on one path); a4-5 had one control never wired to anything at all
-(fixed by wiring it, not patching around it); a5-6 held up clean on a
-comprehensive test (only a genuinely-inert-by-design control pair needed
-an honest live readout, same as the others). Worth repeating for a1-5/
-a2-5/a4-6 even though they start from zero: diagnose real behaviour with
-vite-node before trusting any assumption about timing or scale.
+**g6.a1-5 "From Chloroplast to Coastline" — built from scratch against a
+genuinely ambitious founder spec** (six nested aggregation levels, a
+bistable kelp/urchin/otter system): the biggest design lesson, worth
+repeating for A2.5/A4.6 — when a spec's own activity is sequential
+("scrub to year 20... then set otters back to 18 and scrub 5 more years"),
+build a LIVE, stateful sim (state persists across ticks, changing a
+control takes effect on wherever the state currently is) rather than a
+"jump to any point in a freshly-recomputed timeline" scrubber; the latter
+cannot represent path-dependent history at all, which for a hysteresis
+lesson is the entire point. Caught only by writing the test against the
+spec's own two-phase workflow (advance, change params, advance again) —
+a one-shot "read facts at time T" test would have missed it completely.
+Also: an aggregation ladder's "how much of the total does a small site
+represent" fraction must multiply every count ABOVE the site, not the
+site's own single multiplier — an easy off-by-one-level bug, caught by
+checking bayNegligible across every one of the six sites and finding it
+non-monotonic before the fix, monotonic after.
+
+**Recipe that landed a2-4, a4-5, a5-6 and a1-5**: read the whole founder
+spec (or, for a2-4/a4-5/a5-6, the whole existing file — check for a lane's
+own gitignored `_*.test.ts` scratch diagnostic too, reuse its param/fact
+names, delete it once superseded) BEFORE writing any code or assertions.
+Diagnose real timing/scale/dynamics via standalone vite-node scripts —
+for slow multi-year dynamics, tune constants empirically the same way
+(sweep a parameter, watch for the qualitative behaviour you actually want,
+not just "some numbers came out"). Write the test against verified real
+behaviour, then register and gate. The gate has found something every
+single time so far: a2-4 (2 bugs: divide-by-zero at a labelled minimum, a
+state flag never set on one path), a4-5 (a control wired to nothing at
+all), a1-5 (3 bugs, above), a5-6 (clean build, only a live-readout gap of
+the same already-familiar kind). Never assume a first build is honest
+until the gate and a real test both say so.
 
 **Acceptance-gate triage queue** (docs/QUALITY_STATUS.json, machine-
 generated — do not hand-edit): down to 3 — phys.collisions massB (frozen

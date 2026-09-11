@@ -22,7 +22,7 @@ export const GRADE_6: GradeCurriculum = {
             { code: "A1.2", title: "Subsystems nested within systems", sims: ["g6.a1-2"] },
             { code: "A1.3", title: "Interactions among a system's parts", sims: ["g6.a1-3"] },
             { code: "A1.4", title: "Emergent properties", sims: ["g6.a1-4"] },
-            { code: "A1.5", title: "Systems across scales, from a cell to a planet", sims: [] },
+            { code: "A1.5", title: "Systems across scales, from a cell to a planet", sims: ["g6.a1-5"] },
           ],
         },
         {
