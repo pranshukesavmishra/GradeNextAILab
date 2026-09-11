@@ -3,9 +3,9 @@ import { q } from "@engine/units";
 import { arrow, mixHex, roundRect } from "@ui/draw";
 import {
   badge, caption, clamp01, dashFlow, glow, hexA, isDarkTheme, metal, particleField, plastic,
-  pulse, vignette, type Particle,
+  vignette, type Particle,
 } from "@ui/scene";
-import { barSeries, chartFrame, legend, lineSeries } from "@ui/charts";
+import { chartFrame, legend, lineSeries } from "@ui/charts";
 
 /**
  * On the Dyno: In One End, Out the Other — Grade 6, Unit A2.3: inputs and
@@ -38,12 +38,9 @@ import { barSeries, chartFrame, legend, lineSeries } from "@ui/charts";
  * ------------------------------------------------------------------ */
 
 const DISPLACEMENT_M3 = 250e-6;  // spec: 250 cm³ single cylinder
-const BORE_M = 0.070, STROKE_M = 0.065; // spec: 70 mm bore, 65 mm stroke
 const RPM_IDLE = 600, RPM_MAX = 4000;   // spec: "runs 600-4000 rpm"
-const TORQUE_ARM_M = 0.5; // spec: "0.5 m torque arm"
 const AFR_STOICH = 14.7;  // spec default, and the real stoichiometric ratio for octane
 const FUEL_LHV_J_KG = 44e6;      // spec: 44 MJ/kg
-const COOLANT_CP_J_KGK = 4180;   // spec: 4.18 kJ/(kg·K)
 const FUEL_DENSITY_KG_L = 0.74;  // typical gasoline, for the burette's mL reading
 
 // Octane combustion, explicit and exact: C8H18 + 12.5 O2 -> 8 CO2 + 9 H2O.
@@ -52,8 +49,6 @@ const M_C = 12.011, M_H = 1.008, M_O = 15.999, M_N = 14.007;
 const M_FUEL_KG = (8 * M_C + 18 * M_H) / 1000;      // C8H18
 const M_O2_KG = (2 * M_O) / 1000;
 const M_N2_KG = (2 * M_N) / 1000;
-const M_CO2_KG = (M_C + 2 * M_O) / 1000;
-const M_H2O_KG = (2 * M_H + M_O) / 1000;
 const O2_PER_FUEL_MOL = 12.5;
 const CO2_PER_FUEL_MOL = 8;
 const H2O_PER_FUEL_MOL = 9;
@@ -74,7 +69,7 @@ const AIR_DENSITY_KG_M3 = 1.2;
  * Reasoned estimates — the spec fixes the apparatus, not these numbers
  * ------------------------------------------------------------------ */
 
-const VE_IDLE = 0.25, VE_MAX = 0.85; // volumetric efficiency vs throttle
+const VE_MAX = 0.85; // volumetric efficiency vs throttle
 /** Air mass flow at wide-open throttle: displacement × a mid-range rpm ×
  *  peak VE × air density, so the number is grounded in the real engine
  *  geometry even though it is not re-derived from a live rpm every tick

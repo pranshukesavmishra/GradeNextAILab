@@ -3259,42 +3259,42 @@
        {
         "code": "A1.1",
         "title": "Distance vs displacement",
-        "idea": "",
-        "design": "",
+        "idea": "Distance is the path walked; displacement is the straight line from start to finish.",
+        "design": "Walking track with a real path integrator: student walks a route and the model accumulates path length and the vector separately; a closed loop gives large distance and exactly zero displacement, measured. Fraud: two numbers that are not computed from the same trace.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.2",
         "title": "Speed vs velocity",
-        "idea": "",
-        "design": "",
+        "idea": "Velocity carries a direction; speed does not, and the difference changes the answer.",
+        "design": "Same track, both quantities live: student walks out and back and finds average speed high while average velocity is zero. The two are computed from the identical trace.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.3",
         "title": "Reading a position-time graph",
-        "idea": "",
-        "design": "",
+        "idea": "A position-time graph's slope IS the velocity.",
+        "design": "Graph bench with a real cart: student drives the cart and the graph draws from its measured position; then the student is given a graph and must reproduce the motion, scored on the trace they actually produce.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.4",
         "title": "Reference frames",
-        "idea": "",
-        "design": "",
+        "idea": "Motion is only ever measured relative to a chosen frame.",
+        "design": "Two-frame bench: a walker on a moving train, measured from the platform and from the carriage; both traces are real and simultaneous, and the student reads two different, both-correct velocities.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A1.5",
         "title": "Calculating average speed",
-        "idea": "",
-        "design": "",
+        "idea": "Average speed is total distance over total time, not the average of the speeds.",
+        "design": "Trip bench: student drives two legs at different speeds and computes average speed; the harmonic-mean trap is exposed by measurement (60 then 20 km/h gives 30, not 40).",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3304,42 +3304,42 @@
        {
         "code": "A2.1",
         "title": "Acceleration as a rate of change",
-        "idea": "",
-        "design": "",
+        "idea": "Acceleration is how fast the velocity changes, so it is a rate of a rate.",
+        "design": "Accelerometer cart: real a = dv/dt from the cart's own motion; student pushes and reads velocity and acceleration simultaneously, and finds acceleration can be zero while moving fast.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.2",
         "title": "Reading a velocity-time graph",
-        "idea": "",
-        "design": "",
+        "idea": "On a velocity-time graph, slope is acceleration and area is distance.",
+        "design": "Velocity-graph bench: student drives, and the model integrates the area live to give distance, checked against the measured track position \u2014 the area rule proved by their own run.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.3",
         "title": "Constant vs changing acceleration",
-        "idea": "",
-        "design": "",
+        "idea": "Constant acceleration gives a straight velocity line; changing acceleration bends it.",
+        "design": "Comparison bench: constant thrust vs a real drag force; student runs both and measures the straight and curving velocity traces.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.4",
         "title": "Deceleration",
-        "idea": "",
-        "design": "",
+        "idea": "Deceleration is acceleration pointing against the motion \u2014 same quantity, opposite sign.",
+        "design": "Braking bench: real friction; student brakes and measures negative acceleration, then reverses and finds the same sign convention holds.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A2.5",
         "title": "Connecting the two graph types",
-        "idea": "",
-        "design": "",
+        "idea": "The two graph types describe one motion, and each is the other's slope or area.",
+        "design": "Dual-graph bench: student manipulates either graph and the other updates by real differentiation or integration; inconsistent pairs are impossible to create.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3349,42 +3349,42 @@
        {
         "code": "A3.1",
         "title": "Inertia",
-        "idea": "",
-        "design": "",
+        "idea": "An object keeps doing what it is doing unless a force changes it.",
+        "design": "Frictionless bench: student sets friction to zero and launches; the object never stops, measured over minutes. Then friction is restored and the stopping distance is measured.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A3.2",
         "title": "Balanced vs unbalanced forces",
-        "idea": "",
-        "design": "",
+        "idea": "Balanced forces leave motion unchanged; only unbalanced forces change it.",
+        "design": "Tug bench: real force summation; student adds forces and measures acceleration, finding zero net force gives constant velocity, not rest.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A3.3",
         "title": "Free-body diagrams",
-        "idea": "",
-        "design": "",
+        "idea": "A free-body diagram shows every force on one object and nothing else.",
+        "design": "Diagram bench: student draws forces and the model runs their diagram; a wrong or missing force produces measurably wrong motion, which is the feedback.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A3.4",
         "title": "Friction as the reason intuition misleads",
-        "idea": "",
-        "design": "",
+        "idea": "Things stop because of friction, not because stopping is natural.",
+        "design": "Friction bench: student varies surface and measures stopping distance against the real coefficient, extrapolating to zero friction and infinite distance.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A3.5",
         "title": "Applying the First Law to everyday scenarios",
-        "idea": "",
-        "design": "",
+        "idea": "The First Law explains seatbelts, spilled coffee and everything that keeps going.",
+        "design": "Scenario bench: real cases run on the same physics; student predicts and then measures what the unrestrained object does.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3394,42 +3394,42 @@
        {
         "code": "A4.1",
         "title": "Planning a fair test of force and motion",
-        "idea": "",
-        "design": "",
+        "idea": "A fair test of force and motion holds mass fixed while force varies, or the reverse.",
+        "design": "Planning bench: the model genuinely confounds if both vary, and the confound is measured in the resulting data.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A4.2",
         "title": "The qualitative force-mass-acceleration relationship",
-        "idea": "",
-        "design": "",
+        "idea": "More force gives more acceleration; more mass gives less.",
+        "design": "Relationship bench: student runs a series and plots a against F and against m, discovering the direct and inverse relations from their own points.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A4.3",
         "title": "Running the investigation",
-        "idea": "",
-        "design": "",
+        "idea": "Running the investigation means repeating trials and recording honestly.",
+        "design": "Investigation bench: student runs replicates with real measurement scatter and computes means and spread.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A4.4",
         "title": "Comparing prediction to measured data",
-        "idea": "",
-        "design": "",
+        "idea": "A prediction is tested by how close it lands to the measured value.",
+        "design": "Prediction bench: student predicts acceleration from F and m, then measures; the residual is computed and plotted.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A4.5",
         "title": "Communicating investigation results",
-        "idea": "",
-        "design": "",
+        "idea": "Results are communicated as data, method and conclusion together.",
+        "design": "Report bench: student assembles their own rows into a report scored on whether the data supports the stated conclusion.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3439,42 +3439,42 @@
        {
         "code": "A5.1",
         "title": "Action-reaction pairs",
-        "idea": "",
-        "design": "",
+        "idea": "Forces come in pairs that are equal in size and opposite in direction.",
+        "design": "Dual force-sensor bench: two carts collide and both sensors record simultaneously; the traces are mirror images at every instant, measured to the sample.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A5.2",
         "title": "Why the pair acts on different objects",
-        "idea": "",
-        "design": "",
+        "idea": "The two forces of a pair act on different objects, which is why they never cancel.",
+        "design": "Pair bench: student assigns each force to its object and sees that summing forces on ONE object leaves a net force; assigning both to one object measurably breaks the motion.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A5.3",
         "title": "A common Third Law misconception",
-        "idea": "",
-        "design": "",
+        "idea": "If the forces are equal, why does the small object fly off? Because equal force on smaller mass gives bigger acceleration.",
+        "design": "Truck-and-ball bench: identical force pair measured on both, then a = F/m computed for each; the wildly different accelerations from identical forces is the whole lesson.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A5.4",
         "title": "Applying the law to a collision-safety design",
-        "idea": "",
-        "design": "",
+        "idea": "A safety design works by managing the force pair over time.",
+        "design": "Design bench: student adds crumple structure and measures peak force on the occupant, with the pair still exactly equal.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A5.5",
         "title": "Testing the design against criteria",
-        "idea": "",
-        "design": "",
+        "idea": "A design is judged against the criteria that were stated first.",
+        "design": "Test bench: student's design is run against their stated peak-force limit and the verdict is computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3484,42 +3484,42 @@
        {
         "code": "A6.1",
         "title": "Defining criteria and constraints",
-        "idea": "",
-        "design": "",
+        "idea": "Criteria and constraints turn a safety wish into a testable target.",
+        "design": "Brief bench: student sets a survivable peak deceleration (real human tolerance ~50 g brief) and mass and cost limits; vague briefs are refused.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A6.2",
         "title": "Crumple zones and impulse, conceptually",
-        "idea": "",
-        "design": "",
+        "idea": "Impulse says a longer stop means a smaller force for the same change in momentum.",
+        "design": "Impulse bench: real F*t = m*dv; student lengthens the stopping time and measures peak force falling for the identical momentum change.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A6.3",
         "title": "Generating candidate solutions",
-        "idea": "",
-        "design": "",
+        "idea": "Several different designs should be tried, not one.",
+        "design": "Generation bench: student builds crumple, airbag and restraint variants with real material properties.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A6.4",
         "title": "Systematic evaluation of designs",
-        "idea": "",
-        "design": "",
+        "idea": "Designs are compared by running the same crash on each.",
+        "design": "Evaluation bench: identical impact conditions enforced; each design measured on peak force, intrusion and mass.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "A6.5",
         "title": "Reporting the best solution and its trade-offs",
-        "idea": "",
-        "design": "",
+        "idea": "Every safety gain costs mass, space or money \u2014 name it.",
+        "design": "Trade bench: student reports the winner with its measured cost, computed from their own runs.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -3534,42 +3534,42 @@
        {
         "code": "B1.1",
         "title": "Kinetic energy and mass",
-        "idea": "",
-        "design": "",
+        "idea": "Double the mass and you double the kinetic energy.",
+        "design": "Crush-block bench: student launches masses at a fixed speed and measures crush depth, finding the linear relation in their own points.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.2",
         "title": "Kinetic energy and speed",
-        "idea": "",
-        "design": "",
+        "idea": "Double the speed and you quadruple the kinetic energy.",
+        "design": "Same bench at fixed mass, varying speed: the quadratic emerges from measured crush depths, never from a printed formula.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.3",
         "title": "Why speed has the larger effect",
-        "idea": "",
-        "design": "",
+        "idea": "Speed matters more because it is squared.",
+        "design": "Comparison bench: student doubles mass then doubles speed and measures both outcomes side by side; the 2x versus 4x difference is measured.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.4",
         "title": "Interpreting the shape of the curve",
-        "idea": "",
-        "design": "",
+        "idea": "The curve's steepening shape is the squared relationship made visible.",
+        "design": "Curve bench: student plots their own runs and reads the gradient at low and high speed, finding it grows.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B1.5",
         "title": "Applying kinetic energy to a collision scenario",
-        "idea": "",
-        "design": "",
+        "idea": "Crash energy explains why speed limits matter more than they look.",
+        "design": "Scenario bench: student computes stopping energy at 30 and 60 km/h and measures the fourfold difference in crush and stopping distance.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3579,42 +3579,42 @@
        {
         "code": "B2.1",
         "title": "Gravitational potential energy",
-        "idea": "",
-        "design": "",
+        "idea": "Lifting stores energy that height and mass decide.",
+        "design": "Lift bench: student lifts measured masses to measured heights, reads mgh, then drops and measures the speed at the bottom matching.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.2",
         "title": "Elastic potential energy",
-        "idea": "",
-        "design": "",
+        "idea": "Stretching or compressing stores energy that the spring and the stretch decide.",
+        "design": "Spring bench: real Hooke's law and half-k-x-squared; student measures force vs extension, integrates the area, and checks it against the launch speed achieved.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.3",
         "title": "Potential energy as a property of a system",
-        "idea": "",
-        "design": "",
+        "idea": "Potential energy belongs to the arrangement, not to the object alone.",
+        "design": "System bench: student tries to assign the energy to the ball alone and the model shows it takes Earth and ball together; removing either leaves nothing stored.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.4",
         "title": "Modeling potential energy as an arrangement changes",
-        "idea": "",
-        "design": "",
+        "idea": "Change the arrangement and the stored energy changes with it.",
+        "design": "Arrangement bench: student moves objects and watches stored energy track the configuration, computed continuously.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B2.5",
         "title": "Potential and kinetic energy trading off",
-        "idea": "",
-        "design": "",
+        "idea": "Kinetic and potential trade back and forth, and the sum stays put.",
+        "design": "Pendulum/ramp bench: both energies plotted live from state; the sum is flat to numerical precision until friction is enabled.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3624,42 +3624,42 @@
        {
         "code": "B3.1",
         "title": "Energy converted, not lost",
-        "idea": "",
-        "design": "",
+        "idea": "In a crash the energy goes somewhere \u2014 deformation, sound and heat.",
+        "design": "Crash bench with a full energy ledger: student runs a collision and every joule is accounted into deformation, heat and sound, measured, summing exactly to the initial kinetic energy.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.2",
         "title": "Elastic vs inelastic collisions",
-        "idea": "",
-        "design": "",
+        "idea": "Elastic collisions keep kinetic energy; inelastic ones convert it.",
+        "design": "Restitution bench: real coefficient of restitution; student sets it and measures the kinetic energy retained, from perfectly elastic to perfectly sticky.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.3",
         "title": "Tracing energy through a crash",
-        "idea": "",
-        "design": "",
+        "idea": "You can follow the energy through a crash step by step.",
+        "design": "Trace bench: student steps through a collision millisecond by millisecond and watches the ledger shift between stores.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.4",
         "title": "Safety design and energy conversion",
-        "idea": "",
-        "design": "",
+        "idea": "Safety features work by converting energy where it does no harm.",
+        "design": "Design bench: student routes energy into a crumple structure and measures the reduction in energy reaching the occupant.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B3.5",
         "title": "Comparing energy conversion across two collisions",
-        "idea": "",
-        "design": "",
+        "idea": "Two crashes can be compared by their energy conversion.",
+        "design": "Comparison bench: student runs two collisions and compares the fraction converted in each, computed from their own ledgers.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3669,42 +3669,42 @@
        {
         "code": "B4.1",
         "title": "Energy is conserved",
-        "idea": "",
-        "design": "",
+        "idea": "Energy is never created or destroyed, only moved and converted.",
+        "design": "Closed-system bench: student draws the boundary and the total is flat to the last joule; opening the boundary makes it appear to leak, and the leak is found.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.2",
         "title": "Tracking energy through a multi-step system",
-        "idea": "",
-        "design": "",
+        "idea": "Through a multi-step system you can follow every joule.",
+        "design": "Chain bench: student tracks energy through four stages with real efficiencies and finds the total conserved at each step.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.3",
         "title": "Dissipation as spreading out, not disappearing",
-        "idea": "",
-        "design": "",
+        "idea": "Dissipated energy is spread thin, not gone.",
+        "design": "Dissipation bench: student measures the temperature rise of the surroundings and finds the missing joules there, in real units.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.4",
         "title": "Applying conservation to a bouncing ball",
-        "idea": "",
-        "design": "",
+        "idea": "A bouncing ball loses height because energy moved, not vanished.",
+        "design": "Bounce bench: real restitution; student measures each bounce height, computes the energy lost per bounce, and finds it as heat and sound in the ledger.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B4.5",
         "title": "Conservation as a check on a claim",
-        "idea": "",
-        "design": "",
+        "idea": "If a claim breaks conservation, the claim is wrong.",
+        "design": "Claim bench: student tests claims (including a perpetual-motion design) against the ledger; the model shows exactly where the claim's energy would have to come from.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3714,42 +3714,42 @@
        {
         "code": "B5.1",
         "title": "Developing a model to generate data",
-        "idea": "",
-        "design": "",
+        "idea": "A model generates data you can test a design against.",
+        "design": "Model bench: student builds a testable model and validates it against a known measured case before using it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.2",
         "title": "Running a first round of testing",
-        "idea": "",
-        "design": "",
+        "idea": "The first test finds the failure mode.",
+        "design": "Round-one bench: student runs and measures where and at what threshold the design fails.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.3",
         "title": "Modifying the model from test data",
-        "idea": "",
-        "design": "",
+        "idea": "You change what failed, then test under identical conditions.",
+        "design": "Iteration bench: conditions locked so improvements are comparable; the model refuses to compare runs with different inputs.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.4",
         "title": "Naming the trade-off in each improvement",
-        "idea": "",
-        "design": "",
+        "idea": "Each improvement trades something away.",
+        "design": "Trade bench: student measures the cost in mass, cost or another performance axis.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "B5.5",
         "title": "A second round of modification",
-        "idea": "",
-        "design": "",
+        "idea": "A second round shows whether the change actually helped.",
+        "design": "Round-two bench: student re-runs and the improvement is computed as a difference of measurements.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -3764,42 +3764,42 @@
        {
         "code": "C1.1",
         "title": "Contact forces",
-        "idea": "",
-        "design": "",
+        "idea": "Contact forces need touching: push, pull, friction, normal.",
+        "design": "Contact bench: student applies each and the model shows the contact point; separating the objects makes the force measurably vanish.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.2",
         "title": "Noncontact forces",
-        "idea": "",
-        "design": "",
+        "idea": "Noncontact forces act across a gap: gravity, electric, magnetic.",
+        "design": "Gap bench: student separates the objects and the force persists, measured against distance.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.3",
         "title": "Sorting real scenarios",
-        "idea": "",
-        "design": "",
+        "idea": "Real situations often mix both kinds.",
+        "design": "Sorting bench: student classifies real scenarios by testing whether the force survives separation \u2014 computed, not labelled.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.4",
         "title": "Attraction and repulsion",
-        "idea": "",
-        "design": "",
+        "idea": "Some forces both attract and repel; gravity only attracts.",
+        "design": "Sign bench: student flips charges and poles and measures attraction and repulsion, then tries to make gravity repel and finds it cannot.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C1.5",
         "title": "Previewing the field idea",
-        "idea": "",
-        "design": "",
+        "idea": "A field is how a force reaches across empty space.",
+        "design": "Preview bench: student maps the force at many points and the pattern that emerges IS the field, plotted from their own measurements.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3809,42 +3809,42 @@
        {
         "code": "C2.1",
         "title": "Electric charge",
-        "idea": "",
-        "design": "",
+        "idea": "Like charges repel, unlike attract, and charge is conserved.",
+        "design": "Charging bench: real triboelectric transfer; student rubs materials, measures the charge on each, and finds the totals always sum to zero.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.2",
         "title": "Asking questions about electric-force data",
-        "idea": "",
-        "design": "",
+        "idea": "Good questions about data ask what varies and what is held fixed.",
+        "design": "Question bench: student poses testable questions about the force data; the model runs only the well-formed ones.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.3",
         "title": "How distance affects the force",
-        "idea": "",
-        "design": "",
+        "idea": "Electric force falls with the square of distance.",
+        "design": "Coulomb bench: real 1/r^2; student measures force at five distances and plots F against 1/r^2 to get a straight line \u2014 the law from their own points.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.4",
         "title": "How charge magnitude affects the force",
-        "idea": "",
-        "design": "",
+        "idea": "Force is proportional to each charge.",
+        "design": "Charge bench: student doubles one charge and measures the doubling, then doubles both and measures the quadrupling.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C2.5",
         "title": "Static electricity and lightning",
-        "idea": "",
-        "design": "",
+        "idea": "Lightning is charge separation released when the air finally breaks down.",
+        "design": "Storm bench: real charge separation and the ~3 MV/m breakdown field; student builds the field until the air breaks and measures where and when.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3854,42 +3854,42 @@
        {
         "code": "C3.1",
         "title": "Magnetic poles",
-        "idea": "",
-        "design": "",
+        "idea": "Every magnet has two poles and they cannot be separated.",
+        "design": "Cutting bench: student cuts a magnet and measures that each piece still has both poles, however small.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.2",
         "title": "Magnetic materials",
-        "idea": "",
-        "design": "",
+        "idea": "Only some materials are magnetic, and it depends on their structure.",
+        "design": "Material bench: student tests real materials and measures attraction; domain structure is shown for those that respond.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.3",
         "title": "Current produces a magnetic effect",
-        "idea": "",
-        "design": "",
+        "idea": "A current makes a magnetic field around the wire.",
+        "design": "Oersted bench: real B = mu0*I/(2*pi*r); student varies current and distance and measures the compass deflection, deriving the relation.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.4",
         "title": "Building and varying a simple electromagnet",
-        "idea": "",
-        "design": "",
+        "idea": "Turns, current and core all strengthen an electromagnet.",
+        "design": "Electromagnet bench: student varies each and measures lifting force, finding which factor gives the most gain per unit cost.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C3.5",
         "title": "Earth's magnetic field",
-        "idea": "",
-        "design": "",
+        "idea": "Earth has a magnetic field, and a compass reads it.",
+        "design": "Earth-field bench: real dip and declination by latitude; student measures both and finds magnetic north differs from true north by a measured angle.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3899,42 +3899,42 @@
        {
         "code": "C4.1",
         "title": "Gravity is always attractive",
-        "idea": "",
-        "design": "",
+        "idea": "Gravity only ever pulls.",
+        "design": "Attraction bench: student tries every configuration and measures that the force never reverses sign.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.2",
         "title": "Gravity depends on mass and distance",
-        "idea": "",
-        "design": "",
+        "idea": "Gravity grows with mass and falls with the square of distance.",
+        "design": "Newton bench: real G*m1*m2/r^2; student varies each and measures, plotting to recover both relationships.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.3",
         "title": "Why everyday gravity goes unnoticed",
-        "idea": "",
-        "design": "",
+        "idea": "Everyday objects do attract each other, just far too weakly to notice.",
+        "design": "Cavendish bench: student computes the attraction between two people (~1e-7 N) and then measures it with a real torsion balance that can just detect it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.4",
         "title": "Mass vs weight",
-        "idea": "",
-        "design": "",
+        "idea": "Mass is how much matter; weight is the force gravity exerts on it.",
+        "design": "Two-world bench: student takes the same object to Earth, Moon and Jupiter and measures mass unchanged while weight changes with real g values.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C4.5",
         "title": "Applying the gravity argument to new cases",
-        "idea": "",
-        "design": "",
+        "idea": "The same gravity argument works for satellites, moons and falling apples.",
+        "design": "Application bench: student applies one equation to several cases and measures that it holds each time.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -3944,42 +3944,42 @@
        {
         "code": "C5.1",
         "title": "A field as something filling space",
-        "idea": "",
-        "design": "",
+        "idea": "A field gives every point in space a value you could measure.",
+        "design": "Field bench: student places a test object anywhere and measures the force it would feel; the field is the map of those measurements.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.2",
         "title": "Mapping a field",
-        "idea": "",
-        "design": "",
+        "idea": "Mapping a field means measuring it at many points.",
+        "design": "Mapping bench: student stamps measurements across a region and the field lines emerge from their own data, never pre-drawn.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.3",
         "title": "Investigating evidence of fields",
-        "idea": "",
-        "design": "",
+        "idea": "Field lines are dense where the field is strong.",
+        "design": "Density bench: student measures field strength and line spacing and finds the inverse relation quantitatively.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.4",
         "title": "Energy transferred across empty space",
-        "idea": "",
-        "design": "",
+        "idea": "Energy crosses empty space through fields.",
+        "design": "Transfer bench: student moves an object through a field and measures the work done with no contact anywhere.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "C5.5",
         "title": "Fields as the unifying idea",
-        "idea": "",
-        "design": "",
+        "idea": "Gravity, electricity and magnetism are all fields, which is why they share behaviour.",
+        "design": "Unification bench: student compares the three fields' maps and force laws side by side and finds the shared inverse-square structure, measured.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -3994,42 +3994,42 @@
        {
         "code": "D1.1",
         "title": "Amplitude, wavelength, frequency and period",
-        "idea": "",
-        "design": "",
+        "idea": "Four numbers describe any wave, and period is just one over frequency.",
+        "design": "Wave tank with a real driven string: student sets frequency and amplitude and measures wavelength and period from the live trace with an on-screen ruler and stopwatch; f and T are checked against each other from their own measurements. Fraud: numbers printed rather than measured off the wave.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.2",
         "title": "Wave speed",
-        "idea": "",
-        "design": "",
+        "idea": "Wave speed is frequency times wavelength, and the medium sets it.",
+        "design": "Speed bench: student changes frequency and watches wavelength change so that v stays fixed for a given medium, measured; changing tension changes v and both adjust.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.3",
         "title": "Amplitude and the energy a wave carries",
-        "idea": "",
-        "design": "",
+        "idea": "Amplitude carries the energy, and energy goes as amplitude squared.",
+        "design": "Energy bench: student drives a wave into an absorber and measures energy delivered against amplitude, recovering the square law from their points.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.4",
         "title": "Transverse and longitudinal waves",
-        "idea": "",
-        "design": "",
+        "idea": "In transverse waves the medium moves across the travel direction; in longitudinal, along it.",
+        "design": "Dual-medium bench: real particle motion in both; student tracks a single tagged particle and measures its displacement direction relative to the wave's.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D1.5",
         "title": "Modeling wave behavior from data",
-        "idea": "",
-        "design": "",
+        "idea": "A wave's behaviour can be predicted from measurements of it.",
+        "design": "Prediction bench: student measures a wave's properties, predicts its behaviour at a boundary, then tests.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4039,42 +4039,42 @@
        {
         "code": "D2.1",
         "title": "Three outcomes at a boundary",
-        "idea": "",
-        "design": "",
+        "idea": "At a boundary a wave is reflected, absorbed, transmitted \u2014 usually all three.",
+        "design": "Boundary bench: real impedance mismatch; student sets the second medium and measures the three fractions, which always sum to one.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.2",
         "title": "Modeling absorption, reflection and transmission",
-        "idea": "",
-        "design": "",
+        "idea": "The fractions depend on the two materials meeting.",
+        "design": "Material bench: student pairs media and measures the reflected fraction against the impedance ratio, deriving the relation.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.3",
         "title": "Why an object looks a particular color",
-        "idea": "",
-        "design": "",
+        "idea": "An object's colour is the light it fails to absorb.",
+        "design": "Colour bench: real spectral absorption curves; student shines different spectra on the same object and measures the reflected spectrum, finding a red object under green light looks black.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.4",
         "title": "Refraction, introduced",
-        "idea": "",
-        "design": "",
+        "idea": "A wave bends when its speed changes at a boundary.",
+        "design": "Refraction bench: real Snell's law; student varies the angle and index and measures the bend, plotting sin(i) against sin(r) for a straight line.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D2.5",
         "title": "Reading a wave-material interaction from evidence",
-        "idea": "",
-        "design": "",
+        "idea": "You can identify a material from how it treats a wave.",
+        "design": "Identification bench: student measures reflection, absorption and refraction on an unknown and matches to a real reference table.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4084,42 +4084,42 @@
        {
         "code": "D3.1",
         "title": "Visible light as one narrow band",
-        "idea": "",
-        "design": "",
+        "idea": "Visible light is a sliver of the electromagnetic spectrum.",
+        "design": "Spectrum bench with a true logarithmic axis: student zooms and measures that visible spans only 380-700 nm out of 20 orders of magnitude, with a break glyph making the compression honest.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.2",
         "title": "Ordering the spectrum by wavelength and frequency",
-        "idea": "",
-        "design": "",
+        "idea": "Wavelength and frequency are inversely related across the whole spectrum.",
+        "design": "Ordering bench: student places bands by measured wavelength and frequency and finds the inverse ordering holds everywhere.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.3",
         "title": "A real use of each band",
-        "idea": "",
-        "design": "",
+        "idea": "Each band is used for something that depends on its physics.",
+        "design": "Application bench: student matches band to use and tests it \u2014 microwaves heat water because of a real resonance, X-rays penetrate because of real attenuation coefficients.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.4",
         "title": "Why the whole spectrum travels at the same speed in a vacuum",
-        "idea": "",
-        "design": "",
+        "idea": "All electromagnetic waves travel at c in a vacuum, whatever their energy.",
+        "design": "Race bench: student sends gamma and radio down the same vacuum path and measures identical arrival times, then adds a medium and measures dispersion appearing.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D3.5",
         "title": "Comparing energy across the spectrum",
-        "idea": "",
-        "design": "",
+        "idea": "Photon energy rises with frequency, which is why some bands are dangerous.",
+        "design": "Energy bench: real E = hf; student computes photon energy across the spectrum and finds the ionisation threshold where damage begins.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4129,42 +4129,42 @@
        {
         "code": "D4.1",
         "title": "Sound as a longitudinal wave needing a medium",
-        "idea": "",
-        "design": "",
+        "idea": "Sound is a pressure wave and it needs matter to travel through.",
+        "design": "Vacuum-jar bench: student pumps the jar down and measures the sound level falling to nothing as pressure drops, with the bell still visibly ringing.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.2",
         "title": "Pitch and loudness",
-        "idea": "",
-        "design": "",
+        "idea": "Pitch is frequency; loudness is amplitude \u2014 they are independent.",
+        "design": "Tone bench: student varies each independently and measures the other unchanged, with a real spectrum display.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.3",
         "title": "Speed of sound across media",
-        "idea": "",
-        "design": "",
+        "idea": "Sound travels faster in denser, stiffer media.",
+        "design": "Speed bench: real speeds (343 m/s air, 1480 water, 5100 steel); student times a pulse over a measured distance in each.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.4",
         "title": "The ear and the range of human hearing",
-        "idea": "",
-        "design": "",
+        "idea": "Human hearing spans about 20 Hz to 20 kHz, and the ear converts pressure to signal.",
+        "design": "Hearing bench: student sweeps frequency and measures the audible band and the equal-loudness curve; the cochlea's real frequency mapping is shown.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D4.5",
         "title": "Echo and ultrasound",
-        "idea": "",
-        "design": "",
+        "idea": "Echoes and ultrasound both measure distance by timing a reflection.",
+        "design": "Sonar bench: student times an echo and computes distance from the real speed of sound, then images a hidden object with a scanning pulse.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4174,42 +4174,42 @@
        {
         "code": "D5.1",
         "title": "How each signal encodes information",
-        "idea": "",
-        "design": "",
+        "idea": "Analog varies continuously; digital encodes in discrete steps.",
+        "design": "Encoding bench: student sends the same signal both ways and measures the quantisation error introduced by digitising, against bit depth.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.2",
         "title": "Why digitized signals are more reliable",
-        "idea": "",
-        "design": "",
+        "idea": "Digital survives noise because a step can be restored exactly.",
+        "design": "Noise bench: student adds real noise to both signals and measures the recovered fidelity; analog degrades continuously, digital is perfect until it cliffs.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.3",
         "title": "Noise and error correction, conceptually",
-        "idea": "",
-        "design": "",
+        "idea": "Error correction adds redundancy so mistakes can be found and fixed.",
+        "design": "Correction bench: real parity or Hamming code; student corrupts bits and measures how many errors the code can detect and correct.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.4",
         "title": "Analyzing competing communication designs",
-        "idea": "",
-        "design": "",
+        "idea": "Communication designs are compared on range, rate and reliability.",
+        "design": "Comparison bench: student runs designs through the same channel and measures all three.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "D5.5",
         "title": "Integrating a wave-based communication device",
-        "idea": "",
-        "design": "",
+        "idea": "A working device combines encoding, transmission and decoding.",
+        "design": "Integration bench: student builds an end-to-end link and measures the message that actually arrives.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -4224,42 +4224,42 @@
        {
         "code": "E1.1",
         "title": "The lunar cycle",
-        "idea": "",
-        "design": "",
+        "idea": "The Moon's phase is which part of its lit half we can see.",
+        "design": "Orbit bench: real geometry with the Sun fixed; student orbits the Moon and the phase is computed from the actual illumination angle seen from Earth. Fraud: a phase picture cycled by a timer.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.2",
         "title": "Modeling lunar phases",
-        "idea": "",
-        "design": "",
+        "idea": "You can model the phases with a light, a ball and your own head.",
+        "design": "Physical-model bench: student positions the ball and measures the lit fraction from the Earth viewpoint, matching it to the real phase.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.3",
         "title": "Solar and lunar eclipses",
-        "idea": "",
-        "design": "",
+        "idea": "An eclipse is one body's shadow falling on another.",
+        "design": "Shadow bench: real umbra and penumbra geometry; student aligns the three bodies and measures the shadow cone and where it lands.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.4",
         "title": "Why an eclipse does not happen every month",
-        "idea": "",
-        "design": "",
+        "idea": "The Moon's orbit is tilted about 5 degrees, so alignment is rare.",
+        "design": "Tilt bench: student sets the tilt to zero and gets an eclipse every month; restores 5.1 degrees and measures the eclipse frequency falling to the real rate.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E1.5",
         "title": "Tides",
-        "idea": "",
-        "design": "",
+        "idea": "Tides come from the difference in the Moon's pull across Earth.",
+        "design": "Tidal bench: real differential gravity; student measures the pull on near and far sides and finds two bulges, then times high tides against the Moon's position.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4269,42 +4269,42 @@
        {
         "code": "E2.1",
         "title": "Axial tilt as the cause",
-        "idea": "",
-        "design": "",
+        "idea": "Seasons come from the axis tilt, not from distance to the Sun.",
+        "design": "Tilt bench: student sets tilt to zero and measures seasons vanishing while the orbit stays elliptical; then varies distance alone and measures almost no effect. This kills the misconception by measurement.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.2",
         "title": "Angle of sunlight and day length",
-        "idea": "",
-        "design": "",
+        "idea": "Tilt changes both the angle of sunlight and the length of the day.",
+        "design": "Angle bench: student measures solar altitude and day length at a chosen latitude through the year, and the energy per square metre that results.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.3",
         "title": "Why the hemispheres are opposite",
-        "idea": "",
-        "design": "",
+        "idea": "When one hemisphere tilts toward the Sun, the other tilts away.",
+        "design": "Two-hemisphere bench: student measures both simultaneously and finds them opposite at every date.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.4",
         "title": "Solstices and equinoxes",
-        "idea": "",
-        "design": "",
+        "idea": "Solstices and equinoxes are the four positions where tilt aligns with the orbit.",
+        "design": "Marker bench: student finds the four dates by measuring day length and solar altitude, not by being told.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E2.5",
         "title": "Modeling the seasonal cycle",
-        "idea": "",
-        "design": "",
+        "idea": "The whole cycle follows from tilt plus orbit.",
+        "design": "Full-cycle bench: student runs a year and reads the seasonal temperature curve out of the modelled insolation.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4314,42 +4314,42 @@
        {
         "code": "E3.1",
         "title": "Gravity holding orbits together",
-        "idea": "",
-        "design": "",
+        "idea": "Gravity is what holds every orbit together.",
+        "design": "Orbit bench: real Newtonian gravity; student turns gravity off mid-orbit and the body flies off in a straight tangent, measured.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.2",
         "title": "Why an orbiting object neither falls in nor flies off",
-        "idea": "",
-        "design": "",
+        "idea": "An orbit is falling forward fast enough to keep missing.",
+        "design": "Cannonball bench: Newton's own thought experiment made real; student raises launch speed and measures the trajectory going from falling to orbiting to escaping, finding both critical speeds.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.3",
         "title": "The Sun's dominant mass",
-        "idea": "",
-        "design": "",
+        "idea": "The Sun holds 99.86 percent of the solar system's mass, which is why everything orbits it.",
+        "design": "Mass bench: student measures the mass budget and tests what happens when Jupiter's mass is raised until it competes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.4",
         "title": "Moons, asteroids and comets",
-        "idea": "",
-        "design": "",
+        "idea": "Moons, asteroids and comets all obey the same gravity.",
+        "design": "Small-body bench: student applies the same law to each and measures the orbits, including a comet's real eccentricity.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E3.5",
         "title": "The Milky Way, introduced",
-        "idea": "",
-        "design": "",
+        "idea": "The Sun orbits the galaxy, which is held together by gravity too.",
+        "design": "Galaxy bench: student measures orbital speed against radius and finds the flat rotation curve that real galaxies show.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4359,42 +4359,42 @@
        {
         "code": "E4.1",
         "title": "The astronomical unit",
-        "idea": "",
-        "design": "",
+        "idea": "An astronomical unit is Earth's distance from the Sun, and it makes the numbers manageable.",
+        "design": "Unit bench: student measures distances in km and AU and finds which is workable.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.2",
         "title": "Analyzing size and distance data",
-        "idea": "",
-        "design": "",
+        "idea": "Size and distance data reveal how empty the solar system is.",
+        "design": "Data bench: student computes the ratio of body size to separation and finds it is thousands to one.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.3",
         "title": "Why a to-scale classroom model is nearly impossible",
-        "idea": "",
-        "design": "",
+        "idea": "If Earth is a peppercorn, Neptune is a kilometre away.",
+        "design": "Scale bench: student picks a scale for the Sun and the model computes every distance and size honestly; the classroom is measurably too small, and the number needed is computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.4",
         "title": "Comparing planetary properties",
-        "idea": "",
-        "design": "",
+        "idea": "Planets differ in size, mass, density and composition in patterned ways.",
+        "design": "Comparison bench: student measures and plots real planetary data and finds the rocky-versus-gas split emerging.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E4.5",
         "title": "Building a scale representation",
-        "idea": "",
-        "design": "",
+        "idea": "A scale model must scale sizes and distances by the same factor.",
+        "design": "Model bench: student builds a scale model and the model catches any inconsistent scaling by measurement.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4404,42 +4404,42 @@
        {
         "code": "E5.1",
         "title": "Superposition",
-        "idea": "",
-        "design": "",
+        "idea": "Lower layers are older, unless something disturbed them.",
+        "design": "Superposition bench: student reads a section and orders events, then meets an overturned sequence where the rule alone fails.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.2",
         "title": "Index fossils and unconformities",
-        "idea": "",
-        "design": "",
+        "idea": "Index fossils date a layer; unconformities mark missing time.",
+        "design": "Correlation bench: student correlates sections using real index fossils and measures the time missing at each unconformity.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.3",
         "title": "Reading strata as a record",
-        "idea": "",
-        "design": "",
+        "idea": "Strata are a record you can read in order.",
+        "design": "Reading bench: student derives a full event history from a real section, checked against the model's own generated history.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.4",
         "title": "Eons, eras and periods",
-        "idea": "",
-        "design": "",
+        "idea": "The time scale divides Earth's history by what the rocks record.",
+        "design": "Time-scale bench: student places their measured events on the real scale and sees the proportions of Earth's history each division occupies.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E5.5",
         "title": "Constructing an explanation from strata evidence",
-        "idea": "",
-        "design": "",
+        "idea": "An explanation from strata cites the specific layers it rests on.",
+        "design": "Explanation bench: student builds an account and the fit is computed from whether the cited layers actually support it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4449,42 +4449,42 @@
        {
         "code": "E6.1",
         "title": "Relative vs absolute dating",
-        "idea": "",
-        "design": "",
+        "idea": "Relative dating gives order; absolute dating gives years.",
+        "design": "Two-method bench: student applies both to the same section and measures what each can and cannot tell them.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.2",
         "title": "Radiometric dating, conceptually",
-        "idea": "",
-        "design": "",
+        "idea": "Radioactive decay is a clock because half-life is constant.",
+        "design": "Decay bench: real exponential decay with genuine statistical randomness per atom; student measures the half-life from their own counts and finds it constant regardless of starting amount or temperature.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.3",
         "title": "Combining relative and absolute evidence",
-        "idea": "",
-        "design": "",
+        "idea": "The strongest dating combines order from layers with years from isotopes.",
+        "design": "Combined bench: student dates a section using both and measures how the combination narrows the uncertainty.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.4",
         "title": "The 4.6-billion-year figure",
-        "idea": "",
-        "design": "",
+        "idea": "Earth is about 4.6 billion years old, from meteorite and rock dating.",
+        "design": "Age bench: student dates the oldest samples and measures the convergence of independent methods on 4.54 Ga.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "E6.5",
         "title": "Evaluating a dating claim",
-        "idea": "",
-        "design": "",
+        "idea": "A dating claim is checked against method, assumptions and uncertainty.",
+        "design": "Evaluation bench: student tests claims against whether the method suits the age range and whether the sample was closed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }
@@ -4499,42 +4499,42 @@
        {
         "code": "F1.1",
         "title": "A mutation as a change to genetic information",
-        "idea": "",
-        "design": "",
+        "idea": "A mutation is a change in the genetic information.",
+        "design": "Sequence bench: student mutates a real sequence and the model shows the resulting protein change, computed from the actual codon table.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.2",
         "title": "Beneficial, harmful and neutral outcomes",
-        "idea": "",
-        "design": "",
+        "idea": "A mutation can help, harm, or do nothing, depending on context.",
+        "design": "Outcome bench: student mutates and measures fitness in a specified environment; the same mutation can flip sign when the environment changes.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.3",
         "title": "Why most mutations are neutral",
-        "idea": "",
-        "design": "",
+        "idea": "Most mutations are neutral because most of the genome tolerates change.",
+        "design": "Distribution bench: student runs many random mutations and measures the distribution of effects, finding the neutral majority.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.4",
         "title": "Mutation as the ultimate source of variation",
-        "idea": "",
-        "design": "",
+        "idea": "Without mutation there is no new variation for selection to act on.",
+        "design": "Source bench: student switches mutation off and measures variation draining away over generations until adaptation stops.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F1.5",
         "title": "Tracing a trait to a mutation",
-        "idea": "",
-        "design": "",
+        "idea": "A trait can be traced back to the specific change that produced it.",
+        "design": "Tracing bench: student follows a trait to its causal mutation through the model's own lineage records.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4544,42 +4544,42 @@
        {
         "code": "F2.1",
         "title": "How a fossil forms",
-        "idea": "",
-        "design": "",
+        "idea": "Fossilisation needs quick burial and the right conditions, so it is rare.",
+        "design": "Taphonomy bench: real preservation probabilities by environment; student measures what fraction of organisms fossilise and which body parts survive.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.2",
         "title": "Order of appearance and extinction",
-        "idea": "",
-        "design": "",
+        "idea": "The fossil record shows groups appearing and disappearing in order.",
+        "design": "Record bench: student measures first and last appearances across layers and builds the range chart from their own data.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.3",
         "title": "Transitional forms",
-        "idea": "",
-        "design": "",
+        "idea": "Transitional forms show intermediate features in the right layers.",
+        "design": "Transitional bench: student measures features across a real sequence and finds the intermediate states in the intermediate layers.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.4",
         "title": "Placing fossils on the time scale",
-        "idea": "",
-        "design": "",
+        "idea": "Fossils are placed by the age of the rock that holds them.",
+        "design": "Placement bench: student dates the rock and places the fossil, and the resulting order is computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F2.5",
         "title": "Analyzing fossil-record data",
-        "idea": "",
-        "design": "",
+        "idea": "Patterns of change over time come out of the data, not out of belief.",
+        "design": "Analysis bench: student measures trends in real fossil data and computes the rate of change.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4589,42 +4589,42 @@
        {
         "code": "F3.1",
         "title": "Homologous structures",
-        "idea": "",
-        "design": "",
+        "idea": "Homologous structures share a plan because they share an ancestor.",
+        "design": "Homology bench: student aligns limb bones across species and measures the correspondence, bone by bone.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.2",
         "title": "Analogous and vestigial structures",
-        "idea": "",
-        "design": "",
+        "idea": "Analogous structures share a job, not an ancestor; vestigial ones have lost their job.",
+        "design": "Comparison bench: student measures structural correspondence and finds analogous structures differ underneath despite similar function.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.3",
         "title": "Shared ancestry vs convergence",
-        "idea": "",
-        "design": "",
+        "idea": "Shared plan means ancestry; shared function alone does not.",
+        "design": "Discrimination bench: student is given pairs and must decide using structural evidence; the verdict is computed from the measured correspondence.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.4",
         "title": "Comparing early development across species",
-        "idea": "",
-        "design": "",
+        "idea": "Embryos of related species resemble each other more than the adults do.",
+        "design": "Development bench: student compares developmental stages and measures where the divergence happens.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F3.5",
         "title": "Inferring evolutionary relationships",
-        "idea": "",
-        "design": "",
+        "idea": "Relationships are inferred by counting shared derived features.",
+        "design": "Tree bench: student builds a tree from their own measured character matrix; the tree is computed, not drawn for them.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4634,42 +4634,42 @@
        {
         "code": "F4.1",
         "title": "Variation, survival and heritability",
-        "idea": "",
-        "design": "",
+        "idea": "Selection needs variation, that variation must affect survival, and it must be heritable.",
+        "design": "Three-condition bench: student switches each condition off and measures adaptation failing in each case \u2014 all three are necessary, proved by removal.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.2",
         "title": "A fully worked real case",
-        "idea": "",
-        "design": "",
+        "idea": "A real case shows the whole mechanism working.",
+        "design": "Peppered-moth bench with real predation data: student sets soot level and measures allele frequency shifting over generations, matching the historical record.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.3",
         "title": "Differential survival and reproduction",
-        "idea": "",
-        "design": "",
+        "idea": "Some individuals leave more offspring, and that is what changes the population.",
+        "design": "Reproduction bench: student measures differential reproduction directly and watches the trait frequency follow it.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.4",
         "title": "Selection acts on populations, never on an individual's lifetime",
-        "idea": "",
-        "design": "",
+        "idea": "An individual does not evolve; the population's proportions shift.",
+        "design": "Individual-vs-population bench: student tracks one organism (which never changes) and the population (which does), simultaneously \u2014 the misconception dies by measurement.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F4.5",
         "title": "Constructing an evidence-based explanation",
-        "idea": "",
-        "design": "",
+        "idea": "An evolutionary explanation cites variation, selection pressure and heritability.",
+        "design": "Explanation bench: student builds the account and it is scored on whether their own run's data supports each part.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4679,42 +4679,42 @@
        {
         "code": "F5.1",
         "title": "Selective breeding",
-        "idea": "",
-        "design": "",
+        "idea": "Breeders choose the parents, and the population follows.",
+        "design": "Breeding bench: student selects parents by trait and measures the shift over generations, with real heritability.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.2",
         "title": "The same mechanism, a human selector",
-        "idea": "",
-        "design": "",
+        "idea": "Artificial and natural selection are the same mechanism with a different selector.",
+        "design": "Comparison bench: student runs both on the same population and measures identical mathematics with a different selection criterion.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.3",
         "title": "Technologies influencing inheritance",
-        "idea": "",
-        "design": "",
+        "idea": "Modern technologies change inheritance more directly.",
+        "design": "Technology bench: student compares breeding, hybridisation and direct editing and measures the generations each needs to reach a target.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.4",
         "title": "Tracking a trait's proportion across generations",
-        "idea": "",
-        "design": "",
+        "idea": "A trait's proportion can be counted generation by generation.",
+        "design": "Frequency bench: student counts and plots allele frequency across generations from their own runs.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F5.5",
         "title": "Predicting a population's future trait proportions",
-        "idea": "",
-        "design": "",
+        "idea": "If you know the selection pressure you can predict the trend.",
+        "design": "Prediction bench: student predicts future proportions from measured selection strength, then runs and measures the error.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      },
@@ -4724,42 +4724,42 @@
        {
         "code": "F6.1",
         "title": "Population growth as one multiplier",
-        "idea": "",
-        "design": "",
+        "idea": "More people means more impact, all else equal.",
+        "design": "Population bench: real growth model; student varies population and measures resource use and emissions.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F6.2",
         "title": "Per-capita consumption as the other multiplier",
-        "idea": "",
-        "design": "",
+        "idea": "How much each person uses matters as much as how many people there are.",
+        "design": "Consumption bench: student varies per-capita use and finds it can outweigh population change, measured on the same impact axis.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F6.3",
         "title": "Constructing an argument from real data",
-        "idea": "",
-        "design": "",
+        "idea": "An argument about impact must rest on the actual data.",
+        "design": "Argument bench: student builds a case from real population and consumption data; the fit is computed.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F6.4",
         "title": "Impact on biodiversity specifically",
-        "idea": "",
-        "design": "",
+        "idea": "Human activity reduces biodiversity through specific, measurable mechanisms.",
+        "design": "Impact bench: student applies habitat loss, harvest and pollution at measured intensities and records species lost.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        },
        {
         "code": "F6.5",
         "title": "Presenting management options with trade-offs",
-        "idea": "",
-        "design": "",
+        "idea": "Every management option protects something and costs something.",
+        "design": "Options bench: student compares options on their own stated criteria and reports the trade-off measured, not asserted.",
         "sim": null,
-        "status": "design pending"
+        "status": "designed"
        }
       ]
      }

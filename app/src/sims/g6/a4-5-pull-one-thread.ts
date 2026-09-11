@@ -63,23 +63,40 @@ export interface LinkDef {
  * groundwater-to-subsidence link over years, a soil-to-forest link over a
  * decade, a tectonic-to-rainfall link over geological time.
  */
+/**
+ * Every link integrates as a RATE (deviation accumulates over years, decaying
+ * on RELAX_TAU_YR — see integrateMonth), so a link's actual steady-state
+ * strength is its gain multiplied by that many years, not the gain alone.
+ * These raw numbers encode each mechanism's real RELATIVE strength (warming
+ * shrinking the snowpack is a strong, fast effect; dust seeding clouds is a
+ * weak, secondary one); GAIN_SCALE converts them to the small per-tick values
+ * that keep every one of the twelve links inside a controllable, non-runaway
+ * range once multiplied by RELAX_TAU_YR — the spec's own caution that "gains
+ * are linear... honest only for small kicks" is exactly what this guards.
+ */
+const GAIN_SCALE = 1 / 15;
+
 export const LINKS: LinkDef[] = [
-  { id: "atmo-hydro", from: varKey("atmosphere", "temperature"), to: varKey("hydrosphere", "snowpack"), gain: -0.6, lagYr: 1, name: "warming lifts the snow line" },
-  { id: "atmo-geo", from: varKey("atmosphere", "precipitation"), to: varKey("geosphere", "erosionRate"), gain: 0.5, lagYr: 0.1, name: "heavy rain drives hillslope erosion" },
-  { id: "atmo-bio", from: varKey("atmosphere", "temperature"), to: varKey("biosphere", "forestCover"), gain: -0.3, lagYr: 2, name: "chronic warming stresses the forest" },
-  { id: "hydro-atmo", from: varKey("hydrosphere", "streamflow"), to: varKey("atmosphere", "precipitation"), gain: 0.15, lagYr: 0.2, name: "wet ground recycles moisture to the air" },
-  { id: "hydro-geo", from: varKey("hydrosphere", "aquiferLevel"), to: varKey("geosphere", "landSurfaceElev"), gain: 0.4, lagYr: 3, name: "a pumped aquifer lets the land subside" },
-  { id: "hydro-bio", from: varKey("hydrosphere", "upwellingStrength"), to: varKey("biosphere", "kelpDensity"), gain: 0.7, lagYr: 1, name: "cold nutrient-rich upwelling feeds kelp" },
-  { id: "geo-atmo", from: varKey("geosphere", "erosionRate"), to: varKey("atmosphere", "precipitation"), gain: 0.15, lagYr: 1, name: "eroded dust seeds clouds" },
-  { id: "geo-hydro", from: varKey("geosphere", "erosionRate"), to: varKey("hydrosphere", "aquiferLevel"), gain: -0.3, lagYr: 5, name: "sediment clogs groundwater recharge" },
-  { id: "geo-bio", from: varKey("geosphere", "soilDepth"), to: varKey("biosphere", "forestCover"), gain: 0.4, lagYr: 10, name: "deeper soil supports more forest" },
-  { id: "bio-atmo", from: varKey("biosphere", "forestCover"), to: varKey("atmosphere", "precipitation"), gain: 0.25, lagYr: 0.5, name: "forest transpiration feeds local rainfall" },
-  { id: "bio-hydro", from: varKey("biosphere", "forestCover"), to: varKey("hydrosphere", "streamflow"), gain: -0.2, lagYr: 1, name: "forest canopy draws down streamflow" },
-  { id: "bio-geo", from: varKey("biosphere", "forestCover"), to: varKey("geosphere", "erosionRate"), gain: -0.6, lagYr: 2, name: "roots hold the hillslope together" },
+  { id: "atmo-hydro", from: varKey("atmosphere", "temperature"), to: varKey("hydrosphere", "snowpack"), gain: -0.6 * GAIN_SCALE, lagYr: 1, name: "warming lifts the snow line" },
+  { id: "atmo-geo", from: varKey("atmosphere", "precipitation"), to: varKey("geosphere", "erosionRate"), gain: 0.5 * GAIN_SCALE, lagYr: 0.1, name: "heavy rain drives hillslope erosion" },
+  { id: "atmo-bio", from: varKey("atmosphere", "temperature"), to: varKey("biosphere", "forestCover"), gain: -0.3 * GAIN_SCALE, lagYr: 2, name: "chronic warming stresses the forest" },
+  { id: "hydro-atmo", from: varKey("hydrosphere", "streamflow"), to: varKey("atmosphere", "precipitation"), gain: 0.15 * GAIN_SCALE, lagYr: 0.2, name: "wet ground recycles moisture to the air" },
+  { id: "hydro-geo", from: varKey("hydrosphere", "aquiferLevel"), to: varKey("geosphere", "landSurfaceElev"), gain: 0.4 * GAIN_SCALE, lagYr: 3, name: "a pumped aquifer lets the land subside" },
+  { id: "hydro-bio", from: varKey("hydrosphere", "upwellingStrength"), to: varKey("biosphere", "kelpDensity"), gain: 0.7 * GAIN_SCALE, lagYr: 1, name: "cold nutrient-rich upwelling feeds kelp" },
+  { id: "geo-atmo", from: varKey("geosphere", "erosionRate"), to: varKey("atmosphere", "precipitation"), gain: 0.05 * GAIN_SCALE, lagYr: 1, name: "eroded dust seeds clouds" },
+  { id: "geo-hydro", from: varKey("geosphere", "erosionRate"), to: varKey("hydrosphere", "aquiferLevel"), gain: -0.3 * GAIN_SCALE, lagYr: 5, name: "sediment clogs groundwater recharge" },
+  { id: "geo-bio", from: varKey("geosphere", "soilDepth"), to: varKey("biosphere", "forestCover"), gain: 0.4 * GAIN_SCALE, lagYr: 10, name: "deeper soil supports more forest" },
+  { id: "bio-atmo", from: varKey("biosphere", "forestCover"), to: varKey("atmosphere", "precipitation"), gain: 0.25 * GAIN_SCALE, lagYr: 0.5, name: "forest transpiration feeds local rainfall" },
+  { id: "bio-hydro", from: varKey("biosphere", "forestCover"), to: varKey("hydrosphere", "streamflow"), gain: -0.2 * GAIN_SCALE, lagYr: 1, name: "forest canopy draws down streamflow" },
+  { id: "bio-geo", from: varKey("biosphere", "forestCover"), to: varKey("geosphere", "erosionRate"), gain: -0.6 * GAIN_SCALE, lagYr: 2, name: "roots hold the hillslope together" },
 ];
 
-const RESPONSE_TAU_YR = 0.4;   // how fast a variable moves once a delayed signal reaches it
-const RELAX_TAU_YR = 8;        // how fast an unforced variable drifts back to baseline
+/** How long a deviation lingers before fading on its own, absent any
+ *  reinforcing link — long enough that even the ten-year soil-to-forest lag
+ *  still finds a meaningfully elevated value to read, which is the whole
+ *  point: a one-off kick has to remain visible for as long as the slowest
+ *  real pathway needs to carry it. */
+const RELAX_TAU_YR = 20;
 const MONTH_YR = 1 / 12;
 const HISTORY_YEARS_MAX = 60;  // covers the longest lag (10 yr) with headroom
 const CROSS_THRESHOLD = 0.05;  // spec: the "moved more than 5%" definition
@@ -149,16 +166,20 @@ function pushHistory(hist: History, t: number, v: number): void {
 }
 
 /**
- * One monthly integration step: every variable relaxes toward a target set
- * ONLY by (a) its own baseline pull and (b) the sum of its ACTIVE incoming
- * links' delayed-source contributions. A cut link contributes exactly zero —
- * not a smaller number, zero — which is what makes "trace where it cannot
- * go" a provable, not just a narrated, fact.
+ * One monthly integration step. Each variable's deviation from baseline
+ * moves by a rate, not toward a target: d(deviation)/dt = incoming forcing
+ * minus a single slow decay. The incoming forcing is the sum of every ACTIVE
+ * link's gain times its SOURCE's delayed deviation — a cut link contributes
+ * exactly zero, not a smaller number, which is what makes "trace where it
+ * cannot go" a provable fact rather than a narrated one. A variable with no
+ * incoming links at all (an injector's direct target, mostly) simply decays
+ * on its own slow clock, which is what lets a one-off kick stay visible long
+ * enough for even a ten-year-lag link to still find something to read.
  */
 function integrateMonth(s: State, params: ParamValues): void {
   const delayScale = params.delayScaling as number;
   const cutLink = params.cutLink as string;
-  const targets: Record<string, number> = {};
+  const forcingOf: Record<string, number> = {};
   for (const k of ALL_VARS) {
     let forcing = 0;
     for (const link of LINKS) {
@@ -168,17 +189,16 @@ function integrateMonth(s: State, params: ParamValues): void {
       const delayed = historyAt(s.history[link.from], s.simYears - lag);
       forcing += link.gain * (delayed - 1);
     }
-    targets[k] = 1 + forcing;
+    forcingOf[k] = forcing;
   }
   for (const k of ALL_VARS) {
-    const target = targets[k];
-    const relaxToBaseline = (1 - s.values[k]) / RELAX_TAU_YR;
-    const pulledByLinks = (target - s.values[k]) / RESPONSE_TAU_YR;
-    // Both pulls act at once: a forced variable settles near its forced
-    // target while it is being forced, and drifts home once the forcing
-    // (itself delayed and finite) fades.
-    const dv = (relaxToBaseline * 0.15 + pulledByLinks * 0.85) * MONTH_YR;
-    s.values[k] = s.values[k] + dv;
+    const deviation = s.values[k] - 1;
+    const dDeviation = (forcingOf[k] - deviation / RELAX_TAU_YR) * MONTH_YR;
+    // A real sphere variable cannot run away to an absurd multiple of its own
+    // baseline — spec itself warns gains are "honest only for small kicks",
+    // so this is the physical floor and ceiling that keeps a large kick or an
+    // aggressive delay-scaling readable instead of numerically exploding.
+    s.values[k] = Math.max(0.1, Math.min(3, 1 + deviation + dDeviation));
   }
   for (const k of ALL_VARS) pushHistory(s.history[k], s.simYears, s.values[k]);
 
@@ -248,8 +268,11 @@ const LOOPS = computeLoops();
  * ------------------------------------------------------------------ */
 
 const model: SimModel<State> = {
-  init() {
-    return buildWorld();
+  init(params) {
+    // The sim starts already fired: whatever target and size the setup
+    // dials in is the kick the student is meant to be watching propagate,
+    // exactly as if they had just pulled the thread themselves.
+    return inject(buildWorld(), params.targetSphere as Hub, params.perturbationSize as number);
   },
 
   step(state, dt, params) {

@@ -737,6 +737,17 @@ export const readItRightSim: SimManifest<State> = {
             placeholder: "In g/cm³ it is about ...; in kg/m³ it is about ...; the factor of 1000 comes from ...",
           },
         },
+        {
+          id: "the-rule",
+          phase: "conclude",
+          title: "State the rule this whole bench teaches",
+          instruction:
+            "\"My last digit is a guess, and the instrument tells me which digit that is.\" The trim, the meniscus, the rule against the caliper, this density — every reading today was that same sentence, tested a different way.",
+          write: {
+            prompt: "Pick your clearest example from today and say which digit in your reading was the guess, and how the instrument's own division told you so.",
+            placeholder: "In my ... reading, the guessed digit was the ..., because the instrument's smallest division was ...",
+          },
+        },
       ],
     },
   ],

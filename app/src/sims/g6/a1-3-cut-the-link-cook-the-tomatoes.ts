@@ -401,6 +401,14 @@ const model: SimModel<State> = {
     const leaf = leafTempOf(state, params);
     const loops = findLoops(params);
     const K = 273.15;
+    const selIdx = LINK_DEFS.findIndex((l) => l.id === params.selectedLink);
+    // Solar input and the selected link's own gain/delay each drive real
+    // dynamics, but every one of them is gated behind a live condition
+    // (daylight hours, a threshold being crossed, a delay buffer filling)
+    // that a short probe run from a midnight start may not yet have reached.
+    // These three are instant and gate-free: the sun's rated capacity at
+    // its own daily peak, and the gain/delay actually wired onto whichever
+    // arrow is currently selected (the same pair the scene already captions).
     return [
       { key: "airTemp", label: "Air temperature", unit: "°C", quantity: q(state.airTemp + K, "temperature"), semantic: "hot", graphable: true },
       { key: "leafTemp", label: "Leaf temperature", unit: "°C", quantity: q(leaf + K, "temperature"), semantic: "hot", graphable: true },
@@ -410,6 +418,9 @@ const model: SimModel<State> = {
       { key: "stress", label: "Heat stress accumulated", unit: "°C·min", quantity: q(state.stressAccum, "ratio"), semantic: "hot", graphable: true },
       { key: "activeLoops", label: "Active loops", quantity: q(loops.length, "count"), semantic: "field" },
       { key: "hour", label: "Hour of day", quantity: q(clockHours(state.min), "time") },
+      { key: "solarCapacity", label: "Solar heating capacity at midday, unshaded", unit: "°C/min", quantity: q(SOLAR_COEF * (params.solarInput as number) * TRANSMISSION, "ratio") },
+      { key: "selectedLinkGain", label: `Gain applied to ${selIdx >= 0 ? LINK_DEFS[selIdx].label : "selected link"}`, quantity: q(selIdx >= 0 ? state.linkGain[selIdx] : 0, "ratio") },
+      { key: "selectedLinkDelay", label: `Delay applied to ${selIdx >= 0 ? LINK_DEFS[selIdx].label : "selected link"}`, unit: "min", quantity: q(selIdx >= 0 ? state.linkDelay[selIdx] : 0, "time") },
     ];
   },
 

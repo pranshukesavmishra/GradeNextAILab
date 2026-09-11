@@ -955,6 +955,17 @@ export const benchThatBitesSim: SimManifest<State> = {
             placeholder: "Where something starts relative to the edge determines ...",
           },
         },
+        {
+          id: "the-rule",
+          phase: "conclude",
+          title: "State the rule this whole bench teaches",
+          instruction:
+            "\"Before I touch anything, I work out what could reach me, and I put something in the way.\" Every lab on this bench — the splash, the eyewash timer, the ignition, this drill — was that same sentence, tested a different way.",
+          write: {
+            prompt: "Pick your clearest example from today and say exactly what you worked out in advance, and what you put in the way of it.",
+            placeholder: "Before I ..., I worked out that ... could reach me, so I put ... in the way.",
+          },
+        },
       ],
     },
   ],

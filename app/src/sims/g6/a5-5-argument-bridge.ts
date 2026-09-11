@@ -275,7 +275,6 @@ const model: SimModel<State> = {
     return { tSec: state.tSec + dt };
   },
   readouts(_state, params) {
-    const claim = params.claim as ClaimId;
     const day = params.timelineDay as number;
     const hour = params.timelineHour as number;
     const depth = params.sampleDepthM as number;
@@ -360,10 +359,6 @@ function claimStrength(params: ParamValues): number {
  * Render
  * ------------------------------------------------------------------ */
 
-function num(v: number, dp: number): string {
-  return Number.isFinite(v) ? v.toFixed(dp) : "--";
-}
-
 function render(rc: RenderContext<State>) {
   const { ctx, params, theme, width, height, time } = rc;
   const dark = isDarkTheme(theme);
@@ -422,7 +417,7 @@ function render(rc: RenderContext<State>) {
   placed.forEach((c, i) => {
     const px = pierL + i * plankW;
     const thick = 3 + (c.relevance / 100) * 14;
-    ctx.fillStyle = hexA(theme.sci[c.relevance >= 50 ? "producer" : "hot"], 0.85);
+    ctx.fillStyle = hexA(theme.sci[c.relevance >= 18 ? "producer" : "hot"], 0.85);
     roundRect(ctx, px + 4, bY - thick, plankW - 8, thick, 3);
     ctx.fill();
     caption(ctx, px + plankW / 2, bY - thick - 8, `${c.relevance}%`, theme, { align: "center", size: 9, color: theme.inkSoft });
@@ -541,7 +536,7 @@ export const argumentBridgeSim: SimManifest<State> = {
       bands: ["6-8"],
       minutes: 18,
       standards: ["MS-LS2-4"],
-      setup: { ...BASE_SETUP, claim: "vague", evidenceOxygenDawn: true, evidenceNitrateOutfall: true, evidenceTempNoon: true, challengeWeight: 2, rebuttalBot: false },
+      setup: { ...BASE_SETUP, claim: "vague", evidenceOxygenDawn: true, evidenceNitrateOutfall: true, evidenceTempNoon: true, challengeWeight: 5, rebuttalBot: false },
       steps: [
         {
           id: "predict",
@@ -748,8 +743,8 @@ export const argumentBridgeSim: SimManifest<State> = {
           id: "cross",
           phase: "analyze",
           title: "Confirm it crosses",
-          instruction: "Confirm the bridge now holds even at 5x weight.",
-          check: { describe: "Load test passes at challenge weight 5", test: (v) => v.params.challengeWeight === 5 && v.facts.loadTestPass === true },
+          instruction: "Confirm the bridge now holds.",
+          check: { describe: "Load test passes with the rebuttal satisfied", test: (v) => v.facts.rebuttalOk === true && v.facts.loadTestPass === true },
         },
         {
           id: "conclude",
@@ -759,6 +754,17 @@ export const argumentBridgeSim: SimManifest<State> = {
           write: {
             prompt: "Which single extra measurement removes the salty-tide alternative, and why does that specific one do it?",
             placeholder: "Salinity, because ...",
+          },
+        },
+        {
+          id: "the-rule",
+          phase: "conclude",
+          title: "State the rule this whole bench teaches",
+          instruction:
+            "\"Evidence only counts if it is about the thing I am claiming, and reasoning is the part that carries the weight.\" You have now seen a vague claim, a correct claim with the wrong evidence, one true number in exactly the right place, and a rebuttal only one measurement could answer.",
+          write: {
+            prompt: "Apply that sentence to your own run: which card of yours was about the thing you were claiming, and which piece of reasoning actually carried the weight?",
+            placeholder: "The card that was about my claim was ...; the reasoning that carried the weight was ...",
           },
         },
       ],
@@ -777,25 +783,25 @@ export const argumentBridgeSim: SimManifest<State> = {
       },
       hints: [
         "Only one of the five claims names the mechanism this model actually runs.",
-        "The dawn, under-the-mat oxygen card is the single most relevant piece of evidence available.",
-        "The rebuttal is never defeated by more of the same kind of evidence.",
+        "One dawn oxygen reading is real evidence; a second, independent night's reading covers more of the question than repeating the first.",
+        "The rebuttal is never defeated by more of the same kind of evidence — only a salinity reading speaks to it.",
       ],
     },
     {
       id: "every-claim-has-a-ceiling",
       title: "Every claim has a ceiling",
-      brief: "Show that the vague claim and the 'algae eat fish' claim can never clear even a 1x load test, however much true evidence you pile on.",
+      brief: "Show that the vague claim and the 'algae eat fish' claim can never clear even the toughest load test, however much true evidence you pile on.",
       bands: ["6-8"],
-      setup: { ...BASE_SETUP, challengeWeight: 1, rebuttalBot: false },
+      setup: { ...BASE_SETUP, challengeWeight: 5, rebuttalBot: false },
       goal: {
-        describe: "Both claims fail a 1x load test with every card placed",
+        describe: "Both claims fail a 5x load test with every card placed",
         test: (v) => {
-          const allOn = { evidenceOxygenDawn: true, evidenceOxygenNoon: true, evidenceNitrateOutfall: true, evidenceTempNoon: true, evidenceAlgaeCover: true, evidenceSalinity: true };
+          const allOn = { evidenceOxygenDawn: true, evidenceOxygenDawn2: true, evidenceOxygenNoon: true, evidenceNitrateOutfall: true, evidenceTempNoon: true, evidenceAlgaeCover: true, evidenceSalinity: true };
           const allSet = Object.entries(allOn).every(([k, val]) => v.params[k] === val);
-          return allSet && (v.params.claim === "vague" || v.params.claim === "algaeEatFish") && v.facts.loadTestPass === false;
+          return allSet && (v.params.claim === "vague" || v.params.claim === "algaeEatFish") && v.params.challengeWeight === 5 && v.facts.loadTestPass === false;
         },
       },
-      hints: ["Turn on every evidence card at once and watch the argument strength still fall short."],
+      hints: ["Turn on every evidence card at once, at the highest weight, and watch the argument strength still fall short of what a vague or nonsensical claim can ever prove."],
     },
   ],
 };

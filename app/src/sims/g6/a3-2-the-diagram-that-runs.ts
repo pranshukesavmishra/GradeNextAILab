@@ -271,8 +271,16 @@ const model: SimModel<State> = {
     const chlorine = chlorineResidual(params, fault, outlet);
     const match = traceMatchPct(params, fault, state.headlossM);
     const throughput = state.deadlocked || fault === "powerCut" ? 0 : (params.townDemand as number);
+    // The compression dial's own immediate consequence: how many real
+    // seconds Continuous mode needs to simulate one plant-day. Genuine and
+    // computable the instant the dial moves, whatever Run mode is selected.
+    const secondsPerSimDay = 1440 / (params.compression as number);
     return [
       { key: "traceMatch", label: "Trace match", unit: "%", quantity: q(match / 100, "percent"), semantic: "primary-consumer", graphable: true },
+      {
+        key: "secondsPerSimDay", label: "Real seconds per simulated day (Continuous)", unit: "s",
+        quantity: q(secondsPerSimDay, "time"), semantic: "field", graphable: true,
+      },
       { key: "waterDelivered", label: "Water delivered", unit: "ML/day", quantity: q(throughput, "ratio"), semantic: "velocity", graphable: true },
       { key: "outletTurbidity", label: "Outlet turbidity", unit: "NTU", quantity: q(outlet, "ratio"), semantic: "acid", graphable: true },
       { key: "headloss", label: "Filter headloss", unit: "m", quantity: q(state.headlossM, "length"), semantic: "hot", graphable: true },

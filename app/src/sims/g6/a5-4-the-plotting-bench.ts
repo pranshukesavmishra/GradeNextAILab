@@ -762,6 +762,17 @@ export const plottingBenchSim: SimManifest<State> = {
             placeholder: "The histogram shows ...; the mean alone leaves out ...",
           },
         },
+        {
+          id: "the-rule",
+          phase: "conclude",
+          title: "State the rule this whole bench teaches",
+          instruction:
+            "\"The numbers did not change, my axis did, so the graph was making the argument, not the data.\" The pie on a time series, the truncated rainfall axis, the line joining unordered points, this hidden spread — every fault today was that same sentence, tested a different way.",
+          write: {
+            prompt: "Pick your clearest example from today and say exactly what changed on screen while the underlying numbers stayed exactly the same.",
+            placeholder: "In my ... chart, the numbers stayed at ..., but changing ... made it look like ...",
+          },
+        },
       ],
     },
   ],

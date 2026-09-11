@@ -798,6 +798,17 @@ export const fourChambersSim: SimManifest<State> = {
             placeholder: "Growth collapses below about ... mL/day. Testing one plant risks ...",
           },
         },
+        {
+          id: "the-rule",
+          phase: "conclude",
+          title: "State the rule this whole rack teaches",
+          instruction:
+            "\"If two things differ, the result cannot tell me which one did it.\" Every chamber lab today — the clean light test, the two-variable confound, the single unlucky seed, this water trial — was that same sentence, tested a different way.",
+          write: {
+            prompt: "Pick your clearest example from today and name the two things that could have differed, and how you made sure only one of them did.",
+            placeholder: "In my clearest run, ... and ... could both have differed, so I ...",
+          },
+        },
       ],
     },
   ],

@@ -20,8 +20,8 @@ export const GRADE_6: GradeCurriculum = {
           subtopics: [
             { code: "A1.1", title: "What makes a system a system", sims: ["g6.a1-1"] },
             { code: "A1.2", title: "Subsystems nested within systems", sims: ["g6.a1-2"] },
-            { code: "A1.3", title: "Interactions among a system's parts", sims: [] },
-            { code: "A1.4", title: "Emergent properties", sims: [] },
+            { code: "A1.3", title: "Interactions among a system's parts", sims: ["g6.a1-3"] },
+            { code: "A1.4", title: "Emergent properties", sims: ["g6.a1-4"] },
             { code: "A1.5", title: "Systems across scales, from a cell to a planet", sims: [] },
           ],
         },
@@ -30,7 +30,7 @@ export const GRADE_6: GradeCurriculum = {
           subtopics: [
             { code: "A2.1", title: "Drawing a system's boundary", sims: ["g6.a2-1"] },
             { code: "A2.2", title: "Open vs closed systems", sims: ["g6.a2-2"] },
-            { code: "A2.3", title: "Inputs and outputs", sims: [] },
+            { code: "A2.3", title: "Inputs and outputs", sims: ["g6.a2-3"] },
             { code: "A2.4", title: "Tracing matter and energy through a system", sims: [] },
             { code: "A2.5", title: "Choosing a boundary for a purpose", sims: [] },
           ],
@@ -42,7 +42,7 @@ export const GRADE_6: GradeCurriculum = {
             { code: "A3.2", title: "Diagrams and flowcharts as models", sims: ["g6.a3-2"] },
             { code: "A3.3", title: "Physical and digital models", sims: ["g6.a3-3"] },
             { code: "A3.4", title: "What a model leaves out on purpose", sims: ["g6.a3-4"] },
-            { code: "A3.5", title: "Building and revising a model of a system", sims: [] },
+            { code: "A3.5", title: "Building and revising a model of a system", sims: ["g6.a3-5"] },
           ],
         },
         {
@@ -63,7 +63,7 @@ export const GRADE_6: GradeCurriculum = {
             { code: "A5.2", title: "Variables and fair tests", sims: ["g6.a5-2"] },
             { code: "A5.3", title: "SI units and measurement", sims: ["g6.a5-3"] },
             { code: "A5.4", title: "Organizing and graphing data", sims: ["g6.a5-4"] },
-            { code: "A5.5", title: "Claim, evidence and reasoning", sims: [] },
+            { code: "A5.5", title: "Claim, evidence and reasoning", sims: ["g6.a5-5"] },
             { code: "A5.6", title: "Designing an investigation of a system", sims: [] },
           ],
         },

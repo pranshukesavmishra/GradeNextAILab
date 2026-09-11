@@ -1,8 +1,54 @@
 import { describe, expect, it } from "vitest";
 import { SimRunner } from "@engine/loop";
 import { defaultParams } from "@engine/types";
-import type { ParamValues } from "@engine/types";
+import type { ParamValues, RenderContext, ThemeColors } from "@engine/types";
 import { kelpForestSim } from "./a3-5-three-versions-of-a-kelp-forest";
+
+/**
+ * A canvas stub that throws on exactly the mistakes a real canvas hides:
+ * an undefined fill colour, a non-finite coordinate, or (as this file's own
+ * science tests never call render() at all) a plain reference error from an
+ * import pulled from the wrong module. This is what actually caught the
+ * mixHex-imported-from-@ui/scene-instead-of-@ui/draw bug during this build.
+ */
+function stubContext(): CanvasRenderingContext2D {
+  const store: Record<string, unknown> = {};
+  const gradient = {
+    addColorStop(offset: number, color: string) {
+      if (!Number.isFinite(offset)) throw new Error("addColorStop offset is not finite");
+      if (typeof color !== "string" || color.length === 0) throw new Error("addColorStop received a non-colour");
+    },
+  };
+  return new Proxy(store, {
+    get(target, prop: string) {
+      if (prop === "measureText") return () => ({ width: 24 });
+      if (prop === "canvas") return { width: 900, height: 520 };
+      if (prop in target) return target[prop];
+      return (...args: unknown[]) => {
+        for (const arg of args) {
+          if (typeof arg === "number" && !Number.isFinite(arg)) {
+            throw new Error(`${prop} received a non-finite argument`);
+          }
+        }
+        if (prop === "createLinearGradient" || prop === "createRadialGradient") return gradient;
+        return undefined;
+      };
+    },
+    set(target, prop: string, value) {
+      if ((prop === "fillStyle" || prop === "strokeStyle") && value === undefined) {
+        throw new Error(`${prop} was set to undefined`);
+      }
+      target[prop] = value;
+      return true;
+    },
+  }) as unknown as CanvasRenderingContext2D;
+}
+
+const TEST_THEME: ThemeColors = {
+  surface: "#ffffff", surfaceAlt: "#eeeeee", ink: "#111111", inkSoft: "#555555",
+  line: "#dddddd", grid: "#eeeeee", accent: "#0d7c86",
+  sci: new Proxy({} as Record<string, string>, { get: () => "#888888" }),
+};
 
 /**
  * Science gate for G6-A3.5 "Three Versions of a Kelp Forest".

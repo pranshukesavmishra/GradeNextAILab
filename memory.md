@@ -72,55 +72,79 @@ progress, build log) — this file is the entry point and the law.
 
 ## STATE (update before every pause)
 
-Updated: 2026-09-06, after limit reset.
+Updated: 2026-09-11, after registering a wave of 5 + fixing a1-4 from scratch.
 
-**Live and green on the site** (52 registered sims, CI green at head e742c86+):
+**Live and green on the site** (58 registered sims, full gate green: tsc
+clean, 927/927 vitest, npm run build clean):
 - The 37 keepers (frozen).
-- G6 Unit A: 15 of 27 done, registered, tested, pushed —
-  a1-1 (exemplar), a1-2, a2-1, a2-2, a3-1..a3-4, a4-1..a4-4, a5-1..a5-4.
-  (16 of 27 — a4-4 The Living Skin landed 2026-09-06.)
+- G6 Unit A: 21 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
+  a1-3, a1-4, a2-1, a2-2, a2-3, a3-1, a3-2, a3-3, a3-4, a3-5, a4-1, a4-2,
+  a4-3, a4-4, a5-1, a5-2, a5-3, a5-4, a5-5.
 
-**On disk, uncommitted right now**: mid-build a1-3, a2-3, a4-4, a5-5 (sims
-modified); revived tests a3-5.test.ts, a4-4.test.ts (were .wip, lanes fixed
-them — VERIFY with vitest before trusting); a4-4.test.ts.wip deleted.
+**Remaining Unit A (6)**: a1-5 · a2-4, a2-5 · a4-5, a4-6 · a5-6. Of these,
+a2-4-follow-one-drop-follow-one-joule.ts, a4-5-pull-one-thread.ts and
+a5-6-run-my-plan.ts already have full model files on disk (untracked,
+substantial, ~33-39 KB each) but NO science test file yet — pipeline step 3
+(verify) has not run, so they are NOT wired/shipped. Check these three
+first (fastest path to landing) before starting a1-5/a2-5/a4-6 from zero.
 
-**Remaining Unit A (12)**: a1-3, a1-4, a1-5 (A1 lane) · a2-3, a2-4, a2-5
-(A2 lane) · a3-5 (A3 lane) · a4-4, a4-5, a4-6 (A4 lane) · a5-5, a5-6
-(A5 lane). Plus triage queue in docs/QUALITY_STATUS.json (a3-1
-processes/compression/repeats, a3-2 compression, a3-3 runLengthDays, a4-1
-magnitude, a4-3 ascentRateTarget, a5-1 sash, a5-4 yAxisMax; phys.collisions
-massB waits on founder-approved enhancement).
+**Acceptance-gate triage queue** (docs/QUALITY_STATUS.json, machine-
+generated — do not hand-edit): down to 3 — phys.collisions massB (frozen
+keeper, waits on founder-approved enhancement), a5-1 sash, a5-4 yAxisMax
+(both pre-existing, untouched this pass). a1-3 (linkDelayMin/linkGain/
+solarInput) and a1-4 (patchCount/selectedPatch) triaged to zero this pass —
+see build log for the fix (both were real controls masked by the sweep's
+short window landing entirely at simulated midnight / before any bee
+completes a round trip; fixed with instant, gate-free readouts, no model
+formula changed).
 
-**Retroactive subtopic-alignment audit** (law 2) — FIRST PASS DONE
-(2026-09-06, orchestrator, tagline/intent level): all 15 shipped experiments
-read as genuinely aligned to their subtopics. Spot checks: a1-2 severs parts
-and failure climbs the containment tree (nested subsystems); a2-1 moves a
-boundary and flows change column with no rate moving (drawing a boundary);
-a2-2 "closed does not mean nothing gets in" (open vs closed); a3-4 pays for
-every process skipped (what a model leaves out); a5-2 fair test judged by a
-real number (variables and fair tests); a5-4 catches the axis doing the
-arguing (organizing and graphing data). SECOND PASS ALSO DONE at learningGoals
-level (2026-09-06): every shipped experiment states its subtopic's idea
-explicitly as a goal — a1-1 "say what turns a collection of parts into a
-system: parts, interactions, and a function they maintain together"; a1-2
-"describe a bicycle as a system of subsystems"; a3-1 "explain why a model
-exists: to do what reality forbids"; a3-2 "treat a flowchart as a model whose
-arrows are testable predictions"; a5-3 "state a measurement as a number, a
-unit and an uncertainty". Law 2 holds on the shipped set. Re-run the same
-check on each new experiment at wire time (pipeline step 4).
+**g6.a1-4 "No Bee Is In Charge" — full rebuild from a broken lane draft**
+(2026-09-11): found and fixed 4 real model bugs by direct numerical
+diagnosis (standalone runner scripts, not reading code alone) — measurement-
+by-arrival undercounting convergence, "richest" read from live harvest-
+drained stock instead of student-set target, Rule 4's odour correction not
+credited in the static target measurement, and the real root cause: harvest
+fraction (0.22, lane-invented, unmarked) let up to 600 near-simultaneous
+foragers (S1's own default colony) compound-drain the richest patch faster
+than regrowth could ever recover, holding it below the dance/memory
+thresholds ~98% of the time regardless of simulated duration — structurally
+incapable of the emergence the sim exists to demonstrate. Retuned to 0.01,
+verified across many seeds (colonySize=600 now reliably reaches 55-66%
+accuracy by minute 20-25, matching the spec's stated session length). All
+17 of its own science tests pass; full detail in docs/G6A_BUILD_LOG.md.
+TWO KNOWN GAPS logged there, not blocking ship, founder input wanted before
+touching further: (a) "Colony size" control's tooltip ("weakens then
+vanishes as it falls") reads backwards from verified behaviour — smaller
+colonies converge MORE reliably (a carrying-capacity effect the tooltip
+doesn't anticipate); the more detailed "smallest-working-colony" challenge
+is unaffected and passes reliably. (b) "recruit-without-dancing" challenge
+(accuracy>50% via chance+odour alone) is not reachable in any practical
+time — Rule 4 is richness-blind by design, but the challenge's own hint
+implies it should not be.
 
-**Stale-file cleanup: DONE** (2026-09-06). The six archetype-era leftovers
-in app/src/sims/g6/ (a1.ts, a2.ts, _a1/_a2/_c1/_c2.draft.ts) are deleted —
-unreferenced dead code whose taglines overlapped the new experiments. Gate
-green after removal (778 tests, tsc clean).
+**Retroactive subtopic-alignment audit** (law 2) — TWO PASSES DONE on the
+first 15 (2026-09-06, tagline level then learningGoals level, see git
+history for full quotes) plus a THIRD, learningGoals-level pass on this
+wave's 5 (2026-09-11): a1-3 "explain that a system's behaviour comes from
+the interactions between its parts, not from the parts on their own"; a1-4
+"state the core idea of an emergent property: a whole can have an ability
+that not one of its parts has, or could have"; a2-3 "list a machine's
+inputs and outputs without assuming the useful output is the only one";
+a3-5 "distinguish a parameter problem from a structural one by watching
+auto-tune hit a floor"; a5-5 "distinguish a testable, specific claim from a
+vague one that no evidence can properly support". Law 2 holds on all 21
+shipped. Re-run the same check on each new experiment at wire time
+(pipeline step 4) — cheap (grep learningGoals, read against the subtopic
+title), always do it before registering.
 
 **Next actions, in order**:
-1. Verify on-disk work (vitest), commit+push what's green.
-2. Resume the five lanes (SendMessage) with their remaining lists AND law 2
-   verbatim in the message.
-3. As lanes finish: wire, gate, commit, push, update STATE.
-4. Unit A completion report to founder; then subtopic-alignment audit; then
-   next unit (founder sends the book, or I design per law 4).
+1. Read docs/QUALITY_STATUS.json + this file, confirm git status is clean
+   (should be, right after this update's commit+push).
+2. Write science tests for the three model-complete-but-untested files
+   (a2-4, a4-5, a5-6), verify (own tests + vitest + tsc), wire, gate, ship.
+3. Build the remaining three from zero (a1-5, a2-5, a4-6) per the pipeline.
+4. Unit A completion report to founder; then next unit (founder sends the
+   book, or I design per law 4).
 
 **After Unit A**: founder sends next unit book one at a time; where no book,
 I design each subtopic's experiment myself (law 4) at keeper quality.

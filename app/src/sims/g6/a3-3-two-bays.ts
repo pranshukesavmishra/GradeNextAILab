@@ -198,7 +198,15 @@ const model: SimModel<State> = {
   readouts(state, params) {
     const field = x2Field(params);
     const cost = solverCostSeconds(params.cellSize as number);
+    // Run length's own immediate consequence: real seconds the physical
+    // basin — fixed pace, no dial rushes it — needs to reach that many
+    // tidal days. Genuine and computable before any run finishes.
+    const secondsToRunLength = (params.runLengthDays as number) / PHYSICAL_DAYS_PER_REAL_SEC;
     return [
+      {
+        key: "timeToRunLength", label: "Real time to reach run length (physical)", unit: "s",
+        quantity: q(secondsToRunLength, "time"), semantic: "field", graphable: true,
+      },
       { key: "x2Field", label: "Salt front — field", unit: "km", quantity: q(field * 1000, "length"), semantic: "producer", graphable: true },
       { key: "x2Physical", label: "Salt front — physical", unit: "km", quantity: q(state.x2Physical * 1000, "length"), semantic: "hot", graphable: true },
       { key: "x2Digital", label: "Salt front — digital", unit: "km", quantity: q(state.x2Digital * 1000, "length"), semantic: "cold", graphable: true },

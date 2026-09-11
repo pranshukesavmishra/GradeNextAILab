@@ -1,11 +1,10 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
-import type { Rng } from "@engine/rng";
 import { q } from "@engine/units";
-import { roundRect } from "@ui/draw";
+import { mixHex, roundRect } from "@ui/draw";
 import { benchStage } from "@ui/labware";
 import { plant } from "@ui/fauna";
 import {
-  badge, caption, clamp01, hexA, isDarkTheme, mixHex, softShadow, sphere, vignette,
+  badge, caption, clamp01, hexA, isDarkTheme, softShadow, sphere, vignette,
 } from "@ui/scene";
 import { chartFrame, lineSeries } from "@ui/charts";
 
@@ -403,7 +402,7 @@ function render(rc: RenderContext<State>) {
 
   drawKelpPanel(rc, width * 0.06, stageH * 0.12, width * 0.5, stageH * 0.7);
 
-  const structX = width * 0.62, structY = stageH * 0.12, structW = width * 0.32;
+  const structX = width * 0.62, structY = stageH * 0.12;
   caption(ctx, structX, structY, "STRUCTURE", theme, { size: 10, weight: 800, color: theme.inkSoft });
   const rows: { label: string; on: boolean }[] = [
     { label: "kelp stock + growth flow", on: true },

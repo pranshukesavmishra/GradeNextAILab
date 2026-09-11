@@ -1,39 +1,13 @@
 {
   "generated": "by app/src/sims/acceptance.test.ts — do not edit by hand",
-  "simCount": 53,
+  "simCount": 58,
   "hardInvariants": "asserted in CI: finite readouts, clock advances, determinism, clean reset",
   "unresponsiveControls": [
-    {
-      "id": "g6.a3-1",
-      "subject": "engineering",
-      "unresponsive": [
-        "processes",
-        "compression",
-        "repeats"
-      ],
-      "tested": 4
-    },
     {
       "id": "phys.collisions",
       "subject": "physics",
       "unresponsive": [
         "massB"
-      ],
-      "tested": 4
-    },
-    {
-      "id": "g6.a3-2",
-      "subject": "earth",
-      "unresponsive": [
-        "compression"
-      ],
-      "tested": 3
-    },
-    {
-      "id": "g6.a3-3",
-      "subject": "engineering",
-      "unresponsive": [
-        "runLengthDays"
       ],
       "tested": 4
     },
