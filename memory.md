@@ -74,19 +74,27 @@ progress, build log) — this file is the entry point and the law.
 
 Updated: 2026-09-11, after registering a wave of 5 + fixing a1-4 from scratch.
 
-**Live and green on the site** (58 registered sims, full gate green: tsc
-clean, 927/927 vitest, npm run build clean):
+**Live and green on the site** (59 registered sims, full gate green: tsc
+clean, 945/945 vitest, npm run build clean):
 - The 37 keepers (frozen).
-- G6 Unit A: 21 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
-  a1-3, a1-4, a2-1, a2-2, a2-3, a3-1, a3-2, a3-3, a3-4, a3-5, a4-1, a4-2,
-  a4-3, a4-4, a5-1, a5-2, a5-3, a5-4, a5-5.
+- G6 Unit A: 22 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
+  a1-3, a1-4, a2-1, a2-2, a2-3, a2-4, a3-1, a3-2, a3-3, a3-4, a3-5, a4-1,
+  a4-2, a4-3, a4-4, a5-1, a5-2, a5-3, a5-4, a5-5.
 
-**Remaining Unit A (6)**: a1-5 · a2-4, a2-5 · a4-5, a4-6 · a5-6. Of these,
-a2-4-follow-one-drop-follow-one-joule.ts, a4-5-pull-one-thread.ts and
-a5-6-run-my-plan.ts already have full model files on disk (untracked,
-substantial, ~33-39 KB each) but NO science test file yet — pipeline step 3
-(verify) has not run, so they are NOT wired/shipped. Check these three
-first (fastest path to landing) before starting a1-5/a2-5/a4-6 from zero.
+**Remaining Unit A (5)**: a1-5, a2-5, a4-6 (not started) · a4-5, a5-6
+(model files already on disk, ~33-35 KB each, substantial, but NO science
+test file yet — pipeline step 3 has not run, so not wired/shipped). Check
+a4-5/a5-6 first (fastest path to landing, same recipe as a2-4 below) before
+starting a1-5/a2-5/a4-6 from zero. **Recipe that worked for a2-4** (a model
+built by an earlier lane pass, with no test): read the whole file once,
+diagnose real timing/scale via standalone vite-node scripts BEFORE writing
+assertions (this file's residence times run from seconds to years — used
+`timeComp` at its own max plus `SimRunner.advance(0.25)` — the shared
+engine's own `MAX_FRAME_SECONDS` — in a loop; empirically confirmed both
+correctness AND that it stays fast, tens of ms even for multi-year runs),
+write the test against verified real behaviour, then register and gate.
+This process found and fixed 2 more real model bugs (see build log) — a
+model nobody had ever run against real assertions had two live ones.
 
 **Acceptance-gate triage queue** (docs/QUALITY_STATUS.json, machine-
 generated — do not hand-edit): down to 3 — phys.collisions massB (frozen

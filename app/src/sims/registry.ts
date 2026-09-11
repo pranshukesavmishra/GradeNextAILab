@@ -46,6 +46,7 @@ import { noBeeInChargeSim } from "./g6/a1-4-no-bee-is-in-charge";
 import { whereYouDrawTheLineSim } from "./g6/a2-1-where-you-draw-the-line";
 import { threeJarsOneLampSim } from "./g6/a2-2-three-jars-one-lamp";
 import { onTheDynoSim } from "./g6/a2-3-on-the-dyno";
+import { followOneDropSim } from "./g6/a2-4-follow-one-drop-follow-one-joule";
 import { experimentYouCannotRunSim } from "./g6/a3-1-the-experiment-you-cannot-run";
 import { diagramThatRunsSim } from "./g6/a3-2-the-diagram-that-runs";
 import { twoBaysSim } from "./g6/a3-3-two-bays";
@@ -117,6 +118,7 @@ export const SIMS: AnySim[] = [
   whereYouDrawTheLineSim,
   threeJarsOneLampSim,
   onTheDynoSim,
+  followOneDropSim,
   experimentYouCannotRunSim,
   diagramThatRunsSim,
   twoBaysSim,

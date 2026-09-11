@@ -31,7 +31,7 @@ export const GRADE_6: GradeCurriculum = {
             { code: "A2.1", title: "Drawing a system's boundary", sims: ["g6.a2-1"] },
             { code: "A2.2", title: "Open vs closed systems", sims: ["g6.a2-2"] },
             { code: "A2.3", title: "Inputs and outputs", sims: ["g6.a2-3"] },
-            { code: "A2.4", title: "Tracing matter and energy through a system", sims: [] },
+            { code: "A2.4", title: "Tracing matter and energy through a system", sims: ["g6.a2-4"] },
             { code: "A2.5", title: "Choosing a boundary for a purpose", sims: [] },
           ],
         },

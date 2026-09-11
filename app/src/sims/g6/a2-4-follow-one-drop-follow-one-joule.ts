@@ -1,9 +1,9 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import type { Rng } from "@engine/rng";
 import { q } from "@engine/units";
-import { mixHex, roundRect } from "@ui/draw";
+import { mixHex } from "@ui/draw";
 import {
-  badge, caption, clamp01, dashFlow, glow, hexA, isDarkTheme, metal, plastic, pulse,
+  badge, caption, clamp01, hexA, isDarkTheme, plastic,
   sphere, vignette,
 } from "@ui/scene";
 import { chartFrame, lineSeries } from "@ui/charts";
@@ -78,7 +78,6 @@ export const NODES: NodeDef[] = [
 
 if (NODES.length !== 18) throw new Error(`A2.4 network must have 18 nodes, has ${NODES.length}`);
 const NODE_BY_ID = new Map(NODES.map((n) => [n.id, n]));
-const HIT_RADIUS = 22;
 
 interface FlowCtx { bulk: number; school: number; drink: number; leak: number }
 
@@ -93,7 +92,7 @@ function flowCtx(params: ParamValues): FlowCtx {
  *  follows from it mechanically — never a hand-typed table. */
 function outflowOf(node: NodeDef, c: FlowCtx): number {
   switch (node.flow) {
-    case "bulk": return c.bulk;
+    case "bulk": return Math.max(1e-9, c.bulk);
     case "bulkLeaked": return Math.max(1e-9, c.bulk - c.leak);
     case "school": return Math.max(1e-9, c.school);
     case "drink": return Math.max(1e-9, c.drink);
@@ -292,7 +291,13 @@ const model: SimModel<State> = {
         const next = nextNodeFor(t.kind, t.node, c, ctx.rng);
         if (next === null) {
           // Structurally unreachable for a water tracer (every node in
-          // MATTER_EDGES has an outgoing branch); kept only as a guard.
+          // MATTER_EDGES has an outgoing branch) — this is an energy tracer
+          // discovering, by waiting out its residence here rather than by
+          // just hopping in, that the node it is already at is terminal (a
+          // release point set directly to the bay, soil or cloud). It goes
+          // inactive the same way the hop-arrival case below does, rather
+          // than reading as "still active" forever.
+          if (t.kind === "energy") t = { ...t, active: false };
           break;
         }
         let value = t.value;
@@ -340,7 +345,6 @@ const model: SimModel<State> = {
   },
 
   readouts(state, params) {
-    void params;
     const active = state.tracers.filter((t) => t.active).length;
     const anyClosed = state.tracers.some((t) => t.loop === "closed");
     return [
@@ -348,6 +352,11 @@ const model: SimModel<State> = {
       { key: "activeTracers", label: "Active tracers", quantity: q(active, "count"), semantic: "distance" },
       { key: "wasteHeat", label: "Waste heat released", unit: "J", quantity: q(state.wasteHeatTotal, "energy"), semantic: "hot", graphable: true },
       { key: "loopsClosed", label: "Loops closed (water)", quantity: q(anyClosed ? 1 : 0, "count"), semantic: "producer" },
+      // Instant and gate-free, unlike the four above: the multiplier a joule
+      // actually receives at the pump, live from the dial, rather than a
+      // value that only shows up once some tracer has travelled the months
+      // of upstream residence time it takes to actually reach the pump.
+      { key: "pumpBoost", label: "Pump boost multiplier", quantity: q(pumpBoost(params), "ratio"), semantic: "current" },
     ];
   },
 
@@ -463,7 +472,7 @@ function drawEdges(rc: RenderContext<State>) {
 }
 
 function render(rc: RenderContext<State>) {
-  const { ctx, state, params, theme, width, height, time } = rc;
+  const { ctx, state, params, theme, width, height } = rc;
   const graphH = Math.round(height * 0.22);
   const stageH = height - graphH - 6;
   const scale = Math.min(width / 760, stageH / 300);
