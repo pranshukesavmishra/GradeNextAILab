@@ -74,34 +74,39 @@ progress, build log) — this file is the entry point and the law.
 
 Updated: 2026-09-11, after registering a wave of 5 + fixing a1-4 from scratch.
 
-**Live and green on the site** (60 registered sims, full gate green: tsc
-clean, 958/958 vitest, npm run build clean):
+**Live and green on the site** (61 registered sims, full gate green: tsc
+clean, 975/975 vitest, npm run build clean):
 - The 37 keepers (frozen).
-- G6 Unit A: 23 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
+- G6 Unit A: 24 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
   a1-3, a1-4, a2-1, a2-2, a2-3, a2-4, a3-1, a3-2, a3-3, a3-4, a3-5, a4-1,
-  a4-2, a4-3, a4-4, a4-5, a5-1, a5-2, a5-3, a5-4, a5-5.
+  a4-2, a4-3, a4-4, a4-5, a5-1, a5-2, a5-3, a5-4, a5-5, a5-6.
 
-**Remaining Unit A (4)**: a1-5, a2-5, a4-6 (not started) · a5-6 (model file
-already on disk, ~33 KB, substantial, but NO science test yet — pipeline
-step 3 has not run). Check a5-6 first (fastest path to landing, same
-recipe below) before starting a1-5/a2-5/a4-6 from zero.
+**Remaining Unit A (3), none started**: a1-5, a2-5, a4-6. Every
+model-built-but-untested file left over from earlier lane passes (a2-4,
+a4-5, a5-6) is now landed — these three need the FULL pipeline from step 1
+(design), not just a missing test. Read app/src/curriculum/grade6.ts for
+each subtopic's exact title, then follow docs/BUILDER_GUIDE.md +
+the exemplar (a1-1) same as any from-scratch build; there is no founder
+book chapter for these beyond the subtopic title, so design per law 4.
 
-**Recipe that landed a2-4 and a4-5** (both: a model built by an earlier
-lane pass, with no test): read the whole file once (check for a lane's own
-gitignored `_*.test.ts` scratch diagnostic first — reuse its param/fact
-names as a map, then delete it once superseded), diagnose real timing/scale
-via standalone vite-node scripts BEFORE writing assertions (residence times
-and multi-decade lags need the shared engine's own `MAX_FRAME_SECONDS`
-respected — advance in that increment in a loop, at the control's own max
-speed dial — empirically confirmed both correctness AND that it stays fast,
-tens of ms even for multi-year/decade runs), write the test against
-verified real behaviour, then register and gate — the gate always finds
-one more thing: a2-4 had 2 real model bugs (divide-by-zero at a control's
-own labelled minimum, a state flag never set on one path) plus one
-gate-only timing fix; a4-5 had one control that was never wired to
-anything at all (not slow — absent), fixed by actually wiring it rather
-than patching around it. A model nobody had run against real assertions
-yet, twice in a row, had a real bug an assertion-free scratch file missed.
+**Recipe that landed a2-4, a4-5 and a5-6** (each: a model built by an
+earlier lane pass, with no test): read the whole file once (check for a
+lane's own gitignored `_*.test.ts` scratch diagnostic first — reuse its
+param/fact names as a map, then delete it once superseded), diagnose real
+timing/scale via standalone vite-node scripts BEFORE writing assertions
+(residence times and multi-decade lags need the shared engine's own
+`MAX_FRAME_SECONDS` respected — advance in that increment in a loop, at
+the control's own max speed dial — empirically confirmed both correctness
+AND that it stays fast, tens of ms even for multi-year/decade runs), write
+the test against verified real behaviour, then register and gate. The gate
+found something every time but the last: a2-4 had 2 real model bugs
+(divide-by-zero at a control's own labelled minimum, a state flag never
+set on one path); a4-5 had one control never wired to anything at all
+(fixed by wiring it, not patching around it); a5-6 held up clean on a
+comprehensive test (only a genuinely-inert-by-design control pair needed
+an honest live readout, same as the others). Worth repeating for a1-5/
+a2-5/a4-6 even though they start from zero: diagnose real behaviour with
+vite-node before trusting any assumption about timing or scale.
 
 **Acceptance-gate triage queue** (docs/QUALITY_STATUS.json, machine-
 generated — do not hand-edit): down to 3 — phys.collisions massB (frozen

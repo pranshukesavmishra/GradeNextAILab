@@ -61,6 +61,7 @@ import { benchThatBitesSim } from "./g6/a5-1-the-bench-that-bites";
 import { fourChambersSim } from "./g6/a5-2-four-chambers-one-question";
 import { readItRightSim } from "./g6/a5-3-read-it-right";
 import { plottingBenchSim } from "./g6/a5-4-the-plotting-bench";
+import { runMyPlanSim } from "./g6/a5-6-run-my-plan";
 import { argumentBridgeSim } from "./g6/a5-5-argument-bridge";
 
 
@@ -135,6 +136,7 @@ export const SIMS: AnySim[] = [
   readItRightSim,
   plottingBenchSim,
   argumentBridgeSim,
+  runMyPlanSim,
 /* TEMP-G7E-VERIFY-START */
 /* TEMP-G7E-VERIFY-END */
 ];

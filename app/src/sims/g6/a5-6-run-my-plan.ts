@@ -205,6 +205,14 @@ const model: SimModel<State> = {
       { key: "meanHeight", label: "Mean radish height", unit: "mm", quantity: q(heights.reduce((a, b) => a + b, 0) / n / 1000, "length"), semantic: "producer", graphable: true },
       { key: "score", label: "Design score", quantity: q(crit.filter((c) => c.pass).length / crit.length, "percent"), semantic: "neutral" },
       { key: "resolvesSwing", label: "Resolves the daily swing", quantity: q(canResolveDailySwing(params.measurementIntervalH as number) ? 1 : 0, "count") },
+      // Instant and always live, unlike the columns above: with no variable
+      // assigned yet (Independent variable = None), low/high genuinely do
+      // not reach any column's biology, by design — a plan with nothing
+      // deliberately varied has nothing for these to set. Their own dial
+      // positions are still a real, current fact about the plan, so the
+      // span between them is reported directly rather than left with no
+      // live consequence at all while that choice is still "none".
+      { key: "ivSpan", label: "Independent variable: configured span", quantity: q((params.ivHigh as number) - (params.ivLow as number), "ratio") },
     ];
   },
   facts(state, params) {

@@ -64,7 +64,7 @@ export const GRADE_6: GradeCurriculum = {
             { code: "A5.3", title: "SI units and measurement", sims: ["g6.a5-3"] },
             { code: "A5.4", title: "Organizing and graphing data", sims: ["g6.a5-4"] },
             { code: "A5.5", title: "Claim, evidence and reasoning", sims: ["g6.a5-5"] },
-            { code: "A5.6", title: "Designing an investigation of a system", sims: [] },
+            { code: "A5.6", title: "Designing an investigation of a system", sims: ["g6.a5-6"] },
           ],
         },
       ],
