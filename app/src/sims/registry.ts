@@ -45,6 +45,7 @@ import { chloroplastToCoastlineSim } from "./g6/a1-5-from-chloroplast-to-coastli
 import { cutTheLinkSim } from "./g6/a1-3-cut-the-link-cook-the-tomatoes";
 import { noBeeInChargeSim } from "./g6/a1-4-no-bee-is-in-charge";
 import { whereYouDrawTheLineSim } from "./g6/a2-1-where-you-draw-the-line";
+import { zeroEmissionBusSim } from "./g6/a2-5-the-zero-emission-bus-argument";
 import { threeJarsOneLampSim } from "./g6/a2-2-three-jars-one-lamp";
 import { onTheDynoSim } from "./g6/a2-3-on-the-dyno";
 import { followOneDropSim } from "./g6/a2-4-follow-one-drop-follow-one-joule";
@@ -120,6 +121,7 @@ export const SIMS: AnySim[] = [
   cutTheLinkSim,
   noBeeInChargeSim,
   whereYouDrawTheLineSim,
+  zeroEmissionBusSim,
   threeJarsOneLampSim,
   onTheDynoSim,
   followOneDropSim,

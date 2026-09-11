@@ -74,21 +74,41 @@ progress, build log) — this file is the entry point and the law.
 
 Updated: 2026-09-11, after registering a wave of 5 + fixing a1-4 from scratch.
 
-**Live and green on the site** (62 registered sims, full gate green: tsc
-clean, 994/994 vitest, npm run build clean):
+**Live and green on the site** (63 registered sims, full gate green: tsc
+clean, 1017/1017 vitest, npm run build clean):
 - The 37 keepers (frozen).
-- G6 Unit A: 25 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
-  a1-3, a1-4, a1-5, a2-1, a2-2, a2-3, a2-4, a3-1, a3-2, a3-3, a3-4, a3-5,
-  a4-1, a4-2, a4-3, a4-4, a4-5, a5-1, a5-2, a5-3, a5-4, a5-5, a5-6.
+- G6 Unit A: 26 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
+  a1-3, a1-4, a1-5, a2-1, a2-2, a2-3, a2-4, a2-5, a3-1, a3-2, a3-3, a3-4,
+  a3-5, a4-1, a4-2, a4-3, a4-4, a4-5, a5-1, a5-2, a5-3, a5-4, a5-5, a5-6.
 
-**Remaining Unit A (2), neither started**: a2-5, a4-6. Both have a founder
-spec entry in docs/experiment-specs/G6-UnitA/G6_UnitA.json (search
-`"subtopic_id": "A2.5"` / `"A4.6"`) — read the full entry (theme_scene,
-objects, model, controls, scenarios, activities, outputs, realisation)
-before designing, same as every other Unit A experiment; there is no
-"design myself from nothing" step here, the founder's book already covers
-these two, G6-A2.5 "Choosing a boundary for a purpose" and G6-A4.6
-"Modeling an Earth-system event".
+**Remaining Unit A (1), the LAST one**: a4-6, "Modeling an Earth-system
+event". Founder spec entry at
+docs/experiment-specs/G6-UnitA/G6_UnitA.json, search
+`"subtopic_id": "A4.6"` — read the full entry (theme_scene, objects, model,
+controls, scenarios, activities, outputs, realisation) before designing,
+same as every other Unit A experiment. Once this lands, run the full
+retroactive law-2 alignment audit across all 27 (roadmap step 2) and send
+the founder the Unit A completion report (roadmap step 4) before starting
+the next unit — do not start Unit B without the founder's book for it, or
+design it per law 4 if told there isn't one.
+
+**g6.a2-5 "The Zero-Emission Bus Argument" — a data-dashboard sim with no
+canopy/creature visuals, just a real 7-node lifecycle ledger + a computed
+fit badge**: confirms the "reasoned constant, tuned to the founder's own
+named pivot point" technique (used for a1-4's harvest fraction, a1-5's
+chloroplast rate) generalises past continuous-dynamics sims to a static
+accounting one — here, battery-manufacturing kg CO2/kWh was picked so the
+S3 scenario's own explicit numbers ("service life 12yr, answer is no")
+land correctly inside the service-life control's real range, verified by
+finding the actual break-even year via the crossover of two real lines
+rather than asserting one. Also: a fit badge that checks "does the
+boundary contain what this question needs" must decide, per question,
+which nodes are genuinely REQUIRED — a structurally-always-zero node
+(the electric bus's own tailpipe CO2) is not a meaningful requirement for
+a CO2 question even though it is geometrically "inside" a tailpipe-only
+boundary; the founder's own S2 (tailpipe boundary, CO2 question -> RED)
+only holds once the required-node list reflects that, not a naive
+count-every-node-in-the-question's-topic list.
 
 **g6.a1-5 "From Chloroplast to Coastline" — built from scratch against a
 genuinely ambitious founder spec** (six nested aggregation levels, a
