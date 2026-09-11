@@ -74,27 +74,34 @@ progress, build log) — this file is the entry point and the law.
 
 Updated: 2026-09-11, after registering a wave of 5 + fixing a1-4 from scratch.
 
-**Live and green on the site** (59 registered sims, full gate green: tsc
-clean, 945/945 vitest, npm run build clean):
+**Live and green on the site** (60 registered sims, full gate green: tsc
+clean, 958/958 vitest, npm run build clean):
 - The 37 keepers (frozen).
-- G6 Unit A: 22 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
+- G6 Unit A: 23 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
   a1-3, a1-4, a2-1, a2-2, a2-3, a2-4, a3-1, a3-2, a3-3, a3-4, a3-5, a4-1,
-  a4-2, a4-3, a4-4, a5-1, a5-2, a5-3, a5-4, a5-5.
+  a4-2, a4-3, a4-4, a4-5, a5-1, a5-2, a5-3, a5-4, a5-5.
 
-**Remaining Unit A (5)**: a1-5, a2-5, a4-6 (not started) · a4-5, a5-6
-(model files already on disk, ~33-35 KB each, substantial, but NO science
-test file yet — pipeline step 3 has not run, so not wired/shipped). Check
-a4-5/a5-6 first (fastest path to landing, same recipe as a2-4 below) before
-starting a1-5/a2-5/a4-6 from zero. **Recipe that worked for a2-4** (a model
-built by an earlier lane pass, with no test): read the whole file once,
-diagnose real timing/scale via standalone vite-node scripts BEFORE writing
-assertions (this file's residence times run from seconds to years — used
-`timeComp` at its own max plus `SimRunner.advance(0.25)` — the shared
-engine's own `MAX_FRAME_SECONDS` — in a loop; empirically confirmed both
-correctness AND that it stays fast, tens of ms even for multi-year runs),
-write the test against verified real behaviour, then register and gate.
-This process found and fixed 2 more real model bugs (see build log) — a
-model nobody had ever run against real assertions had two live ones.
+**Remaining Unit A (4)**: a1-5, a2-5, a4-6 (not started) · a5-6 (model file
+already on disk, ~33 KB, substantial, but NO science test yet — pipeline
+step 3 has not run). Check a5-6 first (fastest path to landing, same
+recipe below) before starting a1-5/a2-5/a4-6 from zero.
+
+**Recipe that landed a2-4 and a4-5** (both: a model built by an earlier
+lane pass, with no test): read the whole file once (check for a lane's own
+gitignored `_*.test.ts` scratch diagnostic first — reuse its param/fact
+names as a map, then delete it once superseded), diagnose real timing/scale
+via standalone vite-node scripts BEFORE writing assertions (residence times
+and multi-decade lags need the shared engine's own `MAX_FRAME_SECONDS`
+respected — advance in that increment in a loop, at the control's own max
+speed dial — empirically confirmed both correctness AND that it stays fast,
+tens of ms even for multi-year/decade runs), write the test against
+verified real behaviour, then register and gate — the gate always finds
+one more thing: a2-4 had 2 real model bugs (divide-by-zero at a control's
+own labelled minimum, a state flag never set on one path) plus one
+gate-only timing fix; a4-5 had one control that was never wired to
+anything at all (not slow — absent), fixed by actually wiring it rather
+than patching around it. A model nobody had run against real assertions
+yet, twice in a row, had a real bug an assertion-free scratch file missed.
 
 **Acceptance-gate triage queue** (docs/QUALITY_STATUS.json, machine-
 generated — do not hand-edit): down to 3 — phys.collisions massB (frozen

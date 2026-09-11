@@ -56,6 +56,7 @@ import { peelThePlanetSim } from "./g6/a4-1-peel-the-planet";
 import { hydrosphereSim } from "./g6/a4-2-ninety-seven-two-and-a-splash";
 import { rideTheBalloonSim } from "./g6/a4-3-ride-the-balloon";
 import { livingSkinSim } from "./g6/a4-4-the-living-skin";
+import { pullOneThreadSim } from "./g6/a4-5-pull-one-thread";
 import { benchThatBitesSim } from "./g6/a5-1-the-bench-that-bites";
 import { fourChambersSim } from "./g6/a5-2-four-chambers-one-question";
 import { readItRightSim } from "./g6/a5-3-read-it-right";
@@ -128,6 +129,7 @@ export const SIMS: AnySim[] = [
   hydrosphereSim,
   rideTheBalloonSim,
   livingSkinSim,
+  pullOneThreadSim,
   benchThatBitesSim,
   fourChambersSim,
   readItRightSim,

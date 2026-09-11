@@ -311,9 +311,15 @@ const model: SimModel<State> = {
     return state;
   },
 
-  readouts(state) {
+  readouts(state, params) {
     const out = [
       { key: "years", label: "Years since injection", quantity: q(Math.max(0, state.simYears - Math.max(0, state.injectedAtYear)), "count"), semantic: "time" },
+      // Instant and gate-free: the response-order board (see render) only
+      // ever lists entries inside this many years of the injection, so its
+      // own currently-applied value is a real, live fact about the sim's
+      // present configuration — unlike "years since injection" above, this
+      // one does not need a downstream link's own lag to have first fired.
+      { key: "responseWindowYears", label: "Response board window", unit: "yr", quantity: q(params.runSpan as number, "count"), semantic: "time" },
     ];
     for (const hub of HUBS) {
       let maxDev = 0;
@@ -335,11 +341,19 @@ const model: SimModel<State> = {
       HUB_VARS[hub].some((name) => Math.abs(state.values[varKey(hub, name)] - 1) >= CROSS_THRESHOLD),
     ).length;
     const orderList = state.responseOrder.map((r) => r.key).join(",");
+    const runSpan = params.runSpan as number;
+    const injYr = Math.max(0, state.injectedAtYear);
+    const responsesInWindow = state.responseOrder.filter((r) => r.year - injYr <= runSpan).length;
     return {
       simYears: state.simYears,
       injected: state.injectedAtYear >= 0,
       yearsSinceInjection: state.injectedAtYear >= 0 ? state.simYears - state.injectedAtYear : -1,
       hubsMovedPast5pct: hubsMoved,
+      // How many of the response-order board's own entries fall inside the
+      // window runSpan actually promises to limit it to — the same filter
+      // the board itself now draws with, so the control has a real,
+      // measurable consequence and not just a visual one.
+      responsesInWindow,
       firstResponder: state.responseOrder[0]?.key ?? "",
       secondResponder: state.responseOrder[1]?.key ?? "",
       responseOrderList: orderList,
@@ -452,8 +466,11 @@ function render(rc: RenderContext<State>) {
   ctx.stroke();
   caption(ctx, sideX + 10, 28, "RESPONSE ORDER", theme, { size: 9, weight: 800, color: theme.inkSoft });
   let ry = 44;
-  for (const r of state.responseOrder.slice(0, 10)) {
-    caption(ctx, sideX + 10, ry, `${num(r.year - Math.max(0, state.injectedAtYear))}yr  ${r.key}`, theme, { size: 8, color: theme.inkSoft });
+  const runSpan = params.runSpan as number;
+  const injYr = Math.max(0, state.injectedAtYear);
+  const windowed = state.responseOrder.filter((r) => r.year - injYr <= runSpan);
+  for (const r of windowed.slice(0, 10)) {
+    caption(ctx, sideX + 10, ry, `${num(r.year - injYr)}yr  ${r.key}`, theme, { size: 8, color: theme.inkSoft });
     ry += 13;
   }
   if (params.loopHighlight !== false) {

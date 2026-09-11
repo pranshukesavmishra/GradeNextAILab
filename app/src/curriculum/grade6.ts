@@ -52,7 +52,7 @@ export const GRADE_6: GradeCurriculum = {
             { code: "A4.2", title: "The hydrosphere", sims: ["g6.a4-2"] },
             { code: "A4.3", title: "The atmosphere", sims: ["g6.a4-3"] },
             { code: "A4.4", title: "The biosphere", sims: ["g6.a4-4"] },
-            { code: "A4.5", title: "Interactions among Earth's four spheres", sims: [] },
+            { code: "A4.5", title: "Interactions among Earth's four spheres", sims: ["g6.a4-5"] },
             { code: "A4.6", title: "Modeling an Earth-system event", sims: [] },
           ],
         },
