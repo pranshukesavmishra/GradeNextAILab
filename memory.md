@@ -74,23 +74,68 @@ progress, build log) — this file is the entry point and the law.
 
 Updated: 2026-09-11, after registering a wave of 5 + fixing a1-4 from scratch.
 
-**Live and green on the site** (63 registered sims, full gate green: tsc
-clean, 1017/1017 vitest, npm run build clean):
+**Live and green on the site** (64 registered sims, full gate green: tsc
+clean, 1049/1049 vitest, npm run build clean):
 - The 37 keepers (frozen).
-- G6 Unit A: 26 of 27 registered, tested, pushed — a1-1 (exemplar), a1-2,
-  a1-3, a1-4, a1-5, a2-1, a2-2, a2-3, a2-4, a2-5, a3-1, a3-2, a3-3, a3-4,
-  a3-5, a4-1, a4-2, a4-3, a4-4, a4-5, a5-1, a5-2, a5-3, a5-4, a5-5, a5-6.
+- G6 Unit A: **27 of 27 registered, tested, pushed — COMPLETE.** a1-1
+  (exemplar), a1-2, a1-3, a1-4, a1-5, a2-1, a2-2, a2-3, a2-4, a2-5, a3-1,
+  a3-2, a3-3, a3-4, a3-5, a4-1, a4-2, a4-3, a4-4, a4-5, a4-6, a5-1, a5-2,
+  a5-3, a5-4, a5-5, a5-6.
 
-**Remaining Unit A (1), the LAST one**: a4-6, "Modeling an Earth-system
-event". Founder spec entry at
-docs/experiment-specs/G6-UnitA/G6_UnitA.json, search
-`"subtopic_id": "A4.6"` — read the full entry (theme_scene, objects, model,
-controls, scenarios, activities, outputs, realisation) before designing,
-same as every other Unit A experiment. Once this lands, run the full
-retroactive law-2 alignment audit across all 27 (roadmap step 2) and send
-the founder the Unit A completion report (roadmap step 4) before starting
-the next unit — do not start Unit B without the founder's book for it, or
-design it per law 4 if told there isn't one.
+**Next actions, in order** (none started yet):
+1. Run the full retroactive law-2 alignment audit across all 27 Unit A
+   experiments: for each, does the scene/model/controls/labs/measurements
+   actually serve THAT subtopic's one learning goal (law 2, "very very
+   very important" per the founder), not just a generic simulation of the
+   general topic area. Read each experiment's own tagline/learningGoals
+   against its spec's subtopic_title and realisation text; flag anything
+   that reads generic or drifted, fix in place if the fix is small and
+   obvious, log for founder input if it would mean reinterpreting spec
+   intent (same discipline as a1-4's two logged-not-fixed gaps).
+2. Prepare and send the founder a Unit A completion report (what shipped,
+   what was reasoned/tuned vs. spec-literal, the handful of logged founder-
+   input-needed items: a1-4's colony-size tooltip and recruit-without-
+   dancing challenge, a4-6's two intentionally-unshipped dropdown events).
+3. Do NOT start Unit B without the founder's book for it, or design it per
+   law 4 if told there isn't one.
+4. Optional low-priority cleanup noticed in passing, not yet actioned:
+   `app/src/sims/g6/_a45diag2.test.ts` is a leftover private diagnostic
+   file from earlier a4-5 work (underscore-prefixed, still passes, not
+   part of any real experiment's test suite) — safe to delete whenever
+   convenient, deliberately left untouched while a4-6 was the live lane.
+
+**g6.a4-6 "One Spark, Sixty Years: A Sierra Watershed" — the Unit A4
+capstone and the last of the 27, built from scratch** (2026-09-11): full
+detail in the build log; three lessons worth generalising forward. (1) When
+a spec's own controls are all configured up front (every scenario preset
+sets a full param bundle, none of them a live mid-run click), the timeline
+can be a PURE function of (scrubberPosition, params) with no cached
+derived state at all — recompute zones/severity/indices fresh on every
+readouts()/facts()/render() call rather than fighting cache invalidation;
+this is the opposite lesson from a1-5 (whose sequential S3 activity forced
+a stateful clock) and the deciding question is always "does any control
+fire a one-time shock mid-run, or is everything just a dial set before the
+run starts". (2) A 0-100 "impact index" built from two additive/max-
+combined components (here: an immediate burn-scar component and a delayed
+storm/debris component) will silently saturate BOTH a mild and a severe
+scenario at the same ceiling if either component's scale constant is
+picked too high — always numerically verify the two scenarios the founder
+explicitly wants compared (S1 vs S2 here) actually land on different
+sides of a real threshold, not just "both nonzero". (3) A gate/severity
+threshold that reacts to ONE input (fuel moisture, crown-fire eligibility)
+must not be allowed to make a SECOND input (fuel load, years since fire)
+functionally irrelevant once the first crosses its threshold — caught only
+because S3's own prescribed-burn scenario was tested against the untreated
+baseline and came back identical; the fix (crown fire lowers the severity
+bar rather than bypassing fuel load entirely) is the general pattern for
+any "eligibility gate + continuous driver" severity model. Also: the
+founder's own dropdown listed two more events ("Multi-year drought",
+"Coastal upwelling collapse") with zero scene/object/model/scenario text
+anywhere in the spec to build against — shipped only the two the spec
+actually grounds and exercises (Sierra wildfire, atmospheric river) rather
+than invent two cascades from nothing, flagged for the founder rather than
+decided silently; this is the precedent for any future spec that lists
+more options in a dropdown than it actually describes.
 
 **g6.a2-5 "The Zero-Emission Bus Argument" — a data-dashboard sim with no
 canopy/creature visuals, just a real 7-node lifecycle ledger + a computed
