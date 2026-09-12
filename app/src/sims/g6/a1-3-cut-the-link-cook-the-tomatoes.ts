@@ -777,7 +777,11 @@ export const cutTheLinkSim: SimManifest<State> = {
       options: LINK_DEFS.map((l) => ({ value: l.id, label: l.label })),
       default: "tempVent", help: "Which arrow the two sliders below edit.",
     },
-    linkDelayMin: { type: "number", label: "Delay on selected link", kind: "time", unit: "min", min: 0, max: 30, step: 1, default: 2, help: "Lag between cause and effect on the selected arrow." },
+    // kind: "count", not "time" — the model reads this as a plain number of
+    // minutes directly; "time"'s SI base unit is seconds, which would have
+    // silently converted the raw value 2 into "2 seconds" and displayed a
+    // meaningless "0.03 min" next to the slider.
+    linkDelayMin: { type: "number", label: "Delay on selected link (min)", kind: "count", min: 0, max: 30, step: 1, default: 2, help: "Lag between cause and effect on the selected arrow." },
     linkGain: { type: "number", label: "Gain on selected link", kind: "ratio", min: 0.2, max: 3.0, step: 0.1, default: 1.0, help: "How strongly the selected arrow's cause moves its effect." },
     outsideTemp: { type: "number", label: "Outside air temperature", kind: "temperature", unit: "°C", min: 5 + KELVIN, max: 45 + KELVIN, step: 1, default: 38 + KELVIN, help: "Driving heat difference across the film and through open vents." },
     solarInput: { type: "number", label: "Solar input (W/m²)", kind: "ratio", min: 0, max: 1000, step: 10, default: 850, help: "Heat and light entering through the roof at solar noon." },

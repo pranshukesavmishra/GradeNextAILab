@@ -505,7 +505,11 @@ export const zeroEmissionBusSim: SimManifest<State> = {
     },
     customStart: { type: "number", label: "Custom boundary: first node", kind: "count", min: 0, max: 6, step: 1, default: 4, help: "Only used when Boundary preset = Custom." },
     customEnd: { type: "number", label: "Custom boundary: last node", kind: "count", min: 0, max: 6, step: 1, default: 4, help: "Only used when Boundary preset = Custom; must be at or after the first node." },
-    chargingHour: { type: "number", label: "Charging window", kind: "time", unit: "h", min: 0, max: 23, step: 1, default: 22, help: "Which hourly grid mix the depot draws, which sets gCO2 per kWh." },
+    // kind: "count", not "time" — this is an hour-of-day INDEX (0-23), read
+    // directly by the model, not a duration; "time"'s SI base unit is
+    // seconds, which silently converted 22 into "22 seconds" and displayed
+    // a meaningless "0.006 h" next to the slider.
+    chargingHour: { type: "number", label: "Charging hour (0-23h)", kind: "count", min: 0, max: 23, step: 1, default: 22, help: "Which hourly grid mix the depot draws, which sets gCO2 per kWh." },
     gridScenario: {
       type: "option", label: "Grid scenario",
       options: [
@@ -518,7 +522,11 @@ export const zeroEmissionBusSim: SimManifest<State> = {
       help: "The generation mix behind every kWh the buses use.",
     },
     fleetSize: { type: "number", label: "Fleet size", kind: "count", min: 1, max: 40, step: 1, default: 12, help: "Scales every ledger figure and the depot load together." },
-    serviceLifeYears: { type: "number", label: "Bus service life", kind: "time", unit: "yr", min: 4, max: 18, step: 1, default: 12, help: "How far the manufacturing burden is spread, which moves the break-even year." },
+    // kind: "count", not "time" — the model reads this as a plain number of
+    // years directly (see firstYearCo2/breakEvenServiceLifeYears); "time"'s
+    // SI base unit is seconds, which silently converted 12 into "12
+    // seconds" and displayed a meaningless "3.8e-7 yr" next to the slider.
+    serviceLifeYears: { type: "number", label: "Bus service life (yr)", kind: "count", min: 4, max: 18, step: 1, default: 12, help: "How far the manufacturing burden is spread, which moves the break-even year." },
     comparisonVehicle: {
       type: "option", label: "Comparison vehicle",
       options: [

@@ -392,8 +392,12 @@ export const runMyPlanSim: SimManifest<State> = {
     columnsBuilt: { type: "number", label: "Columns built", kind: "count", min: 1, max: N_MAX, step: 1, default: 3, help: "Treatment levels times replicates." },
     controlledVariablesStated: { type: "boolean", label: "Controlled variables stated", default: false, help: "Unstated, seed-batch variation is left free to move as much as any treatment." },
     randomizePositions: { type: "boolean", label: "Randomise shelf positions", default: false, help: "Off, the lamp-and-window gradient sits on the shelf exactly where you built your columns." },
-    measurementIntervalH: { type: "number", label: "Measurement interval", kind: "time", unit: "h", min: 1, max: 168, step: 1, default: 24, help: "How often oxygen is sampled. Past 12 h, a 24 h swing cannot be resolved." },
-    durationDays: { type: "number", label: "Run duration", kind: "time", unit: "d", min: 3, max: 60, step: 1, default: 14, help: "This system's processes run 6-30 days." },
+    // kind: "count", not "time" — the model reads both of these as plain
+    // numbers of hours/days directly; "time"'s SI base unit is seconds,
+    // which silently converted 24 into "24 seconds" and 14 into
+    // "14 seconds", displaying meaningless fractional h/d values.
+    measurementIntervalH: { type: "number", label: "Measurement interval (h)", kind: "count", min: 1, max: 168, step: 1, default: 24, help: "How often oxygen is sampled. Past 12 h, a 24 h swing cannot be resolved." },
+    durationDays: { type: "number", label: "Run duration (days)", kind: "count", min: 3, max: 60, step: 1, default: 14, help: "This system's processes run 6-30 days." },
     instrumentPrecision: {
       type: "option", label: "Instrument for the dependent variable",
       options: [
