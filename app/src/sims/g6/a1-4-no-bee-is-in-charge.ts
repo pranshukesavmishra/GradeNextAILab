@@ -621,17 +621,38 @@ function drawField(rc: RenderContext<State>, x0: number, w: number, h: number) {
   sphere(ctx, hivePos.x, hivePos.y, HIVE_ENTRANCE_R_M * scale * 1.4, "#8a5a2e", { rim: true });
   caption(ctx, hivePos.x, hivePos.y + HIVE_ENTRANCE_R_M * scale * 1.4 + 10, "hive", theme, { align: "center", size: 10, color: theme.inkSoft });
 
-  // Bees — drawn as small heading dots; only in-flight bees are visible in the field.
+  // Bees — a small elongated, banded body reads clearly as "a bee" even at
+  // a few pixels, where a bare dot read as generic noise. A fixed per-bee
+  // tilt (a cheap hash of the bee's own index) gives visual variety without
+  // needing to track heading in the model's own state — position is the
+  // only thing the model actually simulates per bee, and stays untouched.
   const n = activeBees(params);
   const followIdx = params.followOneBee === true ? 0 : -1;
   for (let i = 0; i < n; i++) {
     const st = state.beeState[i];
     if (st !== ST_SCOUT && st !== ST_FORAGE) continue;
     const p = worldToField(state.beeX[i], state.beeY[i], cx, cy, scale);
+    const isFollowed = i === followIdx;
     const color = st === ST_SCOUT ? theme.sci["field"] : theme.sci["primary-consumer"];
-    ctx.fillStyle = i === followIdx ? theme.accent : hexA(color, 0.85);
-    ctx.beginPath(); ctx.arc(p.x, p.y, i === followIdx ? 3.2 : 1.5, 0, Math.PI * 2); ctx.fill();
-    if (i === followIdx) glow(ctx, p.x, p.y, 10, hexA(theme.accent, 0.4));
+    const bodyColor = isFollowed ? theme.accent : color;
+    const len = isFollowed ? 7 : 3.4;
+    const wid = len * 0.55;
+    const angle = ((i * 2654435761) % 360) * (Math.PI / 180);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(angle);
+    ctx.fillStyle = hexA(bodyColor, 0.92);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, len / 2, wid / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexA(dark ? "#12100c" : "#3a2a10", 0.75);
+    ctx.lineWidth = Math.max(0.4, wid * 0.22);
+    ctx.beginPath();
+    ctx.moveTo(-len * 0.1, -wid * 0.5); ctx.lineTo(-len * 0.1, wid * 0.5);
+    ctx.moveTo(len * 0.15, -wid * 0.5); ctx.lineTo(len * 0.15, wid * 0.5);
+    ctx.stroke();
+    ctx.restore();
+    if (isFollowed) glow(ctx, p.x, p.y, 10, hexA(theme.accent, 0.4));
   }
   if (params.rainEvent === true) {
     ctx.save();
