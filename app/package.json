@@ -8,11 +8,15 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "health": "node scripts/health.mjs",
+    "lab:quality": "node scripts/wire-topics.mjs --check && node scripts/wire-curriculum.mjs --check && tsc -b --noEmit && vitest run"
   },
   "dependencies": {
+    "@types/three": "^0.170.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "three": "^0.170.0"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",

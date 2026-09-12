@@ -24,5 +24,18 @@
       "@labs/*": ["src/labs/*"]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts"],
+  // Files prefixed with an underscore are an agent's working scratch during a
+  // build and are never shipped; excluding them keeps a half-written draft
+  // from breaking the typecheck for everyone else.
+  // Per-topic simulation drafts are excluded until they are wired into the
+  // registry. Nothing here reaches the bundle before that point, and wiring a
+  // topic in removes its exclusion, so a sim cannot ship without type-checking.
+  "exclude": [
+    "src/**/_*.ts",
+    "src/**/_*.tsx",
+    "src/sims/g6",
+    "src/sims/g7",
+    "src/sims/g8"
+  ]
 }

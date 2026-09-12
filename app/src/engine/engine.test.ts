@@ -222,3 +222,62 @@ describe("sim manifest integrity", () => {
     }
   });
 });
+
+/**
+ * The clock.
+ *
+ * Every simulation in the catalogue once sat frozen at zero seconds because a
+ * single negative delta — a first animation frame carrying a timestamp from
+ * before the loop was set up — drove the fixed-step accumulator about twenty
+ * seconds negative, and it never climbed back to one tick. Nothing else caught
+ * it: the types were fine, the unit tests were green, and a still screenshot
+ * of a frozen simulation looks exactly like a still screenshot of a running
+ * one. These are the tests that would have.
+ */
+describe("SimRunner clock", () => {
+  const fresh = () => {
+    const params = defaultParams(projectileSim.params);
+    const r = new SimRunner({ manifest: projectileSim, params, band: "9-12", seed: "clock" });
+    r.playing = true;
+    return r;
+  };
+
+  it("advances on an ordinary frame", () => {
+    const r = fresh();
+    expect(r.advance(1 / 60)).toBe(true);
+    expect(r.time).toBeGreaterThan(0);
+  });
+
+  it("survives a negative delta and keeps running afterwards", () => {
+    const r = fresh();
+    r.advance(-22.4);            // a frame timestamp older than the loop
+    expect(r.time).toBe(0);      // no time travel
+    r.advance(1 / 60);
+    expect(r.time).toBeGreaterThan(0);
+    expect(r.ticks).toBeGreaterThan(0);
+  });
+
+  it("survives a run of negative deltas", () => {
+    const r = fresh();
+    for (let i = 0; i < 40; i++) r.advance(-1);
+    for (let i = 0; i < 4; i++) r.advance(1 / 60);
+    expect(r.ticks).toBeGreaterThan(0);
+  });
+
+  it("clamps a huge catch-up delta rather than spiralling", () => {
+    const r = fresh();
+    r.advance(600);
+    // A stalled tab returning must not run ten minutes of physics in one frame.
+    expect(r.time).toBeLessThanOrEqual(0.26);
+  });
+
+  it("does not advance while paused, and resumes cleanly", () => {
+    const r = fresh();
+    r.playing = false;
+    r.advance(1);
+    expect(r.time).toBe(0);
+    r.playing = true;
+    r.advance(1 / 60);
+    expect(r.time).toBeGreaterThan(0);
+  });
+});

@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import type { AnySim, GradeBand, Subject } from "@engine/types";
+import { Icon } from "@ui/Icon";
 import { SUBJECT_LABEL } from "@engine/types";
 import { SIMS, bandForGrade, filterSims } from "@sims/registry";
+import { CURRICULA, countTopics } from "../curriculum";
 
 const SUBJECT_ORDER: Subject[] = ["physics", "chemistry", "biology", "earth", "math", "engineering"];
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -9,9 +11,10 @@ const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 interface CatalogProps {
   onOpen: (id: string, band: GradeBand) => void;
   onOpenNotebook: () => void;
+  onOpenLibrary: (grade?: number) => void;
 }
 
-export function Catalog({ onOpen, onOpenNotebook }: CatalogProps) {
+export function Catalog({ onOpen, onOpenNotebook, onOpenLibrary }: CatalogProps) {
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<Subject | "all">("all");
   const [grade, setGrade] = useState<number | "all">("all");
@@ -47,9 +50,30 @@ export function Catalog({ onOpen, onOpenNotebook }: CatalogProps) {
             Every science and math idea from Grade 1 to Grade 12 — something you can see,
             change, and run an experiment on.
           </p>
+
+          <div className="cat-courses">
+            <p className="cat-courses-label">Follow your course, in teaching order</p>
+            <div className="cat-course-row">
+              {CURRICULA.map((c) => (
+                <button
+                  key={c.grade}
+                  type="button"
+                  className="cat-course"
+                  onClick={() => onOpenLibrary(c.grade)}
+                >
+                  <span className="cat-course-g">Grade {c.grade}</span>
+                  <span className="cat-course-t">{c.units.length} units · {countTopics(c)} topics</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="cat-actions">
+            <button type="button" className="btn btn-quiet" onClick={() => onOpenLibrary()}>
+              <Icon name="library" size={16} /> Course Library
+            </button>
             <button type="button" className="btn btn-quiet" onClick={onOpenNotebook}>
-              📓 My Lab Notebook
+              <Icon name="notebook" size={16} /> My Lab Notebook
             </button>
           </div>
         </div>
@@ -125,9 +149,9 @@ export function Catalog({ onOpen, onOpenNotebook }: CatalogProps) {
                         Grades {Math.min(...sim.grades)}–{Math.max(...sim.grades)}
                       </span>
                       <span className="sim-modes" aria-label="Available modes">
-                        <span title="Explore">🧭</span>
-                        {sim.labs?.length ? <span title={`${sim.labs.length} guided labs`}>🧪</span> : null}
-                        {sim.challenges?.length ? <span title={`${sim.challenges.length} challenges`}>🎯</span> : null}
+                        <span title="Explore"><Icon name="explore" size={15} /></span>
+                        {sim.labs?.length ? <span title={`${sim.labs.length} guided labs`}><Icon name="lab" size={15} /></span> : null}
+                        {sim.challenges?.length ? <span title={`${sim.challenges.length} challenges`}><Icon name="challenge" size={15} /></span> : null}
                       </span>
                     </div>
                     {sim.standards.ngss?.length ? (

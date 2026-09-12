@@ -1,6 +1,9 @@
 import type { RenderContext, SimManifest, SimModel } from "@engine/types";
 import { CONSTANTS, q } from "@engine/units";
-import { arrow, camera, disc, ground, grid, label, trail } from "@ui/draw";
+import { arrow, camera, grid } from "@ui/draw";
+import {
+  badge, caption, comet, contactShadow, groundPlane, hexA, material, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * Projectile Launcher — Grades 6-12.
@@ -194,114 +197,165 @@ function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, overlays, band } = rc;
   const g = params.gravity as number;
   const speed = params.speed as number;
+  const launchH = params.height as number;
 
-  // Frame the world generously enough to hold the whole flight.
+  // Frame the world around the flight that is actually going to happen, so the
+  // arc fills the stage instead of hugging the floor of an empty box.
   const estRange = Math.max(20, (speed * speed * 1.15) / Math.max(g, 0.5));
-  const worldW = Math.max(estRange, state.target * 1.3, state.body.x * 1.15, 25);
-  const worldH = Math.max(
-    (speed * speed) / (2 * Math.max(g, 0.5)) * 1.35 + (params.height as number),
-    worldW * (height / width) * 0.55,
-    12,
-  );
-  const cam = camera({ x0: -worldW * 0.04, y0: -worldH * 0.08, x1: worldW, y1: worldH, width, height, square: false });
+  const worldW = Math.max(estRange, state.target * 1.25, state.body.x * 1.12, 25);
+  const apex = (speed * Math.sin(params.angle as number)) ** 2 / (2 * Math.max(g, 0.5)) + launchH;
+  const worldH = Math.max(apex * 1.5, state.body.y * 1.2, worldW * 0.3, 8);
+  const cam = camera({
+    x0: -worldW * 0.05, y0: -worldH * 0.14, x1: worldW * 1.02, y1: worldH,
+    width, height, square: false,
+  });
+  const groundY = cam.toScreenY(0);
+
+  /* ---- the place ---- */
+  sky(ctx, width, height, theme, g < 3 ? "space" : "day", groundY);
+  groundPlane(ctx, groundY, 0, width, height, theme, g < 3 ? "rock" : "grass");
 
   const spacing = worldW > 160 ? 40 : worldW > 80 ? 20 : worldW > 40 ? 10 : 5;
   if (overlays.grid) {
     grid(ctx, cam, theme, { spacing, x0: 0, y0: 0, x1: worldW, y1: worldH, labels: band !== "K-2" });
   }
 
-  const groundY = cam.toScreenY(0);
-  ground(ctx, groundY, cam.toScreenX(-worldW * 0.04), cam.toScreenX(worldW), theme);
-
-  // Previous attempts, so comparison is a first-class action.
+  /* ---- previous attempts, so comparison is a first-class action ---- */
   if (overlays.ghosts) {
     for (const gPath of state.ghosts) {
-      const pts = gPath.map((p) => ({ x: cam.toScreenX(p.x), y: cam.toScreenY(p.y) }));
-      trail(ctx, pts, theme.inkSoft, 0.22);
+      if (gPath.length < 2) continue;
+      ctx.save();
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = theme.inkSoft;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cam.toScreenX(gPath[0].x), cam.toScreenY(gPath[0].y));
+      for (const pt of gPath) ctx.lineTo(cam.toScreenX(pt.x), cam.toScreenY(pt.y));
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
-  // Target
+  /* ---- target ---- */
   const tx = cam.toScreenX(state.target);
+  const flag = theme.sci["acceleration"];
   ctx.save();
-  ctx.strokeStyle = theme.sci["acceleration"];
-  ctx.fillStyle = theme.sci["acceleration"];
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = theme.inkSoft;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(tx, groundY);
-  ctx.lineTo(tx, groundY - 26);
+  ctx.lineTo(tx, groundY - 34);
   ctx.stroke();
+  ctx.fillStyle = flag;
   ctx.beginPath();
-  ctx.moveTo(tx, groundY - 26);
-  ctx.lineTo(tx + 20, groundY - 20);
-  ctx.lineTo(tx, groundY - 14);
+  ctx.moveTo(tx, groundY - 34);
+  ctx.lineTo(tx + 22, groundY - 27);
+  ctx.lineTo(tx, groundY - 20);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
+  // A ring on the ground makes "did it land on target?" readable at a glance.
+  ctx.save();
+  ctx.strokeStyle = hexA(flag, 0.7);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(tx, groundY, 14, 4, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 
-  // Flight path
+  /* ---- flight path as a tapering trail ---- */
+  const b = state.body;
   if (state.path.length > 1) {
-    ctx.save();
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 2;
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.moveTo(cam.toScreenX(state.path[0].x), cam.toScreenY(state.path[0].y));
-    for (const p of state.path) ctx.lineTo(cam.toScreenX(p.x), cam.toScreenY(p.y));
-    ctx.stroke();
-    ctx.restore();
+    comet(
+      ctx,
+      state.path.map((pt) => ({ x: cam.toScreenX(pt.x), y: cam.toScreenY(pt.y) })),
+      theme.accent, 3.5,
+    );
   }
 
-  // Launcher
-  const b = state.body;
+  /* ---- launcher ---- */
   const angle = params.angle as number;
   const originX = cam.toScreenX(0);
-  const originY = cam.toScreenY(params.height as number);
+  const originY = cam.toScreenY(launchH);
+  if (launchH > 0.05) {
+    material(ctx, originX - 9, originY, 18, groundY - originY, theme.inkSoft, 3);
+  }
   ctx.save();
   ctx.strokeStyle = theme.inkSoft;
-  ctx.lineWidth = 7;
+  ctx.lineWidth = 9;
   ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(originX, originY);
-  ctx.lineTo(originX + Math.cos(angle) * 34, originY - Math.sin(angle) * 34);
+  ctx.lineTo(originX + Math.cos(angle) * 38, originY - Math.sin(angle) * 38);
   ctx.stroke();
-  if ((params.height as number) > 0.1) {
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(originX, originY);
-    ctx.lineTo(originX, groundY);
-    ctx.stroke();
-  }
+  ctx.strokeStyle = hexA(theme.surface, 0.5);
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(originX, originY);
+  ctx.lineTo(originX + Math.cos(angle) * 38, originY - Math.sin(angle) * 38);
+  ctx.stroke();
   ctx.restore();
+  sphere(ctx, originX, originY, 7, theme.inkSoft);
 
-  // Projectile
+  /* ---- the projectile, with a shadow that tracks its height ---- */
   const px = cam.toScreenX(b.x);
   const py = cam.toScreenY(b.y);
-  const r = band === "K-2" ? 11 : 8;
-  disc(ctx, px, py, r, theme.accent, { stroke: theme.surface, lineWidth: 2 });
+  const r = band === "K-2" ? 13 : 10;
+  contactShadow(ctx, px, groundY, r, groundY - py);
+  sphere(ctx, px, py, r, theme.accent, { glow: b.flying ? 0.5 : 0 });
 
-  // Velocity components — the whole point of the sim at 6-12.
+  /* ---- velocity components: the whole point of the sim ---- */
   if (overlays.vectors && b.flying) {
     const vScale = Math.min(3.2, 90 / Math.max(8, Math.hypot(b.vx, b.vy)));
-    arrow(ctx, px, py, px + b.vx * vScale, py - b.vy * vScale, theme.sci["velocity"], {
-      label: band === "9-12" ? "v" : undefined,
-    });
     if (band === "6-8" || band === "9-12") {
       arrow(ctx, px, py, px + b.vx * vScale, py, theme.sci["velocity"], { width: 1.6, dashed: true });
       arrow(ctx, px, py, px, py - b.vy * vScale, theme.sci["velocity"], { width: 1.6, dashed: true });
     }
+    arrow(ctx, px, py, px + b.vx * vScale, py - b.vy * vScale, theme.sci["velocity"], {
+      label: band === "9-12" ? "v" : undefined,
+    });
   }
   if (overlays.gravityVector && b.flying && band === "9-12") {
     arrow(ctx, px, py, px, py + 40, theme.sci["force"], { label: "mg" });
   }
 
-  // Landing annotation
+  /* ---- live numbers, placed on the scene beside what they describe ---- */
+  if (b.flying && band !== "K-2") {
+    badge(ctx, px, py - r - 20, `${b.y.toFixed(1)} m`, theme, {
+      align: "center", color: theme.sci["velocity"],
+    });
+  }
+  if (b.peak > 0.2 && band !== "K-2") {
+    const peakY = cam.toScreenY(b.peak);
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.inkSoft, 0.5);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath();
+    ctx.moveTo(cam.toScreenX(-worldW * 0.05), peakY);
+    ctx.lineTo(width, peakY);
+    ctx.stroke();
+    ctx.restore();
+    caption(ctx, 12, peakY - 11, `highest  ${b.peak.toFixed(1)} m`, theme, {
+      size: 11, color: theme.inkSoft,
+    });
+  }
+
+  /* ---- landing ---- */
   if (b.landed && band !== "K-2") {
-    label(ctx, `${b.range.toFixed(1)} m`, cam.toScreenX(b.range), groundY + 16, theme, { align: "center" });
+    badge(ctx, cam.toScreenX(b.range), groundY + 22, `${b.range.toFixed(1)} m`, theme, {
+      align: "center", sub: "range",
+    });
   }
   if (b.landed && Math.abs(b.x - state.target) <= 0.5) {
-    label(ctx, "Hit!", tx, groundY - 40, theme, { align: "center", color: theme.sci["energy-kinetic"] });
+    caption(ctx, tx, groundY - 56, "Hit!", theme, {
+      align: "center", size: 20, color: theme.sci["energy-kinetic"], weight: 800,
+    });
   }
+
+  vignette(ctx, width, height, 0.14);
 }
 
 export const projectileSim: SimManifest<State> = {

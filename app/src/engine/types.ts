@@ -332,4 +332,16 @@ export interface ChallengeDefinition {
 export interface DataRow {
   t: number;
   values: Record<string, number>;
+  /**
+   * The control settings this row was recorded under.
+   *
+   * A trial without its inputs is half a measurement: five recorded ranges
+   * with no record of the five angles cannot show a relationship, cannot be
+   * graphed against the thing the student changed, and cannot survive being
+   * looked at the next day. Every recorded row therefore snapshots the
+   * parameters as they stood at the moment of recording.
+   */
+  inputs?: ParamValues;
+  /** 1-based trial number at the moment of recording. */
+  trial?: number;
 }

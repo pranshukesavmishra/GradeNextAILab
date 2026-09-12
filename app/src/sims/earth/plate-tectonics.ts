@@ -1,5 +1,6 @@
 import type { RenderContext, SimManifest, SimModel } from "@engine/types";
-import { arrow, disc, label } from "@ui/draw";
+import { arrow } from "@ui/draw";
+import { badge, caption, glow, hexA, isDarkTheme, sky, sphere, vignette } from "@ui/scene";
 
 /**
  * Plate Tectonics — Grades 6-12.
@@ -491,30 +492,157 @@ function makeScale(height: number) {
   };
 }
 
+/** Mix two theme colours into a hex, so the result can feed the scene kit. */
+function blend(a: string, b: string, t: number): string {
+  const k = Math.max(0, Math.min(1, t));
+  const ca = a.replace("#", "");
+  const cb = b.replace("#", "");
+  let out = "#";
+  for (let i = 0; i < 3; i++) {
+    const va = parseInt(ca.slice(i * 2, i * 2 + 2), 16) || 0;
+    const vb = parseInt(cb.slice(i * 2, i * 2 + 2), 16) || 0;
+    out += Math.round(va + (vb - va) * k).toString(16).padStart(2, "0");
+  }
+  return out;
+}
+
+/**
+ * One rock layer, traced along the whole section between two depths below the
+ * surface. Layers are what make a cross-section read as geology rather than as
+ * a bar chart of elevations.
+ */
+function layerPath(
+  ctx: CanvasRenderingContext2D, state: State,
+  toX: (km: number) => number, toY: (km: number) => number,
+  fromFrac: number, toFrac: number,
+) {
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const e = elevationOf(state, i);
+    const thick = state.kind[i] === CONTINENTAL ? state.thickness[i] : 7;
+    const x = toX(columnX(i));
+    const yTop = toY(e - thick * fromFrac);
+    if (i === 0) ctx.moveTo(x, yTop); else ctx.lineTo(x, yTop);
+  }
+  for (let i = N - 1; i >= 0; i--) {
+    const e = elevationOf(state, i);
+    const thick = state.kind[i] === CONTINENTAL ? state.thickness[i] : 7;
+    ctx.lineTo(toX(columnX(i)), toY(e - thick * toFrac));
+  }
+  ctx.closePath();
+}
+
 function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, band, overlays } = rc;
   const setting = settingOf(params, state.rifted);
   const toY = makeScale(height);
   const toX = (km: number) => ((km - X_MIN) / (X_MAX - X_MIN)) * width;
-
-  ctx.save();
-  ctx.fillStyle = theme.surface;
-  ctx.fillRect(0, 0, width, height);
-  ctx.restore();
+  const dark = isDarkTheme(theme);
 
   const seaY = toY(0);
+  const hot = theme.sci["hot"];
+  const thermal = theme.sci["energy-thermal"];
+  const rock = theme.sci["mass"];
+  const granite = theme.sci["solid"];
+  const sediment = theme.sci["decomposer"];
+  const water = theme.sci["liquid"];
 
-  /* --- mantle ------------------------------------------------------ */
+  /* --- sky above the section --------------------------------------- */
+  sky(ctx, width, height, theme, "day", seaY);
+
+  /* --- mantle: hotter with depth, and it looks it ------------------- */
+  const mantleTop = toY(-12);
   ctx.save();
-  ctx.globalAlpha = 0.16;
-  ctx.fillStyle = theme.sci["hot"];
-  ctx.fillRect(0, toY(-12), width, height - toY(-12));
+  const mantle = ctx.createLinearGradient(0, mantleTop, 0, height);
+  mantle.addColorStop(0, blend(rock, theme.ink, dark ? 0.55 : 0.3));
+  mantle.addColorStop(0.35, blend(thermal, theme.ink, dark ? 0.45 : 0.25));
+  mantle.addColorStop(0.72, blend(hot, theme.ink, dark ? 0.2 : 0.05));
+  mantle.addColorStop(1, hot);
+  ctx.fillStyle = mantle;
+  ctx.fillRect(0, mantleTop, width, height - mantleTop);
   ctx.restore();
 
-  /* --- ocean ------------------------------------------------------- */
+  // Convection: slow cells drawn as faint hot arcs, so the mantle is a fluid.
   ctx.save();
-  ctx.globalAlpha = 0.45;
-  ctx.fillStyle = theme.sci["liquid"];
+  ctx.strokeStyle = hexA(hot, 0.22);
+  ctx.lineWidth = 2;
+  for (let c = 0; c < 4; c++) {
+    const cx = width * (0.14 + c * 0.24);
+    const cyc = mantleTop + (height - mantleTop) * 0.6;
+    ctx.beginPath();
+    ctx.ellipse(cx, cyc, width * 0.1, (height - mantleTop) * 0.3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+  // The deep glow: the heat engine that drives everything above it.
+  glow(ctx, width * 0.5, height + 20, width * 0.8, hot, 0.35);
+
+  /* --- crust, in layers -------------------------------------------- */
+  // Lower crust.
+  ctx.save();
+  layerPath(ctx, state, toX, toY, 0.42, 1);
+  const lower = ctx.createLinearGradient(0, toY(6), 0, toY(-60));
+  lower.addColorStop(0, blend(granite, theme.ink, 0.45));
+  lower.addColorStop(1, blend(rock, theme.ink, 0.5));
+  ctx.fillStyle = lower;
+  ctx.fill();
+  ctx.restore();
+
+  // Upper crust.
+  ctx.save();
+  layerPath(ctx, state, toX, toY, 0.1, 0.42);
+  const upper = ctx.createLinearGradient(0, toY(9), 0, toY(-40));
+  upper.addColorStop(0, blend(granite, theme.surface, 0.12));
+  upper.addColorStop(1, blend(granite, theme.ink, 0.3));
+  ctx.fillStyle = upper;
+  ctx.fill();
+  ctx.restore();
+
+  // Sediment cap.
+  ctx.save();
+  layerPath(ctx, state, toX, toY, 0, 0.1);
+  ctx.fillStyle = blend(sediment, theme.surface, dark ? 0.05 : 0.2);
+  ctx.fill();
+  ctx.restore();
+
+  // Oceanic columns are basalt, not granite: darker, denser, thinner.
+  ctx.save();
+  ctx.fillStyle = hexA(blend(rock, theme.ink, 0.62), 0.85);
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    if (state.kind[i] === CONTINENTAL) continue;
+    const e = elevationOf(state, i);
+    const x = toX(columnX(i));
+    ctx.rect(x, toY(e), width / N + 1, Math.max(2, toY(e - 7) - toY(e)));
+  }
+  ctx.fill();
+  ctx.restore();
+
+  // Volcanic piles glow where they are still being built.
+  ctx.save();
+  for (let i = 0; i < N; i += 2) {
+    if (state.volcano[i] < 0.25) continue;
+    const e = elevationOf(state, i);
+    glow(ctx, toX(columnX(i)), toY(e), 10 + state.volcano[i] * 6, hot,
+      Math.min(0.5, 0.12 + state.volcano[i] * 0.08));
+  }
+  ctx.restore();
+
+  // A crisp ground line on top of the layers.
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.ink, dark ? 0.5 : 0.35);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const x = toX(columnX(i));
+    const y = toY(elevationOf(state, i));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  /* --- ocean, poured over the low ground --------------------------- */
+  ctx.save();
   ctx.beginPath();
   ctx.moveTo(0, seaY);
   for (let i = 0; i < N; i++) {
@@ -523,44 +651,87 @@ function render(rc: RenderContext<State>) {
   }
   ctx.lineTo(width, seaY);
   ctx.closePath();
+  const sea = ctx.createLinearGradient(0, seaY, 0, toY(-11));
+  sea.addColorStop(0, hexA(water, 0.55));
+  sea.addColorStop(1, hexA(blend(water, theme.ink, 0.55), 0.9));
+  ctx.fillStyle = sea;
   ctx.fill();
   ctx.restore();
 
-  /* --- crust ------------------------------------------------------- */
-  for (let i = 0; i < N; i++) {
-    const x = toX(columnX(i));
-    const e = elevationOf(state, i);
-    const thick = state.kind[i] === CONTINENTAL ? state.thickness[i] : 7;
-    const top = toY(e);
-    const bottom = toY(e - thick);
-    ctx.fillStyle = state.kind[i] === CONTINENTAL ? theme.sci["solid"] : theme.sci["mass"];
-    ctx.fillRect(x, top, width / N + 1, Math.max(2, bottom - top));
+  // The sea surface itself, with a lit edge.
+  ctx.save();
+  ctx.strokeStyle = hexA(blend(water, theme.surface, 0.5), 0.9);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, seaY);
+  for (let i = 0; i <= 40; i++) {
+    ctx.lineTo((i / 40) * width, seaY + Math.sin(i * 0.9 + state.myr * 0.6) * 1.2);
   }
+  ctx.stroke();
+  ctx.restore();
 
   /* --- the sinking slab -------------------------------------------- */
   if (setting.subducting) {
     const startX = setting.subSign * 40;
     const dir = -setting.subSign;
+    const endX = startX + dir * (320 / Math.tan(SLAB_DIP));
+    const sx0 = toX(startX), sy0 = toY(-7);
+    const sx1 = toX(endX), sy1 = toY(-320);
+
+    // A melt fringe on the upper face of the slab: where the arc's magma is born.
     ctx.save();
-    ctx.strokeStyle = theme.sci["mass"];
-    ctx.lineWidth = 9;
+    ctx.strokeStyle = hexA(hot, 0.45);
+    ctx.lineWidth = 20;
     ctx.lineCap = "round";
-    ctx.globalAlpha = 0.85;
     ctx.beginPath();
-    ctx.moveTo(toX(startX), toY(-7));
-    ctx.lineTo(toX(startX + dir * (320 / Math.tan(SLAB_DIP))), toY(-320));
+    ctx.moveTo(sx0, sy0);
+    ctx.lineTo(sx1, sy1);
+    ctx.stroke();
+    // The cold, dense slab itself.
+    const slab = ctx.createLinearGradient(sx0, sy0, sx1, sy1);
+    slab.addColorStop(0, blend(rock, theme.ink, 0.35));
+    slab.addColorStop(1, blend(rock, theme.ink, 0.68));
+    ctx.strokeStyle = slab;
+    ctx.lineWidth = 11;
+    ctx.beginPath();
+    ctx.moveTo(sx0, sy0);
+    ctx.lineTo(sx1, sy1);
     ctx.stroke();
     ctx.restore();
 
     // Melt rising off the slab feeds the volcanic arc.
     const arcX = -setting.subSign * ARC_DISTANCE;
     ctx.save();
-    ctx.strokeStyle = theme.sci["energy-thermal"];
-    ctx.lineWidth = 3;
-    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = hexA(hot, 0.85);
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.setLineDash([6, 6]);
     ctx.beginPath();
     ctx.moveTo(toX(arcX + dir * 60), toY(-110));
-    ctx.lineTo(toX(arcX), toY(2));
+    ctx.quadraticCurveTo(toX(arcX + dir * 20), toY(-50), toX(arcX), toY(2));
+    ctx.stroke();
+    ctx.restore();
+    glow(ctx, toX(arcX + dir * 60), toY(-110), 44, hot, 0.55);
+    glow(ctx, toX(arcX), toY(0), 30, hot, 0.5);
+  }
+
+  /* --- magma at a spreading centre ---------------------------------- */
+  if (setting.spreading || setting.boundary === "divergent") {
+    const rx = toX(0);
+    glow(ctx, rx, toY(-24), 70, hot, 0.6);
+    ctx.save();
+    ctx.fillStyle = hexA(hot, 0.8);
+    ctx.beginPath();
+    ctx.ellipse(rx, toY(-18), width * 0.035, Math.abs(toY(-30) - toY(-6)) / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // A dyke feeding the surface.
+    ctx.save();
+    ctx.strokeStyle = hexA(hot, 0.7);
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(rx, toY(-18));
+    ctx.lineTo(rx, toY(elevationOf(state, N / 2)));
     ctx.stroke();
     ctx.restore();
   }
@@ -570,14 +741,17 @@ function render(rc: RenderContext<State>) {
     for (let i = 0; i < state.quakes.length; i++) {
       const qk = state.quakes[i];
       const fade = Math.max(0, 1 - qk.age / 3);
-      disc(ctx, toX(qk.x), toY(-qk.depth), 2 + (qk.magnitude - 3) * 1.6,
-        theme.sci["energy-kinetic"], { alpha: 0.25 + 0.65 * fade });
+      const r = 2.5 + (qk.magnitude - 3) * 1.8;
+      ctx.save();
+      ctx.globalAlpha = 0.3 + 0.7 * fade;
+      sphere(ctx, toX(qk.x), toY(-qk.depth), r, theme.sci["energy-kinetic"], { glow: 0.9 });
+      ctx.restore();
     }
   }
 
   /* --- plate motion ------------------------------------------------- */
   if (overlays.motion !== false && (params.speed as number) > 0) {
-    const arrowY = 22;
+    const arrowY = 24;
     const len = 34 + (params.speed as number) * 3;
     const c = theme.sci["velocity"];
     if (setting.boundary === "convergent") {
@@ -588,13 +762,13 @@ function render(rc: RenderContext<State>) {
       arrow(ctx, width * 0.58, arrowY, width * 0.58 + len, arrowY, c);
     } else {
       arrow(ctx, width * 0.3, arrowY, width * 0.3 + len, arrowY, c);
-      arrow(ctx, width * 0.7, arrowY + 14, width * 0.7 - len, arrowY + 14, c);
+      arrow(ctx, width * 0.7, arrowY + 16, width * 0.7 - len, arrowY + 16, c);
     }
   }
 
   /* --- sea level and labels ------------------------------------------ */
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.strokeStyle = hexA(theme.line, 0.7);
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(0, seaY);
@@ -604,13 +778,21 @@ function render(rc: RenderContext<State>) {
 
   if (band !== "K-2") {
     const top = maxElevation(state);
-    label(ctx, setting.label, 8, height - 14, theme, { size: 12 });
-    label(
-      ctx,
+    caption(ctx, 10, height - 16, setting.label, theme, { size: 13 });
+    caption(
+      ctx, width - 10, height - 16,
       `${state.myr.toFixed(1)} Myr   ·   highest ${(top * 1000).toFixed(0)} m   ·   ${state.quakeCount} quakes`,
-      width - 8, height - 14, theme, { align: "right", size: 11, color: theme.inkSoft },
+      theme, { align: "right", size: 11, color: theme.inkSoft, weight: 500 },
     );
+    caption(ctx, 10, toY(-320) - 12, "mantle", theme, {
+      size: 10, color: hexA(theme.surface, 0.75), weight: 600,
+    });
+    badge(ctx, width - 10, 24, `${(maxElevation(state) * 1000).toFixed(0)} m`, theme, {
+      align: "right", color: theme.sci["distance"], sub: "highest ground",
+    });
   }
+
+  vignette(ctx, width, height, 0.2);
 }
 
 /* ------------------------------------------------------------------ *

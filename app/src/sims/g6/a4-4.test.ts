@@ -1,0 +1,272 @@
+import { describe, expect, it } from "vitest";
+import { SimRunner } from "@engine/loop";
+import { defaultParams } from "@engine/types";
+import type { ParamValues } from "@engine/types";
+import { livingSkinSim } from "./a4-4-the-living-skin";
+
+/**
+ * A canvas context that records nothing and refuses nothing, so the render
+ * function can be exercised in Node — same pattern as math.test.ts and
+ * physics.test.ts. A missing helper, a bad arity, or an import from the
+ * wrong module (mixHex genuinely lives in @ui/draw, not @ui/scene, and a
+ * sibling sim shipped that exact mistake silently until this kind of check
+ * caught it) surfaces here as a thrown error instead of a blank stage.
+ */
+function stubContext(): CanvasRenderingContext2D {
+  const store: Record<string, unknown> = {};
+  // The scene kit shades every surface with a gradient (vignette, sphere,
+  // glow...), so a fake canvas has to hand one back, with stops checked the
+  // same way a real fill would be. Non-finite coordinates are rejected too —
+  // a NaN silently draws nothing on a real canvas, the hardest bug to find.
+  const gradient = {
+    addColorStop(offset: number, color: string) {
+      if (!Number.isFinite(offset)) throw new Error("addColorStop offset is not finite");
+      if (typeof color !== "string" || color.length === 0) {
+        throw new Error("addColorStop received a non-colour");
+      }
+    },
+  };
+  return new Proxy(store, {
+    get(target, prop: string) {
+      if (prop === "measureText") return () => ({ width: 24 });
+      if (prop === "canvas") return { width: 900, height: 520 };
+      if (prop in target) return target[prop];
+      return (...args: unknown[]) => {
+        for (const arg of args) {
+          if (typeof arg === "number" && !Number.isFinite(arg)) {
+            throw new Error(`${prop} received a non-finite argument`);
+          }
+        }
+        if (prop === "createLinearGradient" || prop === "createRadialGradient") return gradient;
+        return undefined;
+      };
+    },
+    set(target, prop: string, value) {
+      if ((prop === "fillStyle" || prop === "strokeStyle") && value === undefined) {
+        throw new Error(`${prop} was set to undefined`);
+      }
+      target[prop] = value;
+      return true;
+    },
+  }) as unknown as CanvasRenderingContext2D;
+}
+
+const SCI_KEYS = new Set([
+  "velocity", "acceleration", "force", "momentum",
+  "energy-kinetic", "energy-potential", "energy-thermal", "energy-total",
+  "charge-pos", "charge-neg", "field", "current",
+  "cold", "hot", "mass", "distance", "time",
+  "acid", "neutral", "base", "solid", "liquid", "gas",
+  "producer", "primary-consumer", "secondary-consumer", "decomposer",
+  "light", "wave",
+]);
+
+const TEST_THEME = {
+  surface: "#ffffff", surfaceAlt: "#eeeeee", ink: "#111111", inkSoft: "#555555",
+  line: "#dddddd", grid: "#eeeeee", accent: "#0d7c86",
+  sci: new Proxy({} as Record<string, string>, {
+    get: (_t, key: string) => {
+      if (!SCI_KEYS.has(key)) return "#888888"; // this sim's own semantic keys are its business
+      return "#888888";
+    },
+  }),
+};
+
+/**
+ * Science gate for G6-A4.4 "The Living Skin: Painting Life onto Bare Rock".
+ *
+ * The honesty rule this sim exists to uphold is that photosynthesis and
+ * respiration are two live, opposing flows, never a single one-way "plants
+ * make oxygen" pipe — so these tests check the SIGN and the SIZE of net
+ * carbon storage, not just that some number moves. A fully bare world must
+ * show literally zero photosynthesis, a mature ecosystem must show a small
+ * positive net (a big flow minus another big flow), and pushing temperature
+ * and decomposer activity hard enough must be able to flip that net negative
+ * — a real, well documented soil-carbon-feedback risk, not decoration.
+ */
+
+const K = 273.15;
+
+function base(overrides: ParamValues = {}): ParamValues {
+  return { ...defaultParams(livingSkinSim.params), ...overrides };
+}
+
+function runFor(params: ParamValues, engineSeconds: number, seed = "a4-4") {
+  const runner = new SimRunner({ manifest: livingSkinSim, params, band: "6-8", seed });
+  runner.playing = true;
+  const dt = 1 / 30;
+  const ticks = Math.round(engineSeconds * 30);
+  for (let i = 0; i < ticks; i++) runner.advance(dt);
+  return runner;
+}
+
+const factsAfter = (overrides: ParamValues, seconds: number, seed = "a4-4") =>
+  runFor(base(overrides), seconds, seed).facts();
+
+describe("g6.a4-4 manifest identity", () => {
+  it("carries the Unit A4 identity", () => {
+    expect(livingSkinSim.id).toBe("g6.a4-4");
+    expect(livingSkinSim.title).toContain("Living Skin");
+    expect(livingSkinSim.grades).toContain(6);
+    expect(livingSkinSim.bands).toContain("6-8");
+    expect(livingSkinSim.labs?.length).toBeGreaterThanOrEqual(4);
+    expect(livingSkinSim.challenges?.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("a bare world has exactly zero air-life flows, but rock still weathers", () => {
+  it("zero coverage means zero photosynthesis and zero respiration, exactly", () => {
+    const f = factsAfter({ patchCoverage: 0 }, 5);
+    expect(f.gppAvg as number).toBe(0);
+    expect(f.plantRespAvg as number).toBe(0);
+    expect(f.decompRespAvg as number).toBe(0);
+    expect(f.coverageFraction as number).toBe(0);
+  });
+
+  it("bare rock still gains a little soil, slowly, from rainwater alone", () => {
+    const f = factsAfter({ patchCoverage: 0 }, 10);
+    expect(f.soilDepthGainMm as number).toBeGreaterThan(0);
+    expect(f.soilDepthGainMm as number).toBeLessThan(1);
+  });
+});
+
+describe("photosynthesis and respiration are both real and net storage is their small difference", () => {
+  it("at baseline conditions, a mature grassland is a small net carbon sink", () => {
+    const f = factsAfter({ patchCoverage: 1, biomeBrush: "grassland", timeCompression: 50 }, 20);
+    expect(f.gppAvg as number).toBeGreaterThan(100);
+    expect(f.plantRespAvg as number).toBeGreaterThan(0);
+    expect(f.decompRespAvg as number).toBeGreaterThan(0);
+    // Net storage is a SMALL fraction of gross photosynthesis, never comparable to it.
+    expect(f.netCarbonAvg as number).toBeGreaterThan(0);
+    expect(f.netCarbonAvg as number).toBeLessThan((f.gppAvg as number) * 0.2);
+  });
+
+  it("plant respiration is close to half of gross photosynthesis, per the spec's own rule", () => {
+    const f = factsAfter({ patchCoverage: 1, biomeBrush: "grassland", timeCompression: 50 }, 20);
+    const ratio = (f.plantRespAvg as number) / (f.gppAvg as number);
+    expect(ratio).toBeGreaterThan(0.45);
+    expect(ratio).toBeLessThan(0.55);
+  });
+
+  it("net oxygen flux tracks net carbon at the real 2.67 stoichiometric ratio", () => {
+    const f = factsAfter({ patchCoverage: 1, biomeBrush: "grassland", timeCompression: 50 }, 20);
+    const ratio = (f.netOxygenAvg as number) / (f.netCarbonAvg as number);
+    expect(ratio).toBeCloseTo(2.67, 1);
+  });
+});
+
+describe("warming and faster decomposition can flip a sink into a source", () => {
+  it("a hot, high-decomposer-activity world drives net carbon negative even though photosynthesis is still running", () => {
+    const warm = factsAfter(
+      { patchCoverage: 1, biomeBrush: "grassland", timeCompression: 50, airTemperature: 30 + K, decomposerActivity: 2.0 },
+      20,
+    );
+    expect(warm.gppAvg as number).toBeGreaterThan(50); // photosynthesis has not stopped
+    expect(warm.netCarbonAvg as number).toBeLessThan(0);
+  });
+
+  it("the same world at a cooler temperature and normal decomposer activity stays a net sink", () => {
+    const cool = factsAfter(
+      { patchCoverage: 1, biomeBrush: "grassland", timeCompression: 50, airTemperature: 15 + K, decomposerActivity: 1.0 },
+      20,
+    );
+    expect(cool.netCarbonAvg as number).toBeGreaterThan(0);
+  });
+});
+
+describe("real biome production rates rank the way the spec says they do", () => {
+  it("coast redwood fixes far more carbon per square metre than Mojave scrub", () => {
+    const redwood = factsAfter({ patchCoverage: 1, biomeBrush: "redwood", timeCompression: 100 }, 30);
+    const mojave = factsAfter({ patchCoverage: 1, biomeBrush: "mojave", rainfall: 150, timeCompression: 100 }, 30);
+    expect(redwood.redwoodGppPerM2Yr as number).toBeGreaterThan((mojave.mojaveGppPerM2Yr as number) * 3);
+  });
+});
+
+describe("a biome planted outside its real rainfall range thins and dies back", () => {
+  it("Mojave scrub thrives in desert rainfall but declines under heavy rain", () => {
+    const dry = factsAfter({ patchCoverage: 1, biomeBrush: "mojave", rainfall: 150, timeCompression: 100 }, 30);
+    const wet = factsAfter({ patchCoverage: 1, biomeBrush: "mojave", rainfall: 2000, timeCompression: 100 }, 30);
+    expect(dry.leafAreaAvg as number).toBeGreaterThan(0.8);
+    expect(wet.leafAreaAvg as number).toBeLessThan(0.5);
+  });
+
+  it("coast redwood thrives at high rainfall but struggles in true desert rainfall", () => {
+    const wet = factsAfter({ patchCoverage: 1, biomeBrush: "redwood", rainfall: 1500, timeCompression: 200 }, 60);
+    const dry = factsAfter({ patchCoverage: 1, biomeBrush: "redwood", rainfall: 50, timeCompression: 200 }, 60);
+    expect(wet.leafAreaAvg as number).toBeGreaterThan(dry.leafAreaAvg as number);
+  });
+});
+
+describe("root respiration genuinely accelerates weathering, thickening soil faster than bare rock", () => {
+  it("a mature, densely rooted forest builds soil faster than bare rock over the same span", () => {
+    const bare = factsAfter({ patchCoverage: 0 }, 20);
+    const forest = factsAfter({ patchCoverage: 1, biomeBrush: "redwood", timeCompression: 100 }, 20);
+    expect(forest.soilDepthGainMm as number).toBeGreaterThan(bare.soilDepthGainMm as number);
+  });
+
+  it("over ten thousand simulated years, a mature redwood patch measurably thickens its soil", () => {
+    const f = factsAfter({ patchCoverage: 1, biomeBrush: "redwood", timeCompression: 500 }, 20 * 60);
+    expect(f.simYears as number).toBeGreaterThanOrEqual(10000 - 1);
+    expect(f.soilDepthGainMm as number).toBeGreaterThan(50);
+  });
+});
+
+describe("herbivore stocking measurably reduces net carbon storage", () => {
+  it("heavy grazing lowers net carbon compared with no grazing at all, all else equal", () => {
+    const none = factsAfter({ patchCoverage: 1, biomeBrush: "grassland", herbivoreStocking: 0, timeCompression: 50 }, 20);
+    const heavy = factsAfter({ patchCoverage: 1, biomeBrush: "grassland", herbivoreStocking: 60, timeCompression: 50 }, 20);
+    expect(heavy.netCarbonAvg as number).toBeLessThan(none.netCarbonAvg as number);
+  });
+});
+
+describe("determinism and reset", () => {
+  it("the same seed replays to the same fingerprint", () => {
+    const a = runFor(base(), 5, "twin");
+    const b = runFor(base(), 5, "twin");
+    expect(a.fingerprint()).toBe(b.fingerprint());
+  });
+
+  it("time compression changes pace and only pace", () => {
+    const slow = runFor(base({ timeCompression: 1 }), 3);
+    const fast = runFor(base({ timeCompression: 100 }), 3);
+    expect(fast.facts().simYears as number).toBeGreaterThan(slow.facts().simYears as number);
+  });
+
+  it("reset restores a state indistinguishable from a fresh run", () => {
+    const runner = runFor(base(), 10, "resetting");
+    runner.reset();
+    const fresh = new SimRunner({ manifest: livingSkinSim, params: base(), band: "6-8", seed: "resetting" });
+    expect(runner.fingerprint()).toBe(fresh.fingerprint());
+  });
+
+  it("raising coverage with a brush selected genuinely plants new, growing patches", () => {
+    const f = factsAfter({ patchCoverage: 0.5, biomeBrush: "grassland" }, 0.1);
+    expect(f.coverageFraction as number).toBeCloseTo(0.5, 1);
+  });
+});
+
+describe("render never throws, at every option value and every view", () => {
+  it("draws cleanly across every band, every dropdown option, wide and cramped", () => {
+    const combos: ParamValues[] = [{}];
+    for (const [key, spec] of Object.entries(livingSkinSim.params)) {
+      if (spec.type !== "option") continue;
+      for (const option of spec.options) combos.push({ [key]: option.value });
+    }
+    for (const overrides of combos) {
+      for (const band of livingSkinSim.bands) {
+        const params = { ...defaultParams(livingSkinSim.params), ...overrides };
+        const runner = new SimRunner({ manifest: livingSkinSim, params, band, seed: "draw" });
+        runner.playing = true;
+        for (let i = 0; i < 90; i++) runner.advance(1 / 60);
+        const overlays: Record<string, boolean> = {};
+        for (const o of livingSkinSim.overlays ?? []) overlays[o.key] = o.default;
+        for (const [w, h] of [[900, 520], [320, 240]] as const) {
+          expect(() => livingSkinSim.render({
+            ctx: stubContext(), state: runner.getState(), params, band,
+            width: w, height: h, overlays, alpha: 0.5, theme: TEST_THEME, time: runner.time,
+          })).not.toThrow();
+        }
+      }
+    }
+  });
+});

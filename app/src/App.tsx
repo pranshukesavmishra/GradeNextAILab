@@ -4,19 +4,29 @@ import { getSim } from "@sims/registry";
 import { Catalog } from "./pages/Catalog";
 import { SimPlayer } from "./pages/SimPlayer";
 import { Notebook } from "./pages/Notebook";
+import { Library } from "./pages/Library";
+import { Formulas } from "./pages/Formulas";
+import { TopBar, type NavKey } from "@ui/TopBar";
 import { applyThemeMode, effectiveTheme, loadThemeMode, type ThemeMode } from "@ui/theme";
 
 type View =
   | { name: "catalog" }
   | { name: "sim"; id: string; band: GradeBand; query?: string }
-  | { name: "notebook" };
+  | { name: "notebook" }
+  | { name: "library"; grade?: number }
+  | { name: "formulas" };
 
 /** Read the view out of the URL hash so every screen is linkable and shareable. */
 function parseHash(): View {
   const hash = window.location.hash.replace(/^#\/?/, "");
-  if (!hash) return { name: "catalog" };
+  if (!hash) return { name: "library" };
   const [route, ...rest] = hash.split("/");
   if (route === "notebook") return { name: "notebook" };
+  if (route === "formulas") return { name: "formulas" };
+  if (route === "library") {
+    const g = Number(rest[0]);
+    return { name: "library", grade: Number.isFinite(g) && g > 0 ? g : undefined };
+  }
   if (route === "sim" && rest[0]) {
     const id = decodeURIComponent(rest[0]);
     const tail = rest[1] ?? "6-8";
@@ -31,6 +41,8 @@ function parseHash(): View {
 function viewToHash(view: View): string {
   if (view.name === "catalog") return "#/";
   if (view.name === "notebook") return "#/notebook";
+  if (view.name === "formulas") return "#/formulas";
+  if (view.name === "library") return view.grade ? `#/library/${view.grade}` : "#/library";
   const q = view.query ? `?${view.query}` : "";
   return `#/sim/${encodeURIComponent(view.id)}/${encodeURIComponent(view.band)}${q}`;
 }
@@ -74,21 +86,45 @@ export default function App() {
 
   return (
     <div className="app">
-      <button
-        type="button"
-        className="theme-toggle"
-        onClick={cycleTheme}
-        aria-label={`Theme: ${themeMode}. Click to change.`}
-        title={`Theme: ${themeMode}`}
-      >
-        {themeMode === "system" ? "◐" : themeMode === "light" ? "☀" : "☾"}
-      </button>
+      <TopBar
+        active={
+          view.name === "sim" ? "sim"
+            : view.name === "library" ? "library"
+            : view.name === "catalog" ? "catalog"
+            : view.name === "formulas" ? "formulas"
+            : "notebook"
+        }
+        onNavigate={(k: NavKey) => navigate(
+          k === "library" ? { name: "library" }
+            : k === "catalog" ? { name: "catalog" }
+            : k === "formulas" ? { name: "formulas" }
+            : { name: "notebook" },
+        )}
+        themeMode={themeMode}
+        onCycleTheme={cycleTheme}
+      />
 
+      <main className="app-main">
       {view.name === "catalog" && (
         <Catalog
           onOpen={(id, band) => navigate({ name: "sim", id, band })}
           onOpenNotebook={() => navigate({ name: "notebook" })}
+          onOpenLibrary={(g?: number) => navigate({ name: "library", grade: g })}
         />
+      )}
+
+      {view.name === "library" && (
+        <Library
+          initialGrade={view.grade}
+          onOpen={(id, band) => navigate({ name: "sim", id, band })}
+        />
+      )}
+
+      {view.name === "formulas" && (
+        <Formulas onOpenSim={(id) => {
+          const target = getSim(id);
+          if (target) navigate({ name: "sim", id, band: target.bands.includes("6-8") ? "6-8" : target.bands[0] });
+        }} />
       )}
 
       {view.name === "notebook" && <Notebook onExit={() => navigate({ name: "catalog" })} />}
@@ -114,6 +150,7 @@ export default function App() {
           </button>
         </div>
       )}
+      </main>
     </div>
   );
 }

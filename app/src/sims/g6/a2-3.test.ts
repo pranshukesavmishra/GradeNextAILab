@@ -1,0 +1,282 @@
+import { describe, expect, it } from "vitest";
+import { SimRunner } from "@engine/loop";
+import { defaultParams } from "@engine/types";
+import type { ParamValues } from "@engine/types";
+import { onTheDynoSim as sim } from "./a2-3-on-the-dyno";
+
+/**
+ * Science gate for G6-A2.3 "On the Dyno: In One End, Out the Other".
+ *
+ * The subtopic is inputs and outputs: a student should leave able to name
+ * everything crossing this rig's boundary and show that the outputs sum to
+ * the input. These tests drive that claim directly — the Sankey's four
+ * outputs always sum to exactly the energy released, atom counts in equal
+ * atom counts out at every air-fuel ratio (rich included), closing the
+ * coolant output kills the engine exactly as closing the fuel or air input
+ * does, and the control-volume choice reclassifies the same physical flows
+ * without ever touching one — plus the platform invariants.
+ */
+
+function base(overrides: ParamValues = {}): ParamValues {
+  return { ...defaultParams(sim.params), ...overrides };
+}
+
+function runSeconds(overrides: ParamValues, seconds: number, seed = "g6a2-3") {
+  const params = base(overrides);
+  const runner = new SimRunner({ manifest: sim, params, band: "6-8", seed });
+  runner.playing = true;
+  const dt = 1 / (sim.tickRate ?? 30);
+  const ticks = Math.round(seconds / dt);
+  for (let i = 0; i < ticks; i++) runner.advance(dt);
+  return runner;
+}
+
+const factsAfter = (overrides: ParamValues, seconds: number, seed = "g6a2-3") =>
+  runSeconds(overrides, seconds, seed).facts();
+
+/* ================================================================== *
+ * Identity
+ * ================================================================== */
+
+describe("g6.a2-3 manifest", () => {
+  it("carries the Unit A2.3 identity", () => {
+    expect(sim.id).toBe("g6.a2-3");
+    expect(sim.title).toContain("Dyno");
+    expect(sim.grades).toContain(6);
+    expect(sim.bands).toContain("6-8");
+  });
+});
+
+/* ================================================================== *
+ * The law: the Sankey closes to 100%, by construction
+ * ================================================================== */
+
+describe("the four outputs always sum to exactly the energy released", () => {
+  it("holds at the default steady cruise", () => {
+    const f = factsAfter({}, 5);
+    expect(f.sankeyClosesTo100).toBe(true);
+    const sum = (f.shaftPowerW as number) + (f.coolantHeatW as number) + (f.exhaustHeatW as number) + (f.frictionW as number);
+    expect(sum).toBeCloseTo(f.releasedW as number, 3);
+  });
+
+  it("holds across a sweep of throttle, load, timing and AFR", () => {
+    const combos: ParamValues[] = [
+      { throttle: 0.1, dynoLoad: 2 }, { throttle: 0.9, dynoLoad: 18 },
+      { sparkTiming: -5, afr: 10 }, { sparkTiming: 35, afr: 18 },
+      { coolantFlow: 0 }, { coolantFlow: 30 },
+    ];
+    for (const c of combos) {
+      const f = factsAfter(c, 3);
+      expect(f.sankeyClosesTo100, JSON.stringify(c)).toBe(true);
+    }
+  });
+
+  it("thermal efficiency never exceeds the 30% ceiling, at the most favourable settings", () => {
+    const f = factsAfter({ sparkTiming: 20, afr: 14.7 }, 3);
+    expect(f.efficiencyPct as number).toBeLessThanOrEqual(30.0001);
+    expect(f.efficiencyPct as number).toBeCloseTo(30, 1);
+  });
+});
+
+/* ================================================================== *
+ * S1 — steady cruise
+ * ================================================================== */
+
+describe("S1 — steady cruise", () => {
+  it("every input and output is measurable and nonzero while running", () => {
+    const f = factsAfter({}, 5);
+    expect(f.running).toBe(true);
+    expect(f.fuelFlowGps as number).toBeGreaterThan(0);
+    expect(f.airFlowGps as number).toBeGreaterThan(0);
+    expect(f.shaftPowerW as number).toBeGreaterThan(0);
+    expect(f.exhaustHeatW as number).toBeGreaterThan(0);
+    expect(f.coolantHeatW as number).toBeGreaterThan(0);
+  });
+});
+
+/* ================================================================== *
+ * S2 — starve one input, and the honest lag on one output
+ * ================================================================== */
+
+describe("S2 — starving the air input collapses every output but one, briefly", () => {
+  it("cutting air stops shaft work and exhaust heat immediately", () => {
+    const f = factsAfter({ disconnectAir: true }, 0.2);
+    expect(f.running).toBe(false);
+    expect(f.shaftPowerW).toBe(0);
+    expect(f.exhaustHeatW).toBe(0);
+  });
+
+  it("the coolant loop keeps carrying real heat right after the cut because the block is already warm, then fades — while the Sankey's ledgered coolant entry, which only ever counts heat released THIS instant, drops to zero at once", () => {
+    const justAfter = factsAfter({ disconnectAir: true }, 0.2);
+    const later = factsAfter({ disconnectAir: true }, 60);
+    // The genuine physical reading: real, measurable, fading heat.
+    expect(justAfter.physicalCoolantW as number).toBeGreaterThan(500);
+    expect(later.physicalCoolantW as number).toBeLessThan(justAfter.physicalCoolantW as number);
+    expect(later.blockTempC as number).toBeLessThan(justAfter.blockTempC as number);
+    // The Sankey ledger: nothing was released, so nothing is counted —
+    // never a false "output" for energy that never actually left this way.
+    expect(justAfter.coolantHeatW).toBe(0);
+    expect(justAfter.sankeyClosesTo100).toBe(true);
+  });
+
+  it("cutting fuel instead is just as fatal to every output", () => {
+    const f = factsAfter({ disconnectFuel: true }, 0.2);
+    expect(f.running).toBe(false);
+    expect(f.shaftPowerW).toBe(0);
+  });
+
+  it("cutting ignition alone stops combustion even with fuel and air both connected", () => {
+    const f = factsAfter({ disconnectIgnition: true }, 0.2);
+    expect(f.running).toBe(false);
+    expect(f.shaftPowerW).toBe(0);
+  });
+});
+
+/* ================================================================== *
+ * S3 — rich mixture: atoms in equal atoms out, exactly
+ * ================================================================== */
+
+describe("S3 — a rich mixture leaves unburnt fuel, but no atom goes missing", () => {
+  it("carbon, hydrogen, oxygen and nitrogen balance exactly at AFR 10:1", () => {
+    const f = factsAfter({ afr: 10, throttle: 0.6 }, 3);
+    expect(f.unburntFlowGps as number).toBeGreaterThan(0);
+    expect(f.fracBurned as number).toBeCloseTo(10 / 14.7, 6);
+    for (const el of ["C", "H", "O", "N"]) {
+      expect(f[`atoms${el}_diff`] as number, `${el} did not balance`).toBeCloseTo(0, 6);
+    }
+  });
+
+  it("balances just as exactly lean, lightly rich, or exactly stoichiometric", () => {
+    for (const afr of [10.5, 13, 14.7, 17.9]) {
+      const f = factsAfter({ afr }, 2);
+      expect(f.atomsC_diff as number, `afr ${afr}`).toBeCloseTo(0, 6);
+      expect(f.atomsO_diff as number, `afr ${afr}`).toBeCloseTo(0, 6);
+    }
+  });
+
+  it("at or above stoichiometric AFR every drop of fuel burns completely", () => {
+    const f = factsAfter({ afr: 14.7 }, 2);
+    expect(f.fracBurned).toBe(1);
+    expect(f.unburntFlowGps).toBe(0);
+    const lean = factsAfter({ afr: 18 }, 2);
+    expect(lean.fracBurned).toBe(1);
+  });
+});
+
+/* ================================================================== *
+ * S4 — blocking an output kills the engine exactly as an input would
+ * ================================================================== */
+
+describe("S4 — a blocked coolant output derates, then seizes the engine", () => {
+  it("with every input still connected, the block heats, derates, then seizes", () => {
+    const early = factsAfter({ coolantFlow: 0, throttle: 0.6, dynoLoad: 12 }, 5);
+    expect(early.derateStartAtT).toBe(-1);
+    expect(early.blockTempC as number).toBeGreaterThan(70);
+
+    const mid = factsAfter({ coolantFlow: 0, throttle: 0.6, dynoLoad: 12 }, 20);
+    expect(mid.derateStartAtT as number).toBeGreaterThanOrEqual(0);
+    expect(mid.seized).toBe(false);
+
+    const late = factsAfter({ coolantFlow: 0, throttle: 0.6, dynoLoad: 12 }, 60);
+    expect(late.seized).toBe(true);
+    expect(late.shaftPowerW).toBe(0);
+  });
+
+  it("once seized, the engine stays seized and its inputs stop drawing", () => {
+    const f = factsAfter({ coolantFlow: 0, throttle: 0.6, dynoLoad: 12 }, 60);
+    expect(f.seized).toBe(true);
+    expect(f.fuelFlowGps).toBe(0);
+    expect(f.airFlowGps).toBe(0);
+  });
+
+  it("with coolant flowing normally under the same load, the block never derates", () => {
+    const f = factsAfter({ throttle: 0.6, dynoLoad: 12 }, 60);
+    expect(f.derateStartAtT).toBe(-1);
+    expect(f.seized).toBe(false);
+  });
+});
+
+/* ================================================================== *
+ * The control volume reclassifies flows, and never touches a rate
+ * ================================================================== */
+
+describe("the control volume choice reclassifies flows without changing any rate", () => {
+  it("the coolant loop is a pair of crossings at 'engine only' and one internal transfer once the radiator is inside", () => {
+    const engineOnly = factsAfter({ controlVolume: "engine" }, 3);
+    const withRadiator = factsAfter({ controlVolume: "engineRadiator" }, 3);
+    expect(engineOnly.roleCoolantOut).toBe("output");
+    expect(withRadiator.roleCoolantOut).toBe("internal");
+  });
+
+  it("fuel is an input until the tank itself is inside the box", () => {
+    const engineOnly = factsAfter({ controlVolume: "engine" }, 3);
+    const withTank = factsAfter({ controlVolume: "engineRadiatorTank" }, 3);
+    expect(engineOnly.roleFuel).toBe("input");
+    expect(withTank.roleFuel).toBe("internal");
+  });
+
+  it("changing the control volume changes no physical rate at all", () => {
+    const a = factsAfter({ controlVolume: "engine" }, 3);
+    const b = factsAfter({ controlVolume: "engineRadiatorTank" }, 3);
+    expect(a.fuelFlowGps).toBe(b.fuelFlowGps);
+    expect(a.coolantHeatW).toBe(b.coolantHeatW);
+    expect(a.shaftPowerW).toBe(b.shaftPowerW);
+  });
+});
+
+/* ================================================================== *
+ * Rates respond to their controls
+ * ================================================================== */
+
+describe("rates genuinely respond to the controls that should drive them", () => {
+  it("more throttle draws more fuel and air", () => {
+    const low = factsAfter({ throttle: 0.1 }, 2);
+    const high = factsAfter({ throttle: 0.9 }, 2);
+    expect(high.fuelFlowGps as number).toBeGreaterThan(low.fuelFlowGps as number);
+    expect(high.airFlowGps as number).toBeGreaterThan(low.airFlowGps as number);
+  });
+
+  it("more load lowers rpm for the same shaft power", () => {
+    const lightLoad = factsAfter({ dynoLoad: 2 }, 2);
+    const heavyLoad = factsAfter({ dynoLoad: 18 }, 2);
+    expect(heavyLoad.rpm as number).toBeLessThan(lightLoad.rpm as number);
+  });
+
+  it("spark timing away from the optimum costs real efficiency", () => {
+    const optimal = factsAfter({ sparkTiming: 20 }, 2);
+    const off = factsAfter({ sparkTiming: -5 }, 2);
+    expect(off.efficiencyPct as number).toBeLessThan(optimal.efficiencyPct as number);
+  });
+});
+
+/* ================================================================== *
+ * Platform invariants
+ * ================================================================== */
+
+describe("determinism and reset", () => {
+  it("the same seed replays to the same fingerprint", () => {
+    const a = runSeconds(base(), 15, "twin");
+    const b = runSeconds(base(), 15, "twin");
+    expect(a.fingerprint()).toBe(b.fingerprint());
+  });
+
+  it("the clock genuinely advances", () => {
+    const r = runSeconds(base(), 10);
+    expect(r.facts().t as number).toBeGreaterThan(0);
+  });
+
+  it("reset restores a state indistinguishable from a fresh run", () => {
+    const runner = runSeconds(base(), 20, "resetting");
+    runner.reset();
+    const fresh = new SimRunner({ manifest: sim, params: base(), band: "6-8", seed: "resetting" });
+    expect(runner.fingerprint()).toBe(fresh.fingerprint());
+  });
+
+  it("every readout and fact stays finite through a two-minute run, blocked coolant included", () => {
+    const runner = runSeconds({ coolantFlow: 0, throttle: 0.8, dynoLoad: 15 }, 130);
+    for (const ro of runner.readouts()) expect(Number.isFinite(ro.quantity.value)).toBe(true);
+    for (const [k, v] of Object.entries(runner.facts())) {
+      if (typeof v === "number") expect(Number.isFinite(v), `fact ${k}`).toBe(true);
+    }
+  });
+});

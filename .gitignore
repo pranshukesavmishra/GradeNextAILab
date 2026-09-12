@@ -1,0 +1,4 @@
+
+# Lane scratch: underscore-prefixed test files are working files only.
+# Vitest runs them but they are never shippable.
+app/src/sims/**/_*.test.ts

@@ -1,7 +1,10 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import type { Rng } from "@engine/rng";
 import { q } from "@engine/units";
-import { camera, disc, label, roundRect } from "@ui/draw";
+import { roundRect } from "@ui/draw";
+import {
+  badge, caption, groundPlane, hexA, isDarkTheme, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * Ecosystem Simulator — Grades 3-12.
@@ -403,15 +406,46 @@ const model: SimModel<State> = {
  * View
  * ------------------------------------------------------------------ */
 
+/** Mix two theme colours into a hex, so the result can feed the scene kit. */
+function blend(a: string, b: string, t: number): string {
+  const k = Math.max(0, Math.min(1, t));
+  const ca = a.replace("#", "");
+  const cb = b.replace("#", "");
+  let out = "#";
+  for (let i = 0; i < 3; i++) {
+    const va = parseInt(ca.slice(i * 2, i * 2 + 2), 16) || 0;
+    const vb = parseInt(cb.slice(i * 2, i * 2 + 2), 16) || 0;
+    out += Math.round(va + (vb - va) * k).toString(16).padStart(2, "0");
+  }
+  return out;
+}
+
+/** A stable pseudo-random value per cell — no allocation, no rng in render. */
+function hash(i: number, salt: number): number {
+  const s = Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+/** A cheap flat contact shadow. Hundreds of animals cannot each afford a gradient. */
+function footShadow(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  ctx.beginPath();
+  ctx.ellipse(x + r * 0.18, y + r * 0.55, r * 1.05, r * 0.42, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 /** The population graph is the payoff, so it gets a third of the stage. */
 function drawGraph(rc: RenderContext<State>, x: number, y: number, w: number, h: number) {
   const { ctx, state, theme, band } = rc;
   const n = state.histYear.length;
+  const dark = isDarkTheme(theme);
 
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, x, y, w, h, 6);
+  ctx.fillStyle = dark ? "rgba(10,14,20,0.72)" : "rgba(255,255,255,0.8)";
+  roundRect(ctx, x, y, w, h, 8);
   ctx.fill();
+  ctx.strokeStyle = hexA(theme.line, 0.9);
+  ctx.lineWidth = 1;
+  ctx.stroke();
   ctx.restore();
 
   if (n < 2) return;
@@ -427,6 +461,22 @@ function drawGraph(rc: RenderContext<State>, x: number, y: number, w: number, h:
   const t1 = Math.max(state.histYear[n - 1], t0 + 1);
   const px = (i: number) => x + ((state.histYear[i] - t0) / (t1 - t0)) * w;
 
+  // Grass fills as an area — it is the ground everything else stands on.
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  for (let i = 0; i < n; i++) {
+    ctx.lineTo(px(i), y + h - Math.min(state.histGrass[i], 1) * (h - 4) - 2);
+  }
+  ctx.lineTo(px(n - 1), y + h);
+  ctx.closePath();
+  const fill = ctx.createLinearGradient(0, y, 0, y + h);
+  fill.addColorStop(0, hexA(theme.sci["producer"], 0.42));
+  fill.addColorStop(1, hexA(theme.sci["producer"], 0.08));
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.restore();
+
   const series: [number[], string, number][] = [
     [state.histGrass, theme.sci["producer"], 1],
     [state.histRabbits, theme.sci["primary-consumer"], maxPop],
@@ -434,8 +484,9 @@ function drawGraph(rc: RenderContext<State>, x: number, y: number, w: number, h:
   ];
 
   ctx.save();
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.2;
   ctx.lineJoin = "round";
+  ctx.lineCap = "round";
   for (const [data, color, scale] of series) {
     ctx.strokeStyle = color;
     ctx.beginPath();
@@ -445,94 +496,204 @@ function drawGraph(rc: RenderContext<State>, x: number, y: number, w: number, h:
       else ctx.lineTo(px(i), py);
     }
     ctx.stroke();
+    // A dot on the live end, so "now" is never ambiguous.
+    const last = y + h - (Math.min(data[n - 1], scale) / scale) * (h - 4) - 2;
+    sphere(ctx, px(n - 1), last, 3.2, color, { rim: false });
   }
   ctx.restore();
 
   if (band !== "K-2") {
-    label(ctx, `${Math.round(t0)}–${Math.round(t1)} yr`, x + w - 6, y + 11, theme, {
-      align: "right", size: 10, color: theme.inkSoft,
+    caption(ctx, x + w - 8, y + 12, `${Math.round(t0)}–${Math.round(t1)} yr`, theme, {
+      align: "right", size: 10, color: theme.inkSoft, weight: 500,
     });
   }
 }
 
 function render(rc: RenderContext<State>) {
   const { ctx, state, theme, width, height, overlays, band } = rc;
+  const dark = isDarkTheme(theme);
 
   const showGraph = overlays.graph !== false;
-  const graphH = showGraph ? Math.round(height * 0.28) : 0;
+  const graphH = showGraph ? Math.round(height * 0.27) : 0;
   const fieldH = height - graphH - (showGraph ? 8 : 0);
 
-  const cam = camera({
-    x0: 0, y0: 0, x1: GRID_W, y1: GRID_H,
-    width, height: fieldH, square: false,
-  });
-  const cellW = cam.scale;
-  const cellH = fieldH / GRID_H;
+  // A shallow band of sky above the meadow: the horizon is what turns a grid
+  // of coloured squares into a place with a far side.
+  const horizonY = Math.round(fieldH * 0.14);
+  const cellW = width / GRID_W;
+  const cellH = (fieldH - horizonY) / GRID_H;
 
-  /* --- the meadow ------------------------------------------------- */
   const producer = theme.sci["producer"];
+  const drought = state.year < state.droughtUntil;
+
+  /* --- sky and horizon -------------------------------------------- */
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  ctx.fillRect(0, 0, width, fieldH);
+  ctx.beginPath();
+  ctx.rect(0, 0, width, fieldH);
+  ctx.clip();
+  sky(ctx, width, fieldH, theme, drought ? "dusk" : "day", horizonY + 8);
+
+  // A treeline on the skyline, drawn from the producer colour so it belongs.
+  ctx.fillStyle = blend(producer, theme.ink, dark ? 0.45 : 0.35);
+  ctx.beginPath();
+  ctx.moveTo(0, horizonY + 2);
+  for (let i = 0; i <= 34; i++) {
+    const tx = (i / 34) * width;
+    const th = 5 + hash(i, 3) * 13;
+    ctx.lineTo(tx, horizonY + 2 - th);
+    ctx.lineTo(tx + width / 68, horizonY + 2);
+  }
+  ctx.lineTo(width, horizonY + 2);
+  ctx.closePath();
+  ctx.fill();
+
+  /* --- the meadow --------------------------------------------------- */
+  groundPlane(ctx, horizonY, 0, width, fieldH, theme, "soil");
+
+  // Grass biomass per cell, over bare soil. Opacity carries the biomass, so a
+  // grazed patch really does read as bare earth.
   ctx.fillStyle = producer;
   for (let gy = 0; gy < GRID_H; gy++) {
+    // Cells further away sit closer to the horizon and are drawn slightly darker.
     for (let gx = 0; gx < GRID_W; gx++) {
       const g = state.grass[gy * GRID_W + gx];
       if (g <= 0.02) continue;
-      // Opacity carries biomass: grazed patches read as bare ground at a glance.
-      ctx.globalAlpha = 0.12 + 0.8 * g;
+      ctx.globalAlpha = 0.14 + 0.82 * g;
       ctx.fillRect(gx * cellW, fieldH - (gy + 1) * cellH, cellW + 0.6, cellH + 0.6);
     }
+  }
+  ctx.globalAlpha = 1;
+
+  // Blades on the lush cells, batched into one path so the cost stays flat.
+  ctx.strokeStyle = blend(producer, theme.surface, dark ? 0.15 : 0.35);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let gy = 0; gy < GRID_H; gy++) {
+    for (let gx = 0; gx < GRID_W; gx++) {
+      const idx = gy * GRID_W + gx;
+      if (state.grass[idx] < 0.55) continue;
+      const bx = gx * cellW + hash(idx, 1) * cellW;
+      const by = fieldH - (gy + 0.5) * cellH;
+      const bh = 3 + hash(idx, 2) * cellH * 0.5;
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + (hash(idx, 4) - 0.5) * 3, by - bh);
+    }
+  }
+  ctx.stroke();
+
+  // Depth: the far end of the meadow sits in haze.
+  const haze = ctx.createLinearGradient(0, horizonY, 0, horizonY + fieldH * 0.3);
+  haze.addColorStop(0, hexA(theme.surface, dark ? 0.28 : 0.45));
+  haze.addColorStop(1, hexA(theme.surface, 0));
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, horizonY, width, fieldH * 0.3);
+
+  if (drought) {
+    ctx.fillStyle = hexA(theme.sci["hot"], 0.16);
+    ctx.fillRect(0, horizonY, width, fieldH - horizonY);
   }
   ctx.restore();
 
   /* --- animals ---------------------------------------------------- */
-  const rRadius = band === "K-2" ? 5.5 : 4;
-  const fRadius = band === "K-2" ? 7.5 : 6;
+  const rRadius = band === "K-2" ? 6 : 4.4;
+  const fRadius = band === "K-2" ? 8 : 6.4;
   const rabbitColor = theme.sci["primary-consumer"];
   const foxColor = theme.sci["secondary-consumer"];
+  const toY = (y: number) => fieldH - y * cellH;
 
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
   for (let i = 0; i < state.rabbits.length; i++) {
     const a = state.rabbits[i];
-    disc(ctx, a.x * cellW, fieldH - a.y * cellH, rRadius, rabbitColor, {
-      stroke: theme.surface, lineWidth: 1,
-    });
+    footShadow(ctx, a.x * cellW, toY(a.y), rRadius);
   }
   for (let i = 0; i < state.foxes.length; i++) {
     const a = state.foxes[i];
-    const px = a.x * cellW;
-    const py = fieldH - a.y * cellH;
-    disc(ctx, px, py, fRadius, foxColor, { stroke: theme.surface, lineWidth: 1.2 });
+    footShadow(ctx, a.x * cellW, toY(a.y), fRadius);
+  }
+  ctx.restore();
+
+  // Ears first, so they sit behind the body and read as attached to it.
+  ctx.save();
+  ctx.strokeStyle = blend(rabbitColor, theme.ink, 0.25);
+  ctx.lineWidth = Math.max(1.4, rRadius * 0.34);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  for (let i = 0; i < state.rabbits.length; i++) {
+    const a = state.rabbits[i];
+    const ax = a.x * cellW, ay = toY(a.y);
+    const ex = Math.cos(a.dir), ey = -Math.sin(a.dir);
+    ctx.moveTo(ax + ex * rRadius * 0.3 - ey * rRadius * 0.35, ay + ey * rRadius * 0.3 + ex * rRadius * 0.35);
+    ctx.lineTo(ax + ex * rRadius * 1.5 - ey * rRadius * 0.5, ay + ey * rRadius * 1.5 + ex * rRadius * 0.5);
+    ctx.moveTo(ax + ex * rRadius * 0.3 + ey * rRadius * 0.35, ay + ey * rRadius * 0.3 - ex * rRadius * 0.35);
+    ctx.lineTo(ax + ex * rRadius * 1.5 + ey * rRadius * 0.5, ay + ey * rRadius * 1.5 - ex * rRadius * 0.5);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  for (let i = 0; i < state.rabbits.length; i++) {
+    const a = state.rabbits[i];
+    sphere(ctx, a.x * cellW, toY(a.y), rRadius, rabbitColor, { rim: false });
+  }
+
+  // Foxes get a brush tail, which is the only cue needed to tell them apart.
+  ctx.save();
+  ctx.strokeStyle = blend(foxColor, theme.ink, 0.2);
+  ctx.lineWidth = Math.max(2, fRadius * 0.45);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  for (let i = 0; i < state.foxes.length; i++) {
+    const a = state.foxes[i];
+    const ax = a.x * cellW, ay = toY(a.y);
+    const ex = Math.cos(a.dir), ey = -Math.sin(a.dir);
+    ctx.moveTo(ax - ex * fRadius * 0.6, ay - ey * fRadius * 0.6);
+    ctx.lineTo(ax - ex * fRadius * 1.9, ay - ey * fRadius * 1.9);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  for (let i = 0; i < state.foxes.length; i++) {
+    const a = state.foxes[i];
+    const fx = a.x * cellW;
+    const fy = toY(a.y);
     if (overlays.hunting && band !== "K-2") {
       ctx.save();
-      ctx.globalAlpha = 0.16;
+      ctx.globalAlpha = 0.18;
       ctx.strokeStyle = foxColor;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(px, py, CATCH_RADIUS * cellW, 0, Math.PI * 2);
+      ctx.ellipse(fx, fy, CATCH_RADIUS * cellW, CATCH_RADIUS * cellH, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
+    sphere(ctx, fx, fy, fRadius, foxColor, { rim: false });
+    // Snout, pointing where it is heading.
+    sphere(
+      ctx, fx + Math.cos(a.dir) * fRadius * 0.85, fy - Math.sin(a.dir) * fRadius * 0.85,
+      fRadius * 0.45, blend(foxColor, theme.surface, 0.2), { rim: false },
+    );
   }
 
   /* --- state banners ---------------------------------------------- */
-  if (state.year < state.droughtUntil) {
-    label(ctx, "Drought", width / 2, 16, theme, {
-      align: "center", color: theme.sci["hot"], size: band === "K-2" ? 16 : 13,
-    });
+  if (drought) {
+    badge(ctx, width / 2, 20, "Drought", theme, { align: "center", color: theme.sci["hot"] });
   }
   if (band !== "K-2") {
-    label(
-      ctx,
-      `Year ${Math.floor(state.year)}   ${state.rabbits.length} rabbits   ${state.foxes.length} foxes`,
-      8, 16, theme, { size: 12, color: theme.inkSoft },
-    );
-  }
-  if (state.rabbits.length === 0) {
-    label(ctx, "No rabbits left", width / 2, fieldH / 2, theme, {
-      align: "center", color: theme.sci["primary-consumer"], size: 15,
+    badge(ctx, 10, 20, `Year ${Math.floor(state.year)}`, theme, { color: theme.accent });
+    badge(ctx, width - 10, 20, `${state.rabbits.length}`, theme, {
+      align: "right", color: theme.sci["primary-consumer"], sub: "rabbits",
+    });
+    badge(ctx, width - 92, 20, `${state.foxes.length}`, theme, {
+      align: "right", color: theme.sci["secondary-consumer"], sub: "foxes",
     });
   }
+  if (state.rabbits.length === 0) {
+    caption(ctx, width / 2, fieldH / 2, "No rabbits left", theme, {
+      align: "center", color: theme.sci["primary-consumer"], size: 17, weight: 800,
+    });
+  }
+
+  vignette(ctx, width, fieldH, 0.16);
 
   if (showGraph) drawGraph(rc, 0, fieldH + 8, width, graphH - 8);
 }

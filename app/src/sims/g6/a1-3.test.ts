@@ -1,0 +1,194 @@
+import { describe, expect, it } from "vitest";
+import { SimRunner } from "@engine/loop";
+import { defaultParams } from "@engine/types";
+import type { ParamValues } from "@engine/types";
+import { cutTheLinkSim } from "./a1-3-cut-the-link-cook-the-tomatoes";
+
+/**
+ * Science gate for G6-A1.3 "Cut the Link, Cook the Tomatoes".
+ *
+ * Tests the spec's actual claims: cutting the temp-to-vent arrow leaves every
+ * component present and powered yet measurably cooks the tunnel; the same
+ * arrow, merely delayed instead of cut, genuinely oscillates with a period
+ * that grows with the delay (a real closed-loop dynamic, not a scripted
+ * wobble); the soil-water pathway to leaf cooling is a separate mechanism
+ * from ventilation, so it fails on its own even when the vents work
+ * perfectly; and the loop detector reports real, signed, closed cycles that
+ * disappear when their owning arrow is cut. Plus the platform invariants:
+ * determinism and a clean reset. Not registered yet, so this file drives the
+ * manifest directly rather than through the shared registry.
+ */
+
+const KELVIN = 273.15;
+
+function base(overrides: ParamValues = {}): ParamValues {
+  return { ...defaultParams(cutTheLinkSim.params), ...overrides };
+}
+
+/** tickRate is 30 Hz; timeComp (sim-minutes per real second) is applied inside step(). */
+function runHours(params: ParamValues, hours: number, seed = "g6a1-3"): SimRunner {
+  const runner = new SimRunner({ manifest: cutTheLinkSim, params, band: "6-8", seed });
+  runner.playing = true;
+  const comp = params.timeComp as number;
+  const engineSeconds = (hours * 60 * 60) / comp;
+  const dt = 1 / 30;
+  const ticks = Math.round(engineSeconds * 30);
+  for (let i = 0; i < ticks; i++) runner.advance(dt);
+  return runner;
+}
+
+const factsAfter = (overrides: ParamValues, hours: number, seed = "g6a1-3") =>
+  runHours(base(overrides), hours, seed).facts();
+
+/* ================================================================== *
+ * Cutting an arrow leaves every part present and powered
+ * ================================================================== */
+
+describe("cutting temp -> vent cooks the tunnel with every component intact", () => {
+  it("a cut tunnel runs hotter and accumulates far more heat stress than a healthy one", () => {
+    const healthy = factsAfter({}, 24);
+    const cut = factsAfter({ linkTempVent: false }, 24);
+    expect(cut.stressAccum as number).toBeGreaterThan((healthy.stressAccum as number) * 1.5);
+  });
+
+  it("the humidity leg is still real and still contributing on its own", () => {
+    // With temp->vent cut, humidity->vent is the only thing left opening the
+    // vents. Cutting that too must make things worse still, proving it was
+    // doing real work even while temp->vent was the one broken arrow.
+    const tempCutOnly = factsAfter({ linkTempVent: false }, 24);
+    const bothCut = factsAfter({ linkTempVent: false, linkHumidityVent: false }, 24);
+    expect(bothCut.stressAccum as number).toBeGreaterThan(tempCutOnly.stressAccum as number);
+  });
+
+  it("the loop detector loses exactly the loops that depended on the cut arrow", () => {
+    const healthy = factsAfter({}, 1);
+    const cut = factsAfter({ linkTempVent: false }, 1);
+    expect(cut.activeLoops as number).toBeLessThan(healthy.activeLoops as number);
+    expect(cut.balancingLoops as number).toBeGreaterThanOrEqual(1); // the humidity loop and the thermostat survive
+  });
+});
+
+/* ================================================================== *
+ * Delay, not removal, produces genuine oscillation
+ * ================================================================== */
+
+describe("delaying temp -> vent produces a real, delay-scaled oscillation", () => {
+  it("a longer delay on the same live arrow produces a measurably longer period", () => {
+    const short = factsAfter({}, 19); // default 2-minute delay
+    const long = factsAfter({ selectedLink: "tempVent", linkDelayMin: 25 }, 19);
+    expect(short.oscPeriodValid).toBe(true);
+    expect(long.oscPeriodValid).toBe(true);
+    expect(long.oscPeriodMin as number).toBeGreaterThan((short.oscPeriodMin as number) * 1.5);
+  });
+
+  it("the arrow is never cut in this scenario — it is delayed, and still intact", () => {
+    const f = factsAfter({ selectedLink: "tempVent", linkDelayMin: 25 }, 19);
+    expect(f.oscAmplitudeValid).toBe(true);
+    expect(f.oscAmplitudeC as number).toBeGreaterThan(1);
+  });
+
+  it("shortening the delay well below default keeps the period well below the 25-minute case", () => {
+    const veryShort = factsAfter({ selectedLink: "tempVent", linkDelayMin: 0.5 }, 19);
+    const long = factsAfter({ selectedLink: "tempVent", linkDelayMin: 25 }, 19);
+    expect(veryShort.oscPeriodValid).toBe(true);
+    expect(veryShort.oscPeriodMin as number).toBeLessThan((long.oscPeriodMin as number) * 0.6);
+  });
+});
+
+/* ================================================================== *
+ * Evaporative cooling through the soil is a separate mechanism from venting
+ * ================================================================== */
+
+describe("dry roots: vents alone cannot replace evaporative cooling", () => {
+  it("with irrigation at zero, soil water only ever falls", () => {
+    const early = factsAfter({ irrigation: 0 }, 2);
+    const late = factsAfter({ irrigation: 0 }, 14);
+    expect(late.soilWater as number).toBeLessThan(early.soilWater as number);
+  });
+
+  it("a dry tunnel runs a hotter leaf than a watered one, vents identical and automatic in both", () => {
+    const dry = factsAfter({ irrigation: 0 }, 14);
+    const wet = factsAfter({ irrigation: 4 }, 14);
+    expect(dry.soilWater as number).toBeLessThan(wet.soilWater as number);
+    expect(dry.leafTempC as number).toBeGreaterThan(wet.leafTempC as number);
+  });
+
+  it("cutting the soil-water arrow removes the limit — transpiration stops answering to dryness", () => {
+    // soil water -> transpiration is a limiting (not driving) arrow: cutting it
+    // means dryness no longer throttles transpiration at all.
+    const limited = factsAfter({ irrigation: 0 }, 10);
+    const unlimited = factsAfter({ irrigation: 0, linkSoilTranspiration: false }, 10);
+    expect(unlimited.leafTempC as number).toBeLessThan(limited.leafTempC as number);
+  });
+});
+
+/* ================================================================== *
+ * CO2 enrichment is a real, cuttable coupling to plant tolerance
+ * ================================================================== */
+
+describe("CO2 -> growth is a genuine coupling, not a decoration", () => {
+  it("cutting it removes CO2's benefit even though the tank keeps injecting", () => {
+    const on = factsAfter({}, 24);
+    const off = factsAfter({ linkCo2Growth: false }, 24);
+    expect(Math.abs((on.co2 as number) - (off.co2 as number))).toBeLessThan(50); // the regulator behaves the same either way
+    expect(off.stressAccum as number).toBeGreaterThan(on.stressAccum as number);
+  });
+});
+
+/* ================================================================== *
+ * Every part in the tunnel is present and powered while it cooks
+ * ================================================================== */
+
+describe("the honesty rule: a cut arrow changes only its own effect", () => {
+  it("cutting shade -> solar gain leaves the shade toggle physically present but functionless", () => {
+    // Sampled at midday (hour 12) so the sun the shade is meant to block is
+    // actually up — the clock starts at midnight, and shade over a shorter,
+    // all-night window would trivially show no effect from either state.
+    const shadeWorks = factsAfter({ shadeDeployed: true }, 12);
+    const shadeCut = factsAfter({ shadeDeployed: true, linkShadeSolar: false }, 12);
+    const noShadeAtAll = factsAfter({ shadeDeployed: false }, 12);
+    // A cut shade arrow behaves exactly as if no shade were deployed at all —
+    // the cloth is drawn on stage, physically there, doing nothing.
+    expect(Math.abs((shadeCut.airTempC as number) - (noShadeAtAll.airTempC as number))).toBeLessThan(0.05);
+    expect(shadeWorks.airTempC as number).toBeLessThan(shadeCut.airTempC as number);
+  });
+
+  it("cutting temp -> heater leaves the heater powered but permanently unlit", () => {
+    const f = factsAfter({ linkTempHeater: false, outsideTemp: 2 + KELVIN, timeComp: 30 }, 3);
+    expect(f.heaterOn).toBe(false);
+    const withHeater = factsAfter({ outsideTemp: 2 + KELVIN, timeComp: 30 }, 3);
+    expect(withHeater.airTempC as number).toBeGreaterThan(f.airTempC as number);
+  });
+});
+
+/* ================================================================== *
+ * Platform invariants
+ * ================================================================== */
+
+describe("determinism and reset", () => {
+  it("the same seed replays to the same fingerprint", () => {
+    const a = runHours(base({ selectedLink: "tempVent", linkDelayMin: 25 }), 5, "twin");
+    const b = runHours(base({ selectedLink: "tempVent", linkDelayMin: 25 }), 5, "twin");
+    expect(a.fingerprint()).toBe(b.fingerprint());
+  });
+
+  it("the clock actually advances", () => {
+    const r = runHours(base(), 1);
+    expect(r.time).toBeGreaterThan(0);
+  });
+
+  it("reset restores a state indistinguishable from a fresh run", () => {
+    const runner = runHours(base({ irrigation: 0 }), 8, "resetting");
+    runner.reset();
+    const fresh = new SimRunner({ manifest: cutTheLinkSim, params: base({ irrigation: 0 }), band: "6-8", seed: "resetting" });
+    expect(runner.fingerprint()).toBe(fresh.fingerprint());
+  });
+
+  it("every readout and fact is finite through a long, oscillating run", () => {
+    const r = runHours(base({ selectedLink: "tempVent", linkDelayMin: 25 }), 30);
+    for (const ro of r.readouts()) expect(Number.isFinite(ro.quantity.value)).toBe(true);
+    for (const v of Object.values(r.facts())) {
+      if (typeof v === "number") expect(Number.isFinite(v)).toBe(true);
+    }
+  });
+});

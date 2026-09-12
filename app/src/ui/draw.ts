@@ -236,18 +236,43 @@ export function energyBars(
   ctx.restore();
 }
 
-/** Linear interpolation between two hex colours, for thermal ramps. */
+/**
+ * Linear interpolation between two colours, for thermal ramps.
+ *
+ * Returns hex, and that matters: a mixed colour is routinely fed straight back
+ * into `mixHex`, `hexA`, or one of the shade helpers to light it. Returning
+ * `rgb(...)` made those compositions parse as hex and produce a NaN channel —
+ * which canvas rejects outright in `addColorStop` (the sim goes blank) and
+ * silently ignores in `fillStyle` (the sim draws in the wrong colour). Hex
+ * round-trips through every colour helper in the kit, so mixes compose.
+ */
 export function mixHex(a: string, b: string, t: number): string {
   const pa = parseHex(a), pb = parseHex(b);
   const k = Math.max(0, Math.min(1, t));
-  const r = Math.round(pa[0] + (pb[0] - pa[0]) * k);
-  const g = Math.round(pa[1] + (pb[1] - pa[1]) * k);
-  const bl = Math.round(pa[2] + (pb[2] - pa[2]) * k);
-  return `rgb(${r}, ${g}, ${bl})`;
+  const ch = (i: number) => {
+    const v = Math.round(pa[i] + (pb[i] - pa[i]) * k);
+    return (v < 0 ? 0 : v > 255 ? 255 : v).toString(16).padStart(2, "0");
+  };
+  return `#${ch(0)}${ch(1)}${ch(2)}`;
 }
 
-function parseHex(hex: string): [number, number, number] {
-  const h = hex.trim().replace("#", "");
+function parseHex(color: string): [number, number, number] {
+  const s = color.trim();
+  // Accept `rgb()` and `rgba()` too, so a colour that came from somewhere other
+  // than a token still lands on real channel values rather than on NaN.
+  if (s.startsWith("rgb")) {
+    const open = s.indexOf("(");
+    const parts = open < 0 ? [] : s.slice(open + 1).split(/[,\s/]+/).filter(Boolean);
+    if (parts.length >= 3) {
+      const ch = (i: number) => {
+        const v = Number.parseFloat(parts[i]);
+        return Number.isFinite(v) ? Math.max(0, Math.min(255, Math.round(v))) : 128;
+      };
+      return [ch(0), ch(1), ch(2)];
+    }
+    return [128, 128, 128];
+  }
+  const h = s.replace("#", "");
   if (h.length === 3) {
     return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)];
   }
