@@ -1,7 +1,10 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import type { Rng } from "@engine/rng";
 import { q } from "@engine/units";
-import { disc, label, roundRect } from "@ui/draw";
+import { roundRect } from "@ui/draw";
+import {
+  badge, caption, glow, groundPlane, hexA, isDarkTheme, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * Natural Selection — Grades 6-12.
@@ -88,6 +91,8 @@ interface State {
   caughtLight: number;
   caughtDark: number;
   starved: number;
+  /** Babies born with a flipped fur gene since the founding. */
+  mutants: number;
   peakLightFraction: number;
 }
 
@@ -116,6 +121,7 @@ function buildPopulation(params: ParamValues, rng: Rng): State {
     caughtLight: 0,
     caughtDark: 0,
     starved: 0,
+    mutants: 0,
     peakLightFraction: frac,
   };
 }
@@ -216,6 +222,7 @@ const model: SimModel<State> = {
     let histGen = state.histGen;
     let histLight = state.histLight;
     let histPop = state.histPop;
+    let mutants = state.mutants;
     let population = survivors;
 
     if (genClock >= GEN_SECONDS) {
@@ -232,7 +239,9 @@ const model: SimModel<State> = {
         if (rng.chance(extra)) litter += 1;
         for (let k = 0; k < litter && next.length < MAX_BUNNIES; k++) {
           // Offspring inherit the parent's allele; mutation flips it rarely.
-          const allele = rng.chance(mutation) ? 1 - parent.allele : parent.allele;
+          const flipped = rng.chance(mutation);
+          if (flipped) mutants++;
+          const allele = flipped ? 1 - parent.allele : parent.allele;
           next.push({
             x: parent.x, y: parent.y, dir: rng.range(0, Math.PI * 2), allele,
           });
@@ -266,11 +275,12 @@ const model: SimModel<State> = {
       caughtLight,
       caughtDark,
       starved,
+      mutants,
       peakLightFraction: Math.max(state.peakLightFraction, frac),
     };
   },
 
-  readouts(state) {
+  readouts(state, params) {
     const n = state.bunnies.length;
     const light = lightFraction(state.bunnies);
     return [
@@ -298,6 +308,13 @@ const model: SimModel<State> = {
         key: "caughtDark", label: "Dark bunnies caught", quantity: q(state.caughtDark, "count"),
         semantic: "decomposer", graphable: false, bands: ["9-12"],
       },
+      {
+        // Why mutation alone is slow, as a number: at this population and this
+        // rate, how many babies per generation arrive with a flipped fur gene.
+        key: "mutantsExpected", label: "New variants expected per generation",
+        quantity: q(n * OFFSPRING * (params.mutationRate as number), "count"),
+        semantic: "producer", graphable: true, bands: ["6-8", "9-12"],
+      },
     ];
   },
 
@@ -315,6 +332,8 @@ const model: SimModel<State> = {
       caughtLight: state.caughtLight,
       caughtDark: state.caughtDark,
       starved: state.starved,
+      mutantBirths: state.mutants,
+      expectedMutantsPerGeneration: n * OFFSPRING * (params.mutationRate as number),
     };
   },
 };
@@ -323,11 +342,102 @@ const model: SimModel<State> = {
  * View
  * ------------------------------------------------------------------ */
 
-/** Ground tint for the place the bunnies are actually living in. */
-function groundColor(env: string, theme: RenderContext<State>["theme"]): [string, number] {
-  if (env === "snow") return [theme.sci["cold"], 0.14];
-  if (env === "grass") return [theme.sci["producer"], 0.42];
-  return [theme.sci["producer"], 0.24];
+/** Mix two theme colours into a hex, so the result can feed the scene kit. */
+function blend(a: string, b: string, t: number): string {
+  const k = Math.max(0, Math.min(1, t));
+  const ca = a.replace("#", "");
+  const cb = b.replace("#", "");
+  let out = "#";
+  for (let i = 0; i < 3; i++) {
+    const va = parseInt(ca.slice(i * 2, i * 2 + 2), 16) || 0;
+    const vb = parseInt(cb.slice(i * 2, i * 2 + 2), 16) || 0;
+    out += Math.round(va + (vb - va) * k).toString(16).padStart(2, "0");
+  }
+  return out;
+}
+
+/** A stable pseudo-random value per index — no allocation, no rng in render. */
+function hash(i: number, salt: number): number {
+  const s = Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+/** The place they are actually living in, painted from the horizon down. */
+function drawHabitat(
+  rc: RenderContext<State>, env: string, horizonY: number, fieldH: number,
+) {
+  const { ctx, theme, width } = rc;
+  const dark = isDarkTheme(theme);
+  const cold = theme.sci["cold"];
+  const producer = theme.sci["producer"];
+  const soil = theme.sci["decomposer"];
+
+  sky(ctx, width, fieldH, theme, env === "snow" ? "day" : "day", horizonY + 10);
+
+  if (env === "snow") {
+    // Snow is not one of the kit's ground kinds, so it is built from the cold
+    // token: a bright drift under a pale, low sun.
+    ctx.save();
+    const g = ctx.createLinearGradient(0, horizonY, 0, fieldH);
+    g.addColorStop(0, blend(cold, theme.surface, dark ? 0.55 : 0.86));
+    g.addColorStop(1, blend(cold, theme.surface, dark ? 0.28 : 0.66));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, horizonY, width, fieldH - horizonY);
+    // Drift edges catch the light and give the flat white some form.
+    ctx.strokeStyle = hexA(cold, dark ? 0.5 : 0.4);
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 5; i++) {
+      const dy = horizonY + (i + 1) * ((fieldH - horizonY) / 6);
+      ctx.beginPath();
+      ctx.moveTo(0, dy);
+      for (let s = 0; s <= 12; s++) {
+        ctx.lineTo((s / 12) * width, dy + Math.sin(s * 1.3 + i * 2.1) * 4);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  } else {
+    groundPlane(ctx, horizonY, 0, width, fieldH, theme, env === "grass" ? "grass" : "soil");
+    if (env === "patchy") {
+      // Patchy ground is soil with grass thrown across it — which is exactly
+      // why it hides neither fur colour particularly well.
+      ctx.save();
+      ctx.fillStyle = hexA(producer, dark ? 0.5 : 0.6);
+      for (let i = 0; i < 90; i++) {
+        const cxp = hash(i, 5) * width;
+        const cyp = horizonY + hash(i, 6) * (fieldH - horizonY);
+        const rr = 7 + hash(i, 7) * 22;
+        ctx.beginPath();
+        ctx.ellipse(cxp, cyp, rr, rr * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    // Blades, batched into one stroke so the cost stays flat.
+    ctx.save();
+    ctx.strokeStyle = blend(env === "grass" ? producer : soil, theme.surface, dark ? 0.1 : 0.3);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < 420; i++) {
+      const bx = hash(i, 1) * width;
+      const t = hash(i, 2);
+      const by = horizonY + t * (fieldH - horizonY);
+      const bh = 2 + t * 7;
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + (hash(i, 3) - 0.5) * 3, by - bh);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Haze at the far edge, so the field has a far edge.
+  ctx.save();
+  const haze = ctx.createLinearGradient(0, horizonY, 0, horizonY + (fieldH - horizonY) * 0.3);
+  haze.addColorStop(0, hexA(theme.surface, dark ? 0.3 : 0.45));
+  haze.addColorStop(1, hexA(theme.surface, 0));
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, horizonY, width, (fieldH - horizonY) * 0.3);
+  ctx.restore();
 }
 
 function drawHistory(rc: RenderContext<State>, x: number, y: number, w: number, h: number) {
@@ -335,8 +445,11 @@ function drawHistory(rc: RenderContext<State>, x: number, y: number, w: number, 
   const n = state.histGen.length;
 
   ctx.save();
-  ctx.fillStyle = theme.sci["decomposer"];
-  roundRect(ctx, x, y, w, h, 5);
+  const dk = ctx.createLinearGradient(0, y, 0, y + h);
+  dk.addColorStop(0, blend(theme.sci["decomposer"], theme.ink, 0.1));
+  dk.addColorStop(1, blend(theme.sci["decomposer"], theme.ink, 0.35));
+  ctx.fillStyle = dk;
+  roundRect(ctx, x, y, w, h, 6);
   ctx.fill();
   ctx.restore();
 
@@ -347,6 +460,9 @@ function drawHistory(rc: RenderContext<State>, x: number, y: number, w: number, 
     const g1 = Math.max(state.histGen[n - 1], g0 + 1);
     ctx.save();
     ctx.beginPath();
+    roundRect(ctx, x, y, w, h, 6);
+    ctx.clip();
+    ctx.beginPath();
     ctx.moveTo(x, y);
     for (let i = 0; i < n; i++) {
       const px = x + ((state.histGen[i] - g0) / (g1 - g0)) * w;
@@ -354,17 +470,33 @@ function drawHistory(rc: RenderContext<State>, x: number, y: number, w: number, 
     }
     ctx.lineTo(x + w, y);
     ctx.closePath();
-    ctx.fillStyle = theme.sci["cold"];
+    const lt = ctx.createLinearGradient(0, y, 0, y + h);
+    lt.addColorStop(0, blend(theme.sci["cold"], theme.surface, 0.45));
+    lt.addColorStop(1, theme.sci["cold"]);
+    ctx.fillStyle = lt;
     ctx.fill();
+    // The boundary itself is the story, so it gets a bright line.
+    ctx.strokeStyle = hexA(theme.surface, 0.85);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const px = x + ((state.histGen[i] - g0) / (g1 - g0)) * w;
+      const py = y + state.histLight[i] * h;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
     ctx.restore();
   }
 
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.strokeStyle = hexA(theme.line, 0.9);
   ctx.lineWidth = 1;
-  roundRect(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 5);
+  roundRect(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 6);
   ctx.stroke();
   ctx.restore();
+  caption(ctx, x + 8, y + h / 2, "share of light fur", theme, {
+    size: 10, color: theme.surface, weight: 600,
+  });
 }
 
 function render(rc: RenderContext<State>) {
@@ -372,61 +504,99 @@ function render(rc: RenderContext<State>) {
   const env = activeEnvironment(state, params);
 
   const showHistory = overlays.history !== false && band !== "K-2";
-  const histH = showHistory ? Math.round(height * 0.2) : 0;
+  const histH = showHistory ? Math.round(height * 0.19) : 0;
   const fieldH = height - histH - (showHistory ? 8 : 0);
+  const horizonY = Math.round(fieldH * 0.15);
 
-  /* --- ground ----------------------------------------------------- */
-  const [groundHex, groundAlpha] = groundColor(env, theme);
+  /* --- the habitat ------------------------------------------------- */
   ctx.save();
-  ctx.fillStyle = theme.surface;
-  ctx.fillRect(0, 0, width, fieldH);
-  ctx.globalAlpha = groundAlpha;
-  ctx.fillStyle = groundHex;
-  ctx.fillRect(0, 0, width, fieldH);
+  ctx.beginPath();
+  ctx.rect(0, 0, width, fieldH);
+  ctx.clip();
+  drawHabitat(rc, env, horizonY, fieldH);
   ctx.restore();
 
-  /* --- catch markers ---------------------------------------------- */
+  const toY = (y: number) => fieldH - y * (fieldH - horizonY);
+
+  /* --- catch markers: a predator strike, fading --------------------- */
   for (let i = 0; i < state.marks.length; i++) {
     const m = state.marks[i];
     const t = 1 - m.age / 0.6;
-    disc(ctx, m.x * width, fieldH - m.y * fieldH, 6 + 14 * (1 - t), theme.sci["secondary-consumer"], {
-      alpha: 0.45 * t,
-    });
+    if (t <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = 0.55 * t;
+    glow(ctx, m.x * width, toY(m.y), 8 + 22 * (1 - t), theme.sci["secondary-consumer"], 0.8);
+    ctx.restore();
   }
 
   /* --- bunnies ----------------------------------------------------- */
   const lightFur = theme.sci["cold"];
   const darkFur = theme.sci["decomposer"];
-  const r = band === "K-2" ? 7 : state.bunnies.length > 220 ? 3.5 : 5;
+  const r = band === "K-2" ? 8 : state.bunnies.length > 220 ? 4 : 5.6;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
   for (let i = 0; i < state.bunnies.length; i++) {
     const b = state.bunnies[i];
-    disc(ctx, b.x * width, fieldH - b.y * fieldH, r, b.allele === LIGHT ? lightFur : darkFur);
+    ctx.beginPath();
+    ctx.ellipse(b.x * width + r * 0.18, toY(b.y) + r * 0.6, r * 1.05, r * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Ears behind the bodies, one batched path per fur colour.
+  for (const [allele, fur] of [[LIGHT, lightFur], [DARK, darkFur]] as [number, string][]) {
+    ctx.save();
+    ctx.strokeStyle = blend(fur, theme.ink, 0.3);
+    ctx.lineWidth = Math.max(1.4, r * 0.32);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let i = 0; i < state.bunnies.length; i++) {
+      const b = state.bunnies[i];
+      if (b.allele !== allele) continue;
+      const bx = b.x * width, by = toY(b.y);
+      const ex = Math.cos(b.dir), ey = -Math.sin(b.dir);
+      ctx.moveTo(bx + ex * r * 0.3 - ey * r * 0.32, by + ey * r * 0.3 + ex * r * 0.32);
+      ctx.lineTo(bx + ex * r * 1.55 - ey * r * 0.46, by + ey * r * 1.55 + ex * r * 0.46);
+      ctx.moveTo(bx + ex * r * 0.3 + ey * r * 0.32, by + ey * r * 0.3 - ex * r * 0.32);
+      ctx.lineTo(bx + ex * r * 1.55 + ey * r * 0.46, by + ey * r * 1.55 - ex * r * 0.46);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  for (let i = 0; i < state.bunnies.length; i++) {
+    const b = state.bunnies[i];
+    sphere(ctx, b.x * width, toY(b.y), r, b.allele === LIGHT ? lightFur : darkFur, { rim: false });
   }
 
   /* --- legend and status ------------------------------------------- */
   const frac = lightFraction(state.bunnies);
-  disc(ctx, 16, 16, 6, lightFur);
-  label(ctx, "light fur", 26, 16, theme, { size: 11, color: theme.inkSoft, plate: false });
-  disc(ctx, 96, 16, 6, darkFur);
-  label(ctx, "dark fur", 106, 16, theme, { size: 11, color: theme.inkSoft, plate: false });
+  sphere(ctx, 18, 18, 6, lightFur);
+  caption(ctx, 28, 18, "light fur", theme, { size: 11, color: theme.inkSoft });
+  sphere(ctx, 100, 18, 6, darkFur);
+  caption(ctx, 110, 18, "dark fur", theme, { size: 11, color: theme.inkSoft });
 
   if (band !== "K-2") {
-    label(
-      ctx,
-      `Generation ${state.generation}   ${state.bunnies.length} bunnies   ${Math.round(frac * 100)}% light`,
-      width - 8, 16, theme, { align: "right", size: 12, color: theme.inkSoft },
-    );
+    badge(ctx, width - 10, 20, `${Math.round(frac * 100)}%`, theme, {
+      align: "right", color: lightFur, sub: "light fur",
+    });
+    badge(ctx, width - 100, 20, `${state.bunnies.length}`, theme, {
+      align: "right", color: theme.accent, sub: `gen ${state.generation}`,
+    });
   }
   if (state.melted) {
-    label(ctx, "The snow melted", width / 2, fieldH - 16, theme, {
-      align: "center", size: 12, color: theme.sci["hot"],
+    badge(ctx, width / 2, fieldH - 20, "The snow melted", theme, {
+      align: "center", color: theme.sci["hot"],
     });
   }
   if (state.bunnies.length === 0) {
-    label(ctx, "The population died out", width / 2, fieldH / 2, theme, {
-      align: "center", size: 15, color: theme.sci["secondary-consumer"],
+    caption(ctx, width / 2, fieldH / 2, "The population died out", theme, {
+      align: "center", size: 17, color: theme.sci["secondary-consumer"], weight: 800,
     });
   }
+
+  vignette(ctx, width, fieldH, 0.16);
 
   if (showHistory) drawHistory(rc, 0, fieldH + 8, width, histH - 8);
 }

@@ -1,6 +1,9 @@
 import type { RenderContext, SimManifest, SimModel } from "@engine/types";
 import { CONSTANTS, q } from "@engine/units";
-import { camera, disc, label, roundRect } from "@ui/draw";
+import { camera, roundRect } from "@ui/draw";
+import {
+  badge, caption, comet, glow, hexA, material, sky, sphere, starfield, vignette,
+} from "@ui/scene";
 
 /**
  * Build an Atom — Grades 6-12.
@@ -177,16 +180,15 @@ const model: SimModel<State> = {
 /* ------------------------------------------------------------------ *
  * View
  * ------------------------------------------------------------------ */
-
 const WORLD_W = 31;
 const WORLD_H = 19;
-const CENTRE_X = 10.5;
-const CENTRE_Y = 11.0;
-const SHELL_R = [2.9, 4.5, 6.1, 7.7];
+const CENTRE_X = 9.5;
+const CENTRE_Y = 11.8;
+const SHELL_R = [2.7, 4.1, 5.5, 6.9];
 
 function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, overlays, band } = rc;
-  const cam = camera({ x0: -0.5, y0: -0.5, x1: WORLD_W + 0.5, y1: WORLD_H + 0.5, width, height });
+  const cam = camera({ x0: -0.3, y0: -0.4, x1: WORLD_W + 0.3, y1: WORLD_H + 0.3, width, height });
   const px = (x: number) => cam.toScreenX(x);
   const py = (y: number) => cam.toScreenY(y);
   const scale = cam.scale;
@@ -199,22 +201,56 @@ function render(rc: RenderContext<State>) {
   const stable = isStableNuclide(p, nCount);
   const filling = shellFilling(e);
 
-  /* ---- electron shells ---- */
+  const positive = theme.sci["charge-pos"];
+  const neutral = theme.sci["mass"];
+  const negative = theme.sci["charge-neg"];
+
+  /* ---- the room, then a dark viewing window for the atom itself ---- */
+  sky(ctx, width, height, theme, "indoor");
+
+  const stripOn = overlays.periodic === true;
+  const floorY = stripOn ? 3.5 : 0.3;
+  const winL = px(0.3), winR = px(18.7);
+  const winT = py(WORLD_H), winB = py(floorY);
+
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.beginPath();
+  roundRect(ctx, winL, winT, winR - winL, winB - winT, 10);
+  ctx.clip();
+  sky(ctx, width, height, theme, "space");
+  starfield(ctx, width, height, 120, 12);
+  // A cold halo around the atom, so the shells have something to sit against.
+  glow(ctx, px(CENTRE_X), py(CENTRE_Y), SHELL_R[3] * scale * 1.35, negative, 0.16);
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.line, 0.8);
   ctx.lineWidth = 1.5;
-  for (let k = 0; k < SHELLS.length; k++) {
+  roundRect(ctx, winL, winT, winR - winL, winB - winT, 10);
+  ctx.stroke();
+  ctx.restore();
+
+  /* ---- electron shells, as orbit rings ---- */
+  for (let k = 0; k < SHELL_R.length; k++) {
     if (filling[k] === 0 && (k === 0 || filling[k - 1] === 0)) continue;
-    ctx.setLineDash(filling[k] === SHELLS[k] ? [] : [5, 4]);
+    const full = filling[k] === SHELLS[k];
+    ctx.save();
+    ctx.strokeStyle = hexA(negative, full ? 0.55 : 0.3);
+    ctx.lineWidth = full ? 1.8 : 1.2;
+    if (!full) ctx.setLineDash([6, 5]);
     ctx.beginPath();
     ctx.arc(px(CENTRE_X), py(CENTRE_Y), SHELL_R[k] * scale, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
   }
-  ctx.restore();
 
   /* ---- nucleus ---- */
   const total = p + nCount;
-  const nucleonR = Math.max(2, 0.27 * scale);
+  const nucleonR = Math.max(2.5, 0.3 * scale);
+  if (total > 0) {
+    const packR = (0.3 * Math.sqrt(total) + 0.35) * scale;
+    glow(ctx, px(CENTRE_X), py(CENTRE_Y), packR * 2.6, positive, 0.42);
+  }
   let placed = 0;
   for (let k = 0; k < total; k++) {
     // Golden-angle packing gives an even, non-crystalline cluster at any count.
@@ -226,129 +262,134 @@ function render(rc: RenderContext<State>) {
     // Interleave protons and neutrons so the nucleus reads as a mixture.
     const isProton = placed * total < (k + 1) * p;
     if (isProton) placed++;
-    disc(
-      ctx, px(nx), py(ny), nucleonR,
-      isProton ? theme.sci["charge-pos"] : theme.sci["mass"],
-      { stroke: theme.surface, lineWidth: 1 },
-    );
+    sphere(ctx, px(nx), py(ny), nucleonR, isProton ? positive : neutral);
   }
   if (total === 0) {
     ctx.save();
-    ctx.strokeStyle = theme.line;
+    ctx.strokeStyle = hexA(theme.inkSoft, 0.7);
     ctx.setLineDash([4, 4]);
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(px(CENTRE_X), py(CENTRE_Y), 0.9 * scale, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
-    label(ctx, "Add a proton to start", px(CENTRE_X), py(CENTRE_Y - 1.7), theme, {
-      align: "center", size: 12, color: theme.inkSoft,
+    badge(ctx, px(CENTRE_X), py(CENTRE_Y - 1.9), "Add a proton to start", theme, {
+      align: "center", color: positive,
     });
   }
 
-  /* ---- electrons ---- */
-  const electronR = Math.max(2, 0.2 * scale);
-  for (let k = 0; k < SHELLS.length; k++) {
+  /* ---- electrons, each dragging a short arc of its own orbit ---- */
+  const electronR = Math.max(2.5, 0.23 * scale);
+  for (let k = 0; k < SHELL_R.length; k++) {
     const count = filling[k];
     for (let i = 0; i < count; i++) {
       const a = state.shellPhase[k] + (i / count) * Math.PI * 2;
-      disc(
+      const tail: { x: number; y: number }[] = [];
+      for (let s = 6; s >= 0; s--) {
+        const ta = a - (s * 0.055);
+        tail.push({
+          x: px(CENTRE_X + SHELL_R[k] * Math.cos(ta)),
+          y: py(CENTRE_Y + SHELL_R[k] * Math.sin(ta)),
+        });
+      }
+      comet(ctx, tail, negative, electronR * 1.2);
+      sphere(
         ctx,
         px(CENTRE_X + SHELL_R[k] * Math.cos(a)),
         py(CENTRE_Y + SHELL_R[k] * Math.sin(a)),
-        electronR, theme.sci["charge-neg"], { stroke: theme.surface, lineWidth: 1.5 },
+        electronR, negative, { glow: 0.8 },
       );
     }
   }
 
+  /* ---- key, inside the window where the particles are ---- */
+  const keys: [string, string][] = [
+    [positive, `${p} proton${p === 1 ? "" : "s"}`],
+    [neutral, `${nCount} neutron${nCount === 1 ? "" : "s"}`],
+    [negative, `${e} electron${e === 1 ? "" : "s"}`],
+  ];
+  for (let i = 0; i < keys.length; i++) {
+    const ky = py(WORLD_H - 1.0 - i * 1.15);
+    sphere(ctx, px(1.15), ky, Math.max(3.5, 0.26 * scale), keys[i][0]);
+    badge(ctx, px(1.7), ky, keys[i][1], theme, { color: keys[i][0] });
+  }
+  if (band !== "3-5" && e > 0) {
+    const text = filling.filter((c, i) => c > 0 || (i > 0 && filling[i - 1] > 0)).join(" · ");
+    badge(ctx, px(1.15), py(WORLD_H - 4.5), `shells  ${text}`, theme, { color: negative });
+  }
+
   /* ---- element card ---- */
-  const cx = 19.6, cw = WORLD_W - cx - 0.4, cy = 9.4, ch = 9.2;
-  ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, px(cx), py(cy + ch), cw * scale, ch * scale, 8);
-  ctx.fill();
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.restore();
+  const cx = 19.3, cw = WORLD_W - cx - 0.3, cy = floorY + 4.5, ch = WORLD_H - cy;
+  material(ctx, px(cx), py(cy + ch), cw * scale, ch * scale, theme.surfaceAlt, 10);
+  if (el) {
+    // A wash of the element's own charge colour, so the card is never inert.
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    glow(ctx, px(cx + cw / 2), py(cy + ch - 2.6), cw * scale * 0.6,
+      charge === 0 ? theme.sci["neutral"] : charge > 0 ? positive : negative, 0.9);
+    ctx.restore();
+  }
 
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = el ? theme.ink : theme.inkSoft;
-  ctx.font = `700 ${Math.max(28, scale * 2.6)}px system-ui, sans-serif`;
-  ctx.fillText(el ? ionNotation(p, e) : "?", px(cx + cw / 2), py(cy + ch - 2.3));
-  ctx.font = `600 ${Math.max(13, scale * 0.9)}px system-ui, sans-serif`;
+  ctx.font = `700 ${Math.max(30, scale * 2.8)}px system-ui, sans-serif`;
+  ctx.fillText(el ? ionNotation(p, e) : "?", px(cx + cw / 2), py(cy + ch - 2.6));
+  ctx.font = `600 ${Math.max(13, scale * 0.95)}px system-ui, sans-serif`;
   ctx.fillStyle = theme.inkSoft;
-  ctx.fillText(el ? el.name : "No element yet", px(cx + cw / 2), py(cy + ch - 4.0));
+  ctx.fillText(el ? el.name : "No element yet", px(cx + cw / 2), py(cy + ch - 4.4));
   ctx.restore();
 
   if (el) {
-    label(ctx, isotopeNotation(p, nCount), px(cx + cw / 2), py(cy + ch - 5.3), theme, {
-      align: "center", size: Math.max(14, scale * 1.0),
+    caption(ctx, px(cx + cw / 2), py(cy + ch - 5.8), isotopeNotation(p, nCount), theme, {
+      align: "center", size: Math.max(15, scale * 1.05),
     });
     const chargeText =
       charge === 0 ? "Neutral atom" : charge > 0 ? `Positive ion, ${charge}+` : `Negative ion, ${-charge}−`;
-    label(ctx, chargeText, px(cx + cw / 2), py(cy + ch - 6.6), theme, {
+    caption(ctx, px(cx + cw / 2), py(cy + ch - 7.1), chargeText, theme, {
       align: "center", size: 12,
-      color: charge === 0 ? theme.sci["neutral"] : charge > 0 ? theme.sci["charge-pos"] : theme.sci["charge-neg"],
+      color: charge === 0 ? theme.sci["neutral"] : charge > 0 ? positive : negative,
     });
-    label(
-      ctx, stable ? "Stable nucleus" : "Unstable — radioactive",
-      px(cx + cw / 2), py(cy + ch - 7.8), theme,
+    caption(
+      ctx, px(cx + cw / 2), py(cy + ch - 8.3),
+      stable ? "Stable nucleus" : "Unstable — radioactive", theme,
       { align: "center", size: 12, color: stable ? theme.sci["energy-kinetic"] : theme.sci["force"] },
     );
     if (band === "9-12") {
-      label(ctx, `Z = ${p}   A = ${p + nCount}`, px(cx + cw / 2), py(cy + 0.6), theme, {
-        align: "center", size: 11, color: theme.inkSoft,
+      caption(ctx, px(cx + cw / 2), py(cy + 0.6), `Z = ${p}   A = ${p + nCount}`, theme, {
+        align: "center", size: 11, color: theme.inkSoft, weight: 500,
       });
     }
   }
 
-  /* ---- key ---- */
-  const keyY = 8.0;
-  const keys: [string, string][] = [
-    ["charge-pos", `${p} proton${p === 1 ? "" : "s"}`],
-    ["mass", `${nCount} neutron${nCount === 1 ? "" : "s"}`],
-    ["charge-neg", `${e} electron${e === 1 ? "" : "s"}`],
-  ];
-  for (let i = 0; i < keys.length; i++) {
-    const kx = 1.2 + i * 6.4;
-    disc(ctx, px(kx), py(keyY), Math.max(3, 0.24 * scale), theme.sci[keys[i][0]]);
-    label(ctx, keys[i][1], px(kx + 0.6), py(keyY), theme, { size: 12, plate: false, color: theme.inkSoft });
-  }
-
-  /* ---- shell filling readout ---- */
-  if (band !== "3-5" && e > 0) {
-    const text = filling.filter((c, i) => c > 0 || (i > 0 && filling[i - 1] > 0)).join(" · ");
-    label(ctx, `Shells: ${text}`, px(1.2), py(6.6), theme, { size: 12, color: theme.sci["charge-neg"] });
-  }
-
   /* ---- the first twenty elements ---- */
-  if (overlays.periodic) {
-    const stripY = 2.4, cellW = (WORLD_W - 1.6) / 20, cellH = 2.4;
+  if (stripOn) {
+    const stripY = 0.6, cellW = (WORLD_W - 0.8) / 20, cellH = 2.3;
     for (let z = 1; z <= 20; z++) {
-      const sx = 0.8 + (z - 1) * cellW;
+      const sx = 0.4 + (z - 1) * cellW;
       const here = z === p;
-      ctx.save();
-      ctx.fillStyle = here ? theme.accent : theme.surfaceAlt;
-      roundRect(ctx, px(sx), py(stripY + cellH), cellW * scale - 2, cellH * scale, 3);
-      ctx.fill();
-      ctx.restore();
+      material(
+        ctx, px(sx), py(stripY + cellH), cellW * scale - 2, cellH * scale,
+        here ? theme.accent : theme.surfaceAlt, 4,
+      );
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = here ? theme.surface : theme.inkSoft;
-      ctx.font = `${here ? 700 : 500} ${Math.max(9, scale * 0.62)}px system-ui, sans-serif`;
-      ctx.fillText(ELEMENTS[z].symbol, px(sx + cellW / 2) - 1, py(stripY + cellH / 2 + 0.28));
-      ctx.font = `${Math.max(7, scale * 0.44)}px system-ui, sans-serif`;
-      ctx.fillText(String(z), px(sx + cellW / 2) - 1, py(stripY + cellH / 2 - 0.55));
+      ctx.font = `${here ? 700 : 500} ${Math.max(9, scale * 0.66)}px system-ui, sans-serif`;
+      ctx.fillText(ELEMENTS[z].symbol, px(sx + cellW / 2) - 1, py(stripY + cellH / 2 + 0.25));
+      ctx.font = `${Math.max(7, scale * 0.46)}px system-ui, sans-serif`;
+      ctx.fillText(String(z), px(sx + cellW / 2) - 1, py(stripY + cellH / 2 - 0.6));
       ctx.restore();
     }
-    label(ctx, "The first twenty elements — the proton count picks the box", px(0.8), py(1.2), theme, {
-      size: 11, color: theme.inkSoft,
-    });
+    caption(ctx, px(0.4), py(stripY + cellH + 0.35),
+      "The first twenty elements — the proton count picks the box", theme, {
+        size: 11, color: theme.inkSoft, weight: 500,
+      });
   }
+
+  vignette(ctx, width, height, 0.16);
 }
 
 /* ------------------------------------------------------------------ *

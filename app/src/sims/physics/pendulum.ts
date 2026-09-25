@@ -1,6 +1,12 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import { CONSTANTS, q } from "@engine/units";
-import { arrow, camera, disc, energyBars, label } from "@ui/draw";
+import { arrow, camera } from "@ui/draw";
+import { clampStand } from "@ui/labware";
+import { bokeh, callout, depthWash } from "@ui/organic";
+import {
+  badge, caption, comet, contactShadow, gradient, hexA, isDarkTheme, material,
+  metal, plastic, rimLight, softShadow, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * Pendulum Lab — Grades 4-12.
@@ -188,9 +194,11 @@ const model: SimModel<State> = {
       swings: Math.floor(state.crossings / 2),
       maxAngle: state.maxAngle,
       smallAnglePeriod: smallAnglePeriod(L, g),
-      periodError: state.period > 0 ? Math.abs(state.period - target) : Number.POSITIVE_INFINITY,
+      // `measured` is the validity flag; until then the errors read 0, and every
+      // lab check gates on `measured` so nothing passes off the placeholder.
+      periodError: state.period > 0 ? Math.abs(state.period - target) : 0,
       gEstimate,
-      gError: gEstimate > 0 ? Math.abs(gEstimate - g) : Number.POSITIVE_INFINITY,
+      gError: gEstimate > 0 ? Math.abs(gEstimate - g) : 0,
     };
   },
 };
@@ -204,11 +212,16 @@ function render(rc: RenderContext<State>) {
   const L = Math.max(0.05, params.length as number);
   const m = Math.max(0.01, params.mass as number);
   const g = params.gravity as number;
+  const dark = isDarkTheme(theme);
 
-  // Frame on the pivot, with enough room for a 150° release angle.
-  const span = L * 1.25 + 0.25;
+  // Frame on the pivot and let the swing fill the stage. The top of the frame
+  // opens up only as far as the release angle actually needs, so a 30° swing
+  // is not shrunk to fit headroom a 150° swing would want.
+  const rise = L * Math.max(0, -Math.cos(Math.min(state.maxAngle, Math.PI * 0.95)));
+  const top = Math.max(L * 0.18 + 0.05, rise + L * 0.16);
+  const xHalf = L * 1.15 + 0.12;
   const cam = camera({
-    x0: -span, y0: -(L * 1.2 + 0.3), x1: span, y1: L * 0.55 + 0.2,
+    x0: -xHalf * 1.25, y0: -(L * 1.2 + 0.1), x1: xHalf * 1.05, y1: top,
     width, height, square: true,
   });
   const px = cam.toScreenX(0);
@@ -216,25 +229,72 @@ function render(rc: RenderContext<State>) {
   const bobX = cam.toScreenX(L * Math.sin(state.theta));
   const bobY = cam.toScreenY(-L * Math.cos(state.theta));
   const rodPx = Math.hypot(bobX - px, bobY - py);
+  const floorY = Math.min(height - 6, cam.toScreenY(-L * 1.14));
 
-  // ---- Equilibrium reference and swept arc ---------------------------
+  /* ---- The room ------------------------------------------------------- */
+  depthWash(ctx, width, height, theme);
+  bokeh(ctx, width, floorY, theme.accent, 11, 5);
+  // The bench the whole rig stands on.
   ctx.save();
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([5, 5]);
+  ctx.fillStyle = gradient(ctx, 0, floorY - 4, width, height - floorY + 4, [
+    hexA(theme.inkSoft, 0.45), hexA(theme.ink, 0.62),
+  ], 90);
+  ctx.fillRect(0, floorY - 4, width, height - floorY + 4);
+  ctx.fillStyle = hexA(theme.surface, dark ? 0.16 : 0.42);
+  ctx.fillRect(0, floorY - 4, width, 2.5);
+  ctx.restore();
+
+  /* ---- Clamp stand ----------------------------------------------------- */
+  // A retort stand with a boss head and a horizontal arm: the pendulum hangs
+  // from real apparatus rather than from the top of the picture.
+  const standX = Math.max(52, width * 0.1);
+  const standW = Math.max(64, width * 0.075);
+  const standTopY = py - Math.max(30, height * 0.07);
+  clampStand(ctx, standX, floorY, floorY - standTopY, standW);
+  {
+    const armY = py - Math.max(14, height * 0.03);
+    // Boss head clamping the arm to the upright.
+    softShadow(ctx, () => {
+      metal(ctx, standX - standW * 0.13, armY - standW * 0.16, standW * 0.32, standW * 0.32,
+        theme.sci["mass"], { radius: 3, angle: 120 });
+    }, { blur: 12, dy: 4, alpha: 0.4 });
+    sphere(ctx, standX + standW * 0.2, armY, standW * 0.09, theme.sci["mass"]);
+    // The horizontal arm reaching out over the swing.
+    metal(ctx, standX, armY - standW * 0.055, px - standX + standW * 0.16, standW * 0.11,
+      theme.sci["mass"], { radius: 3, angle: 90 });
+    // The clamp at the far end, holding the cord.
+    softShadow(ctx, () => {
+      metal(ctx, px - standW * 0.17, armY - standW * 0.09, standW * 0.34, py - armY + standW * 0.09,
+        theme.sci["mass"], { radius: 3, angle: 120 });
+    }, { blur: 10, dy: 3, alpha: 0.4 });
+    sphere(ctx, px - standW * 0.22, armY + standW * 0.02, standW * 0.075, theme.sci["mass"]);
+  }
+
+  /* ---- Equilibrium reference and swept arc ----------------------------- */
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.ink, 0.32);
+  ctx.lineWidth = 1.4;
+  ctx.setLineDash([6, 6]);
   ctx.beginPath();
   ctx.moveTo(px, py);
-  ctx.lineTo(px, py + rodPx * 1.06);
+  ctx.lineTo(px, py + rodPx * 1.12);
   ctx.stroke();
   ctx.restore();
 
   if (overlays.arc) {
     const sweep = Math.min(Math.PI * 0.92, state.maxAngle);
     ctx.save();
-    ctx.strokeStyle = theme.inkSoft;
-    ctx.globalAlpha = 0.3;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 5]);
+    // A faint wedge, so the region the bob has swept reads as a volume of air
+    // rather than a wireframe line.
+    ctx.fillStyle = hexA(theme.accent, 0.09);
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.arc(px, py, rodPx, Math.PI / 2 - sweep, Math.PI / 2 + sweep);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = hexA(theme.accent, 0.45);
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([4, 6]);
     ctx.beginPath();
     // Canvas angles run clockwise from +x; the bob hangs below the pivot.
     ctx.arc(px, py, rodPx, Math.PI / 2 - sweep, Math.PI / 2 + sweep);
@@ -242,131 +302,239 @@ function render(rc: RenderContext<State>) {
     ctx.restore();
   }
 
-  // ---- Protractor ----------------------------------------------------
+  /* ---- Protractor ------------------------------------------------------ */
   if (overlays.protractor && band !== "K-2") {
-    const r = rodPx * 0.34;
+    const r = Math.max(58, rodPx * 0.4);
     ctx.save();
-    ctx.strokeStyle = theme.grid;
-    ctx.lineWidth = 1;
-    for (let deg = -150; deg <= 150; deg += 15) {
+    // A brass half-disc screwed to the clamp, read against the cord.
+    ctx.beginPath();
+    ctx.moveTo(px - r, py);
+    ctx.arc(px, py, r, Math.PI, 0, true);
+    ctx.closePath();
+    const pg = ctx.createLinearGradient(px - r, py, px + r, py + r);
+    pg.addColorStop(0, hexA(theme.surface, dark ? 0.16 : 0.72));
+    pg.addColorStop(0.5, hexA(theme.surfaceAlt, dark ? 0.3 : 0.62));
+    pg.addColorStop(1, hexA(theme.surface, dark ? 0.1 : 0.5));
+    ctx.fillStyle = pg;
+    ctx.fill();
+    ctx.strokeStyle = hexA(theme.sci["mass"], 0.7);
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (let deg = -90; deg <= 90; deg += 5) {
       const a = (deg * Math.PI) / 180;
-      const major = deg % 45 === 0;
-      const r0 = major ? r * 0.86 : r * 0.93;
+      const major = deg % 30 === 0;
+      const mid = deg % 15 === 0;
+      const r0 = major ? r * 0.8 : mid ? r * 0.88 : r * 0.93;
+      ctx.strokeStyle = hexA(theme.ink, major ? 0.6 : 0.32);
+      ctx.lineWidth = major ? 1.6 : 1;
       ctx.beginPath();
       ctx.moveTo(px + Math.sin(a) * r0, py + Math.cos(a) * r0);
       ctx.lineTo(px + Math.sin(a) * r, py + Math.cos(a) * r);
       ctx.stroke();
+      if (major && deg !== 0) {
+        ctx.fillStyle = hexA(theme.ink, 0.6);
+        ctx.fillText(`${Math.abs(deg)}`, px + Math.sin(a) * r * 0.7, py + Math.cos(a) * r * 0.7);
+      }
     }
     ctx.restore();
 
     // The live angle, filled in from the vertical.
     ctx.save();
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
     const a0 = Math.PI / 2;
     const a1 = Math.PI / 2 - state.theta;
-    ctx.arc(px, py, r * 0.7, Math.min(a0, a1), Math.max(a0, a1));
+    ctx.fillStyle = hexA(theme.accent, 0.22);
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.arc(px, py, r * 0.62, Math.min(a0, a1), Math.max(a0, a1));
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = theme.accent;
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.arc(px, py, r * 0.62, Math.min(a0, a1), Math.max(a0, a1));
     ctx.stroke();
     ctx.restore();
-    label(
-      ctx, `${((state.theta * 180) / Math.PI).toFixed(0)}°`,
-      px + Math.sin(state.theta / 2) * r * 1.25,
-      py + Math.cos(state.theta / 2) * r * 1.25,
+    badge(
+      ctx,
+      px + Math.sin(state.theta / 2) * r * 0.44,
+      py + Math.cos(state.theta / 2) * r * 0.44,
+      `${((state.theta * 180) / Math.PI).toFixed(0)}°`,
       theme, { align: "center", color: theme.accent },
     );
   }
 
-  // ---- Rod and pivot --------------------------------------------------
+  /* ---- Trail of the swing ---------------------------------------------- */
+  // Half a second of history, integrated backwards from the live state, so the
+  // bob drags a visible arc behind it instead of teleporting.
+  {
+    const gamma = (params.damping as number) / m;
+    const acc = alpha(state.theta, state.omega, g, L, gamma);
+    const pts: { x: number; y: number }[] = [];
+    const steps = 22;
+    for (let i = steps; i >= 0; i--) {
+      const s = (i / steps) * 0.5;
+      const th = state.theta - state.omega * s + 0.5 * acc * s * s;
+      pts.push({
+        x: cam.toScreenX(L * Math.sin(th)),
+        y: cam.toScreenY(-L * Math.cos(th)),
+      });
+    }
+    const bobR0 = Math.max(9, Math.min(34, 13 * Math.cbrt(m)));
+    comet(ctx, pts, theme.sci["momentum"], bobR0 * 0.9);
+  }
+
+  /* ---- Cord ------------------------------------------------------------- */
+  // A cord has a diameter and, at the ends of the swing where the tension
+  // eases, a little sag. Three passes give it a shadow side, a body and a
+  // specular line.
+  const sag = rodPx * 0.028 * Math.max(0, 1 - Math.abs(state.omega) * 0.55);
+  const cordPath = (dx: number, dy: number) => {
+    ctx.beginPath();
+    ctx.moveTo(px + dx, py + dy);
+    ctx.quadraticCurveTo((px + bobX) / 2 + dx, (py + bobY) / 2 + sag * 2 + dy, bobX + dx, bobY + dy);
+  };
   ctx.save();
-  ctx.strokeStyle = theme.inkSoft;
-  ctx.lineWidth = 3;
   ctx.lineCap = "round";
+  const cordW = Math.max(4, rodPx * 0.017);
+  for (const [lw, col, dx, dy] of [
+    [cordW * 1.5, hexA(theme.ink, 0.28), 1.5, 2],
+    [cordW, theme.sci["mass"], 0, 0],
+    [cordW * 0.34, hexA(theme.surface, dark ? 0.45 : 0.8), -cordW * 0.26, -cordW * 0.2],
+  ] as [number, string, number, number][]) {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = lw;
+    cordPath(dx, dy);
+    ctx.stroke();
+  }
+  ctx.restore();
+  // Pivot pin
+  sphere(ctx, px, py, Math.max(5, standW * 0.07), theme.sci["mass"]);
+  sphere(ctx, px - 1.5, py - 1.5, Math.max(1.6, standW * 0.022), theme.surface, { rim: false });
+
+  /* ---- Bob --------------------------------------------------------------- */
+  // Radius grows with the cube root of mass: equal-density spheres.
+  const bobR = Math.max(11, Math.min(40, 15 * Math.cbrt(m)));
+  contactShadow(ctx, bobX, floorY, bobR, floorY - bobY);
+  // The eyelet the cord is tied through, drawn before the ball so the ball
+  // seats over it.
+  const ux = (bobX - px) / Math.max(rodPx, 1), uy = (bobY - py) / Math.max(rodPx, 1);
+  metal(ctx, bobX - ux * bobR * 1.25 - bobR * 0.13, bobY - uy * bobR * 1.25,
+    bobR * 0.26, bobR * 0.7, theme.sci["mass"], { radius: bobR * 0.1, angle: 0 });
+  sphere(ctx, bobX, bobY, bobR, theme.sci["mass"]);
+  ctx.save();
+  // Specular hot spot and the dim bounce light off the bench: the two
+  // highlights that make a ball read as polished metal.
+  const hl = ctx.createRadialGradient(
+    bobX - bobR * 0.36, bobY - bobR * 0.42, 0, bobX - bobR * 0.36, bobY - bobR * 0.42, bobR * 0.42);
+  hl.addColorStop(0, hexA(theme.surface, 0.95));
+  hl.addColorStop(1, hexA(theme.surface, 0));
+  ctx.fillStyle = hl;
   ctx.beginPath();
-  ctx.moveTo(px, py);
-  ctx.lineTo(bobX, bobY);
+  ctx.arc(bobX, bobY, bobR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(bobX, bobY, bobR * 0.9, Math.PI * 0.15, Math.PI * 0.85);
+  ctx.strokeStyle = hexA(theme.surface, 0.28);
+  ctx.lineWidth = bobR * 0.12;
   ctx.stroke();
   ctx.restore();
+  rimLight(ctx, (c) => {
+    c.beginPath();
+    c.arc(bobX, bobY, bobR, 0, Math.PI * 2);
+  }, theme.surface, { width: 1.6, alpha: 0.7, bounds: { x: bobX - bobR, y: bobY - bobR, w: bobR * 2, h: bobR * 2 } });
 
-  ctx.save();
-  ctx.fillStyle = theme.ink;
-  ctx.beginPath();
-  ctx.moveTo(px - 14, py - 10);
-  ctx.lineTo(px + 14, py - 10);
-  ctx.lineTo(px + 14, py - 4);
-  ctx.lineTo(px - 14, py - 4);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-  disc(ctx, px, py, 4, theme.ink);
-
-  // ---- Bob ------------------------------------------------------------
-  // Radius grows with the cube root of mass: equal-density spheres.
-  const bobR = Math.max(9, Math.min(34, 13 * Math.cbrt(m)));
-  disc(ctx, bobX, bobY, bobR, theme.sci["mass"], { stroke: theme.surface, lineWidth: 2 });
-
-  // ---- Vectors ---------------------------------------------------------
+  /* ---- Vectors ----------------------------------------------------------- */
   if (overlays.vectors && band !== "K-2") {
     // Screen-space unit tangent, pointing the way the bob is travelling.
     // World tangent is (cos θ, sin θ); the screen y axis points the other way.
     const tx = Math.cos(state.theta);
     const ty = -Math.sin(state.theta);
     const v = state.omega * L;
-    const vLen = Math.min(80, Math.abs(v) * 16);
+    const vLen = Math.min(96, Math.abs(v) * 19);
     if (vLen > 3) {
-      const s = Math.sign(v);
-      arrow(ctx, bobX, bobY, bobX + tx * s * vLen, bobY + ty * s * vLen, theme.sci["velocity"], {
-        label: band === "9-12" ? "v" : undefined,
+      const sgn = Math.sign(v);
+      arrow(ctx, bobX, bobY, bobX + tx * sgn * vLen, bobY + ty * sgn * vLen, theme.sci["velocity"], {
+        width: 3.4, label: band === "9-12" ? "v" : undefined,
       });
     }
     if (band === "9-12") {
       // Weight, and the slice of it that actually drives the swing back.
-      arrow(ctx, bobX, bobY, bobX, bobY + 46, theme.sci["force"], { label: "mg" });
-      const restoring = -Math.sin(state.theta) * 46;
+      arrow(ctx, bobX, bobY, bobX, bobY + 54, theme.sci["force"], { width: 3.4, label: "mg" });
+      const restoring = -Math.sin(state.theta) * 54;
       arrow(ctx, bobX, bobY, bobX + tx * restoring, bobY + ty * restoring, theme.sci["force"], {
-        width: 1.8, dashed: true,
+        width: 2, dashed: true,
       });
     }
   }
 
-  // ---- Energy bars ------------------------------------------------------
+  /* ---- Callouts ----------------------------------------------------------- */
+  if (band !== "K-2") {
+    const colX = width - Math.min(200, width * 0.23);
+    callout(ctx, px + ux * rodPx * 0.55, py + uy * rodPx * 0.55,
+      Math.min(px + rodPx * 0.5, colX), Math.max(46, height * 0.1),
+      "Cord", theme, { sub: `L = ${L.toFixed(2)} m`, side: "right", accent: theme.sci["distance"] });
+    callout(ctx, bobX + bobR * 0.7, bobY + bobR * 0.7,
+      Math.min(bobX + bobR + 34, colX), Math.min(height - 46, floorY - 34),
+      "Bob", theme, { sub: `${m.toFixed(2)} kg`, side: "right", accent: theme.sci["mass"] });
+  }
+
+  /* ---- Energy panel -------------------------------------------------------- */
   if (overlays.energy && band !== "K-2") {
     const speed = Math.abs(state.omega) * L;
     const ke = 0.5 * m * speed * speed;
     const pe = m * g * L * (1 - Math.cos(state.theta));
-    const barW = Math.min(240, width * 0.34);
-    const bx = width - barW - 16;
+    const tot = Math.max(1e-9, ke + pe);
+    const panelW = Math.min(266, width * 0.3);
+    const panelH = 86;
+    const bx = width - panelW - 18;
     const by = 16;
-    energyBars(ctx, bx, by, barW, 16, [
-      { label: "KE", value: ke, color: theme.sci["energy-kinetic"] },
-      { label: "PE", value: pe, color: theme.sci["energy-potential"] },
-    ], theme);
-    label(ctx, "kinetic", bx, by + 30, theme, { color: theme.sci["energy-kinetic"], size: 11 });
-    label(ctx, "potential", bx + barW, by + 30, theme, {
-      align: "right", color: theme.sci["energy-potential"], size: 11,
-    });
-    if (band === "9-12") {
-      label(ctx, `total ${(ke + pe).toFixed(2)} J`, bx + barW / 2, by + 46, theme, {
-        align: "center", color: theme.sci["energy-total"], size: 11,
-      });
+    softShadow(ctx, () => {
+      plastic(ctx, bx, by, panelW, panelH, theme.surfaceAlt, { radius: 10, gloss: 0.34 });
+    }, { blur: 18, dy: 6, alpha: 0.32 });
+    caption(ctx, bx + 14, by + 17, "ENERGY", theme, { size: 11, color: theme.inkSoft, weight: 800 });
+    const rows: [string, number, string][] = [
+      ["kinetic", ke, theme.sci["energy-kinetic"]],
+      ["potential", pe, theme.sci["energy-potential"]],
+    ];
+    for (let i = 0; i < rows.length; i++) {
+      const [name, val, col] = rows[i];
+      const ry = by + 34 + i * 24;
+      caption(ctx, bx + 14, ry + 7, name, theme, { size: 11, color: theme.inkSoft });
+      const trackX = bx + 82, trackW = panelW - 82 - 60, trackH = 13;
+      material(ctx, trackX, ry, trackW, trackH, theme.grid, trackH / 2);
+      const f = Math.max(0, Math.min(1, val / tot));
+      if (f > 0.005) material(ctx, trackX, ry, Math.max(trackH, trackW * f), trackH, col, trackH / 2);
+      ctx.save();
+      ctx.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = col;
+      ctx.fillText(`${val.toFixed(2)} J`, bx + panelW - 12, ry + trackH / 2);
+      ctx.restore();
     }
   }
 
-  // ---- Period readout ----------------------------------------------------
+  /* ---- Period readout ------------------------------------------------------- */
   if (band !== "K-2") {
     const t0 = smallAnglePeriod(L, g);
     const txt = state.period > 0 ? `T = ${state.period.toFixed(3)} s` : "T = measuring…";
-    label(ctx, txt, 16, 24, theme, { color: theme.sci["time"] });
+    badge(ctx, 16, 26, txt, theme, { color: theme.sci["time"] });
     if (band === "9-12") {
-      label(ctx, `2π√(L/g) = ${t0.toFixed(3)} s`, 16, 46, theme, { color: theme.inkSoft, size: 11 });
+      badge(ctx, 16, 54, `2π√(L/g) = ${t0.toFixed(3)} s`, theme, { color: theme.inkSoft });
       if (state.period > 0) {
         const pct = ((state.period - t0) / t0) * 100;
-        label(ctx, `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% vs formula`, 16, 66, theme, {
-          color: theme.inkSoft, size: 11,
+        badge(ctx, 16, 82, `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% vs formula`, theme, {
+          color: theme.sci["field"],
         });
       }
     }
   }
+
+  vignette(ctx, width, height, 0.2);
 }
 
 /* ------------------------------------------------------------------ *

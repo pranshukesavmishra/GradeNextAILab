@@ -4,19 +4,37 @@ import { getSim } from "@sims/registry";
 import { Catalog } from "./pages/Catalog";
 import { SimPlayer } from "./pages/SimPlayer";
 import { Notebook } from "./pages/Notebook";
+import { Library } from "./pages/Library";
+import { Formulas } from "./pages/Formulas";
+import { HigherSecondary } from "./pages/HigherSecondary";
+import { MiddleSchoolLab } from "./pages/MiddleSchoolLab";
+import { TopBar, type NavKey } from "@ui/TopBar";
 import { applyThemeMode, effectiveTheme, loadThemeMode, type ThemeMode } from "@ui/theme";
 
 type View =
   | { name: "catalog" }
   | { name: "sim"; id: string; band: GradeBand; query?: string }
-  | { name: "notebook" };
+  | { name: "notebook" }
+  | { name: "library"; grade?: number }
+  | { name: "formulas" }
+  | { name: "hs"; labId?: string }
+  | { name: "ms"; labId: string; setup?: string };
 
 /** Read the view out of the URL hash so every screen is linkable and shareable. */
 function parseHash(): View {
   const hash = window.location.hash.replace(/^#\/?/, "");
-  if (!hash) return { name: "catalog" };
+  if (!hash) return { name: "library" };
   const [route, ...rest] = hash.split("/");
   if (route === "notebook") return { name: "notebook" };
+  if (route === "formulas") return { name: "formulas" };
+  if (route === "hs") return { name: "hs", labId: rest[0] ? decodeURIComponent(rest[0]) : undefined };
+  if (route === "ms" && rest[0]) {
+    return { name: "ms", labId: decodeURIComponent(rest[0]), setup: rest[1] ? decodeURIComponent(rest[1]) : undefined };
+  }
+  if (route === "library") {
+    const g = Number(rest[0]);
+    return { name: "library", grade: Number.isFinite(g) && g > 0 ? g : undefined };
+  }
   if (route === "sim" && rest[0]) {
     const id = decodeURIComponent(rest[0]);
     const tail = rest[1] ?? "6-8";
@@ -31,6 +49,12 @@ function parseHash(): View {
 function viewToHash(view: View): string {
   if (view.name === "catalog") return "#/";
   if (view.name === "notebook") return "#/notebook";
+  if (view.name === "formulas") return "#/formulas";
+  if (view.name === "hs") return view.labId ? `#/hs/${encodeURIComponent(view.labId)}` : "#/hs";
+  if (view.name === "ms") {
+    return `#/ms/${encodeURIComponent(view.labId)}` + (view.setup ? `/${encodeURIComponent(view.setup)}` : "");
+  }
+  if (view.name === "library") return view.grade ? `#/library/${view.grade}` : "#/library";
   const q = view.query ? `?${view.query}` : "";
   return `#/sim/${encodeURIComponent(view.id)}/${encodeURIComponent(view.band)}${q}`;
 }
@@ -66,6 +90,21 @@ export default function App() {
     if (window.location.hash !== hash) window.history.pushState(null, "", hash);
   }, []);
 
+  // The framed Smart Lab switched labs from its own rail: move the route to
+  // match without adding a history step or reloading the frame.
+  const followHs = useCallback((labId: string) => {
+    setView({ name: "hs", labId });
+    const hash = `#/hs/${encodeURIComponent(labId)}`;
+    if (window.location.hash !== hash) window.history.replaceState(null, "", hash);
+  }, []);
+
+  // The framed Grades 6–8 lab changed set-up (or lab) itself: the same, for #/ms/<lab>/<setup>.
+  const followMs = useCallback((labId: string, setup?: string) => {
+    setView({ name: "ms", labId, setup });
+    const hash = `#/ms/${encodeURIComponent(labId)}` + (setup ? `/${encodeURIComponent(setup)}` : "");
+    if (window.location.hash !== hash) window.history.replaceState(null, "", hash);
+  }, []);
+
   const cycleTheme = () => {
     setThemeMode((m) => (m === "system" ? "light" : m === "light" ? "dark" : "system"));
   };
@@ -74,21 +113,69 @@ export default function App() {
 
   return (
     <div className="app">
-      <button
-        type="button"
-        className="theme-toggle"
-        onClick={cycleTheme}
-        aria-label={`Theme: ${themeMode}. Click to change.`}
-        title={`Theme: ${themeMode}`}
-      >
-        {themeMode === "system" ? "◐" : themeMode === "light" ? "☀" : "☾"}
-      </button>
+      <TopBar
+        active={
+          view.name === "sim" ? "sim"
+            : view.name === "library" || view.name === "ms" ? "library"
+            : view.name === "catalog" ? "catalog"
+            : view.name === "formulas" ? "formulas"
+            : view.name === "hs" ? "hs"
+            : "notebook"
+        }
+        onNavigate={(k: NavKey) => navigate(
+          k === "library" ? { name: "library" }
+            : k === "catalog" ? { name: "catalog" }
+            : k === "formulas" ? { name: "formulas" }
+            : k === "hs" ? { name: "hs" }
+            : { name: "notebook" },
+        )}
+        themeMode={themeMode}
+        onCycleTheme={cycleTheme}
+      />
 
+      <main className="app-main">
       {view.name === "catalog" && (
         <Catalog
           onOpen={(id, band) => navigate({ name: "sim", id, band })}
           onOpenNotebook={() => navigate({ name: "notebook" })}
+          onOpenLibrary={(g?: number) => navigate({ name: "library", grade: g })}
+          onOpenHS={() => navigate({ name: "hs" })}
         />
+      )}
+
+      {view.name === "library" && (
+        <Library
+          initialGrade={view.grade}
+          onOpen={(id, band) => navigate({ name: "sim", id, band })}
+          onOpenHS={() => navigate({ name: "hs" })}
+          onOpenLab={(labId, setup) => navigate({ name: "ms", labId, setup })}
+        />
+      )}
+
+      {view.name === "ms" && (
+        <MiddleSchoolLab
+          labId={view.labId}
+          setup={view.setup}
+          onBack={(grade) => navigate({ name: "library", grade })}
+          onPick={(labId, setup) => navigate({ name: "ms", labId, setup })}
+          onFollow={followMs}
+        />
+      )}
+
+      {view.name === "hs" && (
+        <HigherSecondary
+          labId={view.labId}
+          onOpen={(labId) => navigate({ name: "hs", labId })}
+          onBack={() => navigate({ name: "hs" })}
+          onFollow={followHs}
+        />
+      )}
+
+      {view.name === "formulas" && (
+        <Formulas onOpenSim={(id) => {
+          const target = getSim(id);
+          if (target) navigate({ name: "sim", id, band: target.bands.includes("6-8") ? "6-8" : target.bands[0] });
+        }} />
       )}
 
       {view.name === "notebook" && <Notebook onExit={() => navigate({ name: "catalog" })} />}
@@ -114,6 +201,7 @@ export default function App() {
           </button>
         </div>
       )}
+      </main>
     </div>
   );
 }

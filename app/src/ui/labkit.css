@@ -5,28 +5,43 @@
    ========================================================================== */
 
 :root {
+  /* --- GradeNext brand ---------------------------------------------
+     Sampled from the official brand assets: the logo purple is the
+     primary, the trial-button gold is the call-to-action, and the
+     cover art supplies the supporting sky / lilac / pink family. ---- */
+  --brand: #703880;          /* logo purple — the primary */
+  --brand-mid: #9058a8;      /* cover purple */
+  --brand-deep: #4a2456;     /* aubergine, for bands and headers */
+  --brand-tint: #efe7f3;     /* lightest purple wash */
+  --brand-lilac: #d8c8e0;
+  --gold: #f8c038;           /* Start Free Trial gold */
+  --gold-ink: #8a6410;
+  --gold-soft: #fdf1d2;
+  --sky: #58b8f8;
+  --pink: #e858c8;
+
   /* --- chrome: light --- */
-  --bg: #f2f6f9;
+  --bg: #faf8fb;
   --panel: #ffffff;
-  --panel-alt: #e9eff4;
-  --inset: #dde6ed;
-  --ink: #14202b;
-  --ink2: #40546a;
-  --muted: #6a7c8d;
-  --line: #d4dee6;
-  --line2: #bccbd7;
-  --accent: #0d7c86;
-  --accent-ink: #095e66;
-  --accent-soft: #d6ecee;
-  --focus: #0d7c86;
+  --panel-alt: #f4eff7;
+  --inset: #ebe3f0;
+  --ink: #1c1220;
+  --ink2: #4c3d55;
+  --muted: #7a6a83;
+  --line: #e3d9e9;
+  --line2: #cdbdd6;
+  --accent: #703880;
+  --accent-ink: #57266a;
+  --accent-soft: #efe7f3;
+  --focus: #9058a8;
   --good: #2f7d4f;
-  --warn: #9a6414;
-  --warn-soft: #f7ecd8;
+  --warn: #8a6410;
+  --warn-soft: #fdf1d2;
   --danger: #b23c3c;
-  --stage: #fbfdfe;
-  --grid: #e2eaf1;
-  --shadow-1: 0 1px 2px rgba(20, 32, 43, 0.06);
-  --shadow-2: 0 2px 6px rgba(20, 32, 43, 0.07), 0 8px 24px rgba(20, 32, 43, 0.06);
+  --stage: #fdfcfe;
+  --grid: #ece5f0;
+  --shadow-1: 0 1px 2px rgba(35, 18, 45, 0.06);
+  --shadow-2: 0 2px 6px rgba(35, 18, 45, 0.07), 0 8px 24px rgba(35, 18, 45, 0.07);
 
   /* --- the semantic science palette (never used decoratively) --- */
   --sci-velocity: #2f6fc4;
@@ -82,27 +97,37 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0d141b;
-    --panel: #161f29;
-    --panel-alt: #1b2632;
-    --inset: #111a23;
-    --ink: #dde8f1;
-    --ink2: #a6b8c9;
-    --muted: #7b8d9e;
-    --line: #263442;
-    --line2: #334554;
-    --accent: #3fb9c5;
-    --accent-ink: #6ed0d9;
-    --accent-soft: #103a40;
-    --focus: #4fc9d5;
+    --brand: #c79ad8;
+    --brand-mid: #9058a8;
+    --brand-deep: #efe7f3;
+    --brand-tint: #33203d;
+    --brand-lilac: #6d5779;
+    --gold: #f8c038;
+    --gold-ink: #f0cf7a;
+    --gold-soft: #38290f;
+    --sky: #58b8f8;
+    --pink: #e858c8;
+    --bg: #120c17;
+    --panel: #1c1424;
+    --panel-alt: #241a2e;
+    --inset: #170f1d;
+    --ink: #ede6f2;
+    --ink2: #bcaac6;
+    --muted: #8d7c98;
+    --line: #2f2339;
+    --line2: #3f3049;
+    --accent: #c79ad8;
+    --accent-ink: #dcbcea;
+    --accent-soft: #33203d;
+    --focus: #c79ad8;
     --good: #4faa73;
-    --warn: #d3a557;
-    --warn-soft: #33290f;
+    --warn: #ddb45e;
+    --warn-soft: #38290f;
     --danger: #dd6b6b;
-    --stage: #0f1922;
-    --grid: #1d2a35;
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --stage: #150e1b;
+    --grid: #271b31;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
 
     --sci-velocity: #5b95e0;
     --sci-acceleration: #e8933f;
@@ -137,23 +162,67 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #0d141b; --panel: #161f29; --panel-alt: #1b2632; --inset: #111a23;
-  --ink: #dde8f1; --ink2: #a6b8c9; --muted: #7b8d9e; --line: #263442; --line2: #334554;
-  --accent: #3fb9c5; --accent-ink: #6ed0d9; --accent-soft: #103a40; --focus: #4fc9d5;
-  --good: #4faa73; --warn: #d3a557; --warn-soft: #33290f; --danger: #dd6b6b;
-  --stage: #0f1922; --grid: #1d2a35;
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.3);
-  --sci-velocity: #5b95e0; --sci-acceleration: #e8933f; --sci-force: #e56060;
-  --sci-momentum: #a077e0; --sci-energy-kinetic: #4fb47a; --sci-energy-potential: #5b95e0;
-  --sci-energy-thermal: #e07b3f; --sci-energy-total: #9aa9b8; --sci-charge-pos: #e56060;
-  --sci-charge-neg: #5b95e0; --sci-field: #a077e0; --sci-current: #ddb03c;
-  --sci-cold: #5ea4e8; --sci-hot: #ef7048; --sci-mass: #8b9cb0; --sci-distance: #3fb9c5;
-  --sci-time: #94a6b7; --sci-acid: #e8657f; --sci-neutral: #63bd72; --sci-base: #6d7fe0;
-  --sci-solid: #6f95cc; --sci-liquid: #45b3c0; --sci-gas: #e0a04f;
-  --sci-producer: #57b365; --sci-primary-consumer: #d6ae45;
-  --sci-secondary-consumer: #e08c4a; --sci-decomposer: #a3815e;
-  --sci-light: #edbb3c; --sci-wave: #5b95e0;
+    --brand: #c79ad8;
+    --brand-mid: #9058a8;
+    --brand-deep: #efe7f3;
+    --brand-tint: #33203d;
+    --brand-lilac: #6d5779;
+    --gold: #f8c038;
+    --gold-ink: #f0cf7a;
+    --gold-soft: #38290f;
+    --sky: #58b8f8;
+    --pink: #e858c8;
+    --bg: #120c17;
+    --panel: #1c1424;
+    --panel-alt: #241a2e;
+    --inset: #170f1d;
+    --ink: #ede6f2;
+    --ink2: #bcaac6;
+    --muted: #8d7c98;
+    --line: #2f2339;
+    --line2: #3f3049;
+    --accent: #c79ad8;
+    --accent-ink: #dcbcea;
+    --accent-soft: #33203d;
+    --focus: #c79ad8;
+    --good: #4faa73;
+    --warn: #ddb45e;
+    --warn-soft: #38290f;
+    --danger: #dd6b6b;
+    --stage: #150e1b;
+    --grid: #271b31;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  --sci-velocity: #5b95e0;
+  --sci-acceleration: #e8933f;
+  --sci-force: #e56060;
+  --sci-momentum: #a077e0;
+  --sci-energy-kinetic: #4fb47a;
+  --sci-energy-potential: #5b95e0;
+  --sci-energy-thermal: #e07b3f;
+  --sci-energy-total: #9aa9b8;
+  --sci-charge-pos: #e56060;
+  --sci-charge-neg: #5b95e0;
+  --sci-field: #a077e0;
+  --sci-current: #ddb03c;
+  --sci-cold: #5ea4e8;
+  --sci-hot: #ef7048;
+  --sci-mass: #8b9cb0;
+  --sci-distance: #3fb9c5;
+  --sci-time: #94a6b7;
+  --sci-acid: #e8657f;
+  --sci-neutral: #63bd72;
+  --sci-base: #6d7fe0;
+  --sci-solid: #6f95cc;
+  --sci-liquid: #45b3c0;
+  --sci-gas: #e0a04f;
+  --sci-producer: #57b365;
+  --sci-primary-consumer: #d6ae45;
+  --sci-secondary-consumer: #e08c4a;
+  --sci-decomposer: #a3815e;
+  --sci-light: #edbb3c;
+  --sci-wave: #5b95e0;
 }
 
 /* Grade-band density: one simulation, four depths. */

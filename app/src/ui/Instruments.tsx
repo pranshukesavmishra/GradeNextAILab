@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Icon } from "./Icon";
+import type { IconName } from "./Icon";
 import type { GradeBand } from "@engine/types";
 
 /**
@@ -21,11 +23,11 @@ export interface InstrumentState {
   rotation: number;
 }
 
-export const INSTRUMENTS: { kind: InstrumentKind; label: string; icon: string; bands?: GradeBand[] }[] = [
-  { kind: "ruler", label: "Ruler", icon: "📏" },
-  { kind: "protractor", label: "Protractor", icon: "📐", bands: ["3-5", "6-8", "9-12"] },
-  { kind: "stopwatch", label: "Stopwatch", icon: "⏱" },
-  { kind: "magnifier", label: "Magnifier", icon: "🔍", bands: ["K-2", "3-5"] },
+export const INSTRUMENTS: { kind: InstrumentKind; label: string; icon: IconName; bands?: GradeBand[] }[] = [
+  { kind: "ruler", label: "Ruler", icon: "ruler" as const },
+  { kind: "protractor", label: "Protractor", icon: "protractor" as const, bands: ["3-5", "6-8", "9-12"] },
+  { kind: "stopwatch", label: "Stopwatch", icon: "stopwatch" as const },
+  { kind: "magnifier", label: "Magnifier", icon: "search" as const, bands: ["K-2", "3-5"] },
 ];
 
 let nextId = 1;
@@ -279,13 +281,13 @@ export function ToolRail({ band, onAdd, hasAny, onClear }: {
           onClick={() => onAdd(i.kind)}
           title={`Add a ${i.label.toLowerCase()} to the stage`}
         >
-          <span className="tool-icon" aria-hidden="true">{i.icon}</span>
+          <Icon name={i.icon} size={16} />
           <span className="tool-label">{i.label}</span>
         </button>
       ))}
       {hasAny && (
         <button type="button" className="tool-chip is-clear" onClick={onClear} title="Remove all instruments">
-          <span className="tool-icon" aria-hidden="true">✕</span>
+          <Icon name="close" size={15} />
           <span className="tool-label">Clear</span>
         </button>
       )}

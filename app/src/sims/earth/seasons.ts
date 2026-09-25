@@ -1,6 +1,9 @@
 import type { RenderContext, SimManifest, SimModel } from "@engine/types";
 import { CONSTANTS, q } from "@engine/units";
-import { disc, label, roundRect } from "@ui/draw";
+import { roundRect } from "@ui/draw";
+import {
+  badge, caption, glow, groundPlane, hexA, isDarkTheme, material, sky, sphere, starfield, vignette,
+} from "@ui/scene";
 
 /**
  * Seasons & Sun Angle — Grades 1-10.
@@ -265,15 +268,85 @@ const model: SimModel<State> = {
 
 const ORBIT_SQUASH = 0.42;   // oblique view, so the orbit reads as a loop
 
+/** Text over the permanently black orbit view: always a dark halo, light ink. */
+function spaceText(
+  ctx: CanvasRenderingContext2D, x: number, y: number, text: string, color: string,
+  opts: { align?: CanvasTextAlign; size?: number; weight?: number } = {},
+) {
+  ctx.save();
+  ctx.font = `${opts.weight ?? 600} ${opts.size ?? 12}px "Bricolage Grotesque", system-ui, sans-serif`;
+  ctx.textAlign = opts.align ?? "left";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = "rgba(3,7,14,0.85)";
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+/** A ball lit from a direction: highlight toward the light, shadow away. */
+function litBody(
+  ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number,
+  color: string, sunAngle: number,
+) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  const hx = cx + Math.cos(sunAngle) * r * 0.42;
+  const hy = cy + Math.sin(sunAngle) * r * 0.42;
+  const hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 1.3);
+  hg.addColorStop(0, "rgba(255,255,255,0.5)");
+  hg.addColorStop(0.4, "rgba(255,255,255,0.12)");
+  hg.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = hg;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // The night side: a hard terminator, because that is what a planet has.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, sunAngle + Math.PI / 2, sunAngle + Math.PI * 1.5);
+  ctx.closePath();
+  ctx.clip();
+  const ng = ctx.createRadialGradient(
+    cx - Math.cos(sunAngle) * r, cy - Math.sin(sunAngle) * r, 0,
+    cx, cy, r * 1.8,
+  );
+  ng.addColorStop(0, "rgba(0,0,0,0.7)");
+  ng.addColorStop(1, "rgba(0,0,0,0.22)");
+  ctx.fillStyle = ng;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 /** The orbit, the Sun, and Earth with an axis that never changes direction. */
 function drawOrbit(rc: RenderContext<State>, s: Snapshot, x: number, y: number, w: number, h: number) {
-  const { ctx, params, theme, band, overlays } = rc;
+  const { ctx, params, theme, band, overlays, width, height } = rc;
   const e = ECCENTRICITY[params.orbitShape as string] ?? ECCENTRICITY.real;
   const tilt = params.tilt as number;
 
   const cx = x + w * 0.5;
   const cy = y + h * 0.5;
-  const R = Math.min(w * 0.36, h * 0.68);
+  const R = Math.min(w * 0.4, h * 0.72);
+  const ink = theme.surface;
+  const lightColor = theme.sci["light"];
+
+  /* --- deep space, with stars that never swim ---------------------- */
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  sky(ctx, width, height, theme, "space");
+  starfield(ctx, width, height, 150, 21);
+  ctx.restore();
 
   const place = (lambda: number, distanceAU: number) => {
     const theta = lambda + Math.PI / 2;
@@ -285,8 +358,9 @@ function drawOrbit(rc: RenderContext<State>, s: Snapshot, x: number, y: number, 
 
   /* --- the orbit itself, sampled from the real ellipse ------------- */
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.strokeStyle = hexA(ink, 0.3);
   ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 6]);
   ctx.beginPath();
   for (let i = 0; i <= 180; i++) {
     const d = (i / 180) * YEAR_DAYS;
@@ -299,7 +373,9 @@ function drawOrbit(rc: RenderContext<State>, s: Snapshot, x: number, y: number, 
   ctx.restore();
 
   /* --- Sun --------------------------------------------------------- */
-  disc(ctx, cx, cy, band === "K-2" ? 22 : 17, theme.sci["light"]);
+  const sunR = band === "K-2" ? 26 : 21;
+  glow(ctx, cx, cy, sunR * 5.5, lightColor, 0.42);
+  sphere(ctx, cx, cy, sunR, lightColor, { glow: 1.3, rim: false });
 
   /* --- season markers ---------------------------------------------- */
   if (band === "6-8" || band === "9-12") {
@@ -308,19 +384,17 @@ function drawOrbit(rc: RenderContext<State>, s: Snapshot, x: number, y: number, 
     ];
     for (const [lam, name] of marks) {
       const [px, py] = place(lam, 1);
-      label(ctx, name, px, py - 16, theme, {
-        align: "center", size: 10, color: theme.inkSoft, plate: false,
-      });
+      spaceText(ctx, px, py - 18, name, hexA(ink, 0.65), { align: "center", size: 11, weight: 500 });
     }
   }
 
   /* --- Earth, with the axis fixed in space -------------------------- */
   const [ex, ey] = place(s.lambda, s.distanceAU);
-  const earthR = band === "K-2" ? 20 : 16;
+  const earthR = band === "K-2" ? 24 : 19;
+  const sunAngle = Math.atan2(cy - ey, cx - ex);
 
   ctx.save();
-  ctx.strokeStyle = theme.sci["light"];
-  ctx.globalAlpha = 0.35;
+  ctx.strokeStyle = hexA(lightColor, 0.3);
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
@@ -328,33 +402,63 @@ function drawOrbit(rc: RenderContext<State>, s: Snapshot, x: number, y: number, 
   ctx.stroke();
   ctx.restore();
 
-  disc(ctx, ex, ey, earthR, theme.sci["liquid"], { stroke: theme.line, lineWidth: 1 });
+  litBody(ctx, ex, ey, earthR, theme.sci["liquid"], sunAngle);
+  // Continents, so it is a world rather than a blue token.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(ex, ey, earthR, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = hexA(theme.sci["producer"], 0.55);
+  ctx.beginPath();
+  ctx.ellipse(ex - earthR * 0.32, ey - earthR * 0.22, earthR * 0.44, earthR * 0.3, 0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(ex + earthR * 0.28, ey + earthR * 0.36, earthR * 0.36, earthR * 0.22, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
   // The axis leans by the tilt and always points the same way — that constancy
   // is the entire cause of the seasons, so it is drawn, not described.
-  const axX = Math.sin(tilt) * (earthR + 10);
-  const axY = Math.cos(tilt) * (earthR + 10);
+  const axX = Math.sin(tilt) * (earthR + 13);
+  const axY = Math.cos(tilt) * (earthR + 13);
   ctx.save();
-  ctx.strokeStyle = theme.sci["mass"];
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(0,0,0,0.45)";
+  ctx.lineWidth = 4.5;
   ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(ex - axX, ey + axY);
   ctx.lineTo(ex + axX, ey - axY);
   ctx.stroke();
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(ex - axX, ey + axY);
+  ctx.lineTo(ex + axX, ey - axY);
+  ctx.stroke();
   ctx.restore();
+  // The equator, drawn perpendicular to the axis, so the lean is unmistakable.
+  ctx.save();
+  ctx.translate(ex, ey);
+  ctx.rotate(-tilt);
+  ctx.strokeStyle = hexA(ink, 0.55);
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, earthR, earthR * 0.3, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+  sphere(ctx, ex + axX, ey - axY, 3, ink, { rim: false });
 
   // Latitude marker on the globe.
   const latitude = params.latitude as number;
   if (overlays.latitudeMark !== false) {
-    const lx = ex + Math.sin(tilt) * 0 + Math.cos(tilt) * 0;
+    const lx = ex + Math.sin(latitude) * earthR * Math.sin(tilt);
     const ly = ey - Math.sin(latitude) * earthR * Math.cos(tilt);
-    disc(ctx, lx, ly, 3.5, theme.sci["acceleration"]);
+    sphere(ctx, lx, ly, 4, theme.sci["acceleration"], { glow: 0.9 });
   }
 
   if (band !== "K-2") {
-    label(ctx, `${s.distanceAU.toFixed(3)} AU`, ex, ey + earthR + 16, theme, {
-      align: "center", size: 10, color: theme.inkSoft,
+    spaceText(ctx, ex, ey + earthR + 16, `${s.distanceAU.toFixed(3)} AU`, hexA(ink, 0.7), {
+      align: "center", size: 10, weight: 500,
     });
   }
 }
@@ -365,59 +469,92 @@ function drawOrbit(rc: RenderContext<State>, s: Snapshot, x: number, y: number, 
  * even though the Sun is exactly as bright.
  */
 function drawSunAngle(rc: RenderContext<State>, s: Snapshot, x: number, y: number, w: number, h: number) {
-  const { ctx, theme, band } = rc;
-  const groundY = y + h - 26;
+  const { ctx, theme, band, width, height } = rc;
+  const groundY = y + h - 30;
   const alt = Math.max(0, s.altitude);
+  const night = s.altitude <= 0;
 
+  /* --- a place to stand: sky above, ground below ------------------- */
   ctx.save();
-  ctx.strokeStyle = theme.inkSoft;
-  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(x + 12, groundY);
-  ctx.lineTo(x + w - 12, groundY);
-  ctx.stroke();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  sky(ctx, width, height, theme, night ? "dusk" : "day", groundY);
+  groundPlane(ctx, groundY, x, x + w, y + h, theme, night ? "rock" : "grass");
   ctx.restore();
 
-  if (s.altitude <= 0) {
-    label(ctx, "The Sun never rises today", x + w / 2, groundY - 24, theme, {
-      align: "center", size: 12, color: theme.sci["cold"],
+  if (night) {
+    badge(ctx, x + w / 2, groundY - 30, "The Sun never rises today", theme, {
+      align: "center", color: theme.sci["cold"],
     });
     return;
   }
 
   // A beam of fixed width, hitting the ground at the noon altitude.
-  const beamWidth = Math.min(46, w * 0.22);
-  const footprint = beamWidth / Math.max(0.08, Math.sin(alt));
-  const hitX = x + w * 0.45;
+  const beamWidth = Math.min(46, w * 0.2);
+  const footprint = Math.min(beamWidth / Math.max(0.08, Math.sin(alt)), w * 0.52);
+  const hitX = x + w * 0.4;
   const ux = Math.cos(alt);
   const uy = Math.sin(alt);
-  const length = Math.min(h * 0.9, 200);
+  const length = Math.min(h * 0.85, 210);
 
+  /* --- the Sun, in the sky at the angle it actually reaches --------- */
+  const sunX = hitX + ux * length;
+  const sunY = groundY - uy * length;
+  glow(ctx, sunX, sunY, 74, theme.sci["light"], 0.55);
+  sphere(ctx, sunX, sunY, 16, theme.sci["light"], { glow: 1.2, rim: false });
+
+  /* --- the beam ----------------------------------------------------- */
   ctx.save();
-  ctx.globalAlpha = 0.4;
-  ctx.fillStyle = theme.sci["light"];
+  const beam = ctx.createLinearGradient(sunX, sunY, hitX, groundY);
+  beam.addColorStop(0, hexA(theme.sci["light"], 0.55));
+  beam.addColorStop(1, hexA(theme.sci["light"], 0.22));
+  ctx.fillStyle = beam;
   ctx.beginPath();
   ctx.moveTo(hitX, groundY);
-  ctx.lineTo(hitX + ux * length - uy * beamWidth, groundY - uy * length - ux * beamWidth);
-  ctx.lineTo(hitX + ux * length, groundY - uy * length);
-  ctx.lineTo(hitX + Math.min(footprint, w * 0.5), groundY);
+  ctx.lineTo(sunX - uy * beamWidth, sunY - ux * beamWidth);
+  ctx.lineTo(sunX, sunY);
+  ctx.lineTo(hitX + footprint, groundY);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
 
-  // The patch of ground the beam has to cover.
+  // The patch of ground the beam has to cover: the whole argument, in one bar.
   ctx.save();
-  ctx.strokeStyle = theme.sci["hot"];
-  ctx.lineWidth = 3;
+  const fp = ctx.createLinearGradient(hitX, 0, hitX + footprint, 0);
+  fp.addColorStop(0, hexA(theme.sci["hot"], 0.95));
+  fp.addColorStop(1, hexA(theme.sci["hot"], 0.5));
+  ctx.strokeStyle = fp;
+  ctx.lineWidth = 5;
+  ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.moveTo(hitX, groundY + 2);
-  ctx.lineTo(hitX + Math.min(footprint, w * 0.5), groundY + 2);
+  ctx.moveTo(hitX, groundY + 3);
+  ctx.lineTo(hitX + footprint, groundY + 3);
   ctx.stroke();
   ctx.restore();
 
+  /* --- a post, and the shadow that gives the angle away ------------- */
+  const postH = Math.min(52, h * 0.22);
+  const postX = x + w * 0.15;
+  const shadowLen = Math.min(postH / Math.max(0.09, Math.tan(alt)), w * 0.5);
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.beginPath();
+  ctx.moveTo(postX, groundY);
+  ctx.lineTo(postX - shadowLen, groundY);
+  ctx.lineTo(postX - shadowLen, groundY + 4);
+  ctx.lineTo(postX, groundY + 5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  material(ctx, postX - 3, groundY - postH, 6, postH, theme.sci["decomposer"], 2);
+
   if (band !== "K-2") {
-    label(ctx, `${(alt / DEG).toFixed(0)}° at noon`, x + 12, y + 16, theme, {
-      size: 11, color: theme.inkSoft, plate: false,
+    badge(ctx, x + 12, y + 20, `${(alt / DEG).toFixed(0)}°`, theme, {
+      color: theme.sci["light"], sub: "sun at noon",
+    });
+    badge(ctx, hitX + footprint + 8, groundY + 3, `${(1 / Math.max(0.08, Math.sin(alt))).toFixed(1)}×`, theme, {
+      color: theme.sci["hot"], sub: "spread",
     });
   }
 }
@@ -428,17 +565,21 @@ function drawDaylightCurve(rc: RenderContext<State>, s: Snapshot, x: number, y: 
   const e = ECCENTRICITY[params.orbitShape as string] ?? ECCENTRICITY.real;
   const tilt = params.tilt as number;
   const latitude = params.latitude as number;
+  const dark = isDarkTheme(theme);
 
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, x, y, w, h, 5);
+  ctx.fillStyle = dark ? "rgba(10,14,20,0.72)" : "rgba(255,255,255,0.82)";
+  roundRect(ctx, x, y, w, h, 7);
   ctx.fill();
+  ctx.strokeStyle = hexA(theme.line, 0.9);
+  ctx.lineWidth = 1;
+  ctx.stroke();
   ctx.restore();
 
   // The 12-hour line: with no tilt the curve sits exactly on it, all year.
   const midY = y + h * 0.5;
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.strokeStyle = hexA(theme.inkSoft, 0.6);
   ctx.setLineDash([3, 3]);
   ctx.beginPath();
   ctx.moveTo(x, midY);
@@ -446,9 +587,31 @@ function drawDaylightCurve(rc: RenderContext<State>, s: Snapshot, x: number, y: 
   ctx.stroke();
   ctx.restore();
 
+  // Fill under the curve: the daylight the year actually delivers.
+  ctx.save();
+  ctx.beginPath();
+  roundRect(ctx, x, y, w, h, 7);
+  ctx.clip();
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  for (let i = 0; i <= 90; i++) {
+    const d = (i / 90) * YEAR_DAYS;
+    const hours = daylightHours(latitude, solarDeclination(d, tilt, e));
+    ctx.lineTo(x + (i / 90) * w, y + h - (hours / 24) * h);
+  }
+  ctx.lineTo(x + w, y + h);
+  ctx.closePath();
+  const fill = ctx.createLinearGradient(0, y, 0, y + h);
+  fill.addColorStop(0, hexA(theme.sci["light"], 0.42));
+  fill.addColorStop(1, hexA(theme.sci["light"], 0.05));
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.restore();
+
   ctx.save();
   ctx.strokeStyle = theme.sci["light"];
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.2;
+  ctx.lineJoin = "round";
   ctx.beginPath();
   for (let i = 0; i <= 90; i++) {
     const d = (i / 90) * YEAR_DAYS;
@@ -463,8 +626,8 @@ function drawDaylightCurve(rc: RenderContext<State>, s: Snapshot, x: number, y: 
 
   const markX = x + (s.day / YEAR_DAYS) * w;
   const markY = y + h - (s.daylight / 24) * h;
-  disc(ctx, markX, markY, 4, theme.sci["acceleration"]);
-  label(ctx, `${s.daylight.toFixed(1)} h`, x + w - 6, y + 11, theme, {
+  sphere(ctx, markX, markY, 5, theme.sci["acceleration"], { glow: 0.8 });
+  caption(ctx, x + w - 6, y + 12, `${s.daylight.toFixed(1)} h`, theme, {
     align: "right", size: 10, color: theme.inkSoft,
   });
 }
@@ -473,13 +636,8 @@ function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, band, overlays } = rc;
   const s = snapshot(state, params);
 
-  ctx.save();
-  ctx.fillStyle = theme.surface;
-  ctx.fillRect(0, 0, width, height);
-  ctx.restore();
-
   const simple = band === "K-2";
-  const orbitW = simple ? width : width * 0.54;
+  const orbitW = simple ? width : Math.round(width * 0.52);
 
   drawOrbit(rc, s, 0, 0, orbitW, height);
 
@@ -487,14 +645,14 @@ function render(rc: RenderContext<State>) {
     const rightX = orbitW;
     const rightW = width - orbitW;
     const showCurve = overlays.daylightCurve !== false;
-    const curveH = showCurve ? Math.round(height * 0.34) : 0;
-    drawSunAngle(rc, s, rightX, 0, rightW, height - curveH - 8);
+    const curveH = showCurve ? Math.round(height * 0.3) : 0;
+    drawSunAngle(rc, s, rightX, 0, rightW, height - curveH - 6);
     if (showCurve) {
-      drawDaylightCurve(rc, s, rightX + 8, height - curveH, rightW - 16, curveH - 8);
+      drawDaylightCurve(rc, s, rightX + 8, height - curveH + 2, rightW - 16, curveH - 10);
     }
 
     ctx.save();
-    ctx.strokeStyle = theme.line;
+    ctx.strokeStyle = hexA(theme.line, 0.6);
     ctx.beginPath();
     ctx.moveTo(orbitW, 10);
     ctx.lineTo(orbitW, height - 10);
@@ -502,21 +660,19 @@ function render(rc: RenderContext<State>) {
     ctx.restore();
 
     const facts = model.facts?.(state, params) ?? {};
-    label(
-      ctx,
-      `Day ${Math.round(s.day)}  ·  ${facts.season}  ·  ${s.daylight.toFixed(1)} h of daylight`,
-      8, 16, theme, { size: 11, color: theme.inkSoft },
-    );
+    badge(ctx, 10, 20, `Day ${Math.round(s.day)}`, theme, {
+      color: theme.accent, sub: `${facts.season}`,
+    });
     if ((params.tilt as number) < 0.5 * DEG) {
-      label(ctx, "No tilt — no seasons", 8, 36, theme, {
-        size: 11, color: theme.sci["cold"],
-      });
+      badge(ctx, 10, 52, "No tilt — no seasons", theme, { color: theme.sci["cold"] });
     }
   } else {
-    label(ctx, `${s.daylight.toFixed(0)} hours of sunshine`, width / 2, height - 20, theme, {
-      align: "center", size: 16,
+    badge(ctx, width / 2, height - 24, `${s.daylight.toFixed(0)} hours of sunshine`, theme, {
+      align: "center", color: theme.sci["light"],
     });
   }
+
+  vignette(ctx, width, height, 0.18);
 }
 
 /* ------------------------------------------------------------------ *

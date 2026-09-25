@@ -1,7 +1,14 @@
-import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
+import type {
+  ParamValues, RenderContext, SimManifest, SimModel, ThemeColors,
+} from "@engine/types";
 import type { Rng } from "@engine/rng";
 import { CONSTANTS, q } from "@engine/units";
-import { camera, disc, label, mixHex, roundRect } from "@ui/draw";
+import { roundRect } from "@ui/draw";
+import { callout, depthWash } from "@ui/organic";
+import {
+  caption, contactShadow, glow, groundPlane, hexA, isDarkTheme, metal, plastic,
+  softShadow, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * States of Matter: Particle View — Grades 1-12.
@@ -390,7 +397,7 @@ const model: SimModel<State> = {
  * View
  * ------------------------------------------------------------------ */
 
-function phaseColor(state: State, theme: RenderContext<State>["theme"]): string {
+function phaseColor(state: State, theme: ThemeColors): string {
   if (state.phase === 2) return theme.sci["gas"];
   if (state.phase === 1) return theme.sci["liquid"];
   return theme.sci["solid"];
@@ -401,40 +408,354 @@ function phaseName(state: State): string {
   return state.phase === 2 ? "Gas" : state.phase === 1 ? "Liquid" : "Solid";
 }
 
+/** Mix two theme colours into a hex, so the result can feed the scene kit. */
+function blend(a: string, b: string, t: number): string {
+  const k = Math.max(0, Math.min(1, t));
+  const ca = a.replace("#", "");
+  const cb = b.replace("#", "");
+  let out = "#";
+  for (let i = 0; i < 3; i++) {
+    const va = parseInt(ca.slice(i * 2, i * 2 + 2), 16) || 0;
+    const vb = parseInt(cb.slice(i * 2, i * 2 + 2), 16) || 0;
+    out += Math.round(va + (vb - va) * k).toString(16).padStart(2, "0");
+  }
+  return out;
+}
+
+/**
+ * The lightest colour the palette owns, whichever mode is running.
+ *
+ * A specular highlight is *light*, not a hue, and a simulation may only take
+ * colour from the theme — so the light mode's near-white surface and the dark
+ * mode's near-white ink are the two ends of the same role.
+ */
+function lightOf(theme: ThemeColors): string {
+  return isDarkTheme(theme) ? theme.ink : theme.surface;
+}
+
+/**
+ * One particle: a lit sphere, a specular dot, and a smear along its velocity.
+ *
+ * A flat disc reads as a token on a diagram. A shaded ball with a highlight on
+ * it and a blur behind it reads as a piece of matter that is going somewhere,
+ * which is the entire claim this simulation is making.
+ */
+function atom(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, r: number,
+  colour: string, light: string,
+  vx: number, vy: number, heat: number,
+) {
+  const speed = Math.hypot(vx, vy);
+  // The smear is scaled by how hot the particle is, not by raw pixels per
+  // frame: real motion blur here would be sub-pixel, and a long tail on a
+  // vibrating solid reads as a spike rather than as movement.
+  const len = r * heat * 1.15;
+  if (speed > 1e-6 && len > r * 0.18) {
+    const ux = vx / speed, uy = vy / speed;
+    ctx.save();
+    const g = ctx.createLinearGradient(x, y, x - ux * len * 2, y - uy * len * 2);
+    g.addColorStop(0, hexA(colour, 0.42));
+    g.addColorStop(1, hexA(colour, 0));
+    ctx.strokeStyle = g;
+    ctx.lineWidth = r * 1.4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - ux * len * 2, y - uy * len * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  sphere(ctx, x, y, r, colour, { glow: heat > 0.45 ? (heat - 0.45) * 1.5 : 0 });
+  if (r > 2.6) {
+    ctx.save();
+    ctx.fillStyle = hexA(light, 0.9);
+    ctx.beginPath();
+    ctx.ellipse(x - r * 0.33, y - r * 0.38, r * 0.27, r * 0.19, -0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/**
+ * The front face of the sealed cell, drawn over its contents.
+ *
+ * Real glass gives itself away with three things at once: a bright vertical
+ * highlight down the lit side, a dimmer one down the far side, and a wall with
+ * thickness you can see through. Draw the contents first and this over them.
+ */
+function cellGlass(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, wall: number,
+  theme: ThemeColors,
+) {
+  const dark = isDarkTheme(theme);
+  const light = lightOf(theme);
+  const r = wall * 0.8;
+
+  ctx.save();
+  roundRect(ctx, x, y, w, h, r);
+  const pane = ctx.createLinearGradient(x, 0, x + w, 0);
+  pane.addColorStop(0, hexA(light, dark ? 0.16 : 0.4));
+  pane.addColorStop(0.13, hexA(light, 0.05));
+  pane.addColorStop(0.84, hexA(light, 0.03));
+  pane.addColorStop(1, hexA(light, dark ? 0.12 : 0.24));
+  ctx.fillStyle = pane;
+  ctx.fill();
+
+  // The room reflected across the top of the front face.
+  ctx.save();
+  roundRect(ctx, x, y, w, h, r);
+  ctx.clip();
+  const sheen = ctx.createLinearGradient(0, y, 0, y + h * 0.4);
+  sheen.addColorStop(0, hexA(light, dark ? 0.16 : 0.32));
+  sheen.addColorStop(1, hexA(light, 0));
+  ctx.fillStyle = sheen;
+  ctx.fillRect(x, y, w, h * 0.4);
+  ctx.restore();
+
+  // The wall itself: thick, translucent, bright where the light lands.
+  ctx.strokeStyle = hexA(theme.sci["solid"], dark ? 0.34 : 0.24);
+  ctx.lineWidth = wall * 2;
+  roundRect(ctx, x, y, w, h, r);
+  ctx.stroke();
+  ctx.strokeStyle = hexA(theme.ink, dark ? 0.6 : 0.42);
+  ctx.lineWidth = 1.6;
+  roundRect(ctx, x - wall, y - wall, w + wall * 2, h + wall * 2, r + wall);
+  ctx.stroke();
+  ctx.strokeStyle = hexA(light, dark ? 0.5 : 0.9);
+  ctx.lineWidth = 1.8;
+  roundRect(ctx, x - wall + 2, y - wall + 2, w + wall * 2 - 4, h + wall * 2 - 4, r + wall);
+  ctx.stroke();
+  ctx.strokeStyle = hexA(theme.ink, dark ? 0.55 : 0.28);
+  ctx.lineWidth = 1.2;
+  roundRect(ctx, x + wall, y + wall, w - wall * 2, h - wall * 2, Math.max(1, r - wall * 0.5));
+  ctx.stroke();
+
+  ctx.fillStyle = hexA(light, 0.62);
+  ctx.fillRect(x + w * 0.04, y + h * 0.05, Math.max(2, w * 0.013), h * 0.87);
+  ctx.fillStyle = hexA(light, 0.3);
+  ctx.fillRect(x + w * 0.08, y + h * 0.1, Math.max(1, w * 0.006), h * 0.74);
+  ctx.fillStyle = hexA(light, 0.24);
+  ctx.fillRect(x + w * 0.955, y + h * 0.13, Math.max(1, w * 0.008), h * 0.72);
+  ctx.restore();
+
+  // Machined collars: this cell is sealed, which is why the gas cannot leave.
+  const steel = theme.sci["mass"];
+  metal(ctx, x - wall * 2.4, y - wall * 2.8, w + wall * 4.8, wall * 2.4, steel, { radius: wall * 0.6 });
+  metal(ctx, x - wall * 1.9, y + h + wall * 0.5, w + wall * 3.8, wall * 1.7, steel, { radius: wall * 0.5 });
+}
+
+/**
+ * A mercury-in-glass thermometer on an enamel scale plate.
+ *
+ * The bulb, the bore, the rising column and the printed ticks are all here
+ * because a student has held one of these — the picture does not need decoding.
+ */
+function thermometer(
+  ctx: CanvasRenderingContext2D,
+  cx: number, topY: number, botY: number, w: number,
+  frac: number, mercury: string, theme: ThemeColors,
+) {
+  const dark = isDarkTheme(theme);
+  const light = lightOf(theme);
+  const bulbR = w * 1.25;
+  const bulbY = botY - bulbR;
+  const stemTop = topY;
+  const stemBot = bulbY;
+
+  const plateL = cx - w * 4.6;
+  const plateW = w * 8.0;
+  const plateT = stemTop - w * 3.4;
+  const plateH = bulbY + bulbR * 1.5 - plateT;
+  softShadow(ctx, () => {
+    plastic(ctx, plateL, plateT, plateW, plateH, theme.surfaceAlt, {
+      radius: w * 1.4, gloss: 0.32,
+    });
+  }, { blur: 16, dy: 6, alpha: dark ? 0.45 : 0.22 });
+
+  // Ticks up the right of the bore: every 50 K, long and numbered every 200 K.
+  ctx.save();
+  ctx.lineCap = "butt";
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  for (let k = 0; k <= 700; k += 50) {
+    const ty = stemBot - (k / 700) * (stemBot - stemTop);
+    const major = k % 200 === 0;
+    ctx.strokeStyle = hexA(theme.ink, major ? 0.65 : 0.32);
+    ctx.lineWidth = major ? 1.6 : 1;
+    ctx.beginPath();
+    ctx.moveTo(cx + w * 0.62, ty);
+    ctx.lineTo(cx + w * (major ? 1.55 : 1.1), ty);
+    ctx.stroke();
+    if (major) {
+      ctx.fillStyle = hexA(theme.ink, 0.72);
+      ctx.font = `600 ${Math.max(8, w * 0.62)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+      ctx.fillText(String(k), cx + w * 1.8, ty);
+    }
+  }
+  ctx.restore();
+
+  // The bore: glass with a dark back, so the column has something to sit in.
+  ctx.save();
+  roundRect(ctx, cx - w / 2, stemTop, w, stemBot - stemTop + w, w / 2);
+  const bore = ctx.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0);
+  bore.addColorStop(0, hexA(theme.ink, dark ? 0.5 : 0.2));
+  bore.addColorStop(0.4, hexA(light, 0.42));
+  bore.addColorStop(1, hexA(theme.ink, dark ? 0.4 : 0.16));
+  ctx.fillStyle = bore;
+  ctx.fill();
+  ctx.restore();
+
+  // The column, and the bulb it rises out of.
+  const colH = (stemBot - stemTop) * frac;
+  ctx.save();
+  roundRect(ctx, cx - w * 0.31, stemBot - colH, w * 0.62, colH + w, w * 0.31);
+  const col = ctx.createLinearGradient(cx - w * 0.31, 0, cx + w * 0.31, 0);
+  col.addColorStop(0, blend(mercury, theme.ink, 0.35));
+  col.addColorStop(0.35, mercury);
+  col.addColorStop(1, blend(mercury, theme.ink, 0.28));
+  ctx.fillStyle = col;
+  ctx.fill();
+  ctx.restore();
+
+  sphere(ctx, cx, bulbY, bulbR, mercury, { glow: frac > 0.55 ? (frac - 0.55) * 1.2 : 0 });
+  ctx.save();
+  ctx.strokeStyle = hexA(light, 0.7);
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.arc(cx, bulbY, bulbR, 0, Math.PI * 2);
+  ctx.stroke();
+  // The bright vertical line down the bore that says "this is round glass".
+  ctx.fillStyle = hexA(light, 0.75);
+  ctx.fillRect(cx - w * 0.34, stemTop + w * 0.6, Math.max(1, w * 0.12), stemBot - stemTop - w * 0.8);
+  ctx.restore();
+
+  return { plateL, plateW, plateT, plateH, stemTop, stemBot };
+}
+
 function render(rc: RenderContext<State>) {
-  const { ctx, state, params, theme, width, height, overlays, band } = rc;
+  const { ctx, state, params, theme, width, height, overlays, band, time } = rc;
   const s = substanceOf(params);
   const setT = params.temperature as number;
   const tStar = toReduced(setT, s);
-
-  // The thermometer lives in world units to the left of the box, so one camera
-  // covers the whole stage and everything scales together.
-  const cam = camera({
-    x0: -8.4, y0: -1.6, x1: BOX_W + 1.0, y1: BOX_H + 2.6,
-    width, height,
-  });
-  const px = (x: number) => cam.toScreenX(x);
-  const py = (y: number) => cam.toScreenY(y);
-  const scale = cam.scale;
+  const dark = isDarkTheme(theme);
+  const light = lightOf(theme);
+  const M = Math.min(width, height);
 
   const accent = phaseColor(state, theme);
+  const cold = theme.sci["cold"];
+  const hot = theme.sci["hot"];
+  const steel = theme.sci["mass"];
+  const T_MAX = 700;
 
-  /* ---- container ---- */
+  /* ---- the room the apparatus is standing in ---- */
+  depthWash(ctx, width, height, theme);
+  const benchY = height * 0.925;
+  groundPlane(ctx, benchY, 0, width, height, theme, "lab");
+
+  /* ---- layout: the cell owns the middle of the stage ---- */
+  const wall = Math.max(5, M * 0.016);
+  const innerW = Math.min(width * 0.565, height * 0.70 * (BOX_W / BOX_H));
+  const innerH = innerW * (BOX_H / BOX_W);
+  const inL = width * 0.155;
+  const inB = height * 0.785;
+  const inT = inB - innerH;
+  const inR = inL + innerW;
+  const wx = (x: number) => inL + (x / BOX_W) * innerW;
+  const wy = (y: number) => inB - (y / BOX_H) * innerH;
+  const pScale = innerW / BOX_W;
+
+  /* ---- the heating stage the cell sits on ---- */
+  const heatFrac = clamp((setT - 300) / 400, 0, 1);
+  const chillFrac = clamp((300 - setT) / 300, 0, 1);
+  const plateT = inB + wall * 3.2;
+  const plateH = Math.max(11, M * 0.05);
+  const plateL = inL - wall * 4.2;
+  const plateW = innerW + wall * 8.4;
+  contactShadow(ctx, (inL + inR) / 2, benchY, innerW * 0.4, 0);
+  for (const lx of [plateL + plateW * 0.1, plateL + plateW * 0.9]) {
+    const legW = wall * 1.7;
+    metal(ctx, lx - legW / 2, plateT + plateH * 0.7, legW,
+      benchY - plateT - plateH * 0.7, steel, { radius: 2, angle: 0 });
+    metal(ctx, lx - legW, benchY - wall * 0.5, legW * 2, wall * 0.7, steel, { radius: 2 });
+  }
+  // A cast body with a recessed element well, so the stage has a machined face
+  // rather than reading as a second rail under the cell's own flange.
+  softShadow(ctx, () => {
+    metal(ctx, plateL, plateT, plateW, plateH, blend(steel, theme.ink, 0.35),
+      { radius: plateH * 0.22, polish: 0.75 });
+  }, { blur: 12, dy: 5, alpha: 0.3 });
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, px(0), py(BOX_H), BOX_W * scale, BOX_H * scale, 6);
+  ctx.fillStyle = hexA(theme.ink, dark ? 0.6 : 0.42);
+  roundRect(ctx, plateL + plateW * 0.05, plateT + plateH * 0.22,
+    plateW * 0.9, plateH * 0.34, plateH * 0.16);
   ctx.fill();
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
   ctx.restore();
+  // A real element does not sit at one brightness — it breathes as it cycles.
+  const breathe = 0.88 + 0.12 * Math.sin(time * 2.3) + 0.05 * Math.sin(time * 5.7);
+  if (heatFrac > 0.02 || chillFrac > 0.02) {
+    const eColour = heatFrac >= chillFrac ? hot : cold;
+    const eStrength = Math.max(heatFrac, chillFrac) * breathe;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = hexA(eColour, 0.85 * eStrength);
+    roundRect(ctx, plateL + plateW * 0.07, plateT + plateH * 0.27,
+      plateW * 0.86, plateH * 0.24, plateH * 0.12);
+    ctx.fill();
+    glow(ctx, (inL + inR) / 2, plateT + plateH * 0.4, innerW * 0.55, eColour, 0.5 * eStrength);
+    ctx.restore();
+    // Heat haze between the element and the base of the cell.
+    if (heatFrac > 0.15) {
+      ctx.save();
+      ctx.globalAlpha = 0.3 * heatFrac;
+      ctx.strokeStyle = hexA(hot, 0.6);
+      ctx.lineWidth = 1.4;
+      for (let i = 0; i < 9; i++) {
+        const hx = plateL + plateW * (0.12 + 0.09 * i);
+        ctx.beginPath();
+        for (let k = 0; k <= 8; k++) {
+          const f = k / 8;
+          const hy = plateT - f * (plateT - inB - wall);
+          const wob = Math.sin(time * 3.4 + i * 1.7 + f * 5.5) * wall * 0.7 * f;
+          if (k === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx + wob, hy);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
 
-  /* ---- bonds between touching particles: the thing that holds a solid together ---- */
+  /* ---- inside the cell, before the glass goes over it ---- */
+  // The cell's own drop shadow goes down first, under everything it holds:
+  // paint it afterwards and it wipes out the contents.
+  softShadow(ctx, () => {
+    ctx.fillStyle = hexA(theme.surface, dark ? 0.5 : 0.75);
+    roundRect(ctx, inL - wall, inT - wall, innerW + wall * 2, innerH + wall * 2, wall * 1.8);
+    ctx.fill();
+  }, { blur: wall * 3.5, dy: wall * 0.9, alpha: dark ? 0.55 : 0.3 });
+
+  ctx.save();
+  roundRect(ctx, inL, inT, innerW, innerH, wall * 0.8);
+  ctx.clip();
+  const wash = ctx.createLinearGradient(0, inT, 0, inB);
+  wash.addColorStop(0, hexA(accent, dark ? 0.16 : 0.07));
+  wash.addColorStop(1, hexA(accent, dark ? 0.36 : 0.2));
+  ctx.fillStyle = wash;
+  ctx.fillRect(inL, inT, innerW, innerH);
+  if (heatFrac > 0.02) {
+    glow(ctx, (inL + inR) / 2, inB, innerW * 0.62, hot, 0.34 * heatFrac * breathe);
+  }
+  if (chillFrac > 0.05) {
+    glow(ctx, (inL + inR) / 2, inT, innerW * 0.6, cold, 0.24 * chillFrac);
+  }
+
+  /* ---- bonds: the thing that holds a solid together ---- */
   if (overlays.bonds && band !== "K-2" && state.phase !== 2) {
     ctx.save();
-    ctx.strokeStyle = accent;
-    ctx.globalAlpha = 0.28;
-    ctx.lineWidth = Math.max(1, scale * 0.09);
+    ctx.strokeStyle = hexA(accent, 0.42);
+    ctx.lineWidth = Math.max(1.2, pScale * 0.14);
+    ctx.lineCap = "round";
     ctx.beginPath();
     for (let i = 0; i < state.n - 1; i++) {
       const xi = state.x[i], yi = state.y[i];
@@ -442,92 +763,111 @@ function render(rc: RenderContext<State>) {
         const dx = xi - state.x[j];
         const dy = yi - state.y[j];
         if (dx * dx + dy * dy > NEIGHBOUR2) continue;
-        ctx.moveTo(px(xi), py(yi));
-        ctx.lineTo(px(state.x[j]), py(state.y[j]));
+        ctx.moveTo(wx(xi), wy(yi));
+        ctx.lineTo(wx(state.x[j]), wy(state.y[j]));
       }
     }
     ctx.stroke();
     ctx.restore();
   }
 
-  /* ---- particles, coloured by how much energy they carry ---- */
-  const cold = theme.sci["cold"];
-  const hot = theme.sci["hot"];
-  const r = Math.max(2.5, scale * 0.46);
-  // One colour per speed bucket, so the ramp costs eight string builds a frame.
+  /* ---- particles ---- */
+  const r = Math.max(3, pScale * 0.58);
   const BUCKETS = 8;
   const ramp: string[] = new Array(BUCKETS);
-  for (let b = 0; b < BUCKETS; b++) ramp[b] = mixHex(cold, hot, b / (BUCKETS - 1));
+  for (let b = 0; b < BUCKETS; b++) ramp[b] = blend(cold, hot, b / (BUCKETS - 1));
   const vScale = 1 / (2 * Math.sqrt(2 * Math.max(tStar, 0.08)));
-
+  let cxSum = 0, cySum = 0;
   for (let i = 0; i < state.n; i++) {
     const speed = Math.hypot(state.vx[i], state.vy[i]);
     const b = Math.min(BUCKETS - 1, Math.max(0, Math.round(speed * vScale * (BUCKETS - 1))));
-    disc(ctx, px(state.x[i]), py(state.y[i]), r, ramp[b], { stroke: theme.surface, lineWidth: 1 });
+    const px = wx(state.x[i]), py = wy(state.y[i]);
+    cxSum += px; cySum += py;
+    atom(ctx, px, py, r, ramp[b], light,
+      state.vx[i], -state.vy[i], b / (BUCKETS - 1));
   }
-
-  /* ---- thermometer ---- */
-  const tubeX = px(-6.2);
-  const tubeW = Math.max(10, scale * 0.9);
-  const tubeTop = py(BOX_H);
-  const tubeBot = py(0.6);
-  const tubeH = tubeBot - tubeTop;
-  const tMax = 700;
-  const frac = clamp(setT / tMax, 0, 1);
-
-  ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, tubeX, tubeTop, tubeW, tubeH, tubeW / 2);
-  ctx.fill();
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.fillStyle = mixHex(cold, hot, frac);
-  roundRect(ctx, tubeX + 2, tubeBot - tubeH * frac, tubeW - 4, tubeH * frac, (tubeW - 4) / 2);
-  ctx.fill();
   ctx.restore();
 
+  /* ---- the glass, over the contents ---- */
+  cellGlass(ctx, inL, inT, innerW, innerH, wall, theme);
+
+  /* ---- the thermometer, clamped to the left of the cell ---- */
+  const tW = Math.max(9, M * 0.028);
+  const tCx = width * 0.077;
+  const frac = clamp(setT / T_MAX, 0, 1);
+  const mercury = blend(cold, hot, frac);
+  const th = thermometer(ctx, tCx, height * 0.185, height * 0.85, tW, frac, mercury, theme);
+
+  // A digital head on the plate: the number the student set, where they look.
+  const headH = tW * 2.2;
+  ctx.save();
+  ctx.fillStyle = hexA(theme.ink, dark ? 0.65 : 0.86);
+  roundRect(ctx, th.plateL + tW * 0.5, th.plateT + tW * 0.5, th.plateW - tW, headH, tW * 0.4);
+  ctx.fill();
+  ctx.strokeStyle = hexA(mercury, 0.7);
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `700 ${Math.max(12, tW * 1.15)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.shadowColor = hexA(mercury, 0.8);
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = mercury;
+  ctx.fillText(`${setT.toFixed(0)} K`, th.plateL + th.plateW / 2, th.plateT + tW * 0.5 + headH / 2);
+  ctx.restore();
+
+  /* ---- calibration marks the student can hunt for ---- */
   if (overlays.points) {
     for (const [value, text, colour] of [
       [s.melting, "melts", theme.sci["liquid"]],
       [s.boiling, "boils", theme.sci["gas"]],
     ] as [number, string, string][]) {
-      const yy = tubeBot - tubeH * clamp(value / tMax, 0, 1);
+      const yy = th.stemBot - (th.stemBot - th.stemTop) * clamp(value / T_MAX, 0, 1);
       ctx.save();
       ctx.strokeStyle = colour;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(tubeX - 6, yy);
-      ctx.lineTo(tubeX + tubeW + 6, yy);
+      ctx.moveTo(tCx - tW * 3.9, yy);
+      ctx.lineTo(tCx - tW * 0.6, yy);
       ctx.stroke();
-      ctx.restore();
+      ctx.fillStyle = colour;
+      ctx.beginPath();
+      ctx.moveTo(tCx - tW * 0.6, yy);
+      ctx.lineTo(tCx - tW * 1.3, yy - tW * 0.4);
+      ctx.lineTo(tCx - tW * 1.3, yy + tW * 0.4);
+      ctx.closePath();
+      ctx.fill();
       if (band !== "K-2") {
-        label(ctx, `${text} ${value.toFixed(0)} K`, tubeX + tubeW + 9, yy, theme, { size: 10, color: colour });
+        caption(ctx, tCx - tW * 1.5, yy - tW * 0.95, `${text} ${value.toFixed(0)} K`, theme, {
+          size: Math.max(9, tW * 0.62), align: "right", color: colour,
+        });
       }
+      ctx.restore();
     }
   }
 
-  label(ctx, `${setT.toFixed(1)} K`, tubeX + tubeW / 2, tubeTop - 14, theme, { align: "center", size: 12 });
+  /* ---- callouts, out in the clear right margin ---- */
+  const calloutX = inR + Math.max(18, width * 0.022);
+  callout(ctx, inR - innerW * 0.05, inT + innerH * 0.1, calloutX, height * 0.16,
+    `${s.label}  ${s.formula}`, theme, { sub: "sealed cell, fixed volume", side: "right" });
 
-  /* ---- captions ---- */
-  const titleY = py(BOX_H + 1.1);
-  label(ctx, `${s.label}  ${s.formula}`, px(0), titleY, theme, { size: band === "K-2" ? 17 : 14 });
-  label(ctx, phaseName(state), px(BOX_W), titleY, theme, {
-    align: "right", size: band === "K-2" ? 20 : 16, color: accent,
-  });
 
-  if (band !== "K-2") {
-    const footY = py(-0.7);
-    const parts = state.phase === 0
-      ? "Locked in place — but still vibrating."
-      : state.coexist
-        ? "Fast particles are escaping the liquid."
-        : state.phase === 1
-          ? "Still touching, but free to slide past each other."
-          : "Far apart, filling the whole container.";
-    label(ctx, parts, px(0), footY, theme, { size: 12, color: theme.inkSoft });
-  }
+  const parts = state.phase === 0
+    ? "locked in place, vibrating"
+    : state.coexist
+      ? "fast ones escaping"
+      : state.phase === 1
+        ? "touching, but free to slide"
+        : "far apart, filling the cell";
+  callout(ctx, cxSum / Math.max(1, state.n), cySum / Math.max(1, state.n),
+    calloutX, height * 0.35, phaseName(state), theme,
+    { sub: band === "K-2" ? undefined : parts, side: "right", accent });
+
+  callout(ctx, inR - innerW * 0.14, plateT + plateH * 0.5, calloutX, height * 0.62,
+    `${setT.toFixed(0)} K`, theme,
+    { sub: "heating stage", side: "right", accent: mercury });
+
+  vignette(ctx, width, height, 0.18);
 }
 
 /* ------------------------------------------------------------------ *

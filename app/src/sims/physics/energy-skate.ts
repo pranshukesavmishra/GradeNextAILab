@@ -1,6 +1,10 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import { CONSTANTS, q } from "@engine/units";
-import { arrow, camera, disc, energyBars, label } from "@ui/draw";
+import { arrow, camera, energyBars } from "@ui/draw";
+import {
+  badge, caption, comet, contactShadow, groundPlane, hexA, lifted, material, sky, sphere,
+  vignette,
+} from "@ui/scene";
 
 /**
  * Energy Skate Park — Grades 4-12.
@@ -419,57 +423,136 @@ function render(rc: RenderContext<State>) {
   const g = params.gravity as number;
   const track = state.track;
 
-  // Square camera: a loop must actually look like a circle.
-  const cam = camera({ x0: -1, y0: -1.4, x1: 25, y1: 12, width, height, square: true });
+  // Square camera: a loop must actually look like a circle. Cropped tighter
+  // than the track needs so the park fills the stage rather than floating in it.
+  const cam = camera({ x0: -0.4, y0: -1.9, x1: 24.4, y1: 11.2, width, height, square: true });
   const X = (x: number) => cam.toScreenX(x);
   const Y = (y: number) => cam.toScreenY(y);
+  const groundY = Y(0);
+  const last = track.x.length - 1;
+
+  // ---- The park ---------------------------------------------------------
+  sky(ctx, width, height, theme, "day", groundY);
+  groundPlane(ctx, groundY, 0, width, height, theme, "rock");
 
   // ---- Reference height line ------------------------------------------
   if (overlays.heightLine && band !== "K-2") {
     const p0 = skaterAt(state);
     ctx.save();
     ctx.strokeStyle = theme.sci["energy-potential"];
-    ctx.globalAlpha = 0.45;
+    ctx.globalAlpha = 0.5;
     ctx.setLineDash([5, 5]);
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(X(-1), Y(p0.y));
-    ctx.lineTo(X(25), Y(p0.y));
+    ctx.moveTo(X(-0.4), Y(p0.y));
+    ctx.lineTo(X(24.4), Y(p0.y));
     ctx.stroke();
     ctx.restore();
-    label(ctx, `${p0.y.toFixed(1)} m`, X(24.6), Y(p0.y), theme, {
-      align: "right", color: theme.sci["energy-potential"], size: 11,
+    badge(ctx, X(24.1), Y(p0.y), `${p0.y.toFixed(1)} m`, theme, {
+      align: "right", color: theme.sci["energy-potential"],
     });
   }
 
-  // ---- Ground reference -------------------------------------------------
+  // ---- The structure the track is built on ------------------------------
+  // Support posts everywhere the track runs above the concrete, skipping the
+  // vertical loop where a post would run straight through the rider.
   ctx.save();
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(X(-1), Y(0));
-  ctx.lineTo(X(25), Y(0));
-  ctx.stroke();
+  const stride = Math.max(1, Math.round(track.x.length / 44));
+  for (let i = stride; i < last; i += stride) {
+    if (track.y[i] < 0.4) continue;
+    if (Math.abs(Math.sin(track.th[i])) > 0.9) continue;
+    if (track.loop && track.s[i] >= track.loop[0] - 0.4 && track.s[i] <= track.loop[1] + 0.4) continue;
+    const ty = Y(track.y[i]);
+    material(ctx, X(track.x[i]) - 2.5, ty, 5, Math.max(2, groundY - ty), theme.inkSoft, 1);
+  }
   ctx.restore();
 
-  // ---- The track ---------------------------------------------------------
-  ctx.save();
-  ctx.strokeStyle = theme.inkSoft;
-  ctx.lineWidth = 5;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(X(track.x[0]), Y(track.y[0]));
-  for (let i = 1; i < track.x.length; i++) ctx.lineTo(X(track.x[i]), Y(track.y[i]));
-  ctx.stroke();
-  ctx.restore();
+  // A closed ramp body under the function-shaped tracks: solid concrete, not a
+  // wire hanging in the air. The loop doubles back on itself, so it keeps its
+  // posts instead.
+  if (!track.loop) {
+    ctx.save();
+    const fill = ctx.createLinearGradient(0, Y(11), 0, groundY);
+    fill.addColorStop(0, hexA(theme.inkSoft, 0.5));
+    fill.addColorStop(1, hexA(theme.inkSoft, 0.88));
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(X(track.x[0]), Y(track.y[0]));
+    for (let i = 1; i <= last; i++) ctx.lineTo(X(track.x[i]), Y(track.y[i]));
+    ctx.lineTo(X(track.x[last]), groundY);
+    ctx.lineTo(X(track.x[0]), groundY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
 
-  // ---- The skater ---------------------------------------------------------
+  // ---- The track surface --------------------------------------------------
+  // Three passes: a shadow under the lip, the deck itself, and a lit top edge.
+  const passes: [number, string, number][] = [
+    [9, hexA(theme.ink, 0.28), 3],
+    [7, theme.inkSoft, 0],
+    [2, hexA(theme.surface, 0.6), -2],
+  ];
+  for (const [lw, color, dy] of passes) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(X(track.x[0]), Y(track.y[0]) + dy);
+    for (let i = 1; i <= last; i++) ctx.lineTo(X(track.x[i]), Y(track.y[i]) + dy);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---- Where the skater has just been --------------------------------------
   const p = skaterAt(state);
   const sx = X(p.x), sy = Y(p.y);
+  {
+    const pts: { x: number; y: number }[] = [];
+    const steps = 14;
+    for (let i = steps; i >= 0; i--) {
+      const dt = (i / steps) * 0.5;
+      if (state.airborne) {
+        pts.push({
+          x: X(state.ax - state.avx * dt),
+          y: Y(state.ay - state.avy * dt - 0.5 * g * dt * dt),
+        });
+      } else {
+        const sPos = Math.min(track.length, Math.max(0, state.s - state.v * dt));
+        const q = sampleTrack(track, sPos);
+        pts.push({ x: X(q.x), y: Y(q.y) });
+      }
+    }
+    comet(ctx, pts, theme.accent, 5);
+  }
+
+  // ---- The skater ------------------------------------------------------------
   const bodyR = band === "K-2" ? 13 : 10;
-  disc(ctx, sx, sy - bodyR * 0.9, bodyR, theme.accent, { stroke: theme.surface, lineWidth: 2 });
-  disc(ctx, sx, sy - bodyR * 2.3, bodyR * 0.55, theme.accent, { stroke: theme.surface, lineWidth: 2 });
+  contactShadow(ctx, sx, groundY, bodyR * 1.4, groundY - sy);
+  {
+    // Lean with the track, or with the flight path once the board leaves it.
+    const lean = state.airborne
+      ? Math.max(-0.9, Math.min(0.9, Math.atan2(-p.vy, Math.abs(p.vx) + 0.4) * 0.6))
+      : -sampleTrack(track, state.s).th;
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(lean);
+    // Wheels, deck, body, head — bottom up, so each sits on the one below.
+    sphere(ctx, -bodyR * 0.85, -bodyR * 0.3, bodyR * 0.3, theme.ink);
+    sphere(ctx, bodyR * 0.85, -bodyR * 0.3, bodyR * 0.3, theme.ink);
+    material(ctx, -bodyR * 1.5, -bodyR * 0.88, bodyR * 3, bodyR * 0.32, theme.sci["mass"], 2);
+    material(ctx, -bodyR * 0.6, -bodyR * 2.3, bodyR * 1.2, bodyR * 1.5, theme.accent, bodyR * 0.4);
+    sphere(ctx, 0, -bodyR * 2.75, bodyR * 0.58, theme.accent);
+    ctx.restore();
+  }
+
+  if (band !== "K-2" && p.speed > 0.15) {
+    badge(ctx, sx, sy - bodyR * 4.4, `${p.speed.toFixed(1)} m/s`, theme, {
+      align: "center", color: theme.sci["velocity"],
+    });
+  }
 
   // ---- Vectors -------------------------------------------------------------
   if (overlays.vectors && band !== "K-2" && p.speed > 0.2) {
@@ -492,12 +575,14 @@ function render(rc: RenderContext<State>) {
     const ke = 0.5 * m * p.speed * p.speed;
     const pe = m * g * p.y;
     const barW = Math.min(300, width * 0.42);
-    const bx = 16, by = 16, bh = band === "K-2" ? 22 : 18;
-    energyBars(ctx, bx, by, barW, bh, [
-      { label: "KE", value: ke, color: theme.sci["energy-kinetic"] },
-      { label: "PE", value: pe, color: theme.sci["energy-potential"] },
-      { label: "Heat", value: state.thermal, color: theme.sci["energy-thermal"] },
-    ], theme);
+    const bx = 16, by = 18, bh = band === "K-2" ? 22 : 18;
+    lifted(ctx, 12, 3, () => {
+      energyBars(ctx, bx, by, barW, bh, [
+        { label: "KE", value: ke, color: theme.sci["energy-kinetic"] },
+        { label: "PE", value: pe, color: theme.sci["energy-potential"] },
+        { label: "Heat", value: state.thermal, color: theme.sci["energy-thermal"] },
+      ], theme);
+    });
 
     if (band !== "K-2") {
       const legend: [string, string, number][] = [
@@ -508,11 +593,11 @@ function render(rc: RenderContext<State>) {
       let lx = bx;
       for (const [name, color, value] of legend) {
         const text = band === "3-5" ? name : `${name} ${Math.round(value)} J`;
-        label(ctx, text, lx, by + bh + 14, theme, { color, size: 11 });
+        caption(ctx, lx, by + bh + 15, text, theme, { color, size: 11 });
         lx += band === "3-5" ? 62 : 96;
       }
       if (band === "6-8" || band === "9-12") {
-        label(ctx, `total ${Math.round(ke + pe + state.thermal)} J`, bx, by + bh + 34, theme, {
+        caption(ctx, bx, by + bh + 34, `total ${Math.round(ke + pe + state.thermal)} J`, theme, {
           color: theme.sci["energy-total"], size: 11,
         });
       }
@@ -521,15 +606,17 @@ function render(rc: RenderContext<State>) {
 
   // ---- Status --------------------------------------------------------------
   if (state.airborne && band !== "K-2") {
-    label(ctx, "Off the track!", sx, sy - bodyR * 4, theme, {
-      align: "center", color: theme.sci["acceleration"],
+    caption(ctx, sx, sy - bodyR * 5.8, "Off the track!", theme, {
+      align: "center", color: theme.sci["acceleration"], weight: 800,
     });
   }
   if (track.loop && state.loops > 0 && band !== "K-2") {
-    label(ctx, `Loops completed: ${state.loops}`, X(24.6), Y(11.2), theme, {
-      align: "right", color: theme.accent, size: 11,
+    caption(ctx, X(24.1), Y(10.6), `Loops completed: ${state.loops}`, theme, {
+      align: "right", color: theme.accent, size: 12,
     });
   }
+
+  vignette(ctx, width, height, 0.15);
 }
 
 /* ------------------------------------------------------------------ *

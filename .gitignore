@@ -1,0 +1,10 @@
+
+# Lane scratch: underscore-prefixed test files are working files only.
+# Vitest runs them but they are never shippable.
+app/src/sims/**/_*.test.ts
+
+# Smart Lab verification harness: its npm install and everything it writes.
+# (Screenshots, the wrapped _preview.html, sweep images.) Never shipped.
+smartlab/node_modules/
+smartlab/_preview*.html
+smartlab/*.png

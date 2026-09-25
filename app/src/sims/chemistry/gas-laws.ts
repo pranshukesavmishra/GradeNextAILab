@@ -1,7 +1,10 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import type { Rng } from "@engine/rng";
 import { CONSTANTS, q } from "@engine/units";
-import { camera, disc, label, mixHex, roundRect } from "@ui/draw";
+import { camera, roundRect } from "@ui/draw";
+import {
+  badge, caption, contactShadow, groundPlane, hexA, isDarkTheme, material, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * Gas Properties — Grades 6-12.
@@ -289,97 +292,157 @@ const model: SimModel<State> = {
  * View
  * ------------------------------------------------------------------ */
 
-const WORLD_W = 32;
+const WORLD_W = 29.4;
 const WORLD_H = 16;
 const CHAMBER_X = 1.0;
-const CHAMBER_Y = 2.2;
+const CHAMBER_Y = 2.6;
 const GAUGE_MAX = 6e5; // Pa, the top of the drawn gauge
+/** Bench height, in world units. The cylinder is bolted to this. */
+const BENCH_Y = 1.7;
+
+/** Mix two theme colours into a hex, so the result can feed the scene kit. */
+function blend(a: string, b: string, t: number): string {
+  const k = Math.max(0, Math.min(1, t));
+  const ca = a.replace("#", "");
+  const cb = b.replace("#", "");
+  let out = "#";
+  for (let i = 0; i < 3; i++) {
+    const va = parseInt(ca.slice(i * 2, i * 2 + 2), 16) || 0;
+    const vb = parseInt(cb.slice(i * 2, i * 2 + 2), 16) || 0;
+    out += Math.round(va + (vb - va) * k).toString(16).padStart(2, "0");
+  }
+  return out;
+}
 
 function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, band } = rc;
-  const cam = camera({ x0: -0.5, y0: -0.6, x1: WORLD_W + 0.5, y1: WORLD_H + 0.5, width, height });
+  const cam = camera({ x0: -0.4, y0: -0.3, x1: WORLD_W + 0.4, y1: WORLD_H + 0.6, width, height });
   const px = (x: number) => cam.toScreenX(x);
   const py = (y: number) => cam.toScreenY(y);
   const scale = cam.scale;
+  const dark = isDarkTheme(theme);
 
   const pressure = measuredPressure(state) * K_P;
   const temperature = state.tModel * K_T;
   const volumeL = state.width * BOX_H * VOLUME_PER_AREA * 1000;
+  const gasTint = blend(theme.sci["cold"], theme.sci["hot"], clamp(temperature / 800, 0, 1));
+  const steel = theme.sci["mass"];
+  const glass = theme.sci["solid"];
 
-  /* ---- cylinder ---- */
+  /* ---- the bench the apparatus is bolted to ---- */
+  sky(ctx, width, height, theme, "indoor");
+  const benchY = py(BENCH_Y);
+  groundPlane(ctx, benchY, 0, width, height, theme, "lab");
+
+  /* ---- the cylinder body ---- */
+  const chL = px(CHAMBER_X), chR = px(CHAMBER_X + MAX_W);
+  const chT = py(CHAMBER_Y + BOX_H), chB = py(CHAMBER_Y);
+  const shell = Math.max(4, scale * 0.3);
+
+  contactShadow(ctx, (chL + chR) / 2, benchY + 1, (chR - chL) * 0.28, 0);
+  material(ctx, chL - shell, chT - shell, (chR - chL) + shell * 2, (chB - chT) + shell * 2, steel, 8);
+
+  // The bore: a dark cavity with the gas glowing inside it.
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, px(CHAMBER_X), py(CHAMBER_Y + BOX_H), MAX_W * scale, BOX_H * scale, 4);
-  ctx.fill();
-  ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  ctx.beginPath();
+  roundRect(ctx, chL, chT, chR - chL, chB - chT, 4);
+  ctx.clip();
+  const cavity = ctx.createLinearGradient(0, chT, 0, chB);
+  cavity.addColorStop(0, hexA(theme.ink, dark ? 0.5 : 0.16));
+  cavity.addColorStop(0.5, hexA(theme.ink, dark ? 0.32 : 0.06));
+  cavity.addColorStop(1, hexA(theme.ink, dark ? 0.5 : 0.16));
+  ctx.fillStyle = cavity;
+  ctx.fillRect(chL, chT, chR - chL, chB - chT);
+
+  // The gas itself only occupies the space left of the piston.
+  const gasR = px(CHAMBER_X + state.width);
+  const hot = ctx.createLinearGradient(chL, 0, gasR, 0);
+  hot.addColorStop(0, hexA(gasTint, dark ? 0.26 : 0.2));
+  hot.addColorStop(1, hexA(gasTint, dark ? 0.14 : 0.1));
+  ctx.fillStyle = hot;
+  ctx.fillRect(chL, chT, gasR - chL, chB - chT);
   ctx.restore();
 
-  // The gas itself, tinted by how hot it is.
-  const gasTint = mixHex(theme.sci["cold"], theme.sci["hot"], clamp(temperature / 800, 0, 1));
-  ctx.save();
-  ctx.globalAlpha = 0.1;
-  ctx.fillStyle = gasTint;
-  ctx.fillRect(px(CHAMBER_X), py(CHAMBER_Y + BOX_H), state.width * scale, BOX_H * scale);
-  ctx.restore();
-
-  /* ---- molecules ---- */
+  /* ---- molecules, as lit spheres with the fast ones haloed ---- */
   const BUCKETS = 8;
   const ramp: string[] = new Array(BUCKETS);
   for (let b = 0; b < BUCKETS; b++) {
-    ramp[b] = mixHex(theme.sci["cold"], theme.sci["hot"], b / (BUCKETS - 1));
+    ramp[b] = blend(theme.sci["cold"], theme.sci["hot"], b / (BUCKETS - 1));
   }
   const vRef = 2 * Math.sqrt(2 * Math.max(state.tModel, 0.2));
-  const r = Math.max(2, R_DRAW * scale);
+  const r = Math.max(2.5, R_DRAW * scale);
   for (let i = 0; i < state.n; i++) {
     const speed = Math.hypot(state.vx[i], state.vy[i]);
     const b = clamp(Math.round((speed / vRef) * (BUCKETS - 1)), 0, BUCKETS - 1);
-    // Centres reach the walls; the disc is nudged inside so it never spills over.
+    // Centres reach the walls; the sphere is nudged inside so it never spills over.
     const dx = clamp(state.x[i], R_DRAW, Math.max(R_DRAW, state.width - R_DRAW));
     const dy = clamp(state.y[i], R_DRAW, BOX_H - R_DRAW);
-    disc(ctx, px(CHAMBER_X + dx), py(CHAMBER_Y + dy), r, ramp[b]);
+    const heat = b / (BUCKETS - 1);
+    sphere(ctx, px(CHAMBER_X + dx), py(CHAMBER_Y + dy), r, ramp[b], {
+      glow: heat > 0.6 ? (heat - 0.6) * 1.5 : 0,
+    });
   }
 
-  /* ---- piston ---- */
+  /* ---- the piston, and the glass front of the cylinder ---- */
   const pistonX = CHAMBER_X + state.width;
+  const headW = Math.max(6, 0.6 * scale);
+  material(ctx, px(pistonX), chT - shell * 0.4, headW, (chB - chT) + shell * 0.8, steel, 3);
+  material(
+    ctx, px(pistonX) + headW, py(CHAMBER_Y + BOX_H / 2 + 0.32),
+    Math.max(0, (MAX_W - state.width) * scale + shell), 0.64 * scale, steel, 3,
+  );
+  // A seal ring where the head meets the bore.
   ctx.save();
-  ctx.fillStyle = theme.inkSoft;
-  roundRect(ctx, px(pistonX), py(CHAMBER_Y + BOX_H + 0.3), 0.55 * scale, (BOX_H + 0.6) * scale, 3);
-  ctx.fill();
-  ctx.fillRect(px(pistonX + 0.55), py(CHAMBER_Y + BOX_H / 2 + 0.28), (MAX_W - state.width) * scale, 0.56 * scale);
+  ctx.fillStyle = hexA(theme.sci["force"], 0.75);
+  ctx.fillRect(px(pistonX), chT, Math.max(2, headW * 0.28), chB - chT);
   ctx.restore();
 
-  // Walls that never move.
   ctx.save();
-  ctx.strokeStyle = theme.ink;
-  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(px(CHAMBER_X), py(CHAMBER_Y + BOX_H));
-  ctx.lineTo(px(CHAMBER_X), py(CHAMBER_Y));
-  ctx.moveTo(px(CHAMBER_X), py(CHAMBER_Y));
-  ctx.lineTo(px(CHAMBER_X + MAX_W), py(CHAMBER_Y));
-  ctx.moveTo(px(CHAMBER_X), py(CHAMBER_Y + BOX_H));
-  ctx.lineTo(px(CHAMBER_X + MAX_W), py(CHAMBER_Y + BOX_H));
+  roundRect(ctx, chL, chT, chR - chL, chB - chT, 4);
+  ctx.strokeStyle = hexA(glass, 0.7);
+  ctx.lineWidth = 2;
   ctx.stroke();
+  const sheen = ctx.createLinearGradient(0, chT, 0, chB);
+  sheen.addColorStop(0, "rgba(255,255,255,0.16)");
+  sheen.addColorStop(0.18, "rgba(255,255,255,0.02)");
+  sheen.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = sheen;
+  ctx.fillRect(chL, chT, chR - chL, (chB - chT) * 0.5);
   ctx.restore();
 
-  /* ---- gauge ---- */
-  const gx = CHAMBER_X + MAX_W + 1.4;
-  const gw = 1.5;
+  /* ---- pressure gauge, as an instrument on the bench ---- */
+  const gx = CHAMBER_X + MAX_W + 1.5;
+  const gw = 1.9;
   const gh = BOX_H;
+  const gL = px(gx), gT = py(CHAMBER_Y + gh), gB = py(CHAMBER_Y);
+  material(ctx, gL - 4, gT - 4, gw * scale + 8, (gB - gT) + 8, steel, 6);
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, px(gx), py(CHAMBER_Y + gh), gw * scale, gh * scale, 4);
+  ctx.fillStyle = hexA(theme.ink, dark ? 0.45 : 0.12);
+  roundRect(ctx, gL, gT, gw * scale, gB - gT, 4);
   ctx.fill();
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  ctx.restore();
+
   const frac = clamp(pressure / GAUGE_MAX, 0, 1);
-  ctx.fillStyle = theme.sci["force"];
-  roundRect(ctx, px(gx) + 2, py(CHAMBER_Y + gh * frac), gw * scale - 4, gh * frac * scale, 3);
+  ctx.save();
+  const col = ctx.createLinearGradient(0, gB, 0, gT);
+  col.addColorStop(0, hexA(theme.sci["force"], 0.75));
+  col.addColorStop(1, hexA(theme.sci["force"], 1));
+  ctx.fillStyle = col;
+  roundRect(ctx, gL + 3, gB - (gB - gT) * frac, gw * scale - 6, (gB - gT) * frac, 3);
   ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.inkSoft, 0.7);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i <= 6; i++) {
+    const ty = gB - (i / 6) * (gB - gT);
+    ctx.moveTo(gL, ty);
+    ctx.lineTo(gL + gw * scale * (i % 2 === 0 ? 0.42 : 0.24), ty);
+  }
+  ctx.stroke();
   ctx.restore();
 
   if (params.piston === "float" && state.holdPressure > 0) {
@@ -389,39 +452,42 @@ function render(rc: RenderContext<State>) {
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
-    ctx.moveTo(px(gx - 0.4), py(CHAMBER_Y + gh * ty));
-    ctx.lineTo(px(gx + gw + 0.4), py(CHAMBER_Y + gh * ty));
+    ctx.moveTo(gL - 8, gB - (gB - gT) * ty);
+    ctx.lineTo(gL + gw * scale + 8, gB - (gB - gT) * ty);
     ctx.stroke();
     ctx.restore();
   }
 
-  label(ctx, "Pressure", px(gx + gw / 2), py(CHAMBER_Y + gh + 0.6), theme, { align: "center", size: 11 });
-  label(ctx, `${(pressure / 1000).toFixed(0)} kPa`, px(gx + gw / 2), py(CHAMBER_Y - 0.7), theme, {
-    align: "center", size: 12, color: theme.sci["force"],
+  badge(ctx, gL + (gw * scale) / 2, gT - 20, `${(pressure / 1000).toFixed(0)}`, theme, {
+    align: "center", color: theme.sci["force"], sub: "kPa",
+  });
+  caption(ctx, gL + (gw * scale) / 2, gB + 16, "Pressure", theme, {
+    align: "center", size: 11, color: theme.inkSoft,
   });
 
-  /* ---- captions ---- */
-  const topY = py(CHAMBER_Y + BOX_H + 1.4);
-  label(ctx, `${volumeL.toFixed(2)} L`, px(CHAMBER_X + state.width / 2), topY, theme, {
-    align: "center", size: 13, color: theme.sci["distance"],
+  /* ---- live numbers, on the scene beside what they describe ---- */
+  const topY = py(CHAMBER_Y + BOX_H + 1.1);
+  badge(ctx, px(CHAMBER_X + state.width / 2), topY, `${volumeL.toFixed(2)} L`, theme, {
+    align: "center", color: theme.sci["distance"],
   });
-  label(ctx, `${temperature.toFixed(0)} K`, px(CHAMBER_X), topY, theme, {
-    size: 13, color: gasTint,
-  });
+  badge(ctx, px(CHAMBER_X), topY, `${temperature.toFixed(0)} K`, theme, { color: gasTint });
+
   if (band !== "3-5") {
-    label(
-      ctx,
+    caption(
+      ctx, px(CHAMBER_X), py(0.75),
       params.piston === "float"
         ? "Piston floating — it moves until the pressure matches the dashed line"
         : "Piston locked to the volume slider",
-      px(CHAMBER_X), py(1.0), theme, { size: 11, color: theme.inkSoft },
+      theme, { size: 11, color: theme.inkSoft, weight: 500 },
     );
-    label(
-      ctx, `gauge averaging over ${state.timeSum.toFixed(1)} s`,
-      px(CHAMBER_X + MAX_W + gw + 1.4), py(1.0), theme,
-      { align: "right", size: 10, color: theme.inkSoft },
+    caption(
+      ctx, px(gx + gw), py(0.75),
+      `gauge averaging over ${state.timeSum.toFixed(1)} s`, theme,
+      { align: "right", size: 10, color: theme.inkSoft, weight: 500 },
     );
   }
+
+  vignette(ctx, width, height, 0.15);
 }
 
 /* ------------------------------------------------------------------ *

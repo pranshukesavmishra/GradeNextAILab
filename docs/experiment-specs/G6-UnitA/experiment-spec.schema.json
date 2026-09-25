@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gradenext.smartlab.experiment-spec/1.0",
+  "title": "GradeNext Smart Lab — Unit Experiment Bundle",
+  "type": "object",
+  "required": ["schema", "grade", "unit", "unit_title", "domain", "experiment_count", "topics"],
+  "properties": {
+    "schema": {"const": "gradenext.smartlab.experiment-spec/1.0"},
+    "generated": {"type": "string", "format": "date-time"},
+    "grade": {"enum": ["6", "7", "8"]},
+    "grade_title": {"type": "string"},
+    "unit": {"enum": ["A", "B", "C", "D", "E", "F"]},
+    "unit_title": {"type": "string"},
+    "domain": {"type": "string"},
+    "experiment_count": {"type": "integer"},
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["topic_id", "topic_title", "ngss_pe", "experiments"],
+        "properties": {
+          "topic_id": {"type": "string", "pattern": "^[A-F][0-9]+$"},
+          "topic_title": {"type": "string"},
+          "ngss_pe": {"type": "array", "items": {"type": "string"}},
+          "experiments": {"type": "array", "items": {"$ref": "#/$defs/experiment"}}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "experiment": {
+      "type": "object",
+      "required": ["id", "subtopic_id", "subtopic_title", "topic_id", "experiment_name", "render_mode",
+                   "simulation_engine", "interaction_level", "session_length", "ngss_anchor", "theme_scene",
+                   "objects", "model", "controls", "scenarios", "activities", "outputs", "realisation"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^G[678]-[A-F][0-9]+\\.[0-9]+$", "description": "Stable unique ID, e.g. G6-B2.1"},
+        "subtopic_id": {"type": "string"},
+        "subtopic_title": {"type": "string"},
+        "topic_id": {"type": "string"},
+        "topic_title": {"type": "string"},
+        "experiment_name": {"type": "string", "description": "Student-facing tile name"},
+        "render_mode": {"type": "string", "description": "2D Canvas | 3D Scene | 2.5D Layered | Hybrid 2D+3D | Data Dashboard"},
+        "simulation_engine": {"type": "string", "description": "One or more of: Rigid-body, Particle system, Field/vector, Molecular, Agent-based, Fluid/thermal, Ray/wave, Data-driven model, State machine, Procedural geology"},
+        "interaction_level": {"type": "string", "description": "Explore | Manipulate | Investigate | Design | Argue-from-data"},
+        "session_length": {"type": "string"},
+        "ngss_anchor": {"type": "string"},
+        "theme_scene": {"type": "string", "description": "Art-directable description of what the student sees on load"},
+        "objects": {
+          "type": "array", "minItems": 8,
+          "items": {
+            "type": "object",
+            "required": ["n", "name", "class", "build_note", "editable"],
+            "properties": {
+              "n": {"type": ["integer", "string"]},
+              "name": {"type": "string"},
+              "class": {"type": "string", "description": "Actor | Structure | Particle | Field | Instrument | Overlay | Environment | UI-Probe"},
+              "build_note": {"type": "string", "description": "Geometry · appearance · behaviour — enough for an artist to model and an engineer to instantiate"},
+              "editable": {"type": "boolean"},
+              "edit_modes": {"type": "array", "items": {"type": "string"}, "description": "Subset of: drag, place, swap, resize, connect"}
+            }
+          }
+        },
+        "model": {"type": "string", "description": "Governing rules, equations, rate laws, state machine, dataset; per-tick updates; honest simplifications"},
+        "controls": {
+          "type": "array", "minItems": 5,
+          "items": {
+            "type": "object",
+            "required": ["label", "widget", "range", "default", "unit", "effect"],
+            "properties": {
+              "label": {"type": "string"},
+              "widget": {"type": "string"},
+              "range": {
+                "type": "object",
+                "required": ["raw"],
+                "properties": {
+                  "raw": {"type": "string"},
+                  "min": {"type": "number"},
+                  "max": {"type": "number"},
+                  "options": {"type": "array", "items": {"type": "string"}},
+                  "note": {"type": "string"}
+                }
+              },
+              "default": {"type": "string"},
+              "unit": {"type": "string"},
+              "effect": {"type": "string"}
+            }
+          }
+        },
+        "scenarios": {
+          "type": "array", "minItems": 3,
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "preset", "preset_raw", "question"],
+            "properties": {
+              "id": {"type": "string"},
+              "name": {"type": "string"},
+              "preset": {"type": "object", "additionalProperties": {"type": "string"}, "description": "control-key → value; keys are shortened panel labels"},
+              "preset_raw": {"type": "string"},
+              "question": {"type": "string"}
+            }
+          }
+        },
+        "activities": {"type": "array", "minItems": 3, "items": {"type": "string"}},
+        "outputs": {
+          "type": "array", "minItems": 3,
+          "items": {
+            "type": "object",
+            "required": ["readout", "type", "unit", "description"],
+            "properties": {
+              "readout": {"type": "string"},
+              "type": {"type": "string", "description": "Live numeric | Line graph | Bar chart | Data table | Heat map | Vector overlay | Timer | Counter | Pass-fail badge"},
+              "unit": {"type": "string"},
+              "description": {"type": "string"}
+            }
+          }
+        },
+        "realisation": {"type": "string", "description": "The one idea, the misconception displaced, and the sentence the student should be able to say"}
+      }
+    }
+  }
+}
