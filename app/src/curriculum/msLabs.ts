@@ -103,6 +103,18 @@ export const MS_LABS: MsLab[] = [
       { value: "design", label: "Plan it, check it, run it", teaches: ["A5.6"] },
     ],
   },
+  {
+    id: "g6b-microscope", grade: 6, unit: "B", topics: ["B1"], subject: "biology",
+    name: "The Microscope — Discovering Cells",
+    setups: [
+      { value: "hooke", label: "Hooke's cork and Leeuwenhoek's animalcules", teaches: ["B1.2"] },
+      { value: "theory", label: "Every cell from a cell", teaches: ["B1.1"] },
+      { value: "living", label: "Alive or not?", teaches: ["B1.3"] },
+      { value: "unicellular", label: "One cell that does everything", teaches: ["B1.4"] },
+      { value: "multicellular", label: "From one cell to many", teaches: ["B1.5"] },
+      { value: "scale", label: "How small is small?", teaches: ["B1.6"] },
+    ],
+  },
 ];
 
 /** A set-up that teaches a subtopic, with the lab it belongs to. */

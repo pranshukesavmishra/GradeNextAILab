@@ -349,6 +349,22 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   evidence — overstated, supported, not supported, contradicted, no evidence, unfair comparison, too
   little), **design** (A5.6: a planning board checked on five criteria before the plan runs exactly as
   written, and its result against the whole pattern).
+- **Batch 2 — Grade 6 Unit B, Cells, Bodies and Senses** — in progress:
+- **6B-1 The Microscope — Discovering Cells** (`smartlab/sims-g6b-1.js`, id `g6b-microscope`, topic B1,
+  6 subtopics). One microscope on a bench; what its eyepiece shows is computed (MICRO.view): finest detail
+  1.22λ ÷ (NA obj + NA cond), field = field stop ÷ objective, exposure ∝ (NA_ill ÷ M)², defocus spread by
+  the illuminating cone, the image turned round (a single lens: upright). **hooke** (B1.2: Hooke's 1665
+  microscope, Leeuwenhoek's lens and a school microscope on cork, pepper water and tooth scrapings; count
+  cells along a row as Hooke did — 1,080 an inch, 1.26 billion a cubic inch), **theory** (B1.1: an onion
+  root-tip squash counted field by field — the share of cells in a phase is the share of time spent in
+  it; Elodea against cheek cells, as Schwann compared plant and animal), **living** (B1.3: yeast buds,
+  ferments and clears methylene blue; Brown's pollen specks and rock dust jiggle by Stokes–Einstein, boiled
+  or not; salt cubes grow only as brine dries and dissolve above 75 % humidity), **unicellular** (B1.4:
+  Paramecium, Euglena, Amoeba, Chlamydomonas — contractile vacuole against salt, Congo-red food vacuoles,
+  phototaxis, methyl cellulose, Reynolds number 0.2), **multicellular** (B1.5: the volvocine series from
+  Chlamydomonas to Volvox — who can reproduce, swimming against Stokes sinking; a leaf's tissues),
+  **scale** (B1.6: stage micrometer and graticule, the letter e, blood, bacteria, the diatom test plate —
+  Pleurosigma's 0.65 µm pores resolve at 40× and 100×, never at 10× however zoomed — viruses invisible).
 - Shared overlay kit `kit-ms.js` (KITMS: header, card, cardSlot/chipHit for phones, fitText,
   wrapText, led, plotKey, dayAxis, secAxis, watch) — every Grades 6–8 lab from 6A-2 on uses it.
   A stage with several cards gets a row of chips on a phone, one card open at a time
@@ -377,7 +393,16 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   ice bath, spatter; a top-loading balance, weighing boat, graduated cylinders with a real meniscus, an
   overflow can, six minerals in their habits and lustres, a specimen tray, the parallax magnifier; a
   drop tower with release clamp, flat light gates and sand box, steel / glass / ping-pong balls; the
-  paper helicopter, the drop frame and a wall tape).
+  paper helicopter, the drop frame and a wall tape). `art-micro.js` (MICRO: the eyepiece renderer — every
+  specimen drawn in µm as the light it transmits, sorted into depth bands, each band blurred by the optics'
+  σ(dz) with a Kovesi three-box Gaussian, multiplied like transmissions, then the lamp, exposure, haze,
+  field stop, vignette and graticule; slides — Hooke's cork, onion skin, cheek smear, root-tip squash,
+  Elodea, blood, yoghurt bacteria, stage micrometer, newsprint e, hairs, the diatom test plate, a leaf
+  section, wet mounts with bubbles and dust; organisms — Paramecium with cilia wave, vacuoles and oral
+  groove, Euglena, Amoeba with pseudopods, Chlamydomonas, Gonium, Pandorina, Eudorina, Pleodorina, Volvox
+  with daughters, yeast, pollen, mineral grains, salt hopper cubes, Vorticella; the R3 instruments — a
+  school microscope with a parfocal turret whose objectives' axes meet the turret axis, Hooke's leather
+  and gilt microscope with oil lamp, water globe and light path, Leeuwenhoek's brass plate).
 - In the app: `app/src/curriculum/msLabs.ts` (catalogue; `msLabs.test.ts` VM-loads the engine's
   `sims-g*.js` files and holds the two to each other, checks every claimed topic is fully taught,
   runs every set-up headless, and checks the model's numbers), `app/src/pages/MiddleSchoolLab.tsx`
@@ -573,6 +598,28 @@ as they are found by direct numerical testing.
   heavier — supported; red — not supported; card — contradicted; wider — no evidence; all 24 rows —
   unfair comparison; three rows — too little evidence.
 
+**6B-1 The Microscope** (verified in `msLabs.test.ts`):
+- Objectives (Olympus PLN): 4×/0.10 WD 18.5 mm, 10×/0.25 WD 10.6, 40×/0.65 WD 0.6, 100×/1.25 oil WD 0.15;
+  parfocal 45 mm. Eyepieces 10× FN 18, 15× FN 13, 20× FN 10. Condenser NA ≤ 0.9. White light 550 nm.
+- d = 1.22λ/(NAo + NAc): 40×/0.65 at iris 0.52 → 0.57 µm; 100× oil, iris 0.9 → 0.31 µm; blue 450 nm → 0.25.
+  Blur σ = 0.344 d, plus a disc of radius |dz|·tan(asin(NAc/n)) for anything out of the focal plane.
+  100× without oil: NA 0.95 and 0.9 µm of spherical aberration, a 50 % haze. Useful 500–1000 × NA.
+- Exposure (NAc ÷ (Mobj·Meye))² ÷ (0.175/100)², the dimmer 2^(8(lamp − 0.5)); shown as 1 + 0.22·log₂.
+  A preset without a lamp gets the one that makes exposure 1.
+- Hooke: 50×, finest detail about 5 µm (an estimate), field 2.6 mm; cork cells 25.4 mm ÷ 1,080 = 23.5 µm.
+  Leeuwenhoek (Utrecht lens, van Zuylen 1981): 270×, 1.35 µm, field 640 µm, upright.
+- Root tip: cycle 20 h at 20 °C, Q10 2; interphase 90 %, prophase 5, metaphase 1.5, anaphase 1, telophase 2.5.
+- Stokes–Einstein with Vogel's viscosity (1.002 mPa·s at 20 °C): a 1 µm speck D = 0.43 µm²/s.
+- Yeast: doubling 1.5 h at the optimum; cardinal 5 / 32 / 45 °C; Monod Ks 0.2 g/L; death above 50 °C
+  (6 s at 60 °C); settled cells diffuse at a third of free.
+- Brine: water activity 0.753, NaCl out at 0.359 g per g water lost, 2.165 g/cm³; Hu–Larson evaporation;
+  a 0.1 µL drop (88 µg water) dries in about 5 min at 45 %.
+- Contractile vacuole: 64 mOsm inside (Stock et al. 2001), pond 5; Paramecium fires every 10 s in pond
+  water, 21.7 s at 0.1 % NaCl, stops at 0.185 % (osmotic coefficient 0.93).
+- Food vacuole pH: 7 → about 3 in 5 min (τ 1.5 min), neutral again after 8 min (τ 5); Congo red 3.0–5.2.
+- Colonies: cells 5 % denser than water spread through the jelly; Volvox (2,016 cells + 16 gonidia,
+  R 250 µm) sinks 37 µm/s, 80 cm in 6 h; swimming speeds are measured values (about).
+
 Environment constants (this container family):
 - Playwright is pinned at **1.56.1**; its Chromium is `/opt/pw-browsers/chromium-1194/…`, which
   the InsightVis harness hardcodes. Never run `playwright install`.
@@ -620,6 +667,10 @@ Environment constants (this container family):
 ## 9. Current status
 
 **State as of 2026-09-25 (latest):**
+- **Batch 2 started: 6B-1 The Microscope built and verified** — audit CLEAN (49 sims), live.mjs LIVE-CLEAN
+  (66 control × set-up pairs), every problem's measure matches its working (1.26 billion, 0.57 µm, 2.0 h,
+  2.6 µm, 21.7 s, 80 cm, 1600×), gate green (529 tests), all 28 presets and six set-ups reviewed at 1500 px,
+  390 px and from eight camera angles. B1.1–B1.6 open their set-ups from the Course Library.
 - **Batch 1 reported to the founder** (a private claude.ai page, "Grade 6 Unit A Smart Labs",
   https://claude.ai/artifact/So3QbJSqDpPAdWB18Bgk5B): all 29 set-ups screenshotted from the live
   build, each with its controls, presets, the subtopics it teaches and a direct link; the checks per
@@ -655,8 +706,8 @@ Environment constants (this container family):
 
 **Next, in order:**
 1. **Batch 2 — Grade 6 Unit B, Cells, Bodies and Senses** (`docs/BATCH_PLAN.md` Part B, Batch 2):
-   6B-1 The Microscope → 6B-6 Stimulus, Signal, Response, Memory, one lab at a time, each to the
-   end of the ship checklist. Batch 1 (6A-1 to 6A-6) is done and reported.
+   **6B-1 done**; next 6B-2 Inside the Cell (osmosis, diffusion, organelles — reuse MICRO for the cells),
+   then 6B-3 → 6B-6, one lab at a time, each to the end of the ship checklist.
 2. Report Batch 2 the same way (screenshot every set-up from the live build, one page) before Batch 3.
 3. Batches 3–18 in order; the Higher Secondary continuation track (Part C) when the founder
    asks for it or between batches.
@@ -724,6 +775,10 @@ Append only. Never rewrite history.
 | 2026-09-25 | **KITMS.cardSlot gives a stage with several cards a row of chips on a phone** (one open at a time) | 6A-4's eruption has two cards; two chips drawn in one place opened both on top of each other |
 | 2026-09-25 | **Labs that share a topic ship together** (6A-5 and 6A-6 both claim A5) | The per-topic rule fails honestly while a subtopic is untaught; it is not loosened, the pair is committed as one increment |
 | 2026-09-25 | **A safety rule is modelled at the scale where it bites** (6A-5: the drop of water that lands on acid, not only the stirred beaker) | The stirred-beaker model said slow, iced water-into-acid never boils — a dangerous lesson; the landing drop boils at 140 °C |
+| 2026-09-25 | **A microscope image is computed from its optics** (6B-1): specimens in µm as transmitted light, each depth blurred by σ(dz), layers multiplied | "Never fake": resolution, depth of field, empty magnification and the iris's trade-off then appear by themselves — Pleurosigma's pores resolve or not with the NA |
+| 2026-09-25 | **A set-up opens with its own settings; a preset keeps its own**: setup() applies the set-up's defaults when the set-up changes (list, tabs or a link) unless the params carry `pre: 1`, which every preset() sets | The engine applies a link's or a tab's set-up without the select's onChange, so defaults must live in setup() |
+| 2026-09-25 | **The screen is the eye's stand-in**: the camera zoom lets the screen show what an eye at the eyepiece would; "empty" keeps the textbook 1000 × NA and the card says whether the detail was already resolved | A 400 px field shows ~6× less than an eyepiece's 41° field; without the zoom no screen shows a 0.65 µm pore |
+| 2026-09-25 | **What the lab counts, the lab builds**: Hooke's honeycomb and the root-tip cells are generated in the lab file; the figure library only draws them | The tests load the lab without a page, so the counted geometry must be the model's own |
 | 2026-09-25 | **A comparison with a standard names the standard's criterion** (ISO 13732-1 is the onset of a burn; the scald table is a burn through the skin) | The lab's steel limit (73.5 °C) and ISO's (65–70 °C) differ because they measure different burns — said so, test checks the physical chain |
 
 ---
@@ -732,7 +787,17 @@ Append only. Never rewrite history.
 
 Newest first.
 
-- **2026-09-25 (latest)** — **Batch 1 reported.** CI deploy of `28cf7d7` confirmed green. All 29 set-ups
+- **2026-09-25 (latest)** — **6B-1 The Microscope built; Batch 2 begun.** Optics and every living model checked in a
+  scratch runner first (Brownian tracks against 4Dt within 3 %, Paramecium coasting 0.23 µm, Hooke's
+  1,080³). New library `art-micro.js`, looked at in test grids (cork to Pleurosigma, 36 views) and four
+  camera angles before the lab was written. Found on the way: every set-up opened at 100× (defaults moved
+  into setup, presets marked `pre`); presets opened dark (a lamp matched to each objective and iris);
+  unstained yeast invisible (refractile rims); the root-tip plot broke on the sweep's fractional field
+  count; the live sweep saw noise until the random stream and the shrink state were reset in setup;
+  the microscope's controls moved only the image (display controls, a magnification readout everywhere);
+  Leeuwenhoek's bacteria called unseen — a speck is seen before its shape (0.7 × the finest detail);
+  the Volvox problem quoted 14 µm/s where the model, with its gonidia, gives 37.
+- **2026-09-25** — **Batch 1 reported.** CI deploy of `28cf7d7` confirmed green. All 29 set-ups
   re-shot from the live build at 1.6× (stage only, after each had run), plus one whole lab page; the
   controls, presets and problems per set-up read out of `__R.def` in the same pass, so the report lists
   exactly what the student can change. live.mjs over the first three labs for the totals (6A-1 83,
@@ -922,6 +987,15 @@ Learned on 6A-5:
   mat) must sort as ground, or its one face centre paints over what sits on it.
 - **Draw the geometry the physics uses:** the scale is on the near wall of a cylinder — the magnifier has to
   show the eye, the scale and the meniscus in that order, or its parallax is backwards.
+
+Learned on 6B-1:
+- **Liveness needs determinism**: every random stream and every quantity that accumulates across steps
+  (a shrink, a clock, a cache key) is reset in setup(), or the sweep cannot tell a control from noise.
+- **Integer controls receive fractions** (the sweep's midpoint): round them where the model uses them.
+- **Match the light to the optics**: image brightness falls as (NA ÷ M)²; every preset needs its lamp.
+- **Seeing is not resolving**: a speck is detected well below the size whose shape can be made out.
+- **A figure that must be read needs room**: part labels in columns beside the organism, kept inside the
+  round field; labels never under the header or the hint.
 
 Learned on 6A-6:
 - **State the scatter of what is measured**, not of what causes it: a 7 % scatter in drag is 3.5 % in time.

@@ -705,3 +705,127 @@ describe("6A-6 The Fair Test — the models", () => {
     expect(M.judge("heavier", "few").verdict).toBe("too little evidence");
   });
 });
+
+describe("6B-1 The Microscope — the models", () => {
+  type P = Record<string, unknown>;
+  const M = engine.InsightLab.models["g6b-microscope"] as unknown as {
+    optics: (p: P) => { r: number; M: number; field: number; empty: boolean; bright: number; useful: number[]; noOil: boolean };
+    corkCells: (seed: number) => unknown[];
+    corkCount: (s: { cells: unknown[] }, cx: number, cy: number, len: number) => { n: number; perInch: number; perCu: number };
+    rootCells: (seed: number) => unknown[];
+    rootCount: (s: { cells: unknown[] }, F: number[][], fov: number) => { tally: Record<string, number>; N: number };
+    rootEstimate: (t: Record<string, number>, N: number, T: number) => { T: number; mitosis: number };
+    fieldsOf: (n: number, fov: number) => number[][];
+    cycleHours: (T: number) => number;
+    PHASE_FRAC: Record<string, number>;
+    diffusion: (d: number, T: number) => number;
+    viscosity: (T: number) => number;
+    yeastRate: (T: number, sugar: number) => number;
+    yeastDeath: (T: number) => number;
+    evapRate: (R: number, rh: number, T: number) => number;
+    cvPeriod: (org: string, pct: number) => number;
+    osmOf: (pct: number) => number;
+    fvPH: (age: number) => number;
+    sinkSpeed: (c: string) => number;
+    COLONY: Record<string, { N: number; R: number; germ: number; swim: number }>;
+    HOOKE: { perInch: number; perSqInch: number; perCuInch: number };
+    BASE: () => P;
+  };
+  const p = (o: P) => ({ ...M.BASE(), ...o });
+
+  it("resolves 1.22λ ÷ (NA objective + NA condenser): 0.57 µm at 40×/0.65 with the iris at 0.52, never much below 0.2 µm", () => {
+    expect(M.optics(p({ obj: 40, cond: 0.52 })).r).toBeCloseTo(0.5735, 3);
+    expect(M.optics(p({ obj: 100, cond: 0.9 })).r).toBeCloseTo((1.22 * 0.55) / 2.15, 4);
+    const blue = M.optics(p({ obj: 100, cond: 0.9, filter: "blue" })).r;
+    expect(blue).toBeGreaterThan(0.2);
+    expect(blue).toBeLessThan(0.26);
+    // closing the iris costs resolution: Pleurosigma's 0.65 µm rows are lost
+    expect(M.optics(p({ obj: 40, cond: 0.2 })).r).toBeGreaterThan(0.65);
+  });
+
+  it("shrinks the field as the objective's power grows (18 mm ÷ 40 = 0.45 mm) and multiplies the powers", () => {
+    [4, 10, 40, 100].forEach((o) => expect(M.optics(p({ obj: o })).field).toBeCloseTo(18000 / o, 6));
+    expect(M.optics(p({ obj: 40, eye: 15 })).M).toBe(600);
+  });
+
+  it("calls magnification past 1000 × NA empty: a 10×/0.25 zoomed to 1600×", () => {
+    const O = M.optics(p({ obj: 10, cond: 0.2, zoom: 16 }));
+    expect(O.M).toBe(1600);
+    expect(O.useful[1]).toBeCloseTo(250, 6);
+    expect(O.empty).toBe(true);
+    expect(M.optics(p({ obj: 40, cond: 0.45 })).empty).toBe(false);
+  });
+
+  it("dims the image as the power grows, and blurs the 100× used without its oil", () => {
+    expect(M.optics(p({ obj: 100, cond: 0.9, lamp: 0.5 })).bright).toBeLessThan(M.optics(p({ obj: 10, cond: 0.18, lamp: 0.5 })).bright);
+    const dry = M.optics(p({ obj: 100, cond: 0.9, oil: false })), oiled = M.optics(p({ obj: 100, cond: 0.9, oil: true }));
+    expect(dry.noOil).toBe(true);
+    expect(dry.r).toBeGreaterThan(2.5 * oiled.r);
+  });
+
+  it("counts cork as Hooke did: about 1,080 cells an inch, 1,259,712,000 in a cubic inch", () => {
+    const cells = M.corkCells(1), h = ((25400 / 1080) * Math.sqrt(3)) / 2;
+    [0, 3, -5].forEach((row) => {
+      const C = M.corkCount({ cells }, 0, row * h, 1500);
+      expect(C.perInch / 1080).toBeGreaterThan(0.95);
+      expect(C.perInch / 1080).toBeLessThan(1.05);
+    });
+    expect(M.HOOKE.perSqInch).toBe(1080 ** 2);
+    expect(M.HOOKE.perCuInch).toBe(1259712000);
+  });
+
+  it("finds how long mitosis takes from a root-tip count: the share dividing × the cycle, within the count's uncertainty", () => {
+    expect(M.cycleHours(20)).toBe(20);
+    expect(M.cycleHours(30)).toBeCloseTo(10, 6);
+    const cells = M.rootCells(1), fov = 450;
+    const R = M.rootCount({ cells }, M.fieldsOf(8, fov), fov), E = M.rootEstimate(R.tally, R.N, 20);
+    const truth = (1 - M.PHASE_FRAC.I) * 20, f = 1 - R.tally.I / R.N, se = Math.sqrt((f * (1 - f)) / R.N) * 20;
+    expect(R.N).toBeGreaterThan(2000);
+    expect(Math.abs(E.mitosis - truth)).toBeLessThan(2.5 * se);
+  });
+
+  it("jiggles a 1 µm speck by Stokes–Einstein: D = 0.43 µm²/s at 20 °C, 2.6 µm in 4 s, faster when warm", () => {
+    expect(M.viscosity(20)).toBeCloseTo(1.002e-3, 5);
+    expect(M.diffusion(1, 20)).toBeCloseTo(0.4287, 3);
+    expect(Math.sqrt(4 * M.diffusion(1, 20) * 4)).toBeCloseTo(2.62, 2);
+    expect(M.diffusion(1, 40) / M.diffusion(1, 20)).toBeGreaterThan(1.6);
+  });
+
+  it("buds yeast every 1.5 h at 32 °C with sugar, not at all without it or past 45 °C, and kills it past 50 °C", () => {
+    const td = Math.LN2 / M.yeastRate(32, 20);
+    expect(td).toBeGreaterThan(1.5);
+    expect(td).toBeLessThan(1.55);
+    expect(M.yeastRate(30, 0)).toBe(0);
+    expect(M.yeastRate(46, 20)).toBe(0);
+    expect(M.yeastDeath(40)).toBe(0);
+    expect(M.yeastDeath(60)).toBeGreaterThan(0.1);
+  });
+
+  it("dries a drop of brine only while the air is drier than 75 % — and takes water in, dissolving the salt, when it is damper", () => {
+    expect(M.evapRate(0.56, 45, 25)).toBeGreaterThan(0);
+    expect(M.evapRate(0.56, 80, 25)).toBeLessThan(0);
+    const minutes = 88e-6 / M.evapRate(0.56, 45, 25) / 60;
+    expect(minutes).toBeGreaterThan(2);
+    expect(minutes).toBeLessThan(15);
+  });
+
+  it("bails a Paramecium out every 10 s in pond water, every 22 s at 0.1 % salt, and not at all past about 0.19 %", () => {
+    expect(M.cvPeriod("paramecium", 0)).toBeCloseTo(10, 6);
+    expect(M.cvPeriod("paramecium", 0.1)).toBeCloseTo(21.7, 1);
+    expect(M.cvPeriod("paramecium", 0.2)).toBe(Infinity);
+    expect(M.osmOf(0.185)).toBeCloseTo(64, 0);
+  });
+
+  it("turns a Congo-red food vacuole to about pH 3 in five minutes, and back as digestion ends", () => {
+    expect(M.fvPH(0)).toBe(7);
+    expect(M.fvPH(300)).toBeLessThan(3.2);
+    expect(M.fvPH(1200)).toBeGreaterThan(6);
+  });
+
+  it("sinks Volvox fastest of the colonies (Stokes: as R²), yet every colony swims faster than it would sink", () => {
+    Object.keys(M.COLONY).forEach((k) => expect(M.COLONY[k].swim).toBeGreaterThan(M.sinkSpeed(k)));
+    Object.keys(M.COLONY).filter((k) => k !== "volvox").forEach((k) => expect(M.sinkSpeed("volvox")).toBeGreaterThan(M.sinkSpeed(k)));
+    expect(M.COLONY.volvox.germ).toBeLessThan(0.01);
+    expect(M.COLONY.gonium.germ).toBe(1);
+  });
+});
