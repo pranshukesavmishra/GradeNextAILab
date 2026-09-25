@@ -24,7 +24,9 @@ if (!ids.length) { console.log('no Grades 6–8 labs' + (only ? ' called ' + onl
 let dead = 0, checked = 0;
 for (const id of ids) {
   await page.evaluate(id => { location.hash = id; }, id);
-  await page.waitForTimeout(900);
+  // a busy machine can take longer than a moment to mount a lab: wait for it, up to ten seconds
+  await page.waitForFunction(id => window.__R && window.__R.def && window.__R.def.id === id, id, { timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(400);
   const res = await page.evaluate(async id => {
     const R = window.__R, def = R.def, S = R.S;
     if (!def || def.id !== id) return { error: 'did not mount ' + id };

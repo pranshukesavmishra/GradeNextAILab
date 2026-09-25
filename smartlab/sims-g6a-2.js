@@ -507,19 +507,20 @@
      middle; the tap comes in from the mains on the left, the hole drains to the tray on the right,
      the leak falls to the bench below, evaporation rises to the air above. */
   function diagramCard(g, S, x, y, w) {
-    const K = kit(), ctx = g.ctx, p = S.p, V = S.col, q = V.q, h = 262;
+    const K = kit(), ctx = g.ctx, p = S.p, V = S.col, q = V.q, h = 270;
     K.card(ctx, x, y, w, h, { fill: 'rgba(8,12,22,.88)' });
     ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     ctx.font = '600 9px "IBM Plex Mono",monospace'; ctx.fillStyle = th(g)['text-3'];
     ctx.fillText('STOCK AND FLOWS — CLICK A VALVE', x + 10, y + 12);
-    const sw = Math.min(96, w * 0.3), sh = 84, sx = x + w / 2 - sw / 2, sy = y + 92;
+    const sw = Math.min(96, w * 0.3), sh = 84, sx = x + w / 2 - sw / 2, sy = y + 96;
     const mls = Q => (Q * 1e6 >= 10 ? (Q * 1e6).toFixed(1) : (Q * 1e6).toFixed(2)) + ' mL/s';
     S._valves = [];
-    const cloud = (cx, cy, label, below) => {
+    const cloud = (cx, cy, label, at) => {                  // a source or sink; its name below, above or beside it
       ctx.fillStyle = 'rgba(160,175,200,.22)'; ctx.strokeStyle = 'rgba(200,212,234,.55)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(cx - 8, cy + 2, 7, 0, TAU); ctx.arc(cx + 2, cy - 3, 8.5, 0, TAU); ctx.arc(cx + 10, cy + 3, 6.5, 0, TAU); ctx.fill(); ctx.stroke();
-      ctx.font = '500 8.5px "IBM Plex Mono",monospace'; ctx.fillStyle = th(g)['text-3']; ctx.textAlign = 'center';
-      ctx.fillText(label, cx + 1, cy + (below ? 18 : -17));
+      ctx.font = '500 8.5px "IBM Plex Mono",monospace'; ctx.fillStyle = th(g)['text-3'];
+      if (at === 'right') { ctx.textAlign = 'left'; ctx.fillText(label, cx + 20, cy); }
+      else { ctx.textAlign = 'center'; ctx.fillText(label, cx + 1, cy + (at === 'above' ? -17 : 18)); }
     };
     /* a flow: a double pipe with an arrowhead, a bow-tie valve at its middle, its name and live value
        placed on the side named by `side` */
@@ -538,7 +539,7 @@
       else { ctx.moveTo(vx - 7, vy - 8); ctx.lineTo(vx - 7, vy + 8); ctx.lineTo(vx + 7, vy - 8); ctx.lineTo(vx + 7, vy + 8); }
       ctx.closePath(); ctx.fill(); ctx.stroke();
       S._valves.push({ key, x0: vx - 12, y0: vy - 12, x1: vx + 12, y1: vy + 12 });
-      const tx = side === 'left' ? vx - 14 : side === 'right' ? vx + 14 : vx, ty = side === 'above' ? vy - 22 : side === 'below' ? vy + 16 : vy - 7;
+      const tx = side === 'left' ? vx - 14 : side === 'right' ? vx + 14 : vx, ty = side === 'above' ? vy - 32 : side === 'below' ? vy + 16 : vy - 7;
       ctx.textAlign = side === 'left' ? 'right' : side === 'right' ? 'left' : 'center';
       ctx.font = '600 9.5px "IBM Plex Sans",sans-serif'; ctx.fillStyle = on ? th(g).text : th(g)['text-3'];
       ctx.fillText(name, tx, ty);
@@ -553,13 +554,13 @@
     ctx.textAlign = 'center'; ctx.fillStyle = th(g).text;
     ctx.font = '700 9.5px "IBM Plex Sans",sans-serif'; ctx.fillText('the column', sx + sw / 2, sy + 12);
     ctx.font = '700 12px "IBM Plex Mono",monospace'; ctx.fillText((V.h * V.A * 1000).toFixed(2) + ' L', sx + sw / 2, sy + sh / 2 + 6);
-    cloud(x + 22, sy + 26, 'mains', true);
+    cloud(x + 22, sy + 26, 'mains', 'below');
     flow('tap', x + 36, sy + 26, sx - 3, sy + 26, 'tap', mls(q.qin), p.tap, '#9FF0FF', 'above');
-    cloud(x + w - 26, sy + sh - 20, 'tray', true);
+    cloud(x + w - 26, sy + sh - 20, 'tray', 'below');
     flow('drain', sx + sw + 3, sy + sh - 20, x + w - 42, sy + sh - 20, 'hole', mls(q.dr.Q), p.drain, '#7BE08A', 'above');
-    cloud(sx + sw / 2, y + h - 30, 'bench', false);
-    flow('leak', sx + sw / 2, sy + sh + 3, sx + sw / 2, y + h - 44, 'leak at 30 cm', mls(q.lk.Q), p.leak, '#FFB35C', 'right');
-    cloud(sx + sw / 2, y + 38, 'air', true);
+    cloud(sx + sw / 2, y + h - 36, 'bench', 'below');
+    flow('leak', sx + sw / 2, sy + sh + 3, sx + sw / 2, y + h - 50, 'leak at 30 cm', mls(q.lk.Q), p.leak, '#FFB35C', 'right');
+    cloud(sx + sw / 2, y + 38, 'air', 'right');
     flow('evap', sx + sw / 2, sy - 3, sx + sw / 2, y + 54, 'evaporation', (q.ev * 1e9).toFixed(2) + ' µL/s', p.evap, '#DDEBFF', 'right');
     ctx.restore();
   }

@@ -291,6 +291,22 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   switched in and out of the model, each with its measured share: 39 % / 0.4 % / 0.3 % / <0.001 %),
   **revise** (A3.5: constant, proportional and square-root models fitted by least squares; the
   residuals decide; validated on a tap-on run it never saw).
+- **6A-3 Earth's Four Spheres — Rock, Water, Air and Life** (`smartlab/sims-g6a-3.js`, id
+  `g6a-four-spheres`, topic A4, 6 subtopics). One planet, five experiments, each on a published
+  model: **geo** (A4.1: a quake's P and S rays traced through isotropic PREM by the exact Δ(p),
+  T(p) integrals; the globe cut in half with every layer at its PREM radius; the fan's wavefronts
+  run in time; a draggable seismometer with its seismogram; aim one ray; make the outer core solid
+  or the inner core liquid and watch the shadows come and go), **hydro** (A4.2: the USGS water
+  balls to scale on North America, 300 tagged molecules hopping through an 8-store cycle
+  (Gleick volumes, Trenberth flows) against the exact matrix exponential; melt the land ice →
+  sea level), **atmo** (A4.3: a radiosonde on a latex balloon through the US Standard / AFGL
+  tropical / subarctic-winter atmospheres; hydrostatic pressure; the balloon swells as T/P and
+  bursts at its rated diameter; the view from the gondola ray-cast over a round Earth; discover
+  the layers in the sonde's own readings), **bio** (A4.4: the Miami model over a Whittaker
+  chart; 16 real places pinned on the globe; warm or wet a place and see which limit binds),
+  **links** (A4.5, A4.6: carbon through air, land, three ocean layers and fossil fuels since
+  1750 on recorded emissions, checked against Mauna Loa; switch off the ocean or plant growth;
+  four futures to 2100).
 - Shared overlay kit `kit-ms.js` (KITMS: header, card, cardSlot/chipHit for phones, fitText,
   wrapText, led, plotKey, dayAxis, secAxis, watch) — every Grades 6–8 lab from 6A-2 on uses it.
 - Figure libraries made for it: `art-labware.js` (aquarium kit: gravel, caustics, LED bar,
@@ -300,7 +316,13 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   Blue Marble and land mask, ray-traced globe with water-only glint); `art-hydro.js` (HYDRO:
   graduated clear column with water as a volume, brass orifice, parabolic jet breaking into drops,
   catch tray with ripples, lab tap and its narrowing stream, rotameter, ultrasonic sensor,
-  stopwatch, tiled lab wall, water tower with level board, houses with lit windows).
+  stopwatch, tiled lab wall, water tower with level board, houses with lit windows);
+  `art-geo.js` (GEO: the PREM interior face — layers coloured by heat, liquid core streaming;
+  ray fans with wavefronts; quake star; seismometer; glassy water balls; map pins; flux arrows
+  carrying particles; the view from a balloon — a ray-cast landscape under haze, perspective
+  cloud decks, the horizon dipping and curving with height — the balloon, parachute and sonde).
+  `EARTH.trace` gained an optional `cut` (a half-space removed, its face painted by a callback);
+  without it every globe renders exactly as before.
 - In the app: `app/src/curriculum/msLabs.ts` (catalogue; `msLabs.test.ts` VM-loads the engine's
   `sims-g*.js` files and holds the two to each other, checks every claimed topic is fully taught,
   runs every set-up headless, and checks the model's numbers), `app/src/pages/MiddleSchoolLab.tsx`
@@ -403,6 +425,31 @@ as they are found by direct numerical testing.
   preference 0.45, pitch ≤ 20°. Blind Φ over four starts: 0.98 / 0.95 / 0.86 / 0.58 / 0.25 at
   noise 0 / 1 / 2 / 3 / 4 — order holds, then collapses between 2.5 and 3.5.
 
+**6A-3 Earth's Four Spheres** (verified in `msLabs.test.ts`):
+- PREM (isotropic polynomials, ocean left out): Earth's mass 5.976e24 kg, g 9.826, pressure at
+  the CMB 135.9 GPa and at the centre 364.4 GPa — all from the densities alone.
+- Rays by Δ(p) = 2∫p dr/(r√(η²−p²)) with r = r₀ + L·u² per shell (24 panels for display, 16 for
+  the fan table, 0.04° take-off steps under 24°). Direct P reaches 98.3° (core-grazing p 253.7 s),
+  direct S 102.6° (p 479 s), the PKP caustic 145.1°; with the inner core the P shadow is 99–117°
+  (PKiKP/PKIKP fill the rest, weak), without it 99–145°; a solid core leaves no shadow.
+  Travel times match ak135 within seconds: P 6.13 / 10.12 / 12.96 min at 30 / 60 / 90°,
+  S 11.07 / 18.37 / 23.90, PKIKP 20.17 at 180°. Stations closer than 12° are not offered (the
+  LVZ and 410/660 triplications make 8–10° a gap and are not this lesson).
+- Water: 8 stores (thousand km³: ocean 1,338,000, ice 24,064, ground 23,400, lakes 176.4, soil
+  16.5, air 12.9, rivers 2.12, life 1.12) and 16 balanced flows (10³ km³/yr): residence ocean
+  3,240 yr, ice 9,626 yr, ground 1,800 yr, lakes 18 yr, soil 55 d, air 9.7 d, rivers 17 d, life
+  9 d. All land ice melted: 66.5 m by volume ÷ ocean area (published SLE 65.64 m).
+  USGS balls 1,383 / 406 / 273 / 56 km.
+- Air: half below 5.48 km (mid), 5.72 (tropics), 5.08 (polar); tropopause by the WMO lapse rule
+  above any ground inversion: 11 / 17 / 9 km. Balloon: Cd 0.25 + 0.22/(1+(Re/2.5e5)⁴) (drag
+  crisis) keeps the ascent near 6–7 m/s; 600 g at 1.5 m bursts at 29.7 km after 70 min; a
+  1200 g balloon under-filled (1.3 m) never lifts the 250 g sonde.
+- Miami model (Lieth): NPP = min(3000/(1+e^(1.315−0.119T)), 3000(1−e^(−0.000664P))).
+- Carbon: ka 0.12/yr (gross air–sea flux ÷ air stock) and kid 0.0015/yr (deep ventilation ~1000
+  yr) fixed physically; kmi 0.0786/yr and β 0.108 fitted to ice cores + Mauna Loa + GCB sinks.
+  Worst miss 1959–2023 5.0 ppm; 2023 423.6 (measured 421.1); 1850–2022: 698 GtC emitted, 42 %
+  airborne, ocean 153, land 253. Stop in 2030 → 378 ppm in 2100; no ocean → 490 ppm in 2023.
+
 Environment constants (this container family):
 - Playwright is pinned at **1.56.1**; its Chromium is `/opt/pw-browsers/chromium-1194/…`, which
   the InsightVis harness hardcodes. Never run `playwright install`.
@@ -450,6 +497,10 @@ Environment constants (this container family):
 ## 9. Current status
 
 **State as of 2026-09-25 (latest):**
+- **6A-3 Earth's Four Spheres built and verified**: audit CLEAN (45 sims), live.mjs LIVE-CLEAN
+  (21 pairs), every problem's measure matches its working (10.12 min, 30.3 min, 9.7 d, 29.7 km,
+  395 g/m², 378 ppm), gate green (448 tests), every set-up reviewed at 1500 px, at 390 px and at
+  the end of its run. A1.1–A4.6 (21 of Unit A's 27 subtopics) open their set-ups from the Library.
 - **6A-2 The Draining Tank built and verified**: audit CLEAN, live.mjs LIVE-CLEAN (23 pairs),
   probchk values match their workings (10.53 h, 12.0 cm, 21.9 s, −38.7 %, 20.4 cm), gate green
   (426 tests), every set-up reviewed at 1500 px, 430 px and from four orbit views. A1.1–A3.5
@@ -466,9 +517,11 @@ Environment constants (this container family):
 
 **Next, in order:**
 1. **Batch 1 — Grade 6 Unit A, Systems and Subsystems** (`docs/BATCH_PLAN.md` Part B, Batch 1),
-   one lab at a time: 6A-1 and 6A-2 done; next **6A-3 Earth's Four Spheres** (A4.1–A4.4), then
-   (needs relief data and a globe cutaway), 6A-4 One Event, Four Spheres (A4.5–A4.6),
-   6A-5 The Measurement Bench and 6A-6 The Fair Test (A5). Foundations (accents, `unit`/`topics`,
+   one lab at a time: 6A-1, 6A-2 and 6A-3 done; next **6A-4 One Event, Four Spheres** (A4.5–A4.6:
+   eruption, hurricane, wildfire, drought — each event ships only with its numerical check),
+   then 6A-5 The Measurement Bench and 6A-6 The Fair Test (A5). When 6A-4 claims A4 too, the
+   catalogue test's "a lab teaches every subtopic of each topic it claims" becomes "the labs
+   claiming a topic teach all of it together, and each teaches at least one of its subtopics". Foundations (accents, `unit`/`topics`,
    set-up deep links, the app lab view, the liveness harness) are done.
 2. Report Batch 1 to the founder with screenshots of every set-up before Batch 2.
 3. Batches 2–18 in order; the Higher Secondary continuation track (Part C) when the founder
@@ -529,6 +582,9 @@ Append only. Never rewrite history.
 | 2026-09-25 | **Grades 6–8 labs reach the app as `#/ms/<lab>/<setup>`, and the Course Library opens the set-up that teaches each subtopic** | The founder's alignment requirement: every subtopic one click from its experiment |
 | 2026-09-25 | **Middle-school overlays live in one kit (`kit-ms.js`)** from 6A-2 on | Five labs a batch; one header, one card, one phone fold, one plot key — a fix lands everywhere |
 | 2026-09-25 | **A model's weakness is taught by the apparatus, not asserted**: the town model is hours late because it leaves out leaks; a 1:10 copy stops because surface tension does not scale | A3 is about models' limits — the limits must be computed, measured and visible |
+| 2026-09-25 | **6A-3 runs each sphere on the model its scientists use** (PREM, Gleick/USGS + Trenberth, US Std Atmosphere + AFGL, Lieth's Miami model, a GCB-driven box model) and checks each against the published number it should reproduce | "Real working models"; a Grade 6 lab can still be the real thing, only told simply |
+| 2026-09-25 | **Fit only what the data constrain**: in the carbon model the air–sea exchange and deep ventilation are set from physics; only two rates are fitted | A four-rate fit was degenerate (any of several combinations fitted equally) — fixed physical rates make the fitted two meaningful |
+| 2026-09-25 | **A lab may teach a subtopic another lab also teaches** (6A-3 links and 6A-4 both teach A4.5–A4.6) | The founder wants several experiments on a topic; alignment only needs each subtopic taught somewhere |
 
 ---
 
@@ -536,7 +592,19 @@ Append only. Never rewrite history.
 
 Newest first.
 
-- **2026-09-25 (latest)** — **6A-2 The Draining Tank built.** Physics checked in a scratch runner
+- **2026-09-25 (latest)** — **6A-3 Earth's Four Spheres built.** Every model checked in scratch
+  runners first. The ray tracer went through three versions: stepping rays wrapped them round the
+  planet (a turning point that stalled); mirroring the down-leg fixed that; the exact Δ(p), T(p)
+  integrals on PREM's own polynomials gave real travel times and shadows to within a degree. The
+  carbon model's first fit hid an explicit-Euler oscillation (the air–sea mode relaxed in 0.05 yr
+  against a 0.1-yr step) — its stocks looked right while its fluxes flipped each step; refitted
+  with physical exchange rates and a stable step. The harness found the bio set-up's place select
+  dead (it acted only through onChange); the climate became place + warmer + wetter, and the
+  globe's turn moved into step() so the stage is deterministic. Screens found: the globe too big
+  (quake under the header), a flat grey ground and stripes of cloud from the balloon (now a
+  ray-cast landscape and perspective cloud decks), overlapping water-cycle nodes, labels off the
+  stage, triplication fragments on the travel-time plot (now each wave's earliest arrival).
+- **2026-09-25** — **6A-2 The Draining Tank built.** Physics checked in a scratch runner
   before any drawing (Torricelli 143.9 s exact; scale and surface-tension numbers); `art-hydro.js`
   and `kit-ms.js` written first. Bugs found on screen or in numbers: the draining model never
   "finished" with viscosity on (Cd(Re)→0 makes the last millimetres fade exponentially — a jet
@@ -640,3 +708,15 @@ Learned on the Smart Lab engine (6A-1):
   let the problem read the very same runs the curve is made of.
 - **Overlays are laid out, not placed**: keys above frames, labels searched for a clear spot,
   plate labels in rows inside their box, cards that fold on a phone.
+
+Learned on 6A-3:
+- **Check the fluxes, not only the stocks.** An explicit step at the edge of stability made the
+  air–sea flux flip sign every step while CO₂ still matched the record; a fit tuned on top of it
+  was meaningless. Halve the step and compare, before fitting anything.
+- **A control must act on the state, not through a side effect.** A select whose only effect was
+  an onChange copying numbers into other params looked dead to the harness — and would to any
+  preset or deep link. Make the chosen thing itself the input.
+- **Animations that a run depends on belong in step(), not in drawStage()** — frames are not
+  deterministic, steps are.
+- **Real physics has details that are not the lesson** (the LVZ gap at 8–10°, triplications):
+  keep the model whole, and choose the range and the curve (earliest arrival) the lesson needs.

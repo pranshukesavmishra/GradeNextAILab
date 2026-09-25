@@ -106,6 +106,11 @@
      o.overlay   (lat, lon) → [r, g, b, a] painted over the surface, a in 0..1:
                  a data layer (productivity, temperature) drawn ON the planet
      o.budget    pixel budget per frame (default 170k)
+     o.cut       a cutaway: { n, e1, e2, face(u, v, out) }. The half of the ball on
+                 the side n points to is taken away, and the flat face it leaves is
+                 painted by face(): u, v are the face point along e1 and e2 in units
+                 of R, and face writes an [r, g, b] into out. The kept half keeps
+                 its real surface. n, e1, e2 are unit vectors, e1 and e2 in the cut.
      Returns { canvas, x, y, w, h, cx, cy, rp } in CSS pixels, or null.       */
   let RT = null;
   function trace(cam, C, R, o) {
@@ -137,6 +142,13 @@
     const Lx = S[0] / sl, Ly = S[1] / sl, Lz = S[2] / sl;
     const amb = o.ambient == null ? 0.05 : o.ambient, ov = o.overlay || null;
     const pixW = 1 / (K * res);
+    const cut = o.cut || null, fc = [0, 0, 0];
+    let cnx = 0, cny = 0, cnz = 0, on = 0, faceK = 1, e1 = null, e2 = null;
+    if (cut) {
+      cnx = cut.n[0]; cny = cut.n[1]; cnz = cut.n[2]; e1 = cut.e1; e2 = cut.e2;
+      on = ox * cnx + oy * cny + oz * cnz;
+      faceK = 0.80 + 0.20 * clamp(cnx * Lx + cny * Ly + cnz * Lz, 0, 1);      // the face is a model's face: evenly lit
+    }
     for (let j = 0; j < ny; j++) {
       const vy = (h2 - (y0 + (j + 0.5) / res)) / K;
       for (let i = 0; i < nx; i++) {
@@ -152,7 +164,8 @@
         // the air: a thin glow just outside the limb, brightest on the day side
         if (a <= 0) {
           const hgt = (D - R) / R;
-          if (hgt < 0.045 && tca > 0) {
+          // (a cutaway has air only round the half that is kept)
+          if (hgt < 0.045 && tca > 0 && (!cut || (ox + tca * dx) * cnx + (oy + tca * dy) * cny + (oz + tca * dz) * cnz <= 0)) {
             const nxw = (ox + tca * dx) / D, nyw = (oy + tca * dy) / D, nzw = (oz + tca * dz) / D;
             const day = clamp((nxw * Lx + nyw * Ly + nzw * Lz) + 0.25, 0, 1);
             const g = Math.pow(1 - hgt / 0.045, 2.2) * day;
@@ -160,7 +173,22 @@
           } else px[k4 + 3] = 0;
           continue;
         }
-        const t = disc > 0 ? -b - Math.sqrt(disc) : tca;
+        let t = disc > 0 ? -b - Math.sqrt(disc) : tca;
+        if (cut) {
+          // the kept solid is the ball and the half-space n·p ≤ 0: enter it where the ray enters both
+          const t1 = disc > 0 ? -b + Math.sqrt(disc) : tca, dn = dx * cnx + dy * cny + dz * cnz;
+          let h0 = -Infinity, h1 = Infinity;
+          if (Math.abs(dn) < 1e-12) { if (on > 0) h0 = Infinity; }
+          else if (dn > 0) h1 = -on / dn; else h0 = -on / dn;
+          const te = Math.max(t, h0), tx = Math.min(t1, h1);
+          if (te > tx) { px[k4 + 3] = 0; continue; }                          // only the part taken away: see through
+          if (te > t) {                                                        // the flat face
+            const qx = ox + te * dx, qy = oy + te * dy, qz = oz + te * dz;
+            cut.face((qx * e1[0] + qy * e1[1] + qz * e1[2]) / R, (qx * e2[0] + qy * e2[1] + qz * e2[2]) / R, fc);
+            px[k4] = fc[0] * faceK; px[k4 + 1] = fc[1] * faceK; px[k4 + 2] = fc[2] * faceK; px[k4 + 3] = 255 * a;
+            continue;
+          }
+        }
         const nxw = (ox + t * dx) / R, nyw = (oy + t * dy) / R, nzw = (oz + t * dz) / R;
         // body frame: undo the spin
         const bx = nxw * cs - nyw * sn, by = nxw * sn + nyw * cs;

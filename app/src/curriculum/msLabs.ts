@@ -59,6 +59,17 @@ export const MS_LABS: MsLab[] = [
       { value: "revise", label: "Build, test and revise", teaches: ["A3.5"] },
     ],
   },
+  {
+    id: "g6a-four-spheres", grade: 6, unit: "A", topics: ["A4"], subject: "earth",
+    name: "Earth’s Four Spheres — Rock, Water, Air and Life",
+    setups: [
+      { value: "geo", label: "Find the core without digging", teaches: ["A4.1"] },
+      { value: "hydro", label: "Where the water is, and how long it stays", teaches: ["A4.2"] },
+      { value: "atmo", label: "Climb through the air", teaches: ["A4.3"] },
+      { value: "bio", label: "What limits life here?", teaches: ["A4.4"] },
+      { value: "links", label: "Carbon through the four spheres", teaches: ["A4.5", "A4.6"] },
+    ],
+  },
 ];
 
 /** A set-up that teaches a subtopic, with the lab it belongs to. */

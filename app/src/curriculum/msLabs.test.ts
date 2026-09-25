@@ -249,3 +249,136 @@ describe("6A-2 The Draining Tank — the model", () => {
     expect(run("const")).toBe("a pattern");
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * 6A-3 Earth's Four Spheres: each sphere's published model gives the numbers the lab teaches
+ * ------------------------------------------------------------------ */
+describe("6A-3 Earth's Four Spheres — the models", () => {
+  type Arr = { t: number; amp: number; b: string };
+  type Row = { y: number; ppm: number; cumE: number; cumOcean: number; cumLand: number; air: number };
+  const M = engine.InsightLab.models["g6a-four-spheres"] as unknown as {
+    stationArrivals: (p: Record<string, unknown>, land: number) => { P: Arr[]; S: Arr[] };
+    shadowsOf: (p: Record<string, unknown>) => { P: [number, number][]; S: [number, number][] };
+    interior: () => { mass: number; gSurf: number; P: (r: number) => number };
+    residence: (k: string) => number; riseByVolume: (f: number) => number; SLE_ALL: number; WATER_TOTAL: number;
+    ballsOf: (melt: number) => { k: string; d: number }[]; expected: (from: string, t: number) => number[];
+    heightWhereP: (site: string, frac: number) => number; tropopause: (site: string) => [number, number];
+    burstOf: (site: string, type: number, D0: number) => { z: number } | null;
+    npp: (T: number, P: number) => number; limitOf: (T: number, P: number) => string;
+    carbonRun: (o: Record<string, unknown>, y1: number) => Row[]; CO2_OBS: [number, number][];
+    BASE: () => Record<string, unknown>;
+  };
+  const def = defs.find((d) => d.id === "g6a-four-spheres")!;
+  const measure = (k: number) => {
+    const pr = def.problems![k];
+    return pr.measure({ p: Object.assign({}, def.params, pr.params ?? {}) });
+  };
+  const real = { outer: "liquid", inner: "solid" };
+  const first = (a: Arr[]) => a.length ? a[0].t / 60 : null;
+
+  it("times P and S waves through PREM as seismograms do (P at 60° ≈ 10 min 4 s, S ≈ 18 min 16 s)", () => {
+    const A = M.stationArrivals(real, 60);
+    expect(first(A.P)!).toBeGreaterThan(9.95);
+    expect(first(A.P)!).toBeLessThan(10.25);
+    expect(first(A.S)!).toBeGreaterThan(18.0);
+    expect(first(A.S)!).toBeLessThan(18.6);
+  });
+
+  it("casts an S-wave shadow from about 103° and a P shadow from about 98°, from the layers alone", () => {
+    const sh = M.shadowsOf(real);
+    expect(sh.S[0][0]).toBeGreaterThan(101);
+    expect(sh.S[0][0]).toBeLessThan(105);
+    expect(sh.S[0][1]).toBe(180);
+    expect(sh.P[0][0]).toBeGreaterThan(97);
+    expect(sh.P[0][0]).toBeLessThan(101);
+    // faint waves through the solid inner core come up inside the P shadow (Lehmann, 1936)
+    expect(sh.P[0][1]).toBeLessThan(125);
+    const noInner = M.shadowsOf({ outer: "liquid", inner: "liquid" });
+    expect(noInner.P[0][1]).toBeGreaterThan(140);
+  });
+
+  it("has no shadow at all when the core is made solid", () => {
+    const sh = M.shadowsOf({ outer: "solid", inner: "solid" });
+    expect(sh.S.length).toBe(0);
+    expect(sh.P.length).toBe(0);
+    expect(measure(1)).toBeGreaterThan(29.5);
+    expect(measure(1)).toBeLessThan(31.5);
+  });
+
+  it("weighs the Earth and finds the pressure at its centre from PREM's densities", () => {
+    const I = M.interior();
+    expect(Math.abs(I.mass - 5.972e24) / 5.972e24).toBeLessThan(0.002);
+    expect(I.gSurf).toBeCloseTo(9.82, 1);
+    expect(I.P(0) / 1e9).toBeGreaterThan(355);
+    expect(I.P(0) / 1e9).toBeLessThan(372);
+  });
+
+  it("holds 1.386 billion km³ of water, keeps it about 9.7 days in the air and 3,200 years in the ocean", () => {
+    expect(Math.abs(M.WATER_TOTAL * 1000 - 1.386e9) / 1.386e9).toBeLessThan(0.002);
+    expect(M.residence("air") * 365.25).toBeGreaterThan(9);
+    expect(M.residence("air") * 365.25).toBeLessThan(10.5);
+    expect(M.residence("ocean")).toBeGreaterThan(3000);
+    expect(M.residence("ocean")).toBeLessThan(3500);
+  });
+
+  it("draws the USGS balls: all the water 1,385 km across, liquid fresh water 273 km, lakes and rivers 56 km", () => {
+    const b = Object.fromEntries(M.ballsOf(0).map((x) => [x.k, x.d]));
+    expect(Math.abs(b.all - 1385)).toBeLessThan(5);
+    expect(Math.abs(b.liquid - 273)).toBeLessThan(2);
+    expect(Math.abs(b.surface - 56.2)).toBeLessThan(1);
+  });
+
+  it("raises the sea 65–70 m if all the land ice melts, matching the ice sheets' published sea-level equivalents", () => {
+    expect(M.riseByVolume(1)).toBeGreaterThan(65);
+    expect(M.riseByVolume(1)).toBeLessThan(70);
+    expect(Math.abs(M.riseByVolume(1) - M.SLE_ALL) / M.SLE_ALL).toBeLessThan(0.03);
+  });
+
+  it("spreads tagged water, in the long run, as the water itself is spread", () => {
+    const p = M.expected("air", 1e5);
+    expect(p[0]).toBeGreaterThan(0.95);             // the ocean holds 96.6 %
+    const sum = p.reduce((a, b) => a + b, 0);
+    expect(sum).toBeCloseTo(1, 6);
+  });
+
+  it("halves the air's pressure near 5.5 km and puts the tropopause where each climate has it", () => {
+    expect(M.heightWhereP("mid", 0.5)).toBeGreaterThan(5.3);
+    expect(M.heightWhereP("mid", 0.5)).toBeLessThan(5.7);
+    expect(M.tropopause("mid")[0]).toBe(11);
+    expect(M.tropopause("tropics")[0]).toBe(17);
+    expect(M.tropopause("polar")[0]).toBe(9);
+  });
+
+  it("bursts a 600 g balloon near 30 km, and leaves an underfilled 1200 g balloon on the ground", () => {
+    expect(measure(3)).toBeGreaterThan(27);
+    expect(measure(3)).toBeLessThan(32);
+    expect(M.burstOf("mid", 1200, 1.3)).toBeNull();
+  });
+
+  it("limits the desert by water and the tundra by warmth (the Miami model)", () => {
+    expect(M.limitOf(25.1, 60)).toBe("water");
+    expect(M.limitOf(-11.2, 115)).toBe("warmth");
+    expect(M.npp(27.6, 2300)).toBeGreaterThan(2200);
+    expect(measure(4)).toBeGreaterThan(380);
+    expect(measure(4)).toBeLessThan(410);
+  });
+
+  it("follows the Mauna Loa record to within 5 ppm, with about 42 % of the emissions staying in the air", () => {
+    const r = M.carbonRun({ fossil: "hold", clearing: true, ocean: true, plants: true }, 2100);
+    const at = (y: number) => r.find((q) => q.y === y)!;
+    for (const [y, c] of M.CO2_OBS) if (y >= 1959) expect(Math.abs(at(y).ppm - c), String(y)).toBeLessThan(5.5);
+    const a = at(1850), b = at(2022), E = b.cumE - a.cumE;
+    expect((b.air - a.air) / E).toBeGreaterThan(0.38);
+    expect((b.air - a.air) / E).toBeLessThan(0.46);
+    // the ocean's and the land's uptake in 2013–2022, against the Global Carbon Budget (2.8 ± 0.4, 3.3 ± 0.8 GtC a year)
+    const oc = (at(2022).cumOcean - at(2012).cumOcean) / 10, ld = (at(2022).cumLand - at(2012).cumLand) / 10;
+    expect(oc).toBeGreaterThan(2.4); expect(oc).toBeLessThan(3.4);
+    expect(ld).toBeGreaterThan(2.0); expect(ld).toBeLessThan(4.1);
+  });
+
+  it("lets CO₂ fall after emissions stop, and rise far higher without the ocean", () => {
+    expect(measure(5)).toBeLessThan(400);
+    const noSea = M.carbonRun({ fossil: "hold", clearing: true, ocean: false, plants: true }, 2023);
+    expect(noSea.find((q) => q.y === 2023)!.ppm).toBeGreaterThan(470);
+  });
+});
