@@ -620,6 +620,11 @@ Environment constants (this container family):
 ## 9. Current status
 
 **State as of 2026-09-25 (latest):**
+- **Batch 1 reported to the founder** (a private claude.ai page, "Grade 6 Unit A Smart Labs",
+  https://claude.ai/artifact/So3QbJSqDpPAdWB18Bgk5B): all 29 set-ups screenshotted from the live
+  build, each with its controls, presets, the subtopics it teaches and a direct link; the checks per
+  lab; the two founder verdicts answered; Batch 2 previewed. Live sweep over all six labs: 203
+  control × set-up pairs, LIVE-CLEAN. CI deploy of `28cf7d7` green. **Now: Batch 2.**
 - **Batch 1 built: 6A-5 The Measurement Bench and 6A-6 The Fair Test ship together** (they share topic
   A5). Audit CLEAN (48 sims), live.mjs LIVE-CLEAN (6A-5 35 pairs, 6A-6 22), every problem's measure
   matches its working (6A-5: 65 °C, 79 °C, 70 °C, 181 °C, 19.1 g/cm³, 1.7 %, 0.4517 s, 0.18 s, 5.03;
@@ -649,10 +654,11 @@ Environment constants (this container family):
 - This memory rewritten to the InsightVis process; `docs/BATCH_PLAN.md` written.
 
 **Next, in order:**
-1. **Batch 1 — Grade 6 Unit A, Systems and Subsystems** (`docs/BATCH_PLAN.md` Part B, Batch 1),
-   **done: 6A-1 to 6A-6**, every Unit A subtopic taught by a set-up and linked from the Library.
-2. Report Batch 1 to the founder with screenshots of every set-up before Batch 2.
-3. Batches 2–18 in order; the Higher Secondary continuation track (Part C) when the founder
+1. **Batch 2 — Grade 6 Unit B, Cells, Bodies and Senses** (`docs/BATCH_PLAN.md` Part B, Batch 2):
+   6B-1 The Microscope → 6B-6 Stimulus, Signal, Response, Memory, one lab at a time, each to the
+   end of the ship checklist. Batch 1 (6A-1 to 6A-6) is done and reported.
+2. Report Batch 2 the same way (screenshot every set-up from the live build, one page) before Batch 3.
+3. Batches 3–18 in order; the Higher Secondary continuation track (Part C) when the founder
    asks for it or between batches.
 
 ---
@@ -726,7 +732,16 @@ Append only. Never rewrite history.
 
 Newest first.
 
-- **2026-09-25 (latest)** — **6A-6 The Fair Test built; 6A-5 and 6A-6 shipped together; Batch 1 complete.**
+- **2026-09-25 (latest)** — **Batch 1 reported.** CI deploy of `28cf7d7` confirmed green. All 29 set-ups
+  re-shot from the live build at 1.6× (stage only, after each had run), plus one whole lab page; the
+  controls, presets and problems per set-up read out of `__R.def` in the same pass, so the report lists
+  exactly what the student can change. live.mjs over the first three labs for the totals (6A-1 83,
+  6A-2 23, 6A-3 21 pairs; all six 203). Published one private page (the app's own palette and faces:
+  Bricolage Grotesque, Source Sans 3, IBM Plex Mono, GradeNext purple): the two verdicts answered, one
+  annotated lab page, a subtopic → set-up map, per lab its thesis, checks and set-up cards (screenshot,
+  what the student does, controls, presets, a live link), how it was checked, and Batch 2. Generator:
+  scratchpad `mkreport.py` (rebuild for the next batch by swapping LABS / LABELS / NEXT).
+- **2026-09-25** — **6A-6 The Fair Test built; 6A-5 and 6A-6 shipped together; Batch 1 complete.**
   The helicopter checked in a scratch runner first (the closed form, the fall from rest, the flutter
   peak, the mass confound). Found in numbers: a rising draught that made the helicopter fall faster (a
   sign), a class table whose random rows could not test the colour or card claims (rebuilt as a careful
