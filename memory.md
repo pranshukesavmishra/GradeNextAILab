@@ -307,8 +307,28 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   **links** (A4.5, A4.6: carbon through air, land, three ocean layers and fossil fuels since
   1750 on recorded emissions, checked against Mauna Loa; switch off the ocean or plant growth;
   four futures to 2100).
+- **6A-4 One Event, Four Spheres — Eruption, Hurricane, Wildfire, Drought** (`smartlab/sims-g6a-4.js`,
+  id `g6a-one-event`, topic A4 shared with 6A-3; every set-up teaches A4.5 and A4.6). Four real
+  events on a 3D landscape block, each a chain of published models checked against the event it
+  copies; a card draws the four spheres, numbers every link, and says what crossed and how much.
+  **eruption** (SO₂ above the tropopause → sulfate → a veil of optical depth 0.006 per Mt →
+  forcing −25 W/m² per unit depth → the Geoffroy two-layer ocean → sea level and the land carbon
+  sink; the column and umbrella over the cone, ash, lahars; a globe card with the veil spreading;
+  Pinatubo −0.38 °C at 25 months, sea level −5.6 mm, CO₂ growth −1.0 ppm/yr), **hurricane**
+  (DeMaria–Kaplan potential intensity from the sea's temperature, Atkinson–Holliday pressure,
+  Holland winds, a bathystrophic storm tide across a concave shelf plus the inverse barometer and
+  wave setup; marsh takes 0.07 m a km; Kraft's rain rule; Katrina, Camille, Ike and Andrew each
+  within 15 % of the measured, in the right order), **wildfire** (McArthur fire danger and fuel
+  moisture, Rothermel's wind and slope factors, Van Wagner's crowning, Byram's intensity and flame
+  length; the fire runs over the terrain by minimum travel time; then a storm on the bare slope —
+  curve number 55 → 85 — and the forest's return), **drought** (Hargreaves evaporation on Fresno's
+  normals, a 150 mm soil bucket, canal water as the square of the rain, wells for the rest; the
+  aquifer falls by the extra pumping ÷ 0.08; clay compacts 1/15 m per metre of new low head —
+  Poland's benchmark pole; the ground never comes back).
 - Shared overlay kit `kit-ms.js` (KITMS: header, card, cardSlot/chipHit for phones, fitText,
   wrapText, led, plotKey, dayAxis, secAxis, watch) — every Grades 6–8 lab from 6A-2 on uses it.
+  A stage with several cards gets a row of chips on a phone, one card open at a time
+  (`S.cardOpen` is the open chip's index).
 - Figure libraries made for it: `art-labware.js` (aquarium kit: gravel, caustics, LED bar,
   hang-on filter with cutaway, heater, airstone, bubbles, thermometer strip, test kits),
   `art-life.js` (poseable neon tetra, angelfish, shrimp; cabomba, vallisneria; fish / gill /
@@ -322,7 +342,11 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   carrying particles; the view from a balloon — a ray-cast landscape under haze, perspective
   cloud decks, the horizon dipping and curving with height — the balloon, parachute and sonde).
   `EARTH.trace` gained an optional `cut` (a half-space removed, its face painted by a callback);
-  without it every globe renders exactly as before.
+  without it every globe renders exactly as before. `art-terrain.js` (TERRAIN: a height-field
+  landscape block lit and painted per cell, drawn far to near with the things standing on it;
+  water with shorelines, depth colour, glint and Fresnel; cut faces showing strata, the water table
+  and the sea; trees in six states from live to burnt to sprouting; houses that flood; smoke and
+  ash plumes; rain; a benchmark pole).
 - In the app: `app/src/curriculum/msLabs.ts` (catalogue; `msLabs.test.ts` VM-loads the engine's
   `sims-g*.js` files and holds the two to each other, checks every claimed topic is fully taught,
   runs every set-up headless, and checks the model's numbers), `app/src/pages/MiddleSchoolLab.tsx`
@@ -450,6 +474,32 @@ as they are found by direct numerical testing.
   Worst miss 1959–2023 5.0 ppm; 2023 423.6 (measured 421.1); 1850–2022: 698 GtC emitted, 42 %
   airborne, ocean 153, land 253. Stop in 2030 → 378 ppm in 2100; no ocean → 490 ppm in 2023.
 
+**6A-4 One Event, Four Spheres** (verified in `msLabs.test.ts`):
+- Eruption: stratospheric share clamp((plume − 14 km)/4, 0, 1); SO₂ → sulfate e-folding 35 days,
+  ×98/64 ÷ 0.75 (75 % acid droplets); removal 1.0 yr (tropics) / 0.7 yr (high latitude); optical
+  depth 0.0060 per Mt of sulfate spread over its growing band; forcing −25 × depth; Geoffroy
+  two-layer ocean C 7.3, C_D 106 W·yr/m²/K, λ 1.13, γ 0.73; soil respiration Q10 2 on 110 GtC/yr;
+  sea level 0.12 m per 10²⁴ J. Pinatubo (17 Mt, 15° N, 34 km): −0.38 °C at 25 months, sea level
+  −5.6 mm, CO₂ growth −1.01 ppm/yr in the second year; a 12 km column changes nothing.
+- Hurricane: DeMaria–Kaplan potential intensity (67.0 m/s at 28 °C; a 25 °C sea makes no
+  hurricane); storm tide by the bathystrophic equation over 80 cells, dt 150 s, t −24 → +8 h, on
+  the right of the track (y = +Rmax), with f·Q (not −f·Q); shelves wide {120 km, 60 m, concave
+  p 2} and narrow {15 km, 60 m, p 1}; wave setup 0.1 × 0.2 × V; marsh 0.07 m/km. Katrina 6.71 m
+  (measured 7.3–8.5), Camille 6.52 (6.9–7.5), Ike 5.36 (4.6–6.1), Andrew 2.13 (1.5–3.0). A steady
+  one-dimensional setup gave about half — the along-shore current's Coriolis setup is the rest.
+  Rain: Kraft's rule × 1.07^(SST − 28.5); a Harvey-like stall 1,398 mm.
+- Wildfire: McArthur Mk5 FFDI (Black Saturday 46.4 °C, 6 %, 45 km/h, drought factor 10 → 138, catastrophic);
+  Rothermel wind and slope factors with σ 1500 /ft (a 20° slope ×3.3–4.3); crowning by Van Wagner
+  (crown base 4 m, foliar moisture 100 %), crown spread ×3.34; grass ×1.8, town ×0.5, creek no fuel;
+  spread by Dijkstra over 16 neighbours on a 56 × 56 grid of 8 km. A windy fire burns > 20× a calm
+  one in 6 h — McArthur's weak wind term alone made windy fires smaller. Runoff: NRCS curve number
+  55 (forest) → 85 (burned); TR-55's own table value 76.2 mm on CN 80 → 31.75 mm, exact.
+- Drought: Hargreaves on Fresno's normals 1,495 mm/yr (CIMIS ≈ 1,450); bucket 150 mm; canal water
+  0.6 × need × rain²; wells 0.4 × need always; extra pumping ÷ Sy 0.08 lowers the head; the clay
+  compacts 1/15 m per metre of new low head, and never rebounds; the head refills 1 m/yr after.
+  Four dry years at 55 %, 1 °C warmer, with pumping: the land sinks 177 cm; without extra pumping it does not
+  sink, and crops get < 70 % of their water.
+
 Environment constants (this container family):
 - Playwright is pinned at **1.56.1**; its Chromium is `/opt/pw-browsers/chromium-1194/…`, which
   the InsightVis harness hardcodes. Never run `playwright install`.
@@ -497,6 +547,11 @@ Environment constants (this container family):
 ## 9. Current status
 
 **State as of 2026-09-25 (latest):**
+- **6A-4 One Event, Four Spheres built and verified**: audit CLEAN (46 sims), live.mjs LIVE-CLEAN
+  (19 pairs), every problem's measure matches its working (0.383 °C, 7.5 Mt, 6.92 m, 0.70 m,
+  1,398 mm, 138, 19.6 mm, 177 cm), gate green (471 tests), every set-up reviewed at 1500 px, at
+  390 px (both eruption cards) and through its whole run. A4 is now claimed by two labs; the
+  catalogue test holds them to teaching all of it together.
 - **6A-3 Earth's Four Spheres built and verified**: audit CLEAN (45 sims), live.mjs LIVE-CLEAN
   (21 pairs), every problem's measure matches its working (10.12 min, 30.3 min, 9.7 d, 29.7 km,
   395 g/m², 378 ppm), gate green (448 tests), every set-up reviewed at 1500 px, at 390 px and at
@@ -517,12 +572,9 @@ Environment constants (this container family):
 
 **Next, in order:**
 1. **Batch 1 — Grade 6 Unit A, Systems and Subsystems** (`docs/BATCH_PLAN.md` Part B, Batch 1),
-   one lab at a time: 6A-1, 6A-2 and 6A-3 done; next **6A-4 One Event, Four Spheres** (A4.5–A4.6:
-   eruption, hurricane, wildfire, drought — each event ships only with its numerical check),
-   then 6A-5 The Measurement Bench and 6A-6 The Fair Test (A5). When 6A-4 claims A4 too, the
-   catalogue test's "a lab teaches every subtopic of each topic it claims" becomes "the labs
-   claiming a topic teach all of it together, and each teaches at least one of its subtopics". Foundations (accents, `unit`/`topics`,
-   set-up deep links, the app lab view, the liveness harness) are done.
+   one lab at a time: 6A-1 to 6A-4 done; next **6A-5 The Measurement Bench** (A5.1, A5.3, A5.4)
+   and **6A-6 The Fair Test** (A5.2, A5.5, A5.6). Foundations (accents, `unit`/`topics`, set-up
+   deep links, the app lab view, the liveness harness) are done.
 2. Report Batch 1 to the founder with screenshots of every set-up before Batch 2.
 3. Batches 2–18 in order; the Higher Secondary continuation track (Part C) when the founder
    asks for it or between batches.
@@ -585,6 +637,9 @@ Append only. Never rewrite history.
 | 2026-09-25 | **6A-3 runs each sphere on the model its scientists use** (PREM, Gleick/USGS + Trenberth, US Std Atmosphere + AFGL, Lieth's Miami model, a GCB-driven box model) and checks each against the published number it should reproduce | "Real working models"; a Grade 6 lab can still be the real thing, only told simply |
 | 2026-09-25 | **Fit only what the data constrain**: in the carbon model the air–sea exchange and deep ventilation are set from physics; only two rates are fitted | A four-rate fit was degenerate (any of several combinations fitted equally) — fixed physical rates make the fitted two meaningful |
 | 2026-09-25 | **A lab may teach a subtopic another lab also teaches** (6A-3 links and 6A-4 both teach A4.5–A4.6) | The founder wants several experiments on a topic; alignment only needs each subtopic taught somewhere |
+| 2026-09-25 | **The catalogue test's coverage rule is per topic, not per lab**: each lab teaches at least one subtopic of every topic it claims, and the labs claiming a topic teach all of it together — checked through `msTeaching`, the lookup the Library page uses | 6A-4 claims A4 beside 6A-3 but teaches only A4.5–A4.6; the old per-lab rule would have forced it to repeat 6A-3 |
+| 2026-09-25 | **An event ships only with its numerical check** (6A-4: Pinatubo, four measured storm tides, Black Saturday's fire danger, TR-55's table, Fresno's evaporation) | A disaster drawn without its numbers is the animation the founder rejected |
+| 2026-09-25 | **KITMS.cardSlot gives a stage with several cards a row of chips on a phone** (one open at a time) | 6A-4's eruption has two cards; two chips drawn in one place opened both on top of each other |
 
 ---
 
@@ -592,7 +647,19 @@ Append only. Never rewrite history.
 
 Newest first.
 
-- **2026-09-25 (latest)** — **6A-3 Earth's Four Spheres built.** Every model checked in scratch
+- **2026-09-25 (latest)** — **6A-4 One Event, Four Spheres built.** Every chain run in a scratch runner and
+  checked against its event before any drawing; `art-terrain.js` written first. Numbers found
+  wrong and fixed: the storm tide at half the measured (a steady one-dimensional setup — now the
+  bathystrophic equation, whose first version had the transect on the wrong side of the track and
+  the Coriolis term's sign reversed); windy fires burning less than calm ones (McArthur's ellipse —
+  now Rothermel's wind and slope factors with a crown-fire transition); the pumping switch meaning
+  "no wells at all" (now normal wells always, the switch is the extra pumping). Screens found: flat
+  relief (vertical exaggeration and a darker ambient), the first days of the eruption over in a
+  blink (a slow early clock), the benchmark pole drawn behind the ground, "−0 mm", a forcing curve
+  mapped to the wrong axis, overlapping labels, a header counting dry years beside a pole counting
+  calendar years, "0.00 °C cooler" (now "the ocean is slow to cool"), and on a phone two card chips
+  in one place that opened both cards on top of each other.
+- **2026-09-25** — **6A-3 Earth's Four Spheres built.** Every model checked in scratch
   runners first. The ray tracer went through three versions: stepping rays wrapped them round the
   planet (a turning point that stalled); mirroring the down-leg fixed that; the exact Δ(p), T(p)
   integrals on PREM's own polynomials gave real travel times and shadows to within a degree. The
@@ -720,3 +787,16 @@ Learned on 6A-3:
   deterministic, steps are.
 - **Real physics has details that are not the lesson** (the LVZ gap at 8–10°, triplications):
   keep the model whole, and choose the range and the curve (earliest arrival) the lesson needs.
+
+Learned on 6A-4:
+- **Check a model's direction, not only its size.** A fire model where wind makes the fire smaller
+  passes a "burns some hectares" test; compare the two cases the lesson contrasts (windy vs calm,
+  uphill vs flat) and require the right order and ratio.
+- **When a model gives half the measured, look for the missing process, not a fudge factor.** The
+  storm tide's missing half was the along-shore current's Coriolis setup — a physical term, which
+  also got its sign and side of the track wrong at first; test against several real events at once.
+- **A test's expected value is the source's own number, to the source's precision** (TR-55's
+  31.75 mm, not 31.8 at one place) — never widen a tolerance to pass.
+- **One count per quantity on one screen**: the header, the readout and the stage's own labels
+  must use the same year, the same zero and the same units.
+- **Every card needs its own phone chip**: check each set-up with every card open at 390 px.

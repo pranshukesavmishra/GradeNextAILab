@@ -64,23 +64,31 @@
     ctx.restore();
   }
   /* on a wide stage a card sits where the lab puts it; on a phone it folds into a chip under the
-     header, and a tap (the lab calls chipHit from onPointer) opens it full width.
+     header, and a tap (the lab calls chipHit from onPointer) opens it full width. A stage with
+     more than one card gets a row of chips, one card open at a time — a chip that would run off
+     the row is fitted into what is left, so a lab with two cards gives them short titles.
      Returns where the card goes, or null while it is folded. */
   function cardSlot(g, S, title, wideW, wideAt) {
-    if (g.w >= NARROW) { S._chip = null; return Object.assign({ x: 10, y: HDR + 4, w: wideW }, wideAt || {}); }
-    const ctx = g.ctx, th = g.theme, x = 10, y = HDR + 2;
+    if (g.w >= NARROW) { S._chips = null; return Object.assign({ x: 10, y: HDR + 4, w: wideW }, wideAt || {}); }
+    if (S._chipFrame !== g) { S._chipFrame = g; S._chips = []; }      // the row starts again every frame
+    const ctx = g.ctx, th = g.theme, k = S._chips.length, open = S.cardOpen === k, h = 24, y = HDR + 2;
+    const x = k ? S._chips[k - 1].x1 + 6 : 10;
     ctx.save(); ctx.font = '600 10px "IBM Plex Mono",monospace';
-    const label = (S.cardOpen ? '▾ ' : '▸ ') + title, w = Math.min(g.w - 20, ctx.measureText(label).width + 22), h = 24;
-    card(ctx, x, y, w, h);
+    const label = (open ? '▾ ' : '▸ ') + title;
+    const w = Math.max(64, Math.min(g.w - 10 - x, ctx.measureText(label).width + 22));
+    card(ctx, x, y, w, h, open ? { stroke: th.accent } : undefined);
     ctx.fillStyle = th.accent; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     ctx.fillText(fitText(ctx, label, w - 20), x + 10, y + 12);
     ctx.restore();
-    S._chip = { x0: x, y0: y, x1: x + w, y1: y + h };
-    return S.cardOpen ? { x: 10, y: y + h + 4, w: g.w - 20 } : null;
+    S._chips.push({ x0: x, y0: y, x1: x + w, y1: y + h });
+    return open ? { x: 10, y: y + h + 4, w: g.w - 20 } : null;
   }
   function chipHit(S, x, y) {
-    const C = S._chip;
-    if (C && x >= C.x0 && x <= C.x1 && y >= C.y0 && y <= C.y1) { S.cardOpen = !S.cardOpen; return true; }
+    const C = S._chips || [];
+    for (let k = 0; k < C.length; k++) {
+      const c = C[k];
+      if (x >= c.x0 && x <= c.x1 && y >= c.y0 && y <= c.y1) { S.cardOpen = S.cardOpen === k ? null : k; return true; }
+    }
     return false;
   }
 

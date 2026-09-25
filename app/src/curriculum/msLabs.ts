@@ -32,8 +32,10 @@ export interface MsLab {
  *
  * msLabs.test.ts loads the engine's lab sources and fails the moment this list
  * and the engine disagree — ids, grades, units, topics, names, set-ups or what
- * each set-up teaches — and checks that a lab covers every subtopic of each
- * topic it claims.
+ * each set-up teaches — and checks that the labs claiming a topic teach every
+ * subtopic of it between them, each teaching at least one. A topic may be
+ * served by several labs: A4 has Earth's Four Spheres and One Event, Four
+ * Spheres, which both teach A4.5 and A4.6.
  */
 export const MS_LABS: MsLab[] = [
   {
@@ -68,6 +70,16 @@ export const MS_LABS: MsLab[] = [
       { value: "atmo", label: "Climb through the air", teaches: ["A4.3"] },
       { value: "bio", label: "What limits life here?", teaches: ["A4.4"] },
       { value: "links", label: "Carbon through the four spheres", teaches: ["A4.5", "A4.6"] },
+    ],
+  },
+  {
+    id: "g6a-one-event", grade: 6, unit: "A", topics: ["A4"], subject: "earth",
+    name: "One Event, Four Spheres — Eruption, Hurricane, Wildfire, Drought",
+    setups: [
+      { value: "eruption", label: "A volcano erupts", teaches: ["A4.5", "A4.6"] },
+      { value: "hurricane", label: "A hurricane comes ashore", teaches: ["A4.5", "A4.6"] },
+      { value: "wildfire", label: "A wildfire, and the rain after it", teaches: ["A4.5", "A4.6"] },
+      { value: "drought", label: "A drought in a farming valley", teaches: ["A4.5", "A4.6"] },
     ],
   },
 ];

@@ -108,11 +108,29 @@ describe("Grades 6–8 labs cover the curriculum they claim", () => {
       }
     });
 
-    it(`${lab.id}: every subtopic of every topic it claims is taught by one of its set-ups`, () => {
+    it(`${lab.id}: it teaches at least one subtopic of every topic it claims`, () => {
       for (const t of unit!.topics.filter((x) => lab.topics.includes(x.code))) {
-        for (const s of t.subtopics) {
-          expect(msTeaching(lab.grade, s.code).some((m) => m.lab.id === lab.id), `${s.code} ${s.title}`).toBe(true);
-        }
+        const mine = t.subtopics.filter((s) => lab.setups.some((u) => u.teaches.includes(s.code)));
+        expect(mine.length, `${lab.id} claims ${t.code} but teaches none of it`).toBeGreaterThan(0);
+      }
+    });
+  }
+
+  /* A topic can be served by more than one lab (A4: Earth's Four Spheres and One Event, Four Spheres).
+     Together, the labs that claim a topic must teach every one of its subtopics. */
+  const claimed = new Map<string, typeof MS_LABS>();
+  for (const lab of MS_LABS) for (const t of lab.topics) {
+    const k = `${lab.grade}|${lab.unit}|${t}`;
+    claimed.set(k, [...(claimed.get(k) ?? []), lab]);
+  }
+  for (const [k, labs] of claimed) {
+    const [grade, unitCode, topic] = k.split("|");
+    it(`grade ${grade} topic ${topic}: every subtopic is taught by a set-up of a lab that claims it (${labs.map((l) => l.id).join(", ")})`, () => {
+      const unit = CURRICULA.find((c) => c.grade === Number(grade))!.units.find((u) => u.code === unitCode)!;
+      const t = unit.topics.find((x) => x.code === topic)!;
+      for (const s of t.subtopics) {
+        // Through the same lookup the Library page uses, so the page finds a lab for every subtopic.
+        expect(msTeaching(Number(grade), s.code).some((m) => labs.includes(m.lab)), `${s.code} ${s.title}`).toBe(true);
       }
     });
   }
@@ -380,5 +398,119 @@ describe("6A-3 Earth's Four Spheres — the models", () => {
     expect(measure(5)).toBeLessThan(400);
     const noSea = M.carbonRun({ fossil: "hold", clearing: true, ocean: false, plants: true }, 2023);
     expect(noSea.find((q) => q.y === 2023)!.ppm).toBeGreaterThan(470);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * 6A-4 One Event, Four Spheres: each event's chain reproduces the real event it is checked against
+ * ------------------------------------------------------------------ */
+describe("6A-4 One Event, Four Spheres — the models", () => {
+  type Row = { t: number; T: number; sl: number; dR: number };
+  const M = engine.InsightLab.models["g6a-one-event"] as unknown as {
+    eruptionRun: (o: Record<string, unknown>) => Row[]; peakOf: (r: Row[], k: string) => Row; stratFrac: (km: number) => number;
+    ERUPTIONS: { name: string; so2: number; lat: number; cool: [number, number] }[];
+    stormTide: (o: Record<string, unknown>) => { best: { eta: number } };
+    hurricaneRun: (o: Record<string, unknown>) => { V: number; atCoast: number; rain: number; cat: number };
+    HURRICANES: { name: string; Pc: number; Rmax: number; U: number; shelf: string; obs: [number, number] }[];
+    mpi: (sst: number) => number; ffdi: (T: number, RH: number, V: number, DF: number) => number; dangerOf: (F: number) => string;
+    headRos: (p: Record<string, unknown>, wind: number, tanUp: number) => number; byram: (r: number) => number; crownThreshold: () => number;
+    scsRunoff: (P: number, CN: number) => number; et0Month: (m: number, dT: number) => number;
+    droughtRun: (o: Record<string, unknown>) => { sub: number; head: number; crop: number }[];
+    fireOf: (S: unknown) => unknown; burnedHa: (F: unknown, h: number) => number; BASE: () => Record<string, unknown>;
+  };
+
+  it("cools the world about 0.4 °C after Pinatubo, in the measured 0.3–0.5 °C, with a sea-level dip of about 5 mm", () => {
+    const r = M.eruptionRun({ so2: 17, lat: 15, plume: 34, years: 6 });
+    const pk = M.peakOf(r, "T");
+    expect(-pk.T).toBeGreaterThan(0.3);
+    expect(-pk.T).toBeLessThan(0.5);
+    expect(pk.t).toBeGreaterThan(0.8);
+    expect(pk.t).toBeLessThan(3);
+    const sl = M.peakOf(r, "sl").sl;
+    expect(sl).toBeLessThan(-3);
+    expect(sl).toBeGreaterThan(-8);
+  });
+
+  it("slows the rise of CO₂ by about 1 ppm in the year after Pinatubo, as Mauna Loa saw", () => {
+    const r = M.eruptionRun({ so2: 17, lat: 15, plume: 34, years: 3 });
+    const y = r.filter((q) => q.t >= 0.5 && q.t < 1.5), ppm = y.reduce((s, q) => s + q.dR, 0) / y.length / 2.124;
+    expect(ppm).toBeLessThan(-0.6);
+    expect(ppm).toBeGreaterThan(-1.5);
+  });
+
+  it("does nothing to the world when the column stays below the stratosphere", () => {
+    expect(M.stratFrac(12)).toBe(0);
+    const r = M.eruptionRun({ so2: 30, lat: 15, plume: 12, years: 3 });
+    expect(Math.abs(M.peakOf(r, "T").T)).toBeLessThan(1e-9);
+  });
+
+  it("puts the Agung and Pinatubo eruptions inside their measured cooling", () => {
+    for (const e of M.ERUPTIONS.filter((x) => /Agung|Pinatubo/.test(x.name))) {
+      const c = -M.peakOf(M.eruptionRun({ so2: e.so2, lat: e.lat, plume: 30, years: 5 }), "T").T;
+      expect(c, e.name).toBeGreaterThan(e.cool[0]);
+      expect(c, e.name).toBeLessThan(e.cool[1]);
+    }
+  });
+
+  it("ranks four real storm tides as measured and lands within 15 % of their high-water marks", () => {
+    const res = M.HURRICANES.map((h) => {
+      const V = Math.pow(1010 - h.Pc, 0.644) * 6.7 / 1.944;
+      return { h, eta: M.stormTide({ Pc: h.Pc, Rmax: h.Rmax, U: h.U, V, shelf: h.shelf }).best.eta };
+    });
+    for (const { h, eta } of res) {
+      expect(eta, h.name).toBeGreaterThan(h.obs[0] * 0.85);
+      expect(eta, h.name).toBeLessThan(h.obs[1] * 1.15);
+    }
+    const byName = Object.fromEntries(res.map((r) => [r.h.name.split(" ")[0], r.eta]));
+    expect(byName.Katrina).toBeGreaterThan(byName.Camille);   // the bigger, weaker storm pushed the higher tide
+    expect(byName.Camille).toBeGreaterThan(byName.Ike);
+    expect(byName.Ike).toBeGreaterThan(byName.Andrew);
+  });
+
+  it("follows DeMaria and Kaplan's intensity ceiling and drops Harvey-sized rain on a stalled storm", () => {
+    expect(M.mpi(28)).toBeCloseTo(67.0, 0);
+    expect(M.hurricaneRun({ sst: 25, rmax: 40, speed: 5, shelf: "wide" }).cat).toBe(0);
+    const harvey = M.hurricaneRun({ sst: 29.5, rmax: 40, speed: 1, shelf: "wide" }).rain;
+    expect(harvey).toBeGreaterThan(1100);
+    expect(harvey).toBeLessThan(1700);
+  });
+
+  it("calls Black Saturday's weather catastrophic, and lets a windy fire climb into the crowns", () => {
+    expect(M.ffdi(46.4, 6, 45, 10)).toBeGreaterThan(100);
+    expect(M.dangerOf(M.ffdi(46.4, 6, 45, 10))).toBe("catastrophic");
+    const p = { temp: 35, rh: 15, dry: 9 };
+    expect(M.byram(M.headRos(p, 30, 0))).toBeGreaterThan(M.crownThreshold());
+    expect(M.byram(M.headRos(p, 0, 0))).toBeLessThan(M.crownThreshold());
+  });
+
+  it("gives the slope factor Rothermel and McArthur agree on: about ×4 up a 20° slope", () => {
+    const p = { temp: 35, rh: 15, dry: 9 };
+    const ratio = M.headRos(p, 0, Math.tan(20 * Math.PI / 180)) / M.headRos(p, 0, 0);
+    expect(ratio).toBeGreaterThan(3.3);
+    expect(ratio).toBeLessThan(4.3);
+    expect(Math.abs(ratio - Math.exp(0.069 * 20)) / Math.exp(0.069 * 20)).toBeLessThan(0.12);
+  });
+
+  it("runs off exactly what the NRCS TR-55 table says (76.2 mm on curve number 80 → 31.75 mm, 1.25 in)", () => {
+    expect(M.scsRunoff(76.2, 80)).toBeCloseTo(31.75, 2);
+    expect(M.scsRunoff(50, 85) / Math.max(1e-9, M.scsRunoff(50, 55))).toBeGreaterThan(20);
+  });
+
+  it("burns more with wind than in calm, and spreads the fire only where the weather lets it", () => {
+    const base = Object.assign({}, M.BASE(), { setup: "wildfire" });
+    const windy = M.burnedHa(M.fireOf({ p: base }), 6), calm = M.burnedHa(M.fireOf({ p: Object.assign({}, base, { wind: 0 }) }), 6);
+    expect(windy).toBeGreaterThan(20 * calm);
+  });
+
+  it("puts Fresno's yearly evaporation demand near the CIMIS figure, and sinks the land for good when a drought is pumped through", () => {
+    let e0 = 0; for (let m = 0; m < 12; m++) e0 += M.et0Month(m, 0);
+    expect(e0).toBeGreaterThan(1350);
+    expect(e0).toBeLessThan(1600);
+    const pumped = M.droughtRun({ rain: 55, warm: 1, years: 4, pump: true }), dry = M.droughtRun({ rain: 55, warm: 1, years: 4, pump: false });
+    const last = pumped[pumped.length - 1];
+    expect(last.sub).toBeGreaterThan(1.2);
+    expect(last.sub).toBeLessThan(2.4);
+    expect(dry[dry.length - 1].sub).toBe(0);
+    expect(Math.min(...dry.map((r) => r.crop))).toBeLessThan(0.7);
   });
 });
