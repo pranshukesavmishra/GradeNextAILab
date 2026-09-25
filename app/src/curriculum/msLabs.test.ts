@@ -181,3 +181,71 @@ describe("6A-1 The Living Tank — the model", () => {
     expect(wild).toBeLessThan(0.45);
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * 6A-2 The Draining Tank: the apparatus obeys Torricelli, and the lab's claims hold
+ * ------------------------------------------------------------------ */
+describe("6A-2 The Draining Tank — the model", () => {
+  type Fx = Record<string, boolean>;
+  const M = engine.InsightLab.models["g6a-draining-tank"] as unknown as {
+    drainTime: (dmm: number, h0: number, fx: Fx, s?: number) => number | null;
+    halfTime: (dmm: number, h0: number, fx: Fx, s?: number) => number | null;
+    steadyLevel: (dmm: number, q: number, fx: Fx) => number;
+    towerModel: (p: Record<string, unknown>) => { dry: number | null };
+    ALL: Fx; BASE: () => Record<string, unknown>;
+  };
+  const def = defs.find((d) => d.id === "g6a-draining-tank")!;
+  const measure = (k: number) => {
+    const pr = def.problems![k];
+    return pr.measure({ p: Object.assign({}, def.params, pr.params ?? {}) });
+  };
+
+  it("drains a 10 cm column through a 6 mm hole from 50 cm as Torricelli says, once the jet narrows", () => {
+    // exact, to empty, Cd 0.61: t = (A / (Cd·a))·√(2h₀/g) = 143.9 s; the real jet stops ~3 s before the last film
+    const exact = (0.05 ** 2 / (0.61 * 0.003 ** 2)) * Math.sqrt(2 * 0.49 / 9.81);
+    const t = M.drainTime(6, 0.5, { vena: true }, 1)!;
+    expect(Math.abs(t - exact) / exact).toBeLessThan(0.03);
+  });
+
+  it("scales half-times with the square root of size, not with size", () => {
+    const full = M.halfTime(6, 0.5, M.ALL, 1)!, quarter = M.halfTime(6, 0.125, M.ALL, 4)!;
+    expect(full / quarter).toBeGreaterThan(1.85);
+    expect(full / quarter).toBeLessThan(2.1);
+  });
+
+  it("lets surface tension stop the 1:10 copy before its head halves", () => {
+    expect(M.halfTime(6, 0.05, M.ALL, 10)).toBeNull();
+  });
+
+  it("changes the drain time by about −39 % without the vena contracta, and not measurably without evaporation", () => {
+    expect(measure(3)).toBeGreaterThan(-42);
+    expect(measure(3)).toBeLessThan(-36);
+    const t0 = M.drainTime(6, 0.5, M.ALL)!, t1 = M.drainTime(6, 0.5, Object.assign({}, M.ALL, { evap: false }))!;
+    expect(Math.abs(t1 - t0) / t0).toBeLessThan(1e-4);
+  });
+
+  it("settles a 1.5 L/min tap on the 6 mm hole near 12 cm, as the diagram problem's working says", () => {
+    expect(measure(1)).toBeGreaterThan(10.5);
+    expect(measure(1)).toBeLessThan(13.5);
+  });
+
+  it("runs the town's tower dry in the model some ten hours after the pump fails, and earlier with the leaks in", () => {
+    const p = M.BASE();
+    const plain = M.towerModel(p).dry!, leaky = M.towerModel(Object.assign({}, p, { leakModel: true })).dry!;
+    expect(plain).toBeGreaterThan(8);
+    expect(plain).toBeLessThan(12);
+    expect(leaky).toBeLessThan(plain);
+  });
+
+  it("finds the square-root law in the data: its residuals look like noise, the straight line's do not", () => {
+    const run = (fam: string) => {
+      const d = def as unknown as { setup: (S: unknown) => void; step: (S: unknown, dt: number) => void; readouts: (S: unknown) => { label: string; value: string }[] };
+      const S = { p: Object.assign({}, def.params, { setup: "revise", fam }), t: 0, cam: null };
+      d.setup(S);
+      for (let k = 0; k < 3000; k++) d.step(S, 0.05);
+      return d.readouts(S).find((r) => r.label === "Residuals")!.value;
+    };
+    expect(run("sqrt")).toBe("noise");
+    expect(run("const")).toBe("a pattern");
+  });
+});

@@ -278,11 +278,29 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   **sealed** (A2.2: two sealed spheres, carbon conserved to 1e-14), **trace** (A2.3, A2.4:
   carbon atoms cycle, joules leave as heat, residence times against store ÷ flow). Phone layout:
   cards fold into chips, the zoom ladder becomes a rung strip.
+- **6A-2 The Draining Tank — Building, Testing and Revising a Model** (`smartlab/sims-g6a-2.js`,
+  id `g6a-draining-tank`, topic A3, 5 subtopics). A 10 cm × 60 cm clear column draining through a
+  sharp-edged hole into a tray, read by an ultrasonic sensor (whole mm, noise). The apparatus:
+  Torricelli with the vena contracta (Cd 0.61), Cd(Re) (Lienhard shape), surface tension holding
+  2σ/(ρgd) of head, evaporation, a tap and a leak; the jet a true parabola that breaks into drops;
+  the tray holds exactly what drained. Five set-ups: **why** (A3.1: a town's 1131 m³ tower loses
+  its pump at 18:00 — the model answers first, the real evening shows it 2 h late for leaving out
+  the leaking mains), **diagram** (A3.2: a stock-and-flow diagram whose valves are the bench's
+  valves; the equation assembles from its arrows), **scale** (A3.3: 1:2 / 1:4 / 1:10 copies —
+  half-times go as √size; the 1:10 stops, held by surface tension), **leaves** (A3.4: four effects
+  switched in and out of the model, each with its measured share: 39 % / 0.4 % / 0.3 % / <0.001 %),
+  **revise** (A3.5: constant, proportional and square-root models fitted by least squares; the
+  residuals decide; validated on a tap-on run it never saw).
+- Shared overlay kit `kit-ms.js` (KITMS: header, card, cardSlot/chipHit for phones, fitText,
+  wrapText, led, plotKey, dayAxis, secAxis, watch) — every Grades 6–8 lab from 6A-2 on uses it.
 - Figure libraries made for it: `art-labware.js` (aquarium kit: gravel, caustics, LED bar,
   hang-on filter with cutaway, heater, airstone, bubbles, thermometer strip, test kits),
   `art-life.js` (poseable neon tetra, angelfish, shrimp; cabomba, vallisneria; fish / gill /
   cell / mitochondrion plates with row-set labels), `art-earth.js` + `data-earth.js` (2048×1024
-  Blue Marble and land mask, ray-traced globe with water-only glint).
+  Blue Marble and land mask, ray-traced globe with water-only glint); `art-hydro.js` (HYDRO:
+  graduated clear column with water as a volume, brass orifice, parabolic jet breaking into drops,
+  catch tray with ripples, lab tap and its narrowing stream, rotameter, ultrasonic sensor,
+  stopwatch, tiled lab wall, water tower with level board, houses with lit windows).
 - In the app: `app/src/curriculum/msLabs.ts` (catalogue; `msLabs.test.ts` VM-loads the engine's
   `sims-g*.js` files and holds the two to each other, checks every claimed topic is fully taught,
   runs every set-up headless, and checks the model's numbers), `app/src/pages/MiddleSchoolLab.tsx`
@@ -368,6 +386,19 @@ as they are found by direct numerical testing.
   1.48 mg/L at 07:00. Tap-rinsed media: test-kit 0.5 mg/L NH₃ after ≈ 37 h.
 - Sealed sphere: exact redox bookkeeping (Ω = O₂ + 1.5 NO₂ + 2 NO₃ − organic C) — a blanket
   photosynthetic quotient made O₂ from nothing; carbon now drifts ~1e-14, Ω ~1e-13.
+**6A-2 The Draining Tank** (verified in `msLabs.test.ts`):
+- 10 cm bore, 6 mm hole, 50 cm start (49 cm head): exact Torricelli with Cd 0.61 empties in
+  143.9 s; the apparatus's jet stops at 140.6 s (a jet slower than 5 cm/s·√(1/scale) is drips —
+  in the viscous last millimetres Cd(Re)→0 and the flow would otherwise fade forever).
+- Leaving an effect out moves the drain time: vena contracta −38.7 %, viscosity +0.43 %,
+  surface tension +0.26 %, evaporation (2 mm/day) < 0.001 %.
+- Half-times 42.4 / 30.3 / 21.9 s at full / 1:2 / 1:4 (full ÷ 1:4 = 1.94 against √4); the 1:10
+  copy's 0.6 mm hole holds 2.48 cm of head and never reaches half.
+- Tap 1.5 L/min on 6 mm settles at 12.0 cm; 2.0 L/min at 20.4 cm.
+- Town: 20,000 people × 150 L/day on an evening profile, mains leaking 12 % of mean use, real use
+  3.5 % above the textbook: the model without leaks says 04:32, the town runs dry at ~02:06.
+- Fits to a full tap-off run: constant misses by 27 mm (pattern), proportional 77 mm (pattern),
+  square root 1.4 mm (noise).
 - Shoal: noise is rotational diffusion (σ = noise·0.35·√(2/dt) rad/s); lengthwise-swimming
   preference 0.45, pitch ≤ 20°. Blind Φ over four starts: 0.98 / 0.95 / 0.86 / 0.58 / 0.25 at
   noise 0 / 1 / 2 / 3 / 4 — order holds, then collapses between 2.5 and 3.5.
@@ -418,7 +449,11 @@ Environment constants (this container family):
 
 ## 9. Current status
 
-**State as of 2026-09-25 (later):**
+**State as of 2026-09-25 (latest):**
+- **6A-2 The Draining Tank built and verified**: audit CLEAN, live.mjs LIVE-CLEAN (23 pairs),
+  probchk values match their workings (10.53 h, 12.0 cm, 21.9 s, −38.7 %, 20.4 cm), gate green
+  (426 tests), every set-up reviewed at 1500 px, 430 px and from four orbit views. A1.1–A3.5
+  (15 of Unit A's 27 subtopics) now open their set-ups from the Course Library.
 - **6A-1 The Living Tank built and verified**: audit CLEAN (43 sims), live.mjs LIVE-CLEAN (83
   control × set-up pairs), probchk values match their workings, gate green (410 tests), every
   set-up reviewed at 1500 px, at 430 px and from four orbit views. Framed in the app at
@@ -431,8 +466,8 @@ Environment constants (this container family):
 
 **Next, in order:**
 1. **Batch 1 — Grade 6 Unit A, Systems and Subsystems** (`docs/BATCH_PLAN.md` Part B, Batch 1),
-   one lab at a time: 6A-1 done; next **6A-2 The Draining Tank** (A3), then 6A-3 Four Spheres
-   (A4.1–A4.4; needs relief data and a globe cutaway), 6A-4 One Event, Four Spheres (A4.5–A4.6),
+   one lab at a time: 6A-1 and 6A-2 done; next **6A-3 Earth's Four Spheres** (A4.1–A4.4), then
+   (needs relief data and a globe cutaway), 6A-4 One Event, Four Spheres (A4.5–A4.6),
    6A-5 The Measurement Bench and 6A-6 The Fair Test (A5). Foundations (accents, `unit`/`topics`,
    set-up deep links, the app lab view, the liveness harness) are done.
 2. Report Batch 1 to the founder with screenshots of every set-up before Batch 2.
@@ -492,6 +527,8 @@ Append only. Never rewrite history.
 | 2026-09-25 | **Engine fixes that reach every lab**: `.tooltip[hidden]` hides (the empty box sat on every plot); `.stage-hint` above the canvas; the orbit ignores the pointer while a handle is dragged | Found reviewing 6A-1; bugs, so fixed for the keepers too — no lab's content changed |
 | 2026-09-25 | **Engine additions, backward compatible**: `eqNote` may be a function of state; a select restarts unless `display`/`restructure:false`; `R3.box` takes `alpha`; `__FX.pin` for the harness | Multi-set-up labs need set-up-specific notes and view selects that keep the run; cutaways need glass |
 | 2026-09-25 | **Grades 6–8 labs reach the app as `#/ms/<lab>/<setup>`, and the Course Library opens the set-up that teaches each subtopic** | The founder's alignment requirement: every subtopic one click from its experiment |
+| 2026-09-25 | **Middle-school overlays live in one kit (`kit-ms.js`)** from 6A-2 on | Five labs a batch; one header, one card, one phone fold, one plot key — a fix lands everywhere |
+| 2026-09-25 | **A model's weakness is taught by the apparatus, not asserted**: the town model is hours late because it leaves out leaks; a 1:10 copy stops because surface tension does not scale | A3 is about models' limits — the limits must be computed, measured and visible |
 
 ---
 
@@ -499,6 +536,12 @@ Append only. Never rewrite history.
 
 Newest first.
 
+- **2026-09-25 (latest)** — **6A-2 The Draining Tank built.** Physics checked in a scratch runner
+  before any drawing (Torricelli 143.9 s exact; scale and surface-tension numbers); `art-hydro.js`
+  and `kit-ms.js` written first. Bugs found on screen or in numbers: the draining model never
+  "finished" with viscosity on (Cd(Re)→0 makes the last millimetres fade exponentially — a jet
+  slower than 5 cm/s is drips, so that is where it stops); the flows plot clipped its own net line;
+  the scale copy sat off-screen; the leaves card read −100 % for evaporation (the same stall bug).
 - **2026-09-25 (later)** — **6A-1 The Living Tank finished to the ship checklist.**
   - Reviewed every set-up at 2× and fixed what the screen showed: the engine's always-visible
     tooltip box and a hint painted under the canvas; plot keys moved into a band above each frame

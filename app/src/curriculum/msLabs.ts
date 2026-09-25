@@ -48,6 +48,17 @@ export const MS_LABS: MsLab[] = [
       { value: "trace", label: "Follow an atom and a joule", teaches: ["A2.3", "A2.4"] },
     ],
   },
+  {
+    id: "g6a-draining-tank", grade: 6, unit: "A", topics: ["A3"], subject: "engineering",
+    name: "The Draining Tank — Building, Testing and Revising a Model",
+    setups: [
+      { value: "why", label: "Why build a model?", teaches: ["A3.1"] },
+      { value: "diagram", label: "Diagram, flowchart, equation", teaches: ["A3.2"] },
+      { value: "scale", label: "Physical and digital models", teaches: ["A3.3"] },
+      { value: "leaves", label: "What a model leaves out", teaches: ["A3.4"] },
+      { value: "revise", label: "Build, test and revise", teaches: ["A3.5"] },
+    ],
+  },
 ];
 
 /** A set-up that teaches a subtopic, with the lab it belongs to. */
