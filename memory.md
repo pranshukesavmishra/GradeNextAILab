@@ -365,6 +365,30 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   Chlamydomonas to Volvox — who can reproduce, swimming against Stokes sinking; a leaf's tissues),
   **scale** (B1.6: stage micrometer and graticule, the letter e, blood, bacteria, the diatom test plate —
   Pleurosigma's 0.65 µm pores resolve at 40× and 100×, never at 10× however zoomed — viruses invisible).
+- **6B-2 Inside the Cell — Membranes, Walls and Organelles** (`smartlab/sims-g6b-2.js`, id
+  `g6b-inside-cell`, topic B2, 6 subtopics). Six benches, each the experiment that showed what a part of a
+  cell does, each with a close-up drawn to its own scale beside it. **membrane** (B2.1: a Visking-tubing bag
+  in a beaker — Kedem–Katchalsky water flux fitted to the class result, each solute at its own permeability
+  and reflection coefficient, the tubing going tight when full; starch + glucose against iodine with
+  Benedict's and the blue-black inside; sucrose in or out; salt that leaks away instead of drawing water;
+  a 12 nm window on the pores where molecules drawn to size cross both ways as the model says),
+  **wall** (B2.2: red onion and red blood cells side by side in the same salt, each cell with its own sap —
+  plasmolysis half-way at 1.10 %, turgor 0.77 MPa in water, red cells bursting half-way at 0.43 %,
+  crenating in 3 %; boiled onion leaks its red and shrinks at nothing; walls digested away, the
+  protoplasts burst like red cells; the blood tube series cloudy or clear against a printed card),
+  **nucleus** (B2.3: Hämmerling's Acetabularia — cut off the cap, cut into three, graft a stalk onto the
+  other species' base, two nuclei; a cap-building substance from the nucleus with a 15-day half-life,
+  a cap at 10 units: the graft's caps go 43 → 82 → 96 % crenulata, the enucleate stalk makes one cap and
+  dies, a young one none), **mito** (B2.4: a respirometer — germinating peas, dry peas + beads, beads;
+  maggots or boiled peas instead; Q10 2.1 with the enzymes failing above 35 °C; KOH or not; the beads'
+  drift taken off — and an electron micrograph of nine tissues at their measured share of mitochondria,
+  from the hummingbird's flight muscle (35 %) to the red cell (0), a pea's and a leaf's cells among them),
+  **chloro** (B2.5: Elodea's bubbles against the lamp's distance — 1/d², saturation, the compensation point
+  at 63 cm, LED colours, bicarbonate, the heat shield; Engelmann's bacteria crowding in the red and the
+  blue of a spectrum on Cladophora, and at a spot of light only where it falls on Spirogyra's ribbon; a
+  variegated leaf through the starch test, destarched or not, with a foil strip), **size** (B2.6: agar
+  cubes of 5–30 mm soaked in alkali, x = k√t, cut open; a cell grown until its middle gets no oxygen —
+  R = √(6DC/q), 106 µm for a cell working like muscle; flattened or thread-like, the same volume fed).
 - Shared overlay kit `kit-ms.js` (KITMS: header, card, cardSlot/chipHit for phones, fitText,
   wrapText, led, plotKey, dayAxis, secAxis, watch) — every Grades 6–8 lab from 6A-2 on uses it.
   A stage with several cards gets a row of chips on a phone, one card open at a time
@@ -403,6 +427,18 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   with daughters, yeast, pollen, mineral grains, salt hopper cubes, Vorticella; the R3 instruments — a
   school microscope with a parfocal turret whose objectives' axes meet the turret axis, Hooke's leather
   and gilt microscope with oil lamp, water globe and light path, Leeuwenhoek's brass plate).
+  `art-cell.js` (CELL, after art-micro: translucent capsules shaded across their own axis; a Visking bag
+  that goes tight and is veiled by the beaker's water; test tubes and a rack with a printed card behind;
+  small bottles; Acetabularia with cap, rhizoid, nucleus, graft band and hair whorls; a tank whose
+  camera-facing glass is drawn last; the respirometer's bath, vials, stoppers and graduated pipettes with
+  a dye drop; Elodea in a boiling tube with bubbles, a desk lamp and its beam; agar cubes cut to show the
+  front; a tile and a dish drawn with the ground; half a red onion. Close-ups: the membrane window with
+  its particle system (memSim/memStep/memDraw); the tank at a few times life size with each cap from
+  above (acetabView, capFace); an electron micrograph of nine tissues (tem); the variegated leaf in four
+  stages (leafPanel); oxygen across a round, flat or thread-like cell with its starving core (o2Cell).
+  MICRO painters: redOnion (plasmolysing, with Hechtian strands; boiled; free protoplasts that burst),
+  rbcWet (discs, spheres, ghosts, crenated), cladophora, spirogyra, aeroBact, lightMask (a spectrum, one
+  colour or a spot, multiplied over what shares its layer)).
 - In the app: `app/src/curriculum/msLabs.ts` (catalogue; `msLabs.test.ts` VM-loads the engine's
   `sims-g*.js` files and holds the two to each other, checks every claimed topic is fully taught,
   runs every set-up headless, and checks the model's numbers), `app/src/pages/MiddleSchoolLab.tsx`
@@ -452,7 +488,9 @@ does not survive `beginPath()`; `g.mix` returns rgb, `RX.mix` returns hex). Grad
     (§2.7 rule 1). `cd smartlab && node live.mjs [labId] [-v]` must print **LIVE-CLEAN**: each
     value is a fresh seeded run of the same length (camera reset, render tier pinned via
     `__FX.pin`), the first value is run twice so only deterministic channels testify, and a
-    control marked `display: true` counts only through the stage or a plot.
+    control marked `display: true` counts only through the stage or a plot. A lab whose set-ups
+    have sub-experiments (controls shown only in some modes) is also run with `--presets`, which
+    starts a sweep from every preset and covers each (set-up, controls shown) context once.
 14. **Never `git add -A`.** `git status --short`, delete scratch, stage exact files. Scratch goes
     in the session scratchpad or in gitignored names (`smartlab/_preview*.html`,
     `smartlab/*.png`).
@@ -620,6 +658,38 @@ as they are found by direct numerical testing.
 - Colonies: cells 5 % denser than water spread through the jelly; Volvox (2,016 cells + 16 gonidia,
   R 250 µm) sinks 37 µm/s, 80 cm in 6 h; swimming speeds are measured values (about).
 
+**6B-2 Inside the Cell** (verified in `msLabs.test.ts`):
+- Visking bag: 25 mm flat (16 mm round), 12 cm between knots, 15 mL in 200 mL; Lp 3.5 × 10⁻¹³ m/(Pa·s);
+  full at 23.9 mL and 30 MPa stiff past 97 % of that. Solutes P (m/s) / σ: glucose 1.5e-6 / 0.25,
+  sucrose 0.7e-6 / 0.55, salt 4e-6 / 0.05 (i 1.86), iodine 6e-6 / 0.05, starch 0 / 1. D ∝ T/η, Lp ∝ 1/η.
+  Sucrose bag in water, 30 min: 4.0, 7.7, 11.0, 14.1, 16.9 % at 0.2 … 1.0 M (class data 3/7/11/15/18).
+  Benedict's by % glucose: < 0.05 blue, < 0.25 green, < 0.75 yellow, < 1.5 orange, then brick red.
+- Salt π = %·10/58.44·2·0.93 osmol/L × 2.437 MPa. Red onion sap 0.85 MPa ± 8 %, 15 % non-water, wall
+  ε 8 MPa (turgor 0.77 MPa in water), τ 60 s; half plasmolysed at 1.096 %. Protoplast bursts at 1.5×
+  ± 8 % (τ 20 s). Red cell 90 fL at 290 mOsm, 43 % non-water, bursts at 147.5 fL ± 7 % (cells ± 8 %),
+  τ 1.5 s: half burst at 0.43 %; crenated below 0.85 V0 (above 1.22 % salt).
+- Acetabularia: 1 unit a day per nucleus, half-life 15 d, a cap takes 10 units after 10 days' regrowth
+  and grows over 7; full-grown stalk 20 units, young 6, rhizoid 2; no nucleus: dies at 75 d; a cut cap 12 d.
+- Respirometer: peas 0.048 mL O₂/g/h at 22 °C (10 g: 0.16 mL in 20 min), dry peas 2 % of that, maggots
+  0.5; Q10 2.1, × (1 − (T − 35)/10) above 35 °C; RQ peas 1.0, maggots 0.8; 20 mL of air a vial and a
+  0.15 °C cooling (τ 15 min) for the beads to show. Mitochondria (share of the cell) / O₂ (mL/g/h):
+  hummingbird flight muscle 35 % / 130, heart 25 / 5, liver 20 / 2, leg muscle 5 / 12 at full stretch,
+  root tip 6 / 0.4, pea seed leaf 2 / 0.05, leaf 1.5 / 0.1, fat 1 / 0.1, red cell 0 / 0.
+- Elodea: 600 µmol/m²/s at 10 cm (1/d²); P_max 1 µmol O₂/min, I_k 150, CO₂ c/(0.05 + c) with tap water
+  0.01 %, Q10 2 to 30 °C then falling to 0 at 42; respiration 0.08 at 20 °C; a bubble 0.041 µmol; LED
+  colours at equal photons white 1, red 1, blue 0.85, green 0.35; a filament lamp warms the water 4 °C
+  at 10 cm (1/d², τ 8 min), a tenth of that behind a water shield. Compensation at 63.5 cm.
+- Engelmann: green-alga absorptance (peaks 0.95 at 435 nm and 0.92 at 678 nm, 0.25 at 570 nm), action
+  × 0.72–1 over the carotenoid band; spectrum 400–720 nm over 800 µm; oxygen spreads 55 µm off the
+  filament; bacteria D 800 µm²/s, chemotactic κ 4 per unit O₂, shown 4× real time. Spirogyra 110 × 36 µm,
+  two ribbon turns a cell 5.5 µm wide; the spot 14 µm; a ribbon crossing fills 16.8 % of it.
+- Leaf starch: 0.22 of a full test an hour of light where green; 0.8 left if not destarched; iodine
+  blue-black 1 − e^(−s/0.35).
+- Agar: 2 mm in 10 min at 20 °C (x ∝ √t, D-scaled with T). Cell O₂: water 0.28 mol/m³, D 2e-9 m²/s;
+  q (mol/m³/s) bacterium 1.7, working muscle 0.3, resting cell 0.02, amoeba 0.005, frog's egg 1.5e-4.
+  R_max √(6DC/q) sphere, √(2DC/q) sheet half-thickness, √(4DC/q) thread radius (106 / 61 / 86 µm for 0.3).
+  Same-volume shapes: a disc 10 half-thicknesses wide, a thread 40 radii long.
+
 Environment constants (this container family):
 - Playwright is pinned at **1.56.1**; its Chromium is `/opt/pw-browsers/chromium-1194/…`, which
   the InsightVis harness hardcodes. Never run `playwright install`.
@@ -667,6 +737,11 @@ Environment constants (this container family):
 ## 9. Current status
 
 **State as of 2026-09-25 (latest):**
+- **6B-2 Inside the Cell built and verified** — audit CLEAN (50 sims), live.mjs LIVE-CLEAN
+  (61 control × set-up pairs with `--presets`, sub-experiments included; all eight labs 304 pairs), every problem's measure matches
+  its working (11.0 %, 1.10 %, 143 fL, 43 %, 0.34 mL, 150, 4.17 h, 106 µm), gate green (554 tests), all
+  38 presets, the six set-ups at 1500 px and 390 px, and twelve camera angles reviewed. B2.1–B2.6 open
+  their set-ups from the Course Library.
 - **Batch 2 started: 6B-1 The Microscope built and verified** — audit CLEAN (49 sims), live.mjs LIVE-CLEAN
   (66 control × set-up pairs), every problem's measure matches its working (1.26 billion, 0.57 µm, 2.0 h,
   2.6 µm, 21.7 s, 80 cm, 1600×), gate green (529 tests), all 28 presets and six set-ups reviewed at 1500 px,
@@ -706,8 +781,9 @@ Environment constants (this container family):
 
 **Next, in order:**
 1. **Batch 2 — Grade 6 Unit B, Cells, Bodies and Senses** (`docs/BATCH_PLAN.md` Part B, Batch 2):
-   **6B-1 done**; next 6B-2 Inside the Cell (osmosis, diffusion, organelles — reuse MICRO for the cells),
-   then 6B-3 → 6B-6, one lab at a time, each to the end of the ship checklist.
+   **6B-1 and 6B-2 done**; next 6B-3 Levels of Organization (sizes and counts at each level, shape for
+   the job — a red cell's disc against a sphere, a neuron's length, root hairs), then 6B-4 → 6B-6, one lab
+   at a time, each to the end of the ship checklist.
 2. Report Batch 2 the same way (screenshot every set-up from the live build, one page) before Batch 3.
 3. Batches 3–18 in order; the Higher Secondary continuation track (Part C) when the founder
    asks for it or between batches.
@@ -779,6 +855,9 @@ Append only. Never rewrite history.
 | 2026-09-25 | **A set-up opens with its own settings; a preset keeps its own**: setup() applies the set-up's defaults when the set-up changes (list, tabs or a link) unless the params carry `pre: 1`, which every preset() sets | The engine applies a link's or a tab's set-up without the select's onChange, so defaults must live in setup() |
 | 2026-09-25 | **The screen is the eye's stand-in**: the camera zoom lets the screen show what an eye at the eyepiece would; "empty" keeps the textbook 1000 × NA and the card says whether the detail was already resolved | A 400 px field shows ~6× less than an eyepiece's 41° field; without the zoom no screen shows a 0.65 µm pore |
 | 2026-09-25 | **What the lab counts, the lab builds**: Hooke's honeycomb and the root-tip cells are generated in the lab file; the figure library only draws them | The tests load the lab without a page, so the counted geometry must be the model's own |
+| 2026-09-25 | **A close-up is drawn to its own scale beside the bench** (6B-2: a 12 nm window on the pores, a micrograph, the tank at a few times life size) and is driven by the same model: the molecules on each side are the concentrations, their crossings the fluxes | The founder wants visualised learning: the bench shows what a class sees, the close-up why — both from one set of numbers |
+| 2026-09-25 | **A change of condition is an event, not a restart**: sliders that change the conditions (salt round the cells, the bath's temperature, the spot's place) let the model carry on from where it is; only a new experiment restarts; readings are integrated in step() so a change mid-run carries on smoothly | Irrigating a slide with salt and watching the cells shrink is the experiment; a restart would hide it, and an analytic reading of time jumps when its rate changes |
+| 2026-09-25 | **live.mjs --presets** sweeps from every preset as well as every set-up | 6B-2's sub-experiments (Engelmann's spot, the leaf test) show controls the base parameters never reach; the plain sweep checked 35 pairs, the preset sweep 61 |
 | 2026-09-25 | **A comparison with a standard names the standard's criterion** (ISO 13732-1 is the onset of a burn; the scald table is a burn through the skin) | The lab's steel limit (73.5 °C) and ISO's (65–70 °C) differ because they measure different burns — said so, test checks the physical chain |
 
 ---
@@ -787,7 +866,21 @@ Append only. Never rewrite history.
 
 Newest first.
 
-- **2026-09-25 (latest)** — **6B-1 The Microscope built; Batch 2 begun.** Optics and every living model checked in a
+- **2026-09-25 (latest)** — **6B-2 Inside the Cell built.** Every model checked in a scratch runner first (the
+  bag against the class data, plasmolysis and fragility curves, Hämmerling's graft sequence, the
+  respirometer's 20-minute reading, the compensation point, R_max for three shapes). New library
+  `art-cell.js`, looked at in 3D and 2D test grids before the lab. Found on the way: the bag vanished in
+  its beaker (drawn after the water and veiled by it); the rack's labels piled up (one label, the chosen
+  tube marked); Engelmann's bacteria were painted over by the light (the mask now multiplies); they
+  gathered too slowly to see (they start by the filament, 4× time, κ 4); the spot made too little oxygen
+  (normalised to a full ribbon crossing); selects for time-lapse, objective, tissue and shape restarted
+  the run (restructure: false); the respirometer jumped when a control moved mid-run (integrated in
+  step()); a slider default sat on the audit's snapped midpoint; the tank's glass was wrong from behind;
+  a phone's hint ran into the scale bars. live.mjs gained `--presets`. The all-labs sweep then failed to
+  mount a random two or three labs: the lab just swept wrote its own #lab/setup over the harness's move to
+  the next one before its hashchange ran — an engine race a quick user could hit too; `syncSetupHash` no
+  longer writes over an address that already names another lab. Full sweep: 304 pairs in 8 labs, clean.
+- **2026-09-25** — **6B-1 The Microscope built; Batch 2 begun.** Optics and every living model checked in a
   scratch runner first (Brownian tracks against 4Dt within 3 %, Paramecium coasting 0.23 µm, Hooke's
   1,080³). New library `art-micro.js`, looked at in test grids (cork to Pleurosigma, 36 views) and four
   camera angles before the lab was written. Found on the way: every set-up opened at 100× (defaults moved
@@ -987,6 +1080,22 @@ Learned on 6A-5:
   mat) must sort as ground, or its one face centre paints over what sits on it.
 - **Draw the geometry the physics uses:** the scale is on the near wall of a cylinder — the magnifier has to
   show the eye, the scale and the meniscus in that order, or its parallax is backwards.
+
+Learned on 6B-2:
+- **A painter that fills its layer must multiply**: a light mask shares the blur band of whatever is in
+  focus, and painted over it — the bacteria disappeared until the mask was multiplied.
+- **A select restarts the lab unless it says not to**: time-lapse, the view, a tissue shown — mark them
+  `restructure: false` (or `display`) or a change of pace resets the run.
+- **Readings that accumulate are integrated, not computed from t**: a rate × t reading jumps when the
+  rate changes mid-run.
+- **The audit sets a slider to its snapped midpoint**: a default that is that value reads as dead.
+- **Sub-experiments hide controls from the base sweep**: sweep from the presets too (`live.mjs --presets`).
+- **Which side faces the camera decides draw order** for a box of water: the near glass goes over what
+  stands inside, the far one under it.
+- **Never write the address over a move in flight**: an engine that keeps #lab/setup in step must first
+  check the address does not already name another lab, or a switch made in the same frame is lost.
+- **A population, not one cell**: give each cell its own sap or critical volume and the thresholds
+  become curves a class can count along — half plasmolysed, half burst.
 
 Learned on 6B-1:
 - **Liveness needs determinism**: every random stream and every quantity that accumulates across steps

@@ -574,6 +574,9 @@ window.InsightLab = (function () {
     if (!def || !S || !setupOption(def)) return;
     const cur = String(S.p.setup);
     if (R.hashSetup === cur && R.hashId === def.id) return;
+    // a move to another lab already in the address (its hashchange not yet handled) must not be written over
+    const h = hashParts();
+    if (h.id && h.id !== def.id && sims.some(x => x.id === h.id)) return;
     R.hashSetup = cur; R.hashId = def.id;
     try { history.replaceState(null, '', location.pathname + location.search + '#' + encodeURIComponent(def.id) + '/' + encodeURIComponent(cur)); } catch (e) { /* file:// or sandboxed */ }
     try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'smartlab:setup', id: def.id, setup: cur }, '*'); } catch (e) { /* no parent */ }

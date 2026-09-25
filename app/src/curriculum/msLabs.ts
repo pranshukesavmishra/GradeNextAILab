@@ -115,6 +115,18 @@ export const MS_LABS: MsLab[] = [
       { value: "scale", label: "How small is small?", teaches: ["B1.6"] },
     ],
   },
+  {
+    id: "g6b-inside-cell", grade: 6, unit: "B", topics: ["B2"], subject: "biology",
+    name: "Inside the Cell — Membranes, Walls and Organelles",
+    setups: [
+      { value: "membrane", label: "What gets through a membrane?", teaches: ["B2.1"] },
+      { value: "wall", label: "What a wall is for", teaches: ["B2.2"] },
+      { value: "nucleus", label: "Whose cap? The nucleus decides", teaches: ["B2.3"] },
+      { value: "mito", label: "Cells that breathe", teaches: ["B2.4"] },
+      { value: "chloro", label: "Where light makes food", teaches: ["B2.5"] },
+      { value: "size", label: "Why cells are small", teaches: ["B2.6"] },
+    ],
+  },
 ];
 
 /** A set-up that teaches a subtopic, with the lab it belongs to. */
