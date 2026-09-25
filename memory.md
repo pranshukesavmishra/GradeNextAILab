@@ -500,6 +500,34 @@ as they are found by direct numerical testing.
   Four dry years at 55 %, 1 °C warmer, with pumping: the land sinks 177 cm; without extra pumping it does not
   sink, and crops get < 70 % of their water.
 
+**6A-5 The Measurement Bench** (verified in `msLabs.test.ts`; built, ships with 6A-6):
+- The touch: 1D finite volumes graded to the contact, Crank–Nicolson; skin k 0.37, ρ 1100, c 3400 (e 1176),
+  33 °C at the surface → 37 °C at 6 mm; glass e 1453, steel 7950, glass-ceramic 1789; nitrile 0.1 mm, heat mitt
+  3 mm of fibre (k 0.06, ρc 3.3e5). Contact at 90 °C: glass 64.5 °C (closed form = FD within 0.1 K), steel
+  82.7 °C. Burn = dose on the scald table (Moritz & Henriques 1947: 68.3 °C 1 s, 65.6 °C 2 s, 60 °C 5 s,
+  57.2 °C 10 s, 54.4 °C 30 s, 51.7 °C 2 min, 48.9 °C 5 min, 44 °C 6 h), the first 10 ms (grid settling)
+  ignored. 1-s limits: steel ≈ 73.5 °C (ISO 13732-1's 65–70 °C is the *onset* of a burn — a milder
+  criterion), glass ≈ 97 °C; a 5 s bare hold on a glass beaker of water ≈ 79.5 °C.
+- Hot plate 800 W, thermostat band 4 K, C 1050 J/K, loss = 1.5 × top area × (convection + radiation);
+  beaker base contact 200 W/m²K; water evaporation by the Lewis analogy dominates above 70 °C. 250 °C
+  setting: water 82 °C at 10 min; the plate is above 60 °C for 30+ min after switching off.
+- Thomsen: Q = 74.73·n/(n + 1.798) kJ per mol H₂SO₄; c_p = 4.184 − 3.50w + 0.74w² J/g·K; ρ 98 % 1.836.
+  A drop of water lands on the denser acid and mixes first with its own mass: +100 K on 98 % acid.
+  20 mL 98 % acid + 100 mL water: acid→water peak 70 °C (no boiling anywhere); water→acid bulk 146 °C,
+  landing spots 181 °C, 53 mL boils on landing; slowly (0.2 mL/s) in ice: bulk 76 °C but landing 140 °C.
+- Density: balance ± 0.005 g; cylinders (ISO 4788) 10/0.2, 25/0.5, 100/1, 250/2 mL, bores 1.3/1.9/2.9/3.9 cm;
+  ± ½ division a reading, read to a tenth; meniscus climbs 2.2 mm; eye 25 cm away; parallax h·r/D·A (the
+  top edge is on the scale: no parallax, high by the climb); overflow can leaves 0.05 mL on its spout.
+  Medium specimen, 100 mL before-after: ± 11 % (can't tell pyrite 5.01 / magnetite 5.18 / hematite 5.26);
+  large in the can → 25 mL: ± 1.7 % (tells them, not magnetite from hematite); forgetting the 1.87 g boat
+  turns pyrite into "magnetite".
+- Fall: exact t = (v_t/g′)·arccosh(e^(g′h/v_t²)) with buoyancy; steel 25 mm 64 g Cd 0.47 → 0.4517 s for 1 m;
+  ping-pong 2.7 g 40 mm Cd 0.5 → 0.4656 s (g from 2h/t² = 9.23). Stopwatch: partner's release seen late by
+  0.19 ± 0.03 s (the ruler-drop number), the landing anticipated ± 0.045 s, shown to 0.01 s → 0.18 s short
+  on average; gates 0.1 ms.
+- Graphs: an outlier's residual > 3× the leave-one-out scatter; pyrite slope through zero 5.03 without the
+  misread piece (4.90 with it); t² against h through zero → g 9.800; bars from 0.445 s show 3.1 % as 3.1×.
+
 Environment constants (this container family):
 - Playwright is pinned at **1.56.1**; its Chromium is `/opt/pw-browsers/chromium-1194/…`, which
   the InsightVis harness hardcodes. Never run `playwright install`.
@@ -547,6 +575,10 @@ Environment constants (this container family):
 ## 9. Current status
 
 **State as of 2026-09-25 (latest):**
+- **6A-5 The Measurement Bench built** (`sims-g6a-5.js`, `art-measure.js`; five set-ups hot, acid, density,
+  timing, graph; 9 problems whose measures match their workings; 12 model tests green). Not yet committed:
+  it claims topic A5 with 6A-6, and the catalogue's per-topic rule (rightly) fails until 6A-6 teaches
+  A5.2, A5.5, A5.6 — so the two ship together.
 - **6A-4 One Event, Four Spheres built and verified**: audit CLEAN (46 sims), live.mjs LIVE-CLEAN
   (19 pairs), every problem's measure matches its working (0.383 °C, 7.5 Mt, 6.92 m, 0.70 m,
   1,398 mm, 138, 19.6 mm, 177 cm), gate green (471 tests), every set-up reviewed at 1500 px, at
@@ -572,9 +604,9 @@ Environment constants (this container family):
 
 **Next, in order:**
 1. **Batch 1 — Grade 6 Unit A, Systems and Subsystems** (`docs/BATCH_PLAN.md` Part B, Batch 1),
-   one lab at a time: 6A-1 to 6A-4 done; next **6A-5 The Measurement Bench** (A5.1, A5.3, A5.4)
-   and **6A-6 The Fair Test** (A5.2, A5.5, A5.6). Foundations (accents, `unit`/`topics`, set-up
-   deep links, the app lab view, the liveness harness) are done.
+   one lab at a time: 6A-1 to 6A-4 shipped, 6A-5 built; next **6A-6 The Fair Test** (A5.2, A5.5,
+   A5.6: the paper helicopter), then ship 6A-5 + 6A-6 together. Foundations (accents, `unit`/`topics`,
+   set-up deep links, the app lab view, the liveness harness) are done.
 2. Report Batch 1 to the founder with screenshots of every set-up before Batch 2.
 3. Batches 2–18 in order; the Higher Secondary continuation track (Part C) when the founder
    asks for it or between batches.
@@ -640,6 +672,9 @@ Append only. Never rewrite history.
 | 2026-09-25 | **The catalogue test's coverage rule is per topic, not per lab**: each lab teaches at least one subtopic of every topic it claims, and the labs claiming a topic teach all of it together — checked through `msTeaching`, the lookup the Library page uses | 6A-4 claims A4 beside 6A-3 but teaches only A4.5–A4.6; the old per-lab rule would have forced it to repeat 6A-3 |
 | 2026-09-25 | **An event ships only with its numerical check** (6A-4: Pinatubo, four measured storm tides, Black Saturday's fire danger, TR-55's table, Fresno's evaporation) | A disaster drawn without its numbers is the animation the founder rejected |
 | 2026-09-25 | **KITMS.cardSlot gives a stage with several cards a row of chips on a phone** (one open at a time) | 6A-4's eruption has two cards; two chips drawn in one place opened both on top of each other |
+| 2026-09-25 | **Labs that share a topic ship together** (6A-5 and 6A-6 both claim A5) | The per-topic rule fails honestly while a subtopic is untaught; it is not loosened, the pair is committed as one increment |
+| 2026-09-25 | **A safety rule is modelled at the scale where it bites** (6A-5: the drop of water that lands on acid, not only the stirred beaker) | The stirred-beaker model said slow, iced water-into-acid never boils — a dangerous lesson; the landing drop boils at 140 °C |
+| 2026-09-25 | **A comparison with a standard names the standard's criterion** (ISO 13732-1 is the onset of a burn; the scald table is a burn through the skin) | The lab's steel limit (73.5 °C) and ISO's (65–70 °C) differ because they measure different burns — said so, test checks the physical chain |
 
 ---
 
@@ -647,7 +682,17 @@ Append only. Never rewrite history.
 
 Newest first.
 
-- **2026-09-25 (latest)** — **6A-4 One Event, Four Spheres built.** Every chain run in a scratch runner and
+- **2026-09-25 (latest)** — **6A-5 The Measurement Bench built** (ships with 6A-6). Physics in scratch
+  runners first (the touch's finite volumes against the effusivity closed form; the plate and beaker; Thomsen;
+  the cylinder's parallax; the fall with drag against a step-by-step integration; fits and outliers), then
+  `art-measure.js`. Found on screen or in numbers: the skin's first 10 ms (a grid artefact) counted as a
+  burn — now ignored; a gingerbread-man "heat glove" (now mitts hanging on a rail); steam invisible against
+  pale tiles (alpha raised, tiles darkened); `P.area` called without its base; a cylinder whose top was NaN
+  (`scaleH` never existed); a tray face painted over the minerals in it (the painter's algorithm and one big
+  face — the tray now sorts as ground); a magnifier that put the scale on the far wall (it is on the near
+  wall, between the eye and the meniscus); the trials seeded from the hot plate's setting; and the stirred
+  acid model teaching that slow, iced water-into-acid is safe — the landing drop now boils at 140 °C.
+- **2026-09-25** — **6A-4 One Event, Four Spheres built.** Every chain run in a scratch runner and
   checked against its event before any drawing; `art-terrain.js` written first. Numbers found
   wrong and fixed: the storm tide at half the measured (a steady one-dimensional setup — now the
   bathystrophic equation, whose first version had the transect on the wrong side of the track and
@@ -800,3 +845,13 @@ Learned on 6A-4:
 - **One count per quantity on one screen**: the header, the readout and the stage's own labels
   must use the same year, the same zero and the same units.
 - **Every card needs its own phone chip**: check each set-up with every card open at 390 px.
+
+Learned on 6A-5:
+- **A well-mixed model can teach the opposite of the rule.** Model the place where the danger happens (the
+  drop that lands), not only the average (the stirred beaker).
+- **Before comparing with a standard, match what it measures.** ISO's burn onset and a scald table's burn
+  through the skin are both "burn thresholds" and differ by several degrees.
+- **Big flat faces and the painter's algorithm:** anything that holds small objects (a tray, a bench, a
+  mat) must sort as ground, or its one face centre paints over what sits on it.
+- **Draw the geometry the physics uses:** the scale is on the near wall of a cylinder — the magnifier has to
+  show the eye, the scale and the meniscus in that order, or its parallax is backwards.
