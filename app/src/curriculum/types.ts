@@ -72,22 +72,23 @@ export function simsInGrade(g: GradeCurriculum): string[] {
   return out;
 }
 
-/** How many subtopics in a unit have at least one simulation attached. */
-export function unitCoverage(u: Unit): { covered: number; total: number } {
+/** How many subtopics in a unit have at least one simulation attached — or are
+ *  taught elsewhere, when `also` says so (a Smart Lab set-up, for instance). */
+export function unitCoverage(u: Unit, also?: (code: string) => boolean): { covered: number; total: number } {
   let covered = 0, total = 0;
   for (const t of u.topics) {
     for (const s of t.subtopics) {
       total++;
-      if (s.sims?.length) covered++;
+      if (s.sims?.length || also?.(s.code)) covered++;
     }
   }
   return { covered, total };
 }
 
-export function gradeCoverage(g: GradeCurriculum): { covered: number; total: number } {
+export function gradeCoverage(g: GradeCurriculum, also?: (code: string) => boolean): { covered: number; total: number } {
   return g.units.reduce(
     (acc, u) => {
-      const c = unitCoverage(u);
+      const c = unitCoverage(u, also);
       return { covered: acc.covered + c.covered, total: acc.total + c.total };
     },
     { covered: 0, total: 0 },

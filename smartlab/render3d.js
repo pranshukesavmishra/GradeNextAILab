@@ -297,7 +297,9 @@
         ctx.fillStyle = col;
         ctx.beginPath();
         q.forEach((x, k) => k ? ctx.lineTo(x.x, x.y) : ctx.moveTo(x.x, x.y));
-        ctx.closePath(); ctx.fill();
+        ctx.closePath();
+        if (o.alpha != null) { ctx.save(); ctx.globalAlpha = o.alpha; ctx.fill(); ctx.restore(); }   // a see-through box: a cutaway
+        else ctx.fill();
         if (o.edges !== false) {
           ctx.strokeStyle = rgba(mix(colour, '#05080F', 0.6), 0.75);
           ctx.lineWidth = 1; ctx.stroke();

@@ -468,6 +468,8 @@ window.InsightLab = (function () {
       });
       cv.addEventListener('pointermove', e => {
         if (!drag) return;
+        // a handle being dragged owns the pointer: the view must not turn under the student's hand
+        if (opts.busy && opts.busy()) { drag.x = e.clientX; drag.y = e.clientY; return; }
         const cam = opts.cam();
         if (cam) {
           cam.theta -= (e.clientX - drag.x) * 0.007;
@@ -541,10 +543,96 @@ window.InsightLab = (function () {
   }
   // Never an empty rail: a filter that matches nothing falls back to every lab.
   function visibleSims() { const v = sims.filter(inView); return v.length ? v : sims; }
-  function idFromHash() {
+  /* The address is #<labId> or #<labId>/<setup>: a middle-school lab is a bench
+     with several set-ups (a `setup` select), and a subtopic links straight to the
+     set-up that teaches it. */
+  function hashParts() {
     let h = '';
     try { h = decodeURIComponent((location.hash || '').replace(/^#\/?/, '')); } catch (e) { h = ''; }
-    return sims.some(s => s.id === h) ? h : null;
+    const i = h.indexOf('/');
+    return i < 0 ? { id: h, setup: null } : { id: h.slice(0, i), setup: h.slice(i + 1) || null };
+  }
+  function idFromHash() {
+    const id = hashParts().id;
+    return sims.some(s => s.id === id) ? id : null;
+  }
+  function setupOption(def, value) {
+    let it = null;
+    (def.controls || []).forEach(g => (g.items || []).forEach(i => { if (i.key === 'setup') it = i; }));
+    if (!it || !it.options) return null;
+    return value == null ? it.options : (it.options.find(o => String(o.value) === String(value)) || null);
+  }
+  // mount(): a hash that names this lab and one of its set-ups opens on that set-up
+  function applyHashSetup(def, S) {
+    const h = hashParts();
+    const o = h.id === def.id && h.setup ? setupOption(def, h.setup) : null;
+    if (o) S.p.setup = o.value;
+  }
+  // syncUI(): keep #<labId>/<setup> naming what is on screen, and tell a framing page
+  function syncSetupHash() {
+    const def = R.def, S = R.S;
+    if (!def || !S || !setupOption(def)) return;
+    const cur = String(S.p.setup);
+    if (R.hashSetup === cur && R.hashId === def.id) return;
+    R.hashSetup = cur; R.hashId = def.id;
+    try { history.replaceState(null, '', location.pathname + location.search + '#' + encodeURIComponent(def.id) + '/' + encodeURIComponent(cur)); } catch (e) { /* file:// or sandboxed */ }
+    try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'smartlab:setup', id: def.id, setup: cur }, '*'); } catch (e) { /* no parent */ }
+  }
+  // hashchange: a framing page moves between labs, or between set-ups of one lab
+  function followHash() {
+    const h = hashParts();
+    if (!sims.some(s => s.id === h.id)) return;
+    if (!R.def || R.def.id !== h.id) { mount(h.id); return; }
+    const o = h.setup ? setupOption(R.def, h.setup) : null;
+    if (o && String(R.S.p.setup) !== String(o.value)) {
+      R.S.p.setup = o.value;
+      if (R.def.setup) R.def.setup(R.S);
+      buildControls(R.nodes.controls); syncUI();
+    }
+  }
+  /* Middle school adds two subjects, each accent grounded in something real, as
+     the original three are: engineering in the blue-violet line of a diazo
+     whiteprint, the copy every engineering drawing went out as; Earth and space in
+     olivine green, the most abundant mineral of the upper mantle. */
+  SUBJECTS.push({ id: 'engineering', label: 'Engineering', color: 'eng' },
+                { id: 'earth', label: 'Earth & Space', color: 'earth' });
+  /* With only middle-school labs in view, the rail runs in teaching order — grade,
+     then unit (6A, 6B … 8F) — instead of by subject. */
+  function unitOf(def) { return def.unit || String(gradesOf(def)[0]); }
+  function buildRailMS() {
+    const shown = visibleSims();
+    if (!shown.length || !shown.every(s => gradesOf(s).every(g => g <= 8))) return false;
+    const rail = document.getElementById('rail');
+    rail.innerHTML = '';
+    const units = [];
+    shown.forEach(s => { if (units.indexOf(unitOf(s)) < 0) units.push(unitOf(s)); });
+    units.sort();
+    units.forEach(u => {
+      const list = shown.filter(s => unitOf(s) === u);
+      const sub = SUBJECTS.find(x => x.id === list[0].subject) || SUBJECTS[0];
+      const g = el('div', 'rail-group');
+      const head = el('div', 'rail-head');
+      const dot = el('span', 'rail-dot');
+      dot.style.background = 'var(--' + sub.color + ')';
+      dot.style.boxShadow = '0 0 8px var(--' + sub.color + ')';
+      head.appendChild(dot);
+      head.appendChild(el('span', 'rail-title', 'Unit ' + u));
+      head.appendChild(el('span', 'rail-count', String(list.length)));
+      g.appendChild(head);
+      const cg = el('div', 'rail-chapter');
+      cg.appendChild(el('div', 'rail-chapter-name', list[0].chapter || ''));
+      list.forEach(s => {
+        const b = el('button', 'navbtn');
+        b.style.setProperty('--nav', 'var(--' + sub.color + ')');
+        b.innerHTML = '<strong>' + s.name + '</strong>' + (s.weight ? '<em>' + s.weight + '</em>' : '');
+        b.addEventListener('click', () => mount(s.id));
+        b.dataset.sim = s.id;
+        cg.appendChild(b);
+      });
+      g.appendChild(cg);
+      rail.appendChild(g);
+    });
+    return true;
   }
   function viewLabel() {
     if (VIEW.grade) return VIEW.grade >= 11 ? 'Class ' + VIEW.grade + ' · JEE · NEET' : 'Grade ' + VIEW.grade + ' · NGSS';
@@ -627,6 +715,7 @@ window.InsightLab = (function () {
 
   /* ---------------- rail: subject → chapter → experiment ---------------- */
   function buildRail() {
+    if (buildRailMS()) return;   // GradeNext: a middle-school view runs in teaching order
     const rail = document.getElementById('rail');
     rail.innerHTML = '';
     const shown = visibleSims();
@@ -724,7 +813,8 @@ window.InsightLab = (function () {
           S.p[it.key] = o.value;
           seg.querySelectorAll('button').forEach((x, i) =>
             x.setAttribute('aria-pressed', String(it.options[i].value === o.value)));
-          apply(true);
+          // GradeNext: a select restarts the lab unless it only changes the view (display) or says it need not
+          apply(!(it.display || it.restructure === false));
         });
         seg.appendChild(b);
       });
@@ -826,6 +916,7 @@ window.InsightLab = (function () {
   function syncUI() {
     renderReadouts(); renderEquation(); refreshTitles();
     (R.ctlSync || []).forEach(fn => fn());
+    syncSetupHash();             // GradeNext: #<labId>/<setup> follows the set-up on screen
   }
 
   // a plot may declare title as a function of state, so it can say what it is
@@ -833,7 +924,8 @@ window.InsightLab = (function () {
   function refreshTitles() {
     (R.liveTitles || []).forEach(t => {
       const v = t.fn(R.S);
-      if (t.node.textContent !== v) t.node.textContent = v;
+      if (t.html) { if (t.last !== v) { t.node.innerHTML = v; t.last = v; } }
+      else if (t.node.textContent !== v) t.node.textContent = v;
     });
   }
 
@@ -1060,11 +1152,12 @@ window.InsightLab = (function () {
     // Tell a framing GradeNext page which lab is open, so its own route follows.
     try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'smartlab:mount', id: def.id }, '*'); } catch (e) { /* no parent */ }
     R.S = { p: Object.assign({}, def.params), t: 0, cam: null };
+    applyHashSetup(def, R.S);    // GradeNext: #<labId>/<setup> opens on that set-up
     R.playing = def.autoplay !== false;
     R.speed = 1;
     R.wtIndex = 0; R.wtShown = false;
     R.liveTitles = [];
-    window.__S = R.S; window.__R = R;   // the harness needs the live runtime, not just state
+    window.__S = R.S; window.__R = R; window.__FX = FX;   // the harness needs the live runtime, not just state
     R.quizIndex = 0; R.quizPick = null;
     R.log = [];
     R.plots = [];
@@ -1165,7 +1258,12 @@ window.InsightLab = (function () {
       const eqw = el('div', 'eqwrap');
       const eq = el('div', 'eq');
       eqw.appendChild(eq);
-      if (def.eqNote) eqw.appendChild(el('div', 'eq-note', def.eqNote));
+      if (def.eqNote) {
+        // GradeNext: eqNote may be a function of state, so a multi-set-up lab can explain the relation it is showing
+        const note = el('div', 'eq-note', typeof def.eqNote === 'function' ? def.eqNote(R.S) : def.eqNote);
+        if (typeof def.eqNote === 'function') (R.liveTitles || (R.liveTitles = [])).push({ node: note, fn: def.eqNote, html: true });
+        eqw.appendChild(note);
+      }
       ep.body.appendChild(eqw);
       R.nodes.eq = eq;
       left.appendChild(ep);
@@ -1262,6 +1360,7 @@ window.InsightLab = (function () {
     R.stage = Surface(stageBox, {
       orbit: !!def.is3D,
       cam: () => R.S.cam,
+      busy: () => !!R.drag,
       onPointer: (x, y, down, type) => {
         routeDrag(x, y, type);
         if (def.onPointer) def.onPointer(R.S, x, y, down, type, R.stage);
@@ -1397,7 +1496,7 @@ window.InsightLab = (function () {
     }
     // layer 10 — quality tier follows the measured frame cost
     FX.frameCost = FX.frameCost * 0.9 + (performance.now() - now) * 0.1;
-    FX.quality = FX.frameCost > 22 ? 0.5 : FX.frameCost > 13 ? 0.75 : 1;
+    FX.quality = FX.pin != null ? FX.pin : FX.frameCost > 22 ? 0.5 : FX.frameCost > 13 ? 0.75 : 1;   // a harness may pin the tier
 
     R.plots.forEach((pp, i) => {
       pp.surf.resize(); pp.surf.begin();
@@ -1473,11 +1572,8 @@ window.InsightLab = (function () {
     if (VIEW.embed) document.documentElement.classList.add('is-embed');
     buildRail();
     mount(idFromHash() || visibleSims()[0].id);
-    // A framing page switches labs by changing only the hash; follow it.
-    window.addEventListener('hashchange', () => {
-      const id = idFromHash();
-      if (id && (!R.def || R.def.id !== id)) mount(id);
-    });
+    // A framing page switches labs (or set-ups) by changing only the hash; follow it.
+    window.addEventListener('hashchange', followHash);
     document.addEventListener('keydown', keys);
     window.addEventListener('resize', () => {
       R.stage && R.stage.resize();

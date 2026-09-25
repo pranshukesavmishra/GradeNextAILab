@@ -19,6 +19,8 @@
   --text:#E7EDFB; --text-2:#98A6C6; --text-3:#63729A;
 
   --phys:#3DD6F5; --chem:#FFAE4C; --bio:#FF6B9D;
+  /* GradeNext middle school: diazo-whiteprint violet, olivine green */
+  --eng:#A98BFF; --earth:#8BDC6A;
   --accent:var(--phys);
   --ok:#4ADE80; --warn:#FBBF24; --crit:#FB7185;
 
@@ -33,6 +35,8 @@
 [data-subject="physics"]{--accent:var(--phys);}
 [data-subject="chemistry"]{--accent:var(--chem);}
 [data-subject="biology"]{--accent:var(--bio);}
+[data-subject="engineering"]{--accent:var(--eng);}
+[data-subject="earth"]{--accent:var(--earth);}
 
 *{box-sizing:border-box;}
 body{
@@ -144,7 +148,7 @@ table{border-collapse:collapse;}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;}
 .stagepanel[data-d3="1"] .stage canvas{cursor:grab;}
 .stagepanel[data-d3="1"] .stage canvas:active{cursor:grabbing;}
-.stage-hint{position:absolute;left:10px;bottom:9px;font-family:var(--mono);font-size:9.5px;
+.stage-hint{position:absolute;z-index:2;left:10px;bottom:9px;font-family:var(--mono);font-size:9.5px;
   letter-spacing:.06em;color:var(--text-3);background:rgba(5,8,15,.74);
   padding:3px 7px;border-radius:var(--r1);pointer-events:none;max-width:calc(100% - 20px);}
 .stagepanel:fullscreen{background:var(--ink-950);border-radius:0;}
@@ -258,6 +262,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;
   background:rgba(8,12,22,.95);border:1px solid var(--line);border-radius:var(--r2);
   padding:7px 9px;display:flex;flex-direction:column;gap:3px;min-width:118px;
   box-shadow:0 6px 20px rgba(0,0,0,.5);}
+.tooltip[hidden]{display:none;}
 .tooltip .tr{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;}
 .tooltip .tr i{width:8px;height:8px;border-radius:2px;flex:none;}
 .tooltip .tr b{font-weight:400;color:var(--text-3);flex:1;}
@@ -401,6 +406,9 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;
   <script src="art-physics.js"></script>
   <script src="art-organic.js"></script>
   <script src="mech.js"></script>
+  <script src="art-earth.js"></script>
+  <script src="art-life.js"></script>
+  <script src="art-labware.js"></script>
 <script src="sims-physics.js"></script>
 <script src="sims-physics2.js"></script>
 <script src="sims-physics3.js"></script>
@@ -427,5 +435,6 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;
 <script src="sims-animalia-x2.js"></script>
 <script src="sims-biology.js"></script>
 <script src="sims-biology2.js"></script>
+<script src="sims-g6a-1.js"></script>
 <script src="sims-extend.js"></script>
 <script>InsightLab.boot();</script>

@@ -264,7 +264,30 @@ erosion, fronts, moon-phases, plate-tectonics, radiometric, rock-cycle, seasons,
 unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
 (`phys.collisions` · `massB`, frozen, awaits the founder).
 
-**Middle School on the Smart Lab engine** — none yet. Batch 1 (Grade 6 Unit A) is next.
+**Middle School on the Smart Lab engine** — Batch 1 (Grade 6 Unit A) in progress:
+- **6A-1 The Living Tank — Parts, Boundaries and Flows** (`smartlab/sims-g6a-1.js`, id
+  `g6a-living-tank`, topics A1–A2, 10 subtopics). A planted 54 L tank integrated as one system:
+  18-state RK4 model (O₂ Benson–Krause, CO₂/DIC Weiss + Harned speciation by bisection, two-step
+  Monod nitrification with Anthonisen inhibition, P–I photosynthesis for plants and algae, fish
+  respiration Q10, thermostat heat balance, evaporation, redox bookkeeping Ω), boids shoal with
+  rotational-diffusion noise and an angelfish with a confusion effect. Six set-ups: **unplug**
+  (A1.1, A1.3: interaction web, the filter cut open with its two bacterial populations),
+  **zoom** (A1.2, A1.5: planet → tank → fish → gill → cell → mitochondrion, ray-traced Earth and
+  four textbook plates), **shoal** (A1.4: order Φ, blind runs against noise over four starts),
+  **boundary** (A2.1, A2.5: draggable boundary, ledger that closes to model precision),
+  **sealed** (A2.2: two sealed spheres, carbon conserved to 1e-14), **trace** (A2.3, A2.4:
+  carbon atoms cycle, joules leave as heat, residence times against store ÷ flow). Phone layout:
+  cards fold into chips, the zoom ladder becomes a rung strip.
+- Figure libraries made for it: `art-labware.js` (aquarium kit: gravel, caustics, LED bar,
+  hang-on filter with cutaway, heater, airstone, bubbles, thermometer strip, test kits),
+  `art-life.js` (poseable neon tetra, angelfish, shrimp; cabomba, vallisneria; fish / gill /
+  cell / mitochondrion plates with row-set labels), `art-earth.js` + `data-earth.js` (2048×1024
+  Blue Marble and land mask, ray-traced globe with water-only glint).
+- In the app: `app/src/curriculum/msLabs.ts` (catalogue; `msLabs.test.ts` VM-loads the engine's
+  `sims-g*.js` files and holds the two to each other, checks every claimed topic is fully taught,
+  runs every set-up headless, and checks the model's numbers), `app/src/pages/MiddleSchoolLab.tsx`
+  (framed lab with set-up tabs at `#/ms/<lab>/<setup>`, route ⇄ frame both ways), and Course
+  Library buttons that open the exact set-up that teaches a subtopic (coverage counts them).
 
 **Engine** (`smartlab/`, from InsightVis at `657e3ab`): `lab-core.js` (registry, console,
 control deck, multi-plot, walkthrough, quiz, notebook, camera, drag handles), `render.js`
@@ -272,7 +295,7 @@ control deck, multi-plot, walkthrough, quiz, notebook, camera, drag handles), `r
 `solve.js`, `mech.js`, figure libraries `art-physics.js`, `art-bio.js`, `art-zoo.js`,
 `art-organic.js`, `art-animalia.js`, data `data-animalia.js`, and the `sims-*.js` lab files.
 Harness: the `.mjs` files (never shipped; `app/vite.config.ts` ships only top-level `.js` and
-`assets/`).
+`assets/`). GradeNext's own: `live.mjs` (§6 rule 13).
 
 ---
 
@@ -306,7 +329,10 @@ does not survive `beginPath()`; `g.mix` returns rgb, `RX.mix` returns hex). Grad
     `smartlab/`; CI cannot run it — it needs Playwright).
 13. **Controls are checked for liveness, not just wiring**: for Grades 6–8 labs, every control
     in every set-up must move at least one readout or plot when swept across its range
-    (§2.7 rule 1). Build this into the harness with Batch 1 and keep it green.
+    (§2.7 rule 1). `cd smartlab && node live.mjs [labId] [-v]` must print **LIVE-CLEAN**: each
+    value is a fresh seeded run of the same length (camera reset, render tier pinned via
+    `__FX.pin`), the first value is run twice so only deterministic channels testify, and a
+    control marked `display: true` counts only through the stage or a plot.
 14. **Never `git add -A`.** `git status --short`, delete scratch, stage exact files. Scratch goes
     in the session scratchpad or in gitignored names (`smartlab/_preview*.html`,
     `smartlab/*.png`).
@@ -315,13 +341,36 @@ does not survive `beginPath()`; `g.mix` returns rgb, `RX.mix` returns hex). Grad
     verified increment, so a lost session costs minutes.
 17. The engine never imports React, Three or anything from `app/`; the app reaches the engine
     only through `smartlab/index.html?…#<id>` and `postMessage`.
+18. **Grades 6–8 lab files are `smartlab/sims-g<grade><unit>-<n>.js` and load without a DOM**:
+    registration and model may not touch the page (drawing may). `msLabs.test.ts` loads them in
+    a bare VM, and every new lab gets a row in `msLabs.ts` and model-number tests there.
+19. **A control is shown only in the set-ups whose experiment it belongs to** (`when`). In a
+    chaotic system (a shoal) any perturbation "moves" the output — that is not liveness; scope it.
+20. **A select that only changes the view does not restart the lab**: mark it `display: true` or
+    `restructure: false` (engine rule since 2026-09-25; selects otherwise restart as before).
 
 ---
 
 ## 7. Calibration constants — hard-won, do not re-guess
 
 InsightVis §7 governs for the Higher Secondary labs. GradeNext constants are added here per lab
-as they are found by direct numerical testing — none yet on the Smart Lab engine.
+as they are found by direct numerical testing.
+
+**6A-1 The Living Tank** (verified in `msLabs.test.ts` and the scratch model suite):
+- O₂ saturation 9.09 / 8.26 / 7.54 mg/L at 20 / 25 / 30 °C; CO₂ at 420 ppm, 25 °C 0.63 mg/L;
+  free NH₃ 0.56 % of TAN at pH 7, 25 °C.
+- PLANT {pmax 10, ik 90, resp 0.6}; ALGA {pmax 150, ik 60, resp 7.5, loss 0.012} — algal pmax
+  was 8× too slow at first (no bloom); 150 gives 1–2 doublings a day.
+- FISH {wet 0.40 g, rO2 0.45 mg/g/h, Q10 2.2}: one neon ≈ 0.18 mg O₂/h at 25 °C.
+- BACT {mu1 0.045, mu2 0.030, b 0.002, K 0.5, Ko 0.5}; media: mature 6, new 0.002, tap 0.3,
+  tank 5.4. New tank: ammonia peaks ≈ day 10.7, nitrite ≈ day 24.
+- Mortality starts below 1.3 mg/L O₂ (gasping below 2.5); power cut at 20:00 on a 31 °C night:
+  1.48 mg/L at 07:00. Tap-rinsed media: test-kit 0.5 mg/L NH₃ after ≈ 37 h.
+- Sealed sphere: exact redox bookkeeping (Ω = O₂ + 1.5 NO₂ + 2 NO₃ − organic C) — a blanket
+  photosynthetic quotient made O₂ from nothing; carbon now drifts ~1e-14, Ω ~1e-13.
+- Shoal: noise is rotational diffusion (σ = noise·0.35·√(2/dt) rad/s); lengthwise-swimming
+  preference 0.45, pitch ≤ 20°. Blind Φ over four starts: 0.98 / 0.95 / 0.86 / 0.58 / 0.25 at
+  noise 0 / 1 / 2 / 3 / 4 — order holds, then collapses between 2.5 and 3.5.
 
 Environment constants (this container family):
 - Playwright is pinned at **1.56.1**; its Chromium is `/opt/pw-browsers/chromium-1194/…`, which
@@ -369,7 +418,11 @@ Environment constants (this container family):
 
 ## 9. Current status
 
-**State as of 2026-09-25:**
+**State as of 2026-09-25 (later):**
+- **6A-1 The Living Tank built and verified**: audit CLEAN (43 sims), live.mjs LIVE-CLEAN (83
+  control × set-up pairs), probchk values match their workings, gate green (410 tests), every
+  set-up reviewed at 1500 px, at 430 px and from four orbit views. Framed in the app at
+  `#/ms/g6a-living-tank/<setup>`; the Course Library links A1.1–A2.5 to their set-ups.
 - Higher Secondary: 42 labs live at `#/hs` (commit `71ac7a8`, deployed).
 - Grade 6 Unit A's 27 React sims removed (commit `49cf1ca`, deployed); its 27 subtopics show
   as planned in the Course Library.
@@ -378,9 +431,10 @@ Environment constants (this container family):
 
 **Next, in order:**
 1. **Batch 1 — Grade 6 Unit A, Systems and Subsystems** (`docs/BATCH_PLAN.md` Part B, Batch 1),
-   one lab at a time, starting with 6A-1 *The Living Tank*. Build the figure library it needs
-   first, the engine additions it needs (earth/engineering accents, `unit`/`topics` fields,
-   set-up deep links, the Middle School lab view in the app, the liveness audit) alongside it.
+   one lab at a time: 6A-1 done; next **6A-2 The Draining Tank** (A3), then 6A-3 Four Spheres
+   (A4.1–A4.4; needs relief data and a globe cutaway), 6A-4 One Event, Four Spheres (A4.5–A4.6),
+   6A-5 The Measurement Bench and 6A-6 The Fair Test (A5). Foundations (accents, `unit`/`topics`,
+   set-up deep links, the app lab view, the liveness harness) are done.
 2. Report Batch 1 to the founder with screenshots of every set-up before Batch 2.
 3. Batches 2–18 in order; the Higher Secondary continuation track (Part C) when the founder
    asks for it or between batches.
@@ -435,6 +489,9 @@ Append only. Never rewrite history.
 | 2026-09-25 | **One lab per topic, organised as set-ups; every subtopic taught by a set-up and linked to it** | Founder: multiple things to teach per topic, not one sim per subtopic; keeps subtopic alignment |
 | 2026-09-25 | **Batches follow the teaching order, one unit per batch; Batch 1 is Grade 6 Unit A** | The removed unit leaves the first thing a Grade 6 student opens empty |
 | 2026-09-25 | **Middle-school level: NGSS practice done inside the lab, real equations underneath, grade-band misconceptions as reachable traps, CAST-pattern problems** | InsightVis §2.2 translated to Grades 6–8 without lowering the bar |
+| 2026-09-25 | **Engine fixes that reach every lab**: `.tooltip[hidden]` hides (the empty box sat on every plot); `.stage-hint` above the canvas; the orbit ignores the pointer while a handle is dragged | Found reviewing 6A-1; bugs, so fixed for the keepers too — no lab's content changed |
+| 2026-09-25 | **Engine additions, backward compatible**: `eqNote` may be a function of state; a select restarts unless `display`/`restructure:false`; `R3.box` takes `alpha`; `__FX.pin` for the harness | Multi-set-up labs need set-up-specific notes and view selects that keep the run; cutaways need glass |
+| 2026-09-25 | **Grades 6–8 labs reach the app as `#/ms/<lab>/<setup>`, and the Course Library opens the set-up that teaches each subtopic** | The founder's alignment requirement: every subtopic one click from its experiment |
 
 ---
 
@@ -442,6 +499,22 @@ Append only. Never rewrite history.
 
 Newest first.
 
+- **2026-09-25 (later)** — **6A-1 The Living Tank finished to the ship checklist.**
+  - Reviewed every set-up at 2× and fixed what the screen showed: the engine's always-visible
+    tooltip box and a hint painted under the canvas; plot keys moved into a band above each frame
+    (`plotKey`), day axes that never repeat a label (`dayAxis`); history opens on three recorded
+    lived-in days (the run starts on day 4); readout labels short enough never to truncate; the
+    unplug header now says what its numbers say; the web card places each flow label where it
+    clears the nodes and the others; eqNote per set-up; stones drawn as projected hulls (a
+    sliver read as a dead fish); neons swim level and lengthwise; the shoal camera close and
+    following; plates labelled in rows inside their box; the globe lit from the side with Africa
+    in view; the ledger's notes on their own line; a phone layout for every set-up.
+  - The blind order curve averaged over four starts (it dipped at noise 0.5 on one start); the
+    emergence problem moved to noise 3.0 (Φ 0.59) where "loosely aligned" is true.
+  - Wrote `live.mjs`; it found `graph` and `cutFilter` dead in four set-ups and the tank's
+    controls "live" in the shoal only through chaos — scoped them per set-up; made the filter
+    cutaway real (glass shell + an inset of the media and both bacterial populations).
+  - App: `msLabs.ts` + test (20 tests), the framed lab page, the route, Course Library links.
 - **2026-09-25** — **Founder: merge InsightVis as Higher Secondary, adopt its process, remove
   Grade 6 Unit A, plan batches.**
   - Merged the InsightVis engine and its 42 labs intact into `smartlab/`, added a marked
@@ -514,3 +587,13 @@ Still true on any engine:
   finding the real crossover of two computed lines, not asserted.
 - **Diagnose with numbers, not by reading code** — standalone runner scripts found every real
   model bug in that era.
+
+Learned on the Smart Lab engine (6A-1):
+- **Look at every set-up at 2× before calling it done.** The audit was CLEAN while an empty
+  tooltip box sat on every plot of every lab and a stone rendered as a dead fish.
+- **A liveness harness must control its own noise**: reset the camera, pin the render tier, run
+  the first value twice. Without that, noise passed a control that drew nothing.
+- **A background curve from one random start is not a result** — average several starts, and
+  let the problem read the very same runs the curve is made of.
+- **Overlays are laid out, not placed**: keys above frames, labels searched for a clear spot,
+  plate labels in rows inside their box, cards that fold on a phone.

@@ -8,6 +8,7 @@ import {
   type Topic, type Unit,
 } from "../curriculum";
 import { HS_LABS } from "../curriculum/hsLabs";
+import { msTeaching, type MsTeaching } from "../curriculum/msLabs";
 
 interface LibraryProps {
   onOpen: (id: string, band: GradeBand) => void;
@@ -15,6 +16,8 @@ interface LibraryProps {
   initialGrade?: number;
   /** Class 11–12 lives on its own page (the Smart Lab engine), not in a curriculum tab. */
   onOpenHS: () => void;
+  /** A Grades 6–8 Smart Lab experiment, opened on the set-up that teaches the subtopic. */
+  onOpenLab: (labId: string, setup: string) => void;
 }
 
 /**
@@ -26,12 +29,14 @@ interface LibraryProps {
  * Units run in the order they are taught, topics in the order they are taught,
  * and each subtopic carries the simulations that teach it.
  */
-export function Library({ onOpen, initialGrade, onOpenHS }: LibraryProps) {
+export function Library({ onOpen, initialGrade, onOpenHS, onOpenLab }: LibraryProps) {
   const [grade, setGrade] = useState<number>(initialGrade ?? CURRICULA[0].grade);
   const curriculum = CURRICULA.find((c) => c.grade === grade) ?? CURRICULA[0];
   const [openUnit, setOpenUnit] = useState<string>(curriculum.units[0].code);
 
-  const coverage = useMemo(() => gradeCoverage(curriculum), [curriculum]);
+  // a subtopic a Smart Lab set-up teaches is covered as surely as one with a simulation
+  const taught = useMemo(() => (code: string) => msTeaching(curriculum.grade, code).length > 0, [curriculum]);
+  const coverage = useMemo(() => gradeCoverage(curriculum, taught), [curriculum, taught]);
 
   const pickGrade = (g: number) => {
     setGrade(g);
@@ -71,7 +76,7 @@ export function Library({ onOpen, initialGrade, onOpenHS }: LibraryProps) {
 
         <p className="lib-coverage">
           <strong>{countSubtopics(curriculum)}</strong> subtopics ·{" "}
-          <strong>{coverage.covered}</strong> with a simulation attached
+          <strong>{coverage.covered}</strong> with a simulation or experiment attached
           <span className="lib-bar" aria-hidden="true">
             <span style={{ width: `${(100 * coverage.covered) / coverage.total}%` }} />
           </span>
@@ -87,6 +92,8 @@ export function Library({ onOpen, initialGrade, onOpenHS }: LibraryProps) {
             open={openUnit === unit.code}
             onToggle={() => setOpenUnit((u) => (u === unit.code ? "" : unit.code))}
             onOpen={onOpen}
+            onOpenLab={onOpenLab}
+            taught={taught}
           />
         ))}
       </div>
@@ -95,12 +102,14 @@ export function Library({ onOpen, initialGrade, onOpenHS }: LibraryProps) {
 }
 
 function UnitBlock(
-  { unit, grade, open, onToggle, onOpen }: {
+  { unit, grade, open, onToggle, onOpen, onOpenLab, taught }: {
     unit: Unit; grade: number; open: boolean; onToggle: () => void;
     onOpen: (id: string, band: GradeBand) => void;
+    onOpenLab: (labId: string, setup: string) => void;
+    taught: (code: string) => boolean;
   },
 ) {
-  const cov = unitCoverage(unit);
+  const cov = unitCoverage(unit, taught);
   return (
     <section className={`lib-unit sub-${unit.subject} ${open ? "is-open" : ""}`}>
       <button type="button" className="lib-unit-head" onClick={onToggle} aria-expanded={open}>
@@ -118,7 +127,7 @@ function UnitBlock(
       {open && (
         <ol className="lib-topics">
           {unit.topics.map((topic) => (
-            <TopicRow key={topic.code} topic={topic} grade={grade} onOpen={onOpen} />
+            <TopicRow key={topic.code} topic={topic} grade={grade} onOpen={onOpen} onOpenLab={onOpenLab} />
           ))}
         </ol>
       )}
@@ -127,10 +136,23 @@ function UnitBlock(
 }
 
 function TopicRow(
-  { topic, grade, onOpen }: {
+  { topic, grade, onOpen, onOpenLab }: {
     topic: Topic; grade: number; onOpen: (id: string, band: GradeBand) => void;
+    onOpenLab: (labId: string, setup: string) => void;
   },
 ) {
+  // One button per Smart Lab set-up that teaches any subtopic here, in the order taught.
+  const experiments = useMemo(() => {
+    const out: (MsTeaching & { codes: string[] })[] = [];
+    for (const s of topic.subtopics) {
+      for (const m of msTeaching(grade, s.code)) {
+        const row = out.find((x) => x.lab.id === m.lab.id && x.setup.value === m.setup.value);
+        if (row) row.codes.push(s.code); else out.push({ ...m, codes: [s.code] });
+      }
+    }
+    return out;
+  }, [topic, grade]);
+
   // One button per distinct simulation in the topic, in the order taught.
   const sims = useMemo(() => {
     const seen = new Set<string>();
@@ -157,12 +179,30 @@ function TopicRow(
 
       <ul className="lib-subs">
         {topic.subtopics.map((s) => (
-          <li key={s.code} className={s.sims?.length ? "has-sim" : ""}>
+          <li key={s.code} className={s.sims?.length || msTeaching(grade, s.code).length ? "has-sim" : ""}>
             <span className="lib-sub-code">{s.code}</span>
             <span className="lib-sub-title">{s.title}</span>
           </li>
         ))}
       </ul>
+
+      {experiments.length > 0 && (
+        <div className="lib-simrow lib-labrow">
+          {experiments.map(({ lab, setup, codes }) => (
+            <button
+              key={`${lab.id}/${setup.value}`}
+              type="button"
+              className={`lib-simbtn lib-labbtn sub-${lab.subject}`}
+              onClick={() => onOpenLab(lab.id, setup.value)}
+            >
+              <span className="lib-simbtn-title">{setup.label}</span>
+              <span className="lib-simbtn-modes">
+                <Icon name="lab" size={13} />{lab.name.split(" — ")[0]} · {codes.join(" · ")}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {sims.length > 0 && (
         <div className="lib-simrow">

@@ -1000,3 +1000,20 @@ svg { flex: none; }
   .hs-stats > div { padding: 8px 12px; }
   .hs-labbar-title span { display: none; }
 }
+
+/* Grades 6–8 Smart Lab experiments: in the Course Library, and framed with their set-ups */
+.lib-labrow { margin-bottom: 8px; }
+.lib-labbtn .lib-simbtn-modes { display: inline-flex; align-items: center; gap: 5px; }
+.ms-setups {
+  display: flex; gap: 6px; flex: none; overflow-x: auto; padding: 7px 14px;
+  border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.ms-setup {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px; flex: none;
+  padding: 6px 12px; border-radius: var(--r-md); cursor: pointer; font: inherit;
+  border: 1px solid var(--line2); background: transparent; color: var(--ink2);
+}
+.ms-setup:hover { border-color: var(--accent); }
+.ms-setup.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.ms-setup-label { font-weight: 650; font-size: 13px; white-space: nowrap; }
+.ms-setup-codes { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
