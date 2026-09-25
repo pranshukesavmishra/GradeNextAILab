@@ -514,3 +514,194 @@ describe("6A-4 One Event, Four Spheres — the models", () => {
     expect(Math.min(...dry.map((r) => r.crop))).toBeLessThan(0.7);
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * 6A-5 The Measurement Bench: each safety rule and each measurement is computed, and checked
+ * ------------------------------------------------------------------ */
+describe("6A-5 The Measurement Bench — the models", () => {
+  type Mat = { k: number; rho: number; c: number };
+  type Touch = { peak: number; dose: number; burn: number | null; pain: number | null };
+  type Target = { mat: Mat; L: number; fixed: boolean };
+  const M = engine.InsightLab.models["g6a-measurement-bench"] as unknown as {
+    MAT: Record<string, Mat>; eff: (m: Mat) => number; burnTime: (T: number) => number;
+    touch: (tg: Target, T: number, protection: string, hold: number) => Touch; targetOf: (p: Record<string, unknown>) => Target;
+    thresholdT: (tg: Target, protection: string, hold: number) => number;
+    thermalRun: (p: Record<string, unknown>) => { t: number; Tp: number; Tb: number }[];
+    QTH: (n: number) => number;
+    dilute: (o: Record<string, unknown>) => { peak: number; peakBulk: number; above: number; final: number };
+    measure: (p: Record<string, unknown>) => { r: number; dr: number; rel: number; cands: string[] };
+    fallTime: (ball: string, h: number) => number;
+    trialsOf: (o: Record<string, unknown>) => { t: number; out: { watch: number; gate: number }[] };
+    stats: (a: number[]) => { mean: number; sd: number };
+    fit: (P: number[][], origin: boolean) => { a: number; b: number };
+    outlierOf: (P: number[][], origin: boolean) => { i: number; z: number } | null;
+    DATASETS: Record<string, { rows: number[][] }>; BASE: () => Record<string, unknown>;
+  };
+  const glassWater = () => M.targetOf({ target: "beaker", beaker: "glass", contents: "water" });
+
+  it("finds the contact temperature the effusivities give: glass at 90 °C puts skin at 64.5 °C", () => {
+    const thick = { mat: M.MAT.glass, L: 0.02, fixed: true };
+    const cf = (M.eff(M.MAT.glass) * 90 + M.eff(M.MAT.skin) * 33) / (M.eff(M.MAT.glass) + M.eff(M.MAT.skin));
+    expect(cf).toBeCloseTo(64.5, 1);
+    expect(Math.abs(M.touch(thick, 90, "bare", 0.5).peak - cf)).toBeLessThan(0.3);
+  });
+
+  it("reproduces Moritz and Henriques's table: 5 s at 60 °C, 1 s at 68.3 °C, nothing below 44 °C", () => {
+    expect(M.burnTime(60)).toBeCloseTo(5, 6);
+    expect(M.burnTime(68.3)).toBeCloseTo(1, 6);
+    expect(M.burnTime(43.9)).toBe(Infinity);
+  });
+
+  it("puts bare steel's one-second limit where its contact with skin reaches the table's 1 s temperature (68.3 °C)", () => {
+    // ISO 13732-1's limits mark the first sign of a burn (bare metal 65–70 °C for 1 s); the lab's burn is the scald
+    // table's burn through the skin, a few degrees later. The chain is what is checked: effusivities, then the table.
+    const steel = { mat: M.MAT.steel, L: 0.01, fixed: true }, es = M.eff(M.MAT.steel), ek = M.eff(M.MAT.skin);
+    const T = M.thresholdT(steel, "bare", 1), Tc = (es * T + ek * 33) / (es + ek);
+    expect(Math.abs(Tc - 68.3)).toBeLessThan(0.5);
+    expect(T).toBeGreaterThan(70);
+    expect(T).toBeLessThan(76);
+  });
+
+  it("burns in a blink on steel, in seconds on glass, not at all through a heat mitt or with tongs", () => {
+    const steel = M.targetOf({ target: "beaker", beaker: "steel", contents: "water" });
+    expect(M.touch(steel, 90, "bare", 2).burn!).toBeLessThan(0.1);
+    const g = M.touch(glassWater(), 90, "bare", 5);
+    expect(g.burn!).toBeGreaterThan(1);
+    expect(g.burn!).toBeLessThan(4);
+    expect(M.touch(glassWater(), 100, "heat", 30).burn).toBeNull();
+    expect(M.touch(glassWater(), 100, "tongs", 30).peak).toBe(33);
+  });
+
+  it("holds water at 100 °C at most, lets an empty beaker go past it, and keeps the plate hot long after switching off", () => {
+    const w = M.thermalRun({ ...M.BASE(), set: 350 }), e = M.thermalRun({ ...M.BASE(), set: 300, contents: "empty" });
+    expect(Math.max(...w.map((r) => r.Tb))).toBeLessThanOrEqual(100);
+    expect(Math.max(...e.map((r) => r.Tb))).toBeGreaterThan(130);
+    const r35 = w.find((r) => r.t >= 35)!;                            // 20 minutes after switching off
+    expect(r35.Tp).toBeGreaterThan(60);
+  });
+
+  it("releases Thomsen's heat: 74.73 kJ per mol of acid at infinite dilution, 26.7 kJ with one water", () => {
+    expect(M.QTH(1e9)).toBeCloseTo(74.73, 2);
+    expect(M.QTH(1)).toBeCloseTo(26.7, 1);
+  });
+
+  it("warms acid poured into water to about 70 °C, but boils water poured into acid — even slowly, in ice", () => {
+    const base = { acidV: 20, waterV: 100, strength: 98, rate: 1, bath: "air" };
+    const a2w = M.dilute({ ...base, order: "acid-into-water" }), w2a = M.dilute({ ...base, order: "water-into-acid" });
+    expect(a2w.peak).toBeGreaterThan(65);
+    expect(a2w.peak).toBeLessThan(76);
+    expect(a2w.above).toBe(0);
+    expect(w2a.peakBulk).toBeGreaterThan(130);
+    const cold = M.dilute({ ...base, order: "water-into-acid", rate: 0.2, bath: "ice" });
+    expect(cold.peakBulk).toBeLessThan(100);
+    expect(cold.above).toBeGreaterThan(0);
+    const weak = M.dilute({ ...base, order: "water-into-acid", strength: 40 });
+    expect(weak.above).toBe(0);
+  });
+
+  it("tells gold from fool's gold at once, but pyrite from hematite only with the overflow can", () => {
+    const B = M.BASE();
+    expect(M.measure({ ...B, specimen: "B", size: "small", cyl: 25 }).cands).toEqual(["gold"]);
+    expect(M.measure({ ...B, specimen: "A", size: "medium", cyl: 100 }).cands).toEqual(expect.arrayContaining(["pyrite", "hematite"]));
+    const over = { ...B, size: "large", method: "overflow", catchCyl: 25 };
+    expect(M.measure({ ...over, specimen: "A" }).cands).toEqual(["pyrite"]);
+    expect(M.measure({ ...over, specimen: "C" }).cands).toEqual(["hematite"]);
+    expect(M.measure({ ...over, specimen: "C" }).rel).toBeLessThan(0.02);
+  });
+
+  it("lets a forgotten tare and a high eye mislead the overflow measurement", () => {
+    const over = { ...M.BASE(), specimen: "A", size: "large", method: "overflow", catchCyl: 25 };
+    expect(M.measure({ ...over, tared: false }).cands).toEqual(["magnetite"]);
+    expect(M.measure({ ...over, eye: 3 }).cands).not.toContain("pyrite");
+  });
+
+  it("times a fall exactly: 0.4517 s for 1 m, and g from the gates within 0.1 %", () => {
+    const t = M.fallTime("steel", 1);
+    let x = 0, v = 0, tn = 0;                                        // an independent step-by-step integration
+    const m = 0.0642, A = Math.PI * 0.0125 ** 2, Vb = (Math.PI * 0.025 ** 3) / 6, g1 = 9.81 * (1 - (1.2 * Vb) / m);
+    while (x < 1) { const a = g1 - (0.5 * 1.2 * 0.47 * A * v * v) / m; v += a * 1e-5; x += v * 1e-5; tn += 1e-5; }
+    expect(Math.abs(t - tn)).toBeLessThan(1e-4);
+    expect(t).toBeCloseTo(0.4517, 4);
+    expect(Math.abs(2 / (t * t) - 9.81) / 9.81).toBeLessThan(0.001);
+    expect(2 / M.fallTime("pingpong", 1) ** 2).toBeLessThan(9.4);
+  });
+
+  it("finds a stopwatch about 0.19 s short when you react to a partner — however many drops are averaged", () => {
+    const P = M.trialsOf({ ball: "steel", h: 1, n: 30, who: "partner", set: 1 }), S2 = M.trialsOf({ ball: "steel", h: 1, n: 30, who: "self", set: 1 });
+    const short = P.t - M.stats(P.out.map((q) => q.watch)).mean;
+    expect(short).toBeGreaterThan(0.15);
+    expect(short).toBeLessThan(0.23);
+    expect(Math.abs(P.t - M.stats(S2.out.map((q) => q.watch)).mean)).toBeLessThan(0.03);
+    expect(M.stats(P.out.map((q) => q.gate)).sd).toBeLessThan(0.0002);
+  });
+
+  it("finds the misread piece, the density as the slope, g from time² against height, and the lying axis", () => {
+    const mass = M.DATASETS.mass.rows, out = M.outlierOf(mass, true)!;
+    expect(out.i).toBe(3);
+    expect(M.fit(mass.filter((_, i) => i !== 3), true).b).toBeCloseTo(5.03, 1);
+    const sq = M.DATASETS.fall.rows.map(([h, t]) => [h, t * t]);
+    expect(Math.abs(2 / M.fit(sq, true).b - 9.81) / 9.81).toBeLessThan(0.002);
+    const a = M.fallTime("steel", 1), b = M.fallTime("pingpong", 1);
+    expect(b / a).toBeLessThan(1.04);
+    expect((b - 0.445) / (a - 0.445)).toBeGreaterThan(2);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * 6A-6 The Fair Test: the paper helicopter, the class's data, the plans
+ * ------------------------------------------------------------------ */
+describe("6A-6 The Fair Test — the models", () => {
+  type D = { L: number; w: number; clips: number; paper: string; colour: string; extra: number };
+  const M = engine.InsightLab.models["g6a-fair-test"] as unknown as {
+    heli: (d: D) => { m: number; vt: number; flutter: number; A: number; Cr: number };
+    flight: (d: D, H: number, k?: number, up?: number) => { t: number; v: number };
+    drops: (d: D, H: number, n: number, seed: number) => { t: number; gate: number; watch: number }[];
+    stats: (a: number[]) => { mean: number; sd: number };
+    designsOf: (p: Record<string, unknown>) => { A: D; B: D };
+    judge: (claim: string, ev: string) => { verdict: string };
+    BASE_D: D; BASE: () => Record<string, unknown>;
+  };
+  const d = (o: Partial<D>) => ({ ...M.BASE_D, ...o });
+
+  it("falls at about a metre a second, as paper helicopters do, and at the closed form √(2mg ÷ ρCA)", () => {
+    const h = M.heli(M.BASE_D);
+    expect(h.vt).toBeGreaterThan(0.8);
+    expect(h.vt).toBeLessThan(1.5);
+    expect(h.vt).toBeCloseTo(Math.sqrt((2 * h.m * 9.81) / (1.2 * h.Cr * h.A)), 6);
+    expect(Math.abs(M.flight(M.BASE_D, 20).v - h.vt) / h.vt).toBeLessThan(0.01);   // a long fall settles at it
+  });
+
+  it("falls faster when heavier (as √m) and slower with longer blades, until they flutter", () => {
+    const t = (o: Partial<D>) => M.flight(d(o), 3).t;
+    expect(t({ clips: 0 })).toBeGreaterThan(t({ clips: 1 }));
+    expect(t({ clips: 1 })).toBeGreaterThan(t({ clips: 3 }));
+    expect(t({ L: 9 })).toBeGreaterThan(t({ L: 6 }));
+    expect(t({ L: 14 })).toBeLessThan(t({ L: 10.5 }));
+    expect(M.heli(d({ L: 14 })).flutter).toBeGreaterThan(0.5);
+    expect(M.heli(d({ L: 8 })).flutter).toBe(0);
+  });
+
+  it("makes longer blades from the same paper heavier — the confound the fair test flags", () => {
+    const { A, B } = M.designsOf({ ...M.BASE(), vary: "length", aL: 7, bL: 10, balance: false });
+    expect((M.heli(B).m - M.heli(A).m) * 1000).toBeCloseTo(0.144, 3);
+    const bal = M.designsOf({ ...M.BASE(), vary: "length", aL: 7, bL: 10, balance: true });
+    expect(M.heli(bal.A).m).toBeCloseTo(M.heli(bal.B).m, 9);
+  });
+
+  it("scatters each drop by a few percent, and lets colour change nothing", () => {
+    const ds = M.drops(M.BASE_D, 3, 40, 1).map((q) => q.gate), st = M.stats(ds);
+    expect(st.sd / st.mean).toBeGreaterThan(0.02);
+    expect(st.sd / st.mean).toBeLessThan(0.06);
+    expect(M.flight(d({ colour: "red" }), 3).t).toBe(M.flight(M.BASE_D, 3).t);
+  });
+
+  it("judges the class's claims: overstated, supported, not supported, contradicted, no evidence — and all 24 rows unfair", () => {
+    expect(M.judge("longer", "alike").verdict).toBe("overstated");
+    expect(M.judge("heavier", "alike").verdict).toBe("supported");
+    expect(M.judge("red", "alike").verdict).toBe("not supported");
+    expect(M.judge("card", "alike").verdict).toBe("contradicted");
+    expect(M.judge("wider", "alike").verdict).toBe("no evidence");
+    expect(M.judge("longer", "all").verdict).toBe("unfair comparison");
+    expect(M.judge("heavier", "few").verdict).toBe("too little evidence");
+  });
+});

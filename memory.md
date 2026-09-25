@@ -325,6 +325,30 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   normals, a 150 mm soil bucket, canal water as the square of the rain, wells for the rest; the
   aquifer falls by the extra pumping ÷ 0.08; clay compacts 1/15 m per metre of new low head —
   Poland's benchmark pole; the ground never comes back).
+- **6A-5 The Measurement Bench — Safety, SI Units and Honest Numbers** (`smartlab/sims-g6a-5.js`,
+  id `g6a-measurement-bench`, topic A5 with 6A-6). Five experiments on one bench. **hot** (A5.1: a
+  beaker heated on a hot plate looks exactly like a cold one; the touch is computed layer by layer —
+  object, glove, skin — and the burn read off Moritz and Henriques's table; glass or steel, water or
+  empty, bare, nitrile, heat mitts or tongs; a thermal camera that shows the heat, and shows shiny steel
+  as cold), **acid** (A5.1: Thomsen's heat of dilution in a stirred beaker in a fume cupboard; water
+  poured into acid boils where each drop lands, even slowly, even in ice; acid into water warms a large
+  mass), **density** (A5.3: a balance, cylinders or an overflow can, six mystery minerals; parallax,
+  the meniscus, the tare, ± half a division; can the method tell pyrite from hematite, is the nugget
+  gold; g/cm³ and kg/m³), **timing** (A5.3, A5.4: a drop tower with a release clamp, two light gates
+  and a stroboscope, a stopwatch started by a reacting partner or by yourself, a table of drops; what
+  averaging fixes and what it cannot), **graph** (A5.4: the notebook table and graph paper — which
+  axis, points or a line, the best fit, the outlier, time² that straightens, the axis that lies — and
+  what a reader would conclude from it).
+- **6A-6 The Fair Test — Variables, Evidence and Investigation Design** (`smartlab/sims-g6a-6.js`,
+  id `g6a-fair-test`, topic A5 with 6A-5). A paper helicopter autorotating down a stairwell through two
+  light gates. **fair** (A5.2: change one thing between A and B; the lab names the independent,
+  dependent and held variables — and what changed anyway: longer blades from the same paper are
+  heavier; an open window lifts the air), **trials** (A5.2, A5.4: two designs 5 % apart; the means and
+  their uncertainties as drops add up, told apart when the difference is twice its uncertainty),
+  **cer** (A5.5: a class table of 24 helicopters; five claims tested against the rows chosen as
+  evidence — overstated, supported, not supported, contradicted, no evidence, unfair comparison, too
+  little), **design** (A5.6: a planning board checked on five criteria before the plan runs exactly as
+  written, and its result against the whole pattern).
 - Shared overlay kit `kit-ms.js` (KITMS: header, card, cardSlot/chipHit for phones, fitText,
   wrapText, led, plotKey, dayAxis, secAxis, watch) — every Grades 6–8 lab from 6A-2 on uses it.
   A stage with several cards gets a row of chips on a phone, one card open at a time
@@ -346,7 +370,14 @@ unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
   landscape block lit and painted per cell, drawn far to near with the things standing on it;
   water with shorelines, depth colour, glint and Fresnel; cut faces showing strata, the water table
   and the sea; trees in six states from live to burnt to sprouting; houses that flood; smoke and
-  ash plumes; rain; a benchmark pole).
+  ash plumes; rain; a benchmark pole). `art-measure.js` (MEAS: an epoxy bench and tiled wall; a ceramic-topped
+  hot plate with knobs and a hot-top light; glass and steel beakers with boiling and steam; tongs, mitts,
+  a glove box, a heat-proof mat; the thermal camera's palette and emissivity; the skin-section plate; a
+  fume cupboard, stirrer bar, graduated dropping funnel, reagent and wash bottles with the GHS label, an
+  ice bath, spatter; a top-loading balance, weighing boat, graduated cylinders with a real meniscus, an
+  overflow can, six minerals in their habits and lustres, a specimen tray, the parallax magnifier; a
+  drop tower with release clamp, flat light gates and sand box, steel / glass / ping-pong balls; the
+  paper helicopter, the drop frame and a wall tape).
 - In the app: `app/src/curriculum/msLabs.ts` (catalogue; `msLabs.test.ts` VM-loads the engine's
   `sims-g*.js` files and holds the two to each other, checks every claimed topic is fully taught,
   runs every set-up headless, and checks the model's numbers), `app/src/pages/MiddleSchoolLab.tsx`
@@ -528,6 +559,20 @@ as they are found by direct numerical testing.
 - Graphs: an outlier's residual > 3× the leave-one-out scatter; pyrite slope through zero 5.03 without the
   misread piece (4.90 with it); t² against h through zero → g 9.800; bars from 0.445 s show 3.1 % as 3.1×.
 
+**6A-6 The Fair Test** (verified in `msLabs.test.ts`):
+- Helicopter: blades L × w from copy paper (80 g/m²; tissue 25, card 160), a 7 cm body folded to thirds,
+  paper clips 0.45 g. The spinning rotor is a drag disc πL², C 1.2; before it spins up (first 25 cm) the
+  strip falls with drag 0.5 on a quarter of the disc. Flutter from L/w > 3.2·∛(stiffness) (copy 1, card
+  4.5, tissue 0.35): up to 65 % of the rotor's drag lost. Tip speed 2.6 × the fall.
+- 8 cm × 3 cm, one clip: 1.27 g, 0.93 m/s (= √(2mg ÷ ρCA)), 3.14 s for 3 m; slowest at about 10.25 cm
+  (flutter from 9.6); 7 → 10 cm from the same paper adds 144 mg.
+- Drop to drop the drag scatters 7 % (the time 3.5 %), more when fluttering; an open window lifts the
+  stairwell's air at 0.1 m/s (3.14 → 3.49 s). Gates 1 ms; the stopwatch as in 6A-5 (you drop it).
+- The class table: a careful 5–14 cm series, red/blue, card, and 0/2/3-clip groups on the 8 cm design,
+  four mixed; group comparisons use every drop. Verdicts: longer — overstated (flutter beyond 11 cm);
+  heavier — supported; red — not supported; card — contradicted; wider — no evidence; all 24 rows —
+  unfair comparison; three rows — too little evidence.
+
 Environment constants (this container family):
 - Playwright is pinned at **1.56.1**; its Chromium is `/opt/pw-browsers/chromium-1194/…`, which
   the InsightVis harness hardcodes. Never run `playwright install`.
@@ -575,10 +620,11 @@ Environment constants (this container family):
 ## 9. Current status
 
 **State as of 2026-09-25 (latest):**
-- **6A-5 The Measurement Bench built** (`sims-g6a-5.js`, `art-measure.js`; five set-ups hot, acid, density,
-  timing, graph; 9 problems whose measures match their workings; 12 model tests green). Not yet committed:
-  it claims topic A5 with 6A-6, and the catalogue's per-topic rule (rightly) fails until 6A-6 teaches
-  A5.2, A5.5, A5.6 — so the two ship together.
+- **Batch 1 built: 6A-5 The Measurement Bench and 6A-6 The Fair Test ship together** (they share topic
+  A5). Audit CLEAN (48 sims), live.mjs LIVE-CLEAN (6A-5 35 pairs, 6A-6 22), every problem's measure
+  matches its working (6A-5: 65 °C, 79 °C, 70 °C, 181 °C, 19.1 g/cm³, 1.7 %, 0.4517 s, 0.18 s, 5.03;
+  6A-6: 0.93 m/s, 144 mg, 3.14 s, 4–6 drops, 0.63 s, 10.25 cm), all 27 Unit A subtopics taught and linked,
+  every set-up reviewed wide and at 390 px with each card open.
 - **6A-4 One Event, Four Spheres built and verified**: audit CLEAN (46 sims), live.mjs LIVE-CLEAN
   (19 pairs), every problem's measure matches its working (0.383 °C, 7.5 Mt, 6.92 m, 0.70 m,
   1,398 mm, 138, 19.6 mm, 177 cm), gate green (471 tests), every set-up reviewed at 1500 px, at
@@ -604,9 +650,7 @@ Environment constants (this container family):
 
 **Next, in order:**
 1. **Batch 1 — Grade 6 Unit A, Systems and Subsystems** (`docs/BATCH_PLAN.md` Part B, Batch 1),
-   one lab at a time: 6A-1 to 6A-4 shipped, 6A-5 built; next **6A-6 The Fair Test** (A5.2, A5.5,
-   A5.6: the paper helicopter), then ship 6A-5 + 6A-6 together. Foundations (accents, `unit`/`topics`,
-   set-up deep links, the app lab view, the liveness harness) are done.
+   **done: 6A-1 to 6A-6**, every Unit A subtopic taught by a set-up and linked from the Library.
 2. Report Batch 1 to the founder with screenshots of every set-up before Batch 2.
 3. Batches 2–18 in order; the Higher Secondary continuation track (Part C) when the founder
    asks for it or between batches.
@@ -682,7 +726,15 @@ Append only. Never rewrite history.
 
 Newest first.
 
-- **2026-09-25 (latest)** — **6A-5 The Measurement Bench built** (ships with 6A-6). Physics in scratch
+- **2026-09-25 (latest)** — **6A-6 The Fair Test built; 6A-5 and 6A-6 shipped together; Batch 1 complete.**
+  The helicopter checked in a scratch runner first (the closed form, the fall from rest, the flutter
+  peak, the mass confound). Found in numbers: a rising draught that made the helicopter fall faster (a
+  sign), a class table whose random rows could not test the colour or card claims (rebuilt as a careful
+  class would make it), group comparisons from two helicopter means (far too sure — now every drop), a
+  flutter too weak to show, and a drop scatter stated as the drag's 3.5 % when the time's was half that.
+  Found on screen: a close-up that cut B off, a stray handrail line, a verdict stamp over its text on a
+  phone, a design chart balanced to the wrong mass and plotted at unrounded lengths.
+- **2026-09-25** — **6A-5 The Measurement Bench built** (ships with 6A-6). Physics in scratch
   runners first (the touch's finite volumes against the effusivity closed form; the plate and beaker; Thomsen;
   the cylinder's parallax; the fall with drag against a step-by-step integration; fits and outliers), then
   `art-measure.js`. Found on screen or in numbers: the skin's first 10 ms (a grid artefact) counted as a
@@ -855,3 +907,10 @@ Learned on 6A-5:
   mat) must sort as ground, or its one face centre paints over what sits on it.
 - **Draw the geometry the physics uses:** the scale is on the near wall of a cylinder — the magnifier has to
   show the eye, the scale and the meniscus in that order, or its parallax is backwards.
+
+Learned on 6A-6:
+- **State the scatter of what is measured**, not of what causes it: a 7 % scatter in drag is 3.5 % in time.
+- **An uncertainty from two samples is not an uncertainty**: compare groups from every measurement, not
+  from a couple of means that may happen to agree.
+- **Evidence tables must be built to test the claims asked of them** — a random table cannot show that
+  colour does nothing; a careful class's groups can. And a claim the data never varied has no evidence.

@@ -82,6 +82,27 @@ export const MS_LABS: MsLab[] = [
       { value: "drought", label: "A drought in a farming valley", teaches: ["A4.5", "A4.6"] },
     ],
   },
+  {
+    id: "g6a-measurement-bench", grade: 6, unit: "A", topics: ["A5"], subject: "engineering",
+    name: "The Measurement Bench — Safety, SI Units and Honest Numbers",
+    setups: [
+      { value: "hot", label: "Hot glass looks like cold glass", teaches: ["A5.1"] },
+      { value: "acid", label: "Acid into water — never water into acid", teaches: ["A5.1"] },
+      { value: "density", label: "Weigh it, measure it, name it", teaches: ["A5.3"] },
+      { value: "timing", label: "Stopwatch against light gates", teaches: ["A5.3", "A5.4"] },
+      { value: "graph", label: "From the table to the graph", teaches: ["A5.4"] },
+    ],
+  },
+  {
+    id: "g6a-fair-test", grade: 6, unit: "A", topics: ["A5"], subject: "engineering",
+    name: "The Fair Test — Variables, Evidence and Investigation Design",
+    setups: [
+      { value: "fair", label: "A fair test: change one thing", teaches: ["A5.2"] },
+      { value: "trials", label: "How many drops tell them apart?", teaches: ["A5.2", "A5.4"] },
+      { value: "cer", label: "Claim, evidence, reasoning", teaches: ["A5.5"] },
+      { value: "design", label: "Plan it, check it, run it", teaches: ["A5.6"] },
+    ],
+  },
 ];
 
 /** A set-up that teaches a subtopic, with the lab it belongs to. */
