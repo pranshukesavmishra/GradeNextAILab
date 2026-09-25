@@ -1,338 +1,516 @@
-# MEMORY — read this first on every resume
+# GradeNext Smart Lab — Project Memory
 
-This file is the project's brain. On any limit reset or fresh context: read this
-file top to bottom, then continue from **STATE** below. Update STATE before every
-pause and after every landed increment. Deeper history lives in docs/ (ADRs,
-progress, build log) — this file is the entry point and the law.
+> **Purpose of this file.** GradeNext Smart Lab is a long-running project spanning many work
+> sessions. This file is the durable memory: the brief, the standing mandates, the decisions,
+> the conventions and the state. **Read it before starting any work. Update it whenever a
+> decision is made, a constraint is discovered, or an increment lands** — the founder asked for
+> this explicitly ("every time update yours memory.md file too"). A stale memory is worse than
+> no memory: fix anything here that no longer matches reality.
+>
+> Since 2026-09-25 this project is built **by the InsightVis process**. That process lives in
+> `docs/insightvis/memory.md` (a verbatim copy — never edit it) and this file adopts it section
+> by section. Where this file says *"InsightVis §x governs"*, read that section there; it is
+> binding here exactly as written, with only the adaptations stated below.
 
-## THE FOUNDER'S STANDING LAWS (never violate, never forget)
+Last updated: 2026-09-25 (v1 of the InsightVis-process memory)
 
-1. **Quality never decreases** (ADR-8). Every efficiency measure must be
-   quality-neutral or quality-raising. At the first sign of slipping, revert
-   the change strictly and immediately. Speed is never a defense.
-2. **SUBTOPIC ALIGNMENT — very very very important.** Every experiment exists
-   to teach its ONE specific subtopic. Scene, model, controls, labs and
-   measurements must all serve that subtopic's learning goal; a student who
-   finishes it must have learned exactly that idea. Check every build against
-   this; it applies RETROACTIVELY to everything already uploaded. When
-   reviewing an experiment, first question is always: "does this make a
-   student learn THIS subtopic?"
-3. **The quality bar** is the founder-approved keepers, named explicitly:
-   Physics (Heat Transfer, Motion Graphs, EM Spectrum, Wave Machine,
-   Collisions and Crumple Zones, Sound, Pendulum Lab, Kinetic Energy, Optics
-   Bench) and Chemistry (Heating Curve, Molecule Builder, Build an Atom,
-   States of Matter, Gas Properties, Reaction Rates, Conservation of Mass,
-   pH & Acid-Base Lab) — "build like these for all subtopics."
-4. **I design experiments myself, at an EXTRAORDINARY level** (founder,
-   2026-09-10: "i didn't like these so much... build and design at extra
-   ordinary level experiments and you can get help from these but think
-   yourself as i need very high level of experiments"). The founder's unit
-   books are now REFERENCE, not ground truth: read them for the subtopic and
-   for real numbers, then design something better — a deeper causal model, a
-   more physical interaction, a sharper measurement, a lesson that lands.
-   Exception: G6 Unit A's book was accepted as spec and is already built to.
-   Every design goes into docs/structure/SUBTOPIC_STRUCTURE.json before code.
-   Bar to clear: would this out-teach the founder's named keepers?
-5. **Never fake anything**: real integrated causal model, every control
-   measurably alive, measurements computed from state, failure states shown,
-   predict-first labs, deterministic and finite always. A fake simulation is
-   worse than an unfinished topic.
-6. The 37 keeper sims are frozen as-is; improvements only on the founder's
-   explicit suggestion.
+---
 
-## HOW WORK RUNS (efficiency rules — keep tokens low, keep moving)
+## 0. Resume protocol — do this first, every session
 
-- Builders: Sonnet lanes, one owner per topic, one experiment fully built and
-  verified at a time. They read docs/BUILDER_GUIDE.md + the exemplar
-  (app/src/sims/g6/a1-1-unplug-the-aquarium.ts) + their spec — nothing more.
-- Lanes NEVER touch registry.ts / grade6.ts / this file (contention); they
-  append one line per finished experiment to docs/G6A_BUILD_LOG.md and write
-  sim + test files only. No commits from lanes.
-- Orchestrator wires registry + curriculum centrally, runs the gate
-  (npx tsc -b --noEmit; npx vitest run; npm run build for big waves), commits,
-  pushes, updates STATE here. Verify once, not thrice: lanes verify their own
-  work, orchestrator gates at commit, CI seals.
-- Every experiment must pass: its own science tests + the acceptance gate
-  (finite/deterministic/reset/live-controls) + typecheck. Unresponsive
-  controls land in docs/QUALITY_STATUS.json — triage to zero, honestly.
-- Never recreate scratch tsconfigs (root tsconfig excludes src/sims/g6 for
-  unregistered drafts by design; registered sims get checked via the registry
-  import). Never Read agent .output transcripts (context overflow).
-- **NEVER `git add -A` blindly while lanes are live.** It sweeps mid-edit lane
-  files and scratch (`_diag*.test.ts`, `_debug*.test.ts`) into a commit and
-  turns CI red — this happened once (2026-09-06) and cost a red build. Before
-  any commit: `git status --short`, delete lane scratch (underscore-prefixed
-  test files are never shippable), run the gate, and only then add. Vitest
-  runs `_*` test files even though tsconfig excludes `_*` from typecheck.
-- Incremental saves always: files land on disk as they're finished so a limit
-  kill loses minutes, not hours. Commit+push at every verified increment.
-- On resume: read this file, check `git status --short` + docs/G6A_BUILD_LOG.md
-  tail, verify what's on disk, commit what's green, resume dead lanes via
-  SendMessage with their exact remaining list.
+1. Read this file top to bottom. Then read `docs/insightvis/memory.md` §2.11 (the build method)
+   and §14 (the lab specification) — every new lab is built from those two.
+2. `git status --short` and `git log --oneline -5` on branch
+   `claude/gradenext-smart-lab-plan-yba89q`. Verify what is on disk before trusting §9.
+3. Open `docs/BATCH_PLAN.md` at the batch §9 names as current, and continue with the next lab
+   in it. One lab at a time, built to the end of the ship checklist (§2.11 step 9–10) before the
+   next one starts.
+4. Fresh container: `cd app && npm install`, and `cd smartlab && npm install` (the harness).
+5. Never `git add -A`. `git status --short`, then stage the exact files.
 
-## STATE (update before every pause)
+---
 
-Updated: 2026-09-11, after registering a wave of 5 + fixing a1-4 from scratch.
+## 1. Project identity
 
-**Live and green on the site** (64 registered sims, full gate green: tsc
-clean, 1049/1049 vitest, npm run build clean):
-- The 37 keepers (frozen).
-- G6 Unit A: **27 of 27 registered, tested, pushed — COMPLETE.** a1-1
-  (exemplar), a1-2, a1-3, a1-4, a1-5, a2-1, a2-2, a2-3, a2-4, a2-5, a3-1,
-  a3-2, a3-3, a3-4, a3-5, a4-1, a4-2, a4-3, a4-4, a4-5, a4-6, a5-1, a5-2,
-  a5-3, a5-4, a5-5, a5-6.
+| | |
+|---|---|
+| **Name** | GradeNext Smart Lab — the virtual-laboratory wing of the GradeNext platform |
+| **Owner** | The founder (GradeNext). Every verdict quoted here is theirs. |
+| **Repository** | `pranshukesavmishra/GradeNextAILab`, working branch `claude/gradenext-smart-lab-plan-yba89q` |
+| **Live site** | https://pranshukesavmishra.github.io/GradeNextAILab/ — deployed by `.github/workflows/deploy.yml` on every push to the branch (and to `main`) |
+| **Open PR** | https://github.com/pranshukesavmishra/GradeNextAILab/pull/2 (draft) |
+| **Track 1 — Middle School** | Grades 6–8, California Integrated Science (the NGSS integrated model). 18 units, 100 topics, 521 subtopics, encoded in `app/src/curriculum/grade6.ts`, `grade7.ts`, `grade8.ts`. Being rebuilt batch by batch (`docs/BATCH_PLAN.md`). |
+| **Track 2 — Higher Secondary** | Class 11–12, JEE Main / JEE Advanced / NEET UG. The 42 InsightVis labs, merged intact on 2026-09-25. Route `#/hs`. |
+| **Sister project** | `pranshukesavmishra/insightvis` — the source of the engine, the process and the Higher Secondary labs. **Read-only from this workspace** (we cannot push to it). |
 
-**Roadmap steps 1 (audit) and 2 (report) are DONE, same session as a4-6:**
-1. Retroactive law-2 alignment audit, all 27: cross-referenced every
-   experiment's own tagline/learningGoals against its spec entry's "the
-   student should be able to say" line — all 27 land on it, most in close
-   paraphrase or near-verbatim. Spot-checked one level deeper (actual test
-   assertions, not just manifest text) for four experiments not built in
-   this session — a1-1, a2-1, a4-1, a5-2 — confirming the stated claim is
-   something the model genuinely enforces. **Verdict: no corrections
-   needed anywhere.** Method and full per-topic ledger are in the
-   published report (next line) — do not redo this audit from scratch;
-   read that report first if picking this up later.
-2. Founder completion report published as an artifact:
-   https://claude.ai/code/artifact/96df29c3-fe90-4c1c-aa97-1f16bec62891
-   ("Unit A Completion") — full 27-row ledger by topic (A1-A5), the audit
-   writeup, and the three founder-input-needed items below, restated
-   there for the founder directly. NOTE: this session's wake-subscription
-   registration for that artifact failed (relay_unavailable via the
-   session gateway) — comments/edits on it will NOT wake this session;
-   check it manually (`Artifact` tool, action "comments") if picking this
-   thread back up and founder input is expected.
+---
 
-**Next actions, in order**:
-1. Wait for the founder's response to the completion report before doing
-   anything else on this unit — the three flagged items (below) are
-   theirs to decide, not to guess at.
-2. Do NOT start Unit B without the founder's book for it, or design it per
-   law 4 if told there isn't one.
-3. Optional low-priority cleanup noticed in passing, not yet actioned:
-   `app/src/sims/g6/_a45diag2.test.ts` is a leftover private diagnostic
-   file from earlier a4-5 work (underscore-prefixed, still passes, not
-   part of any real experiment's test suite) — safe to delete whenever
-   convenient, deliberately left untouched while a4-6 was the live lane.
+## 2. The standing mandate — read this every session
 
-**The three items flagged for founder input** (do not decide these
-unilaterally — Unit A's book is ground truth, law 4's exception):
-- a1-4: "Colony size" tooltip says convergence weakens as colony falls;
-  verified behaviour is the opposite (50-bee avg 77%, 600-bee avg 56%).
-  Fix the tooltip, or add a colony-size-aware harvest term to match it?
-- a1-4: the "recruit without dancing" challenge's hint implies odour-
-  following gets help from a richer patch; Rule 4 is richness-blind by
-  design per the five founder rules, so the challenge asymptotes near
-  20-25% however richness is set. Add a richness-scaled odour range
-  (a real effect, not currently in the five rules), or rewrite the goal?
-- a4-6: shipped only 2 of the spec's 4 "Event" dropdown options (Sierra
-  wildfire, Atmospheric river) — "Multi-year drought" and "Coastal
-  upwelling collapse" have no scene/object/model/scenario anywhere in the
-  spec to build against. Spec them out, or keep the dropdown at two?
+### 2.0 The founder's directive of 2026-09-25 (verbatim — this governs everything below)
 
-**g6.a4-6 "One Spark, Sixty Years: A Sierra Watershed" — the Unit A4
-capstone and the last of the 27, built from scratch** (2026-09-11): full
-detail in the build log; three lessons worth generalising forward. (1) When
-a spec's own controls are all configured up front (every scenario preset
-sets a full param bundle, none of them a live mid-run click), the timeline
-can be a PURE function of (scrubberPosition, params) with no cached
-derived state at all — recompute zones/severity/indices fresh on every
-readouts()/facts()/render() call rather than fighting cache invalidation;
-this is the opposite lesson from a1-5 (whose sequential S3 activity forced
-a stateful clock) and the deciding question is always "does any control
-fire a one-time shock mid-run, or is everything just a dial set before the
-run starts". (2) A 0-100 "impact index" built from two additive/max-
-combined components (here: an immediate burn-scar component and a delayed
-storm/debris component) will silently saturate BOTH a mild and a severe
-scenario at the same ceiling if either component's scale constant is
-picked too high — always numerically verify the two scenarios the founder
-explicitly wants compared (S1 vs S2 here) actually land on different
-sides of a real threshold, not just "both nonzero". (3) A gate/severity
-threshold that reacts to ONE input (fuel moisture, crown-fire eligibility)
-must not be allowed to make a SECOND input (fuel load, years since fire)
-functionally irrelevant once the first crosses its threshold — caught only
-because S3's own prescribed-burn scenario was tested against the untreated
-baseline and came back identical; the fix (crown fire lowers the severity
-bar rather than bypassing fuel load entirely) is the general pattern for
-any "eligibility gate + continuous driver" severity model. Also: the
-founder's own dropdown listed two more events ("Multi-year drought",
-"Coastal upwelling collapse") with zero scene/object/model/scenario text
-anywhere in the spec to build against — shipped only the two the spec
-actually grounds and exercises (Sierra wildfire, atmospheric river) rather
-than invent two cascades from nothing, flagged for the founder rather than
-decided silently; this is the precedent for any future spec that lists
-more options in a dropdown than it actually describes.
+> "https://github.com/pranshukesavmishra/insightvis.git merege all the experiments of this github
+> repository in a higher seconday section because these can be for both 11 and 12 grade. and
+> qlso copy its memory.md file into you and work according to that , as these experiments are
+> very best and you have to make like these or more better but follow the guidliness and process
+> of this repository. and remove the grade 6 unit A experiment that you build last as they are
+> too bad and rubish and pl,an a structure batch wise batch for each grade units , this time i am
+> not forcing to make each experimemt for each subtopic , its on you however you build i just
+> want that there should be multiple things to teach with experiments on a single topic , one
+> more point that focus on the controls of experiments as they should be perfectly workint with
+> multiple experiment controls which helps better into experiment and visualised learnings. copy
+> its memory.md file and its processes to build and every time update yours memory.md file too.
+> […] and higest qulity graphics and simulation max"
 
-**g6.a2-5 "The Zero-Emission Bus Argument" — a data-dashboard sim with no
-canopy/creature visuals, just a real 7-node lifecycle ledger + a computed
-fit badge**: confirms the "reasoned constant, tuned to the founder's own
-named pivot point" technique (used for a1-4's harvest fraction, a1-5's
-chloroplast rate) generalises past continuous-dynamics sims to a static
-accounting one — here, battery-manufacturing kg CO2/kWh was picked so the
-S3 scenario's own explicit numbers ("service life 12yr, answer is no")
-land correctly inside the service-life control's real range, verified by
-finding the actual break-even year via the crossover of two real lines
-rather than asserting one. Also: a fit badge that checks "does the
-boundary contain what this question needs" must decide, per question,
-which nodes are genuinely REQUIRED — a structurally-always-zero node
-(the electric bus's own tailpipe CO2) is not a meaningful requirement for
-a CO2 question even though it is geometrically "inside" a tailpipe-only
-boundary; the founder's own S2 (tailpipe boundary, CO2 question -> RED)
-only holds once the required-node list reflects that, not a naive
-count-every-node-in-the-question's-topic list.
+Read as six instructions, all permanent:
+1. The InsightVis labs are **the bar** — "make like these or more better".
+2. **The InsightVis process is the process** — its mandates, its build method, its spec, its
+   harness, its ship checklist.
+3. **One experiment per topic is fine; one idea per experiment is not.** Each lab carries several
+   set-ups that teach several things on one topic (§2.6).
+4. **The controls are the experiment** — many of them, all genuinely working (§2.7).
+5. **Highest-quality graphics and simulation** — InsightVis §2.3/§2.4/§2.7–§2.9/§2.12 in full.
+6. **Keep this file current, every time.**
 
-**g6.a1-5 "From Chloroplast to Coastline" — built from scratch against a
-genuinely ambitious founder spec** (six nested aggregation levels, a
-bistable kelp/urchin/otter system): the biggest design lesson, worth
-repeating for A2.5/A4.6 — when a spec's own activity is sequential
-("scrub to year 20... then set otters back to 18 and scrub 5 more years"),
-build a LIVE, stateful sim (state persists across ticks, changing a
-control takes effect on wherever the state currently is) rather than a
-"jump to any point in a freshly-recomputed timeline" scrubber; the latter
-cannot represent path-dependent history at all, which for a hysteresis
-lesson is the entire point. Caught only by writing the test against the
-spec's own two-phase workflow (advance, change params, advance again) —
-a one-shot "read facts at time T" test would have missed it completely.
-Also: an aggregation ladder's "how much of the total does a small site
-represent" fraction must multiply every count ABOVE the site, not the
-site's own single multiplier — an easy off-by-one-level bug, caught by
-checking bayNegligible across every one of the six sites and finding it
-non-monotonic before the fix, monotonic after.
+### 2.1 Real working models, never decorative animation
+InsightVis §2.1 governs. Every experiment computes the actual governing equations — integrated,
+solved or summed — and every displayed quantity was calculated. This absorbs the older GradeNext
+law *"never fake anything"*: a real causal model, every control measurably alive, measurements
+computed from state, failure states shown, deterministic and finite always. **A fake simulation
+is worse than an unfinished topic.**
 
-**Recipe that landed a2-4, a4-5, a5-6 and a1-5**: read the whole founder
-spec (or, for a2-4/a4-5/a5-6, the whole existing file — check for a lane's
-own gitignored `_*.test.ts` scratch diagnostic too, reuse its param/fact
-names, delete it once superseded) BEFORE writing any code or assertions.
-Diagnose real timing/scale/dynamics via standalone vite-node scripts —
-for slow multi-year dynamics, tune constants empirically the same way
-(sweep a parameter, watch for the qualitative behaviour you actually want,
-not just "some numbers came out"). Write the test against verified real
-behaviour, then register and gate. The gate has found something every
-single time so far: a2-4 (2 bugs: divide-by-zero at a labelled minimum, a
-state flag never set on one path), a4-5 (a control wired to nothing at
-all), a1-5 (3 bugs, above), a5-6 (clean build, only a live-readout gap of
-the same already-familiar kind). Never assume a first build is honest
-until the gate and a real test both say so.
+### 2.2 The level: the top of the band, never down to it
+**Higher Secondary** — InsightVis §2.2 governs unchanged (JEE/NEET difficulty, the traps
+examiners set, second-order effects).
 
-**Acceptance-gate triage queue** (docs/QUALITY_STATUS.json, machine-
-generated — do not hand-edit): down to 3 — phys.collisions massB (frozen
-keeper, waits on founder-approved enhancement), a5-1 sash, a5-4 yAxisMax
-(both pre-existing, untouched this pass). a1-3 (linkDelayMin/linkGain/
-solarInput) and a1-4 (patchCount/selectedPatch) triaged to zero this pass —
-see build log for the fix (both were real controls masked by the sweep's
-short window landing entirely at simulated midnight / before any bee
-completes a round trip; fixed with instant, gate-free readouts, no model
-formula changed).
+**Grades 6–8** — the same attitude, pitched at the right student:
+- **The NGSS performance expectation says what the student must be able to *do*** — plan an
+  investigation, analyse and interpret data, develop and use a model, construct an explanation,
+  engage in argument from evidence. The lab is built so the student *does that act inside it*,
+  not so they read about it.
+- **The model under the hood is the one a scientist would write** — the heat equation,
+  Stefan–Boltzmann, Henry's law, logistic growth, F = ma, Coulomb's law: real equations, real
+  constants, real SI units — even when what the student reads off the screen is a comparison
+  or a direction rather than a number.
+- **The misconceptions students of this age actually hold are the traps** (heavier things fall
+  faster; cold flows in; a plant's mass comes from the soil; seasons come from distance to the
+  Sun; the Moon's phases are Earth's shadow; air has no weight; energy gets used up). Each is
+  something the student can **drive the apparatus into** and watch fail (InsightVis §2.11 step 3).
+- **The exam equivalent is CAST** — the California Science Test, taken in Grade 8 over every
+  middle-school performance expectation. Worked problems are written in its pattern (a
+  phenomenon, a data display, a claim to evaluate) and checked by the apparatus.
+- **Assume the student is curious, bright and has never been shown the real thing.** Short
+  sentences and plain words in the teaching text; no simplification of the science itself.
 
-**g6.a1-4 "No Bee Is In Charge" — full rebuild from a broken lane draft**
-(2026-09-11): found and fixed 4 real model bugs by direct numerical
-diagnosis (standalone runner scripts, not reading code alone) — measurement-
-by-arrival undercounting convergence, "richest" read from live harvest-
-drained stock instead of student-set target, Rule 4's odour correction not
-credited in the static target measurement, and the real root cause: harvest
-fraction (0.22, lane-invented, unmarked) let up to 600 near-simultaneous
-foragers (S1's own default colony) compound-drain the richest patch faster
-than regrowth could ever recover, holding it below the dance/memory
-thresholds ~98% of the time regardless of simulated duration — structurally
-incapable of the emergence the sim exists to demonstrate. Retuned to 0.01,
-verified across many seeds (colonySize=600 now reliably reaches 55-66%
-accuracy by minute 20-25, matching the spec's stated session length). All
-17 of its own science tests pass; full detail in docs/G6A_BUILD_LOG.md.
-TWO KNOWN GAPS logged there, not blocking ship, founder input wanted before
-touching further: (a) "Colony size" control's tooltip ("weakens then
-vanishes as it falls") reads backwards from verified behaviour — smaller
-colonies converge MORE reliably (a carrying-capacity effect the tooltip
-doesn't anticipate); the more detailed "smallest-working-colony" challenge
-is unaffected and passes reliably. (b) "recruit-without-dancing" challenge
-(accuracy>50% via chance+odour alone) is not reachable in any practical
-time — Rule 4 is richness-blind by design, but the challenge's own hint
-implies it should not be.
+### 2.3 Graphics and UI/UX: no compromise, ever
+InsightVis §2.3 governs. The founder's words: *"higest qulity graphics and simulation max"*.
+Every stage looks like professional scientific instrumentation or a plate from a good
+textbook — lit, volumetric, dense with labelled structure. If a choice trades visual quality
+for convenience, make the other choice.
 
-**Retroactive subtopic-alignment audit** (law 2) — TWO PASSES DONE on the
-first 15 (2026-09-06, tagline level then learningGoals level, see git
-history for full quotes) plus a THIRD, learningGoals-level pass on this
-wave's 5 (2026-09-11): a1-3 "explain that a system's behaviour comes from
-the interactions between its parts, not from the parts on their own"; a1-4
-"state the core idea of an emergent property: a whole can have an ability
-that not one of its parts has, or could have"; a2-3 "list a machine's
-inputs and outputs without assuming the useful output is the only one";
-a3-5 "distinguish a parameter problem from a structural one by watching
-auto-tune hit a floor"; a5-5 "distinguish a testable, specific claim from a
-vague one that no evidence can properly support". Law 2 holds on all 21
-shipped. Re-run the same check on each new experiment at wire time
-(pipeline step 4) — cheap (grep learningGoals, read against the subtopic
-title), always do it before registering.
+### 2.4 Things are drawn as the real thing — never boxes, blobs, cartoons or clip-art
+InsightVis §2.4 governs, extended to every subject. The founder's verdict on the removed Grade 6
+Unit A: *"the object and characters used are so silly and low quality"*. A fish is drawn as a
+fish (fins, operculum, lateral line, scales, eye), a plant as a plant (stem, nodes, leaves,
+roots, chloroplast-green tissue), a beaker as glass with a meniscus, a globe as a lit planet
+with real continents and cloud, a thermometer with a bulb and a graduated bore. **No faces on
+objects, no mascots, no emoji, no characters.** Everything goes through a figure library on
+`render.js` (§2.11 step 4) so the suite looks like one instrument.
 
-**Next actions, in order**:
-1. Read docs/QUALITY_STATUS.json + this file, confirm git status is clean
-   (should be, right after this update's commit+push).
-2. Write science tests for the three model-complete-but-untested files
-   (a2-4, a4-5, a5-6), verify (own tests + vitest + tsc), wire, gate, ship.
-3. Build the remaining three from zero (a1-5, a2-5, a4-6) per the pipeline.
-4. Unit A completion report to founder; then next unit (founder sends the
-   book, or I design per law 4).
+### 2.5 An experiment, not an animation and not a dashboard
+The founder's other verdict on the removed unit: *"there is nothing of experiment type"*. Every
+lab is an experiment in the laboratory sense:
+- **Apparatus on the bench** — a physical set-up the student recognises (tank, bench, chamber,
+  globe, stream table, track, shake table), drawn as §2.4 requires.
+- **An independent variable the student changes, a dependent variable an instrument measures**,
+  and the variables held constant named on screen.
+- **A reading taken off an instrument** — a thermometer, a probe, a balance, a gate, a gauge —
+  shown as the instrument would show it, beside the model's value (InsightVis 2026-09-23 (c):
+  *"every value a meter shows must be the value a real instrument would give"*).
+- **A result the student can record** (the lab notebook) and graph (the plots).
+A ledger with sliders is not an experiment. A cartoon that plays when you press a button is
+not an experiment.
 
-**After Unit A**: founder sends next unit book one at a time; where no book,
-I design each subtopic's experiment myself (law 4) at keeper quality.
+### 2.6 Depth per topic — several things to teach in one experiment
+The founder: *"i just want that there should be multiple things to teach with experiments on a
+single topic"*, and *"this time i am not forcing to make each experiment for each subtopic"*.
+InsightVis did the same from 2026-09-12 (*"depth over breadth"*) and its best labs carry 4–8
+set-ups (gravitation 5, fluids 8).
+- **One lab per topic** (occasionally one lab for two tightly linked topics). A lab is organised
+  as **set-ups**: a `mode` select that changes the apparatus, each set-up teaching one or more
+  subtopics of the topic, all set-ups sharing one bench, one model, one figure library.
+- **Every subtopic of the topic is taught by at least one set-up**, and the Course Library links
+  each subtopic to the set-up that teaches it (§8, set-up deep links). This is how the old law
+  *"subtopic alignment — very very very important"* survives: not one sim per subtopic, but no
+  subtopic left without the part of an experiment that teaches it.
+- A set-up earns its place only if it teaches something the others do not. Two set-ups that
+  differ only in numbers are presets, not set-ups.
 
-## OPERATING STRUCTURE (full system — any orchestrator model resumes from here)
+### 2.7 The controls are the experiment — many of them, all perfectly working
+The founder: *"focus on the controls of experiments as they should be perfectly working with
+multiple experiment controls which helps better into experiment and visualised learnings."*
+Rules, on top of InsightVis §14.3:
+1. **Every control changes the computed model** — never only the picture — and the change is
+   visible on the stage *and* in at least one readout or plot. `node audit.mjs` must print
+   CLEAN; the audit's liveness check (§6 rule 13) must pass for every control of every set-up.
+2. **Controls are grouped by the part of the apparatus they belong to** (*Light*, *Tank*,
+   *Fish*, *Filter*), in the order a student would set up the real thing.
+3. **Controls follow the set-up** — group- and item-level `when` hide what the current set-up
+   does not use; nothing on the deck is inert.
+4. **The primary variables are also drag handles on the stage** (InsightVis §2.11 step 7,
+   §14.7, §2.13 gains), kept in sync with their sliders.
+5. **Real units, real ranges, typed entry** — click a value to type it; log keys for quantities
+   spanning decades; the range covers the whole phenomenon including its failure.
+6. **Presets are experiments** (5–8 per lab; InsightVis §14.3) and must set every parameter
+   they depend on.
+7. **Fair-test support** — the ghost overlay and the notebook are the tools for "change one
+   variable, hold the rest"; labs that teach investigation make the held variables explicit.
 
-**Model policy.** The orchestrator runs on the session model — Opus 5 at high
-effort is an approved configuration for long fast runs. Builder lanes run on
-Sonnet 5. Escalate one experiment to Opus 5 when its lane fails verification
-twice or the physics is unusually hard. QUALITY IS ENFORCED BY THE GATES, NOT
-BY THE MODEL: every experiment passes the same science tests, acceptance gate,
-typecheck, build, and orchestrator review whatever model built it. If quality
-ever slips under any configuration, ADR-8's revert rule fires: roll back to
-the last proven setup immediately and record it here.
+### 2.8 Quality never decreases
+The oldest GradeNext law (ADR-8), kept: every efficiency measure must be quality-neutral or
+quality-raising; at the first sign of slipping, revert immediately. Speed is never a defence.
+And InsightVis §2.10's corollary: **a lab is not finished because it once shipped** — when the
+bar moves, everything below it becomes work.
 
-**Roles.**
-- Orchestrator (this session): owns registry/curriculum wiring, the gates,
-  commits/pushes, memory.md STATE, lane resumes, reviews, founder contact.
-- Builder lanes: one owner per topic, files only, incremental, log per finish.
-- Reviewer (orchestrator, or an Opus agent for big waves): checks each
-  finished experiment against the RUBRIC below before it is wired in.
+### 2.9 What is frozen
+- **The 37 keeper simulations** of the React engine (`app/src/sims/`, listed in §4) are frozen
+  as-is; they change only on the founder's explicit suggestion. They stay live and linked.
+- **The 42 Higher Secondary labs** are InsightVis's work, merged verbatim. They change only by
+  syncing from upstream (§8) or on the founder's explicit request.
 
-**Per-experiment pipeline** (never skip a step):
-1. DESIGN — from the founder's spec book if one exists; else I design it:
-   read the subtopic in app/src/curriculum/grade*.ts, research what the
-   subtopic means a student must learn, choose the one most interactive
-   experiment that teaches exactly that, write a short nine-part design
-   (name, scene, objects, causal model with real constants, controls,
-   scenarios, measurements, failure state, the fraud to avoid) into
-   docs/experiment-specs/<unit>/SELF/<code>.md BEFORE building.
-2. BUILD — per docs/BUILDER_GUIDE.md, to the keeper bar.
-3. VERIFY — own science tests + vitest + tsc green from app/.
-4. ALIGN — law 2 check: labs and conclusions walk the student to the
-   subtopic's idea, stated plainly.
-5. WIRE — orchestrator registers + links curriculum.
-6. GATE — full vitest + tsc (+ npm run build each wave); triage any
-   unresponsive-control entry immediately or assign it to the lane.
-7. SHIP — commit, push, update STATE here.
+### 2.10 CALIBRATION — the founder's verdicts, and what they mean
 
-**RUBRIC (orchestrator review before wiring):**
-- Teaches its subtopic (law 2) — the decisive question.
-- Real model: constants sourced, couplings per design, no closed-form
-  positions, no wall-clock physics, honesty rule enforced structurally.
-- Every control measurably alive; readouts/facts finite always.
-- Labs predict-first, checks on facts a student can actually cause.
-- Scene shows the whole apparatus, cause drawn on objects, failure visible.
-- Matches keeper style; no emoji; theme-aware.
-Reject → back to lane with the specific gap; two rejections → escalate model.
+| Round | Verdict | What it means |
+|---|---|---|
+| React keepers, 37 sims (to 2026-09-10) | *"build like these for all subtopics"*, then *"i didn't like these so much… build and design at extra ordinary level"* | Acceptable, not the ceiling. Frozen and kept live. |
+| Grade 6 Unit A, 27 React sims, one per subtopic (2026-09-06 → 09-12) | *"there is nothing of experiment type"*, *"the object and characters used are so silly and low quality"*, *"too bad and rubbish"* — **removed entirely on 2026-09-25** | **1053 passing tests, a clean acceptance gate and a three-pass alignment audit did not make them good.** The faults were all on the screen: cartoon objects and characters, dashboards and ledgers instead of apparatus, and one thin idea per sim spread across 27 sims. Correctness was the floor and was mistaken for the bar. |
+| InsightVis, 42 labs (2026-09-25) | *"these experiments are very best and you have to make like these or more better"* | **The bar.** And InsightVis's own client scored them lower than they look — organic 50%, physics 40% before the 3D round (InsightVis §2.10) — so the ceiling sits above even them. What moved their score: **true 3D benches, apparatus the student drags into shape, predict-then-check problems, and new material rather than polish.** Start every lab there. |
 
-**Roadmap.**
-1. Finish G6 Unit A (12 remaining; lanes live).
-2. Retroactive alignment audit of all 27 (law 2).
-3. Next units in founder order, one at a time. If the founder sends a book →
-   it is ground truth. If not → I design each subtopic per pipeline step 1,
-   using app/src/curriculum/grade6.ts (units B-F), grade7.ts, grade8.ts as
-   the subtopic source. Curriculum subtopics without sims show as planned;
-   never attach a wrong-fit sim just to fill a slot.
-4. Each unit ends with: unit report to founder, alignment audit, STATE update.
+**Never present a batch as finished because it verified clean.** Clean is the floor. The founder
+judges what is on the screen; look at every screenshot as they would.
 
-**Long-run efficiency levers (all active).**
-Distilled reading (BUILDER_GUIDE + exemplar only) · topic batching · Sonnet
-lanes · central wiring · single verification chain (lane → gate → CI) ·
-incremental commits · memory.md resume (a limit reset costs ~zero context) ·
-shared scene kits extracted when two experiments duplicate machinery (kit code
-goes in app/src/ui/, unit-tested, then both use it).
+### 2.11 THE BUILD METHOD — InsightVis §2.11, adapted
+InsightVis §2.11 is the procedure for every lab, in its order, with these adaptations:
+
+- **Step 1 — Pick the lab from `docs/BATCH_PLAN.md`, in batch order** (teaching order), not by
+  exam weight. Middle-school labs are pitched by §2.2 above. Check §4 so two labs never cover
+  the same ground.
+- **Step 2 — The real computation, and the rule as its output.** For Grades 6–8 "the rule" is
+  the disciplinary core idea the performance expectation names (e.g. *thermal energy moves from
+  hotter to colder until equilibrium*, *matter is conserved because atoms are*). It must be
+  readable off the apparatus without ever being stated first.
+- **Step 3 — Every grade-band misconception on the topic is a reachable trap** (§2.2).
+- **Step 4 — Figure library first.** Middle-school subjects need libraries InsightVis never
+  built (living things at organism scale, Earth and sky, the bench for grade-school apparatus).
+  Build the library on `render.js` / `render3d.js` / `bench3d.js` before the first lab uses it,
+  one library per domain, never drawing in a sim file. Record each new library in §4 and §8.
+- **Step 5–8 — unchanged** (plate standard, two plots, drag handles, teaching text last and
+  asking before telling), plus **the set-up structure of §2.6** and **the control rules of §2.7**.
+- **Step 9 — Verify** with the harness (InsightVis §14.12) *and* look at every screenshot:
+  every set-up, every preset, the orbit extremes for 3D benches, 430 px narrow. Then the repo
+  gate: `cd app && npx tsc -b --noEmit && npx vitest run && npm run build`.
+- **Step 10 — Ship the whole increment**: register the script in `smartlab/index.html` in
+  order; add the lab to the GradeNext catalogue and link every subtopic it teaches to its
+  set-up; update §4, §9 and §13 of this file; commit with a message that explains the science
+  and names the bugs found; push (the push deploys the site).
+
+### 2.12 InsightVis rules adopted by reference — binding here as written
+Do not duplicate these; read them in `docs/insightvis/memory.md`:
+§2.7 the plate standard · §2.8 rendering is a layer · §2.9 rich, volumetric, vivid, dense ·
+§2.12 a 3D bench must read as the object it is (depth policy, occlusion by camera, labels by
+projection, the orbit sweep) · §2.13 drag gains on compressed axes · §5 design system ·
+§6 engineering rules 1–10 · §7 calibration constants · §8 conventions · §14 the lab
+specification · §14.12 the harness · §14.13 numerical verification · §14.14 the ship checklist.
+
+---
+
+## 3. Scope
+
+**Middle School, Grades 6–8** — California Integrated Science, in teaching order:
+- Grade 6: A Systems and Subsystems · B Cells, Bodies and Senses · C Energy, Heat and Thermal
+  Systems · D Water, Atmosphere and Weather · E Regional Climate, Organisms and Heredity ·
+  F Global Warming and Human Impact.
+- Grade 7: A Atoms and the Structure of Matter · B Chemical Reactions and Conservation of
+  Matter · C The Chemistry of Being Alive · D Matter and Energy in Ecosystems · E Earth's
+  Materials and Moving Plates · F Natural Hazards and Engineering Solutions.
+- Grade 8: A Motion, Forces and Collisions · B Energy in Moving Systems · C Noncontact Forces
+  and Fields · D Waves and Information · E Space Systems and Deep Time · F Evolution and
+  Sustaining Biodiversity.
+
+**Higher Secondary, Class 11–12** — Physics, Chemistry, Biology at JEE/NEET level (InsightVis
+§3); continuation chapters are listed in `docs/BATCH_PLAN.md` Part C.
+
+The grade-1–12 vision in `docs/SMART_LAB_PLAN.md` and `docs/SIMULATION_CATALOG.md` is the
+long-range product plan; the curriculum files are the ground truth for what is taught.
+
+---
+
+## 4. What is built
+
+**The site** (`app/`, React + Vite) — the shell: top bar, Courses (the Grade 6–8 course library
+by unit → topic → subtopic), Higher Secondary, Simulations (catalogue), Formulas, Notebook.
+
+**Higher Secondary** — 42 labs, 28 chapters (28 Class 11, 14 Class 12), all on the Smart Lab
+engine, served at `smartlab/index.html` and framed by `app/src/pages/HigherSecondary.tsx`.
+The catalogue list `app/src/curriculum/hsLabs.ts` is generated from the engine sources and
+held to them by `hsLabs.test.ts`. InsightVis README §4 describes each lab.
+
+**The 37 frozen keepers** (React SimManifest engine, `app/src/sims/`):
+physics — collisions, em-spectrum, heat-transfer, kinetic-energy, motion-graphs, optics,
+pendulum, sound, waves · chemistry — build-atom, conservation, gas-laws, heating-curve,
+molecules, ph-lab, reactions, states-of-matter · biology — artificial-selection, body-systems,
+carbon-cycle, cell, ecosystem, heredity, mutations, natural-selection, symbiosis · earth —
+erosion, fronts, moon-phases, plate-tectonics, radiometric, rock-cycle, seasons, spheres,
+unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
+(`phys.collisions` · `massB`, frozen, awaits the founder).
+
+**Middle School on the Smart Lab engine** — none yet. Batch 1 (Grade 6 Unit A) is next.
+
+**Engine** (`smartlab/`, from InsightVis at `657e3ab`): `lab-core.js` (registry, console,
+control deck, multi-plot, walkthrough, quiz, notebook, camera, drag handles), `render.js`
+(RX volume pass), `render3d.js` (R3 frame, depth sort), `bench3d.js` (BENCH apparatus),
+`solve.js`, `mech.js`, figure libraries `art-physics.js`, `art-bio.js`, `art-zoo.js`,
+`art-organic.js`, `art-animalia.js`, data `data-animalia.js`, and the `sims-*.js` lab files.
+Harness: the `.mjs` files (never shipped; `app/vite.config.ts` ships only top-level `.js` and
+`assets/`).
+
+---
+
+## 5. Design system
+
+**Inside the Smart Lab engine: InsightVis §5 governs, locked** — the dark-committed instrument
+console, ink ramp `#05080F → #1A2439`, text `#E7EDFB / #98A6C6 / #63729A`, IBM Plex Sans
+Condensed / Sans / Mono with Georgia italic maths, single-scale charts, subject accents grounded
+in something real (`--phys #3DD6F5` oscilloscope phosphor, `--chem #FFAE4C` sodium flame,
+`--bio #FF6B9D` eosin).
+
+**GradeNext additions to the accent set** — middle-school units carry two subjects the engine
+has never had, `earth` and `engineering`. Each gets an accent grounded the same way, chosen and
+recorded here with the first lab that needs it, added to `SUBJECTS` in `lab-core.js` and to the
+`--*` tokens and `[data-subject]` rules in `smartlab/index.html` (§8).
+
+**The React shell** keeps the LabKit system (`docs/DESIGN_SYSTEM.md`, light and dark themes);
+it frames the engine, whose stage stays dark in both.
+
+---
+
+## 6. Engineering rules
+
+InsightVis §6 rules 1–10 govern inside the engine (correctness and prettiness both; 60 fps;
+SI units; syllabus-anchored; school hardware; accessible; nothing faked; no external JS; a path
+does not survive `beginPath()`; `g.mix` returns rgb, `RX.mix` returns hex). GradeNext adds:
+
+11. **The repo gate before every commit**: `cd app && npx tsc -b --noEmit && npx vitest run &&
+    npm run build`. CI runs the same three on every push and deploys only if they pass.
+12. **`node audit.mjs` CLEAN before every commit that touches `smartlab/`** (run from
+    `smartlab/`; CI cannot run it — it needs Playwright).
+13. **Controls are checked for liveness, not just wiring**: for Grades 6–8 labs, every control
+    in every set-up must move at least one readout or plot when swept across its range
+    (§2.7 rule 1). Build this into the harness with Batch 1 and keep it green.
+14. **Never `git add -A`.** `git status --short`, delete scratch, stage exact files. Scratch goes
+    in the session scratchpad or in gitignored names (`smartlab/_preview*.html`,
+    `smartlab/*.png`).
+15. **Never loosen a test to make it pass.** A failing test is a finding.
+16. **Incremental saves**: files land on disk as they are finished; commit and push at every
+    verified increment, so a lost session costs minutes.
+17. The engine never imports React, Three or anything from `app/`; the app reaches the engine
+    only through `smartlab/index.html?…#<id>` and `postMessage`.
+
+---
+
+## 7. Calibration constants — hard-won, do not re-guess
+
+InsightVis §7 governs for the Higher Secondary labs. GradeNext constants are added here per lab
+as they are found by direct numerical testing — none yet on the Smart Lab engine.
+
+Environment constants (this container family):
+- Playwright is pinned at **1.56.1**; its Chromium is `/opt/pw-browsers/chromium-1194/…`, which
+  the InsightVis harness hardcodes. Never run `playwright install`.
+- The engine page loads IBM Plex from Google Fonts; headless Chromium here cannot fetch it
+  (the proxy's certificate), so harness screenshots fall back to system fonts. Environment only.
+
+---
+
+## 8. Conventions
+
+**Everything in InsightVis §8 applies.** GradeNext conventions on top:
+
+- **Every new lab — middle school and higher secondary — is built on the Smart Lab engine.**
+  The React SimManifest engine hosts only the 37 frozen keepers.
+- **Grade tagging.** A lab declares `grade: 6 | 7 | 8` (or an array). A lab without `grade` is an
+  InsightVis lab and counts as Class 11–12. Middle-school labs also declare `unit: '6A'` and
+  `topics: ['A1', 'A2']` (curriculum topic codes), and `exams` carries the NGSS performance
+  expectations and `'CAST'`. `chapter` is the unit's title.
+- **URLs into the engine.** `smartlab/index.html` accepts `?level=hs|ms`, `?grade=N` (filters
+  the rail), `#<labId>` (opens a lab), `?embed=1` (hides the console brand when framed). On
+  every mount the engine posts `{ type: 'smartlab:mount', id }` to its parent and writes
+  `#<id>` into its own address. The integration code is one marked block in `lab-core.js`
+  (*"GradeNext integration"*) — keep every GradeNext change to the engine inside marked blocks
+  so upstream syncs stay clean.
+- **Set-up deep links** (to be built with Batch 1): a subtopic links to
+  `#<labId>/<setupValue>`, which mounts the lab and selects that set-up.
+- **Curriculum links.** A subtopic in `grade*.ts` names the lab and set-up that teach it; the
+  Course Library opens them in a framed lab view like the Higher Secondary one. Never attach a
+  wrong-fit lab just to fill a slot.
+- **Files.** Middle-school labs go in `smartlab/sims-g<grade><unit>-<n>.js`
+  (`sims-g6a-1.js`), two labs per file at most; new figure libraries are
+  `smartlab/art-<domain>.js`. Script tags in `smartlab/index.html` follow InsightVis §14.1's
+  order.
+- **The Higher Secondary catalogue** (`hsLabs.ts`) is regenerated from the engine sources when
+  the HS lab set changes; `hsLabs.test.ts` fails if it drifts.
+- **Upstream sync from InsightVis.** Fetch `insightvis`, copy changed files from its
+  `smartlab/` over ours **except** the marked GradeNext blocks in `lab-core.js` and the brand
+  lines in `index.html` (re-apply those by hand), bump the commit reference in §4, regenerate
+  `hsLabs.ts` if labs changed, run the audit and the gate.
+- **Terminology.** Middle school: Grade 6/7/8, unit, topic, subtopic, NGSS, CAST. Higher
+  Secondary: Class 11/12, chapter, NCERT, JEE Main / JEE Advanced / NEET UG, PYQ.
+
+---
+
+## 9. Current status
+
+**State as of 2026-09-25:**
+- Higher Secondary: 42 labs live at `#/hs` (commit `71ac7a8`, deployed).
+- Grade 6 Unit A's 27 React sims removed (commit `49cf1ca`, deployed); its 27 subtopics show
+  as planned in the Course Library.
+- The 37 keepers live and frozen.
+- This memory rewritten to the InsightVis process; `docs/BATCH_PLAN.md` written.
+
+**Next, in order:**
+1. **Batch 1 — Grade 6 Unit A, Systems and Subsystems** (`docs/BATCH_PLAN.md` Part B, Batch 1),
+   one lab at a time, starting with 6A-1 *The Living Tank*. Build the figure library it needs
+   first, the engine additions it needs (earth/engineering accents, `unit`/`topics` fields,
+   set-up deep links, the Middle School lab view in the app, the liveness audit) alongside it.
+2. Report Batch 1 to the founder with screenshots of every set-up before Batch 2.
+3. Batches 2–18 in order; the Higher Secondary continuation track (Part C) when the founder
+   asks for it or between batches.
+
+---
+
+## 10. Open questions — need the founder's input
+
+1. **Branding inside the engine.** The console now reads "GradeNext Smart Lab"; the InsightVis
+   dark console identity is kept. Is that the identity the founder wants for both tracks?
+2. **Middle-school console on dark.** The engine is dark-committed (InsightVis §5) while the
+   GradeNext shell has light and dark themes. The plan keeps the lab stage dark for both
+   tracks, for the same reason InsightVis gives (additive light, glow, fields).
+3. **Batch review cadence.** The plan reports at the end of each batch (4–5 labs). Earlier or
+   per-lab review is possible if the founder prefers.
+
+The three items flagged in the old Unit A report (a1-4 tooltip and challenge, a4-6 dropdown)
+are **moot** — those sims were removed.
+
+---
+
+## 11. Environment and access notes
+
+- Push only to `claude/gradenext-smart-lab-plan-yba89q` with
+  `git push -u origin claude/gradenext-smart-lab-plan-yba89q`; retry on network failure with
+  backoff (2 s, 4 s, 8 s, 16 s).
+- GitHub is reached through the GitHub MCP tools, not the `gh` CLI.
+- `insightvis` is readable (clone over HTTPS) and **not pushable** from here.
+- Fresh container: `app/` needs `npm install` (vite, three, vitest); `smartlab/` needs
+  `npm install` for the harness. Harness scripts that are ad hoc run as CommonJS with
+  `NODE_PATH=<repo>/smartlab/node_modules`.
+- Dev server: `cd app && npx vite --port 5183 --strictPort`; it serves the engine at
+  `/smartlab/` through the `smartLab()` plugin in `app/vite.config.ts` (the build copies it
+  to `dist/smartlab/`). Kill a stale server with `lsof -ti:5183 | xargs -r kill`, not
+  `pkill -f` (exit 144 aborts a chained command).
+
+---
+
+## 12. Decision log
+
+Append only. Never rewrite history.
+
+| Date | Decision | Rationale |
+|---|---|---|
+| 2026-09-04 | ADR-8: quality never decreases | Founder's standing law; efficiency never at the cost of quality |
+| 2026-09-10 | Founder's unit books become reference, not ground truth; design at an extraordinary level | Founder: "build and design at extra ordinary level experiments" |
+| 2026-09-11 | The 37 keepers frozen | Improvements only on the founder's explicit suggestion |
+| 2026-09-25 | **Merge all 42 InsightVis labs as a Higher Secondary (Class 11–12) section, intact** | Founder's directive; porting them would have lowered their quality, so the engine was merged whole and framed |
+| 2026-09-25 | **Remove all 27 Grade 6 Unit A React sims** | Founder: "too bad and rubbish", "silly and low quality", "nothing of experiment type" |
+| 2026-09-25 | **Adopt the InsightVis process (mandates, §2.11 method, §14 spec, harness, ship checklist) as this project's process** | Founder's directive; InsightVis's labs are the bar |
+| 2026-09-25 | **Every new lab, middle school included, is built on the Smart Lab engine** | One engine, one design system, one harness; the quality of the InsightVis labs comes from that engine's render layers and apparatus library |
+| 2026-09-25 | **One lab per topic, organised as set-ups; every subtopic taught by a set-up and linked to it** | Founder: multiple things to teach per topic, not one sim per subtopic; keeps subtopic alignment |
+| 2026-09-25 | **Batches follow the teaching order, one unit per batch; Batch 1 is Grade 6 Unit A** | The removed unit leaves the first thing a Grade 6 student opens empty |
+| 2026-09-25 | **Middle-school level: NGSS practice done inside the lab, real equations underneath, grade-band misconceptions as reachable traps, CAST-pattern problems** | InsightVis §2.2 translated to Grades 6–8 without lowering the bar |
+
+---
+
+## 13. Session log
+
+Newest first.
+
+- **2026-09-25** — **Founder: merge InsightVis as Higher Secondary, adopt its process, remove
+  Grade 6 Unit A, plan batches.**
+  - Merged the InsightVis engine and its 42 labs intact into `smartlab/`, added a marked
+    integration block to `lab-core.js` (grade tagging, level filter, deep links, embed,
+    `smartlab:mount`), shipped it through a Vite plugin, and built the Higher Secondary page
+    (catalogue by subject → chapter with class filter; a framed lab view whose route and frame
+    follow each other). `hsLabs.ts` generated from the engine and tested against it.
+  - Removed the 27 Grade 6 Unit A sims, their curriculum links and their tests; the gate went
+    from 1053 to 390 tests, all green; the 37 keepers untouched.
+  - Copied InsightVis's `memory.md` and `README.md` to `docs/insightvis/`; rewrote this file to
+    its structure; wrote `docs/BATCH_PLAN.md`.
+  - **Lesson:** the removed unit passed every automated check this project had. Checks confirm
+    the floor; only looking at the screen as the founder does finds the bar.
+- **2026-09-06 → 2026-09-12** — Grade 6 Unit A built as 27 React sims, one per subtopic, with a
+  retroactive alignment audit and a completion report. Removed on 2026-09-25 (see §2.10). The
+  lessons worth keeping are in §15.
+
+---
+
+## 14. The lab specification — InsightVis §14 governs
+
+Every field, every structure and every harness in InsightVis §14 applies unchanged. GradeNext
+additions for middle-school labs:
+
+```js
+L.register({
+  id: 'g6a-living-tank',          // g<grade><unit>-<slug>
+  grade: 6,                       // 6 | 7 | 8 — puts it in the Middle School track
+  unit: '6A',
+  topics: ['A1', 'A2'],           // curriculum topic codes this lab teaches
+  subject: 'engineering',         // the unit's subject; sets the accent
+  chapter: 'Systems and Subsystems',
+  name: 'The Living Tank — Parts, Boundaries and Flows',
+  exams: ['NGSS MS-LS2-3', 'CAST'],
+  weight: 'Unit anchor',
+  params: { setup: 'unplug', … },
+  controls: [
+    { group: 'Set-up', items: [
+      { key: 'setup', type: 'select', label: 'Experiment', restructure: true, options: [
+        { value: 'unplug', label: 'Unplug a part', teaches: ['A1.1', 'A1.3'] }, … ] } ] },
+    …
+  ],
+  …
+});
+```
+- `teaches` on each set-up option names the subtopic codes it covers; the Course Library reads
+  it to link each subtopic to its set-up. Every subtopic of every listed topic must appear in
+  some set-up's `teaches` — a test enforces it.
+- `problems[].source` names the pattern: `'CAST pattern · analysing data'`,
+  `'NGSS MS-PS3-4 · planning an investigation'`.
+- `notes` closes with the misconception most likely to survive the lesson, in the `pyq` block
+  (*"Misconception to catch"*).
+
+---
+
+## 15. Lessons carried forward from the React-engine era
+
+Still true on any engine:
+- **Units must be real**: a value typed as seconds must hold seconds. Raw human-scale numbers in
+  an SI field displayed as nonsense and no test saw it — only the running app did.
+- **Pure timeline or stateful clock** is decided by one question: does any control fire a
+  one-time shock mid-run? If yes, the state must persist across ticks; a recomputed timeline
+  cannot show path dependence (hysteresis, recovery).
+- **Two-component indices saturate silently.** Numerically check that the two scenarios the
+  lesson compares land on different sides of the threshold, not merely that both are non-zero.
+- **An eligibility gate must not make a continuous driver irrelevant** once it trips — a gate
+  lowers a bar, it does not bypass the other input.
+- **Never invent dropdown options** the design does not ground in a model and a scenario.
+- **A reasoned constant must be tuned to the pivot the lesson needs**, and the pivot verified by
+  finding the real crossover of two computed lines, not asserted.
+- **Diagnose with numbers, not by reading code** — standalone runner scripts found every real
+  model bug in that era.
