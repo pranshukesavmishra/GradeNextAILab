@@ -1,6 +1,6 @@
 {
   "generated": "by app/src/sims/acceptance.test.ts — do not edit by hand",
-  "simCount": 64,
+  "simCount": 37,
   "hardInvariants": "asserted in CI: finite readouts, clock advances, determinism, clean reset",
   "unresponsiveControls": [
     {
@@ -10,22 +10,6 @@
         "massB"
       ],
       "tested": 4
-    },
-    {
-      "id": "g6.a5-1",
-      "subject": "chemistry",
-      "unresponsive": [
-        "sash"
-      ],
-      "tested": 4
-    },
-    {
-      "id": "g6.a5-4",
-      "subject": "earth",
-      "unresponsive": [
-        "yAxisMax"
-      ],
-      "tested": 1
     }
   ]
 }

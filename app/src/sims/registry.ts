@@ -39,33 +39,6 @@ import { spheresSim } from "./earth/spheres";
 import { unequalHeatingSim } from "./earth/unequal-heating";
 import { waterCycleSim } from "./earth/water-cycle";
 import { weatherSim } from "./earth/weather";
-import { unplugAquariumSim } from "./g6/a1-1-unplug-the-aquarium";
-import { bikeInsideBikeSim } from "./g6/a1-2-the-bike-inside-the-bike";
-import { chloroplastToCoastlineSim } from "./g6/a1-5-from-chloroplast-to-coastline";
-import { cutTheLinkSim } from "./g6/a1-3-cut-the-link-cook-the-tomatoes";
-import { noBeeInChargeSim } from "./g6/a1-4-no-bee-is-in-charge";
-import { whereYouDrawTheLineSim } from "./g6/a2-1-where-you-draw-the-line";
-import { zeroEmissionBusSim } from "./g6/a2-5-the-zero-emission-bus-argument";
-import { threeJarsOneLampSim } from "./g6/a2-2-three-jars-one-lamp";
-import { onTheDynoSim } from "./g6/a2-3-on-the-dyno";
-import { followOneDropSim } from "./g6/a2-4-follow-one-drop-follow-one-joule";
-import { experimentYouCannotRunSim } from "./g6/a3-1-the-experiment-you-cannot-run";
-import { diagramThatRunsSim } from "./g6/a3-2-the-diagram-that-runs";
-import { twoBaysSim } from "./g6/a3-3-two-bays";
-import { flattenedSierraSim } from "./g6/a3-4-the-model-that-flattened-the-sierra";
-import { kelpForestSim } from "./g6/a3-5-three-versions-of-a-kelp-forest";
-import { peelThePlanetSim } from "./g6/a4-1-peel-the-planet";
-import { hydrosphereSim } from "./g6/a4-2-ninety-seven-two-and-a-splash";
-import { rideTheBalloonSim } from "./g6/a4-3-ride-the-balloon";
-import { livingSkinSim } from "./g6/a4-4-the-living-skin";
-import { pullOneThreadSim } from "./g6/a4-5-pull-one-thread";
-import { oneSparkSixtyYearsSim } from "./g6/a4-6-one-spark-sixty-years";
-import { benchThatBitesSim } from "./g6/a5-1-the-bench-that-bites";
-import { fourChambersSim } from "./g6/a5-2-four-chambers-one-question";
-import { readItRightSim } from "./g6/a5-3-read-it-right";
-import { plottingBenchSim } from "./g6/a5-4-the-plotting-bench";
-import { runMyPlanSim } from "./g6/a5-6-run-my-plan";
-import { argumentBridgeSim } from "./g6/a5-5-argument-bridge";
 
 
 
@@ -115,34 +88,6 @@ export const SIMS: AnySim[] = [
   unequalHeatingSim,
   waterCycleSim,
   weatherSim,
-  // Grade 6 · Unit A rebuild — one dedicated experiment per subtopic.
-  unplugAquariumSim,
-  bikeInsideBikeSim,
-  chloroplastToCoastlineSim,
-  cutTheLinkSim,
-  noBeeInChargeSim,
-  whereYouDrawTheLineSim,
-  zeroEmissionBusSim,
-  threeJarsOneLampSim,
-  onTheDynoSim,
-  followOneDropSim,
-  experimentYouCannotRunSim,
-  diagramThatRunsSim,
-  twoBaysSim,
-  flattenedSierraSim,
-  kelpForestSim,
-  peelThePlanetSim,
-  hydrosphereSim,
-  rideTheBalloonSim,
-  livingSkinSim,
-  pullOneThreadSim,
-  oneSparkSixtyYearsSim,
-  benchThatBitesSim,
-  fourChambersSim,
-  readItRightSim,
-  plottingBenchSim,
-  argumentBridgeSim,
-  runMyPlanSim,
 /* TEMP-G7E-VERIFY-START */
 /* TEMP-G7E-VERIFY-END */
 ];
