@@ -908,3 +908,95 @@ svg { flex: none; }
   .data-body { flex-direction: column; }
   .trial-plot { flex-basis: auto; max-width: 100%; width: 100%; }
 }
+
+/* ==========================================================================
+   Higher Secondary — the Class 11–12 suite on the Smart Lab engine
+   The catalogue speaks the shell's language; the lab view hands the whole
+   viewport below the top bar to the engine, which paints its own dark ground.
+   ========================================================================== */
+
+.hs { max-width: 1180px; margin: 0 auto; padding: 0 20px 80px; }
+
+.hs-hero { padding: 40px 0 22px; }
+.hs-hero h1 { font-size: clamp(32px, 5vw, 50px); line-height: 1.04; margin: 0 0 12px; text-wrap: balance; }
+.hs-thesis { font-size: 17px; color: var(--ink2); max-width: 68ch; margin: 0 0 22px; text-wrap: pretty; }
+
+.hs-stats {
+  display: flex; flex-wrap: wrap; gap: 0; margin: 0;
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel);
+  width: fit-content; max-width: 100%;
+}
+.hs-stats > div { padding: 10px 18px; border-right: 1px solid var(--line); }
+.hs-stats > div:last-child { border-right: 0; }
+.hs-stats dt {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.hs-stats dd { margin: 2px 0 0; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.hs-missing {
+  margin: 0 0 18px; padding: 10px 14px; border-radius: var(--r-md);
+  border: 1px solid var(--line2); background: var(--panel-alt); color: var(--ink2);
+}
+
+.hs-filters { display: grid; gap: 10px; margin: 6px 0 8px; }
+.hs-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--sub, var(--muted)); margin-right: 7px; vertical-align: 1px;
+}
+.hs-count { font-family: var(--font-mono); font-size: 11.5px; margin-left: 7px; opacity: 0.75; }
+
+.hs-subject { margin-top: 30px; }
+.hs-subject-head {
+  display: flex; align-items: center; gap: 2px; margin: 0 0 4px;
+  font-size: 22px; font-weight: 800;
+}
+.hs-subject-head .hs-dot { width: 10px; height: 10px; }
+.hs-subject-meta { margin-left: 10px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--muted); }
+
+.hs-chapter { margin-top: 18px; }
+.hs-chapter-head {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  margin: 0 0 8px; font-size: 15px; font-weight: 700; color: var(--ink);
+}
+.hs-class {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 2px 8px; border-radius: var(--r-pill); border: 1px solid var(--line2); color: var(--ink2);
+}
+
+.hs-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.hs-card {
+  display: flex; flex-direction: column; gap: 5px; text-align: left;
+  padding: 14px 16px 12px; border-radius: var(--r-md);
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  font: inherit; cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.hs-card:hover { border-color: var(--sub, var(--accent)); transform: translateY(-1px); box-shadow: var(--shadow-1); }
+.hs-card:focus-visible { outline: 2px solid var(--sub, var(--accent)); outline-offset: 2px; }
+.hs-card-title { font-size: 15.5px; font-weight: 700; line-height: 1.25; }
+.hs-card-sub { font-size: 13.5px; color: var(--ink2); line-height: 1.35; }
+.hs-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 4px; }
+.hs-exam {
+  font-family: var(--font-mono); font-size: 10.5px; padding: 1px 6px;
+  border-radius: var(--r-pill); background: var(--panel-alt); color: var(--ink2);
+}
+.hs-weight { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); margin-left: auto; }
+
+.hs-labview { display: flex; flex-direction: column; height: calc(100vh - 60px); }
+.hs-labbar {
+  display: flex; align-items: center; gap: 12px; flex: none;
+  padding: 7px 14px; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.hs-labbar-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hs-labbar-title strong { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hs-labbar-title span {
+  font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* the engine's own ground, so nothing flashes white while its scripts load */
+.hs-frame { flex: 1; width: 100%; border: 0; display: block; background: #05080F; }
+
+@media (max-width: 640px) {
+  .hs-stats > div { padding: 8px 12px; }
+  .hs-labbar-title span { display: none; }
+}

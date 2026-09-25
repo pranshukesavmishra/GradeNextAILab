@@ -15,7 +15,8 @@ export type IconName =
   | "play" | "pause" | "step" | "reset"
   | "chevron-right" | "chevron-left" | "chevron-down" | "arrow-left"
   | "theme-system" | "theme-light" | "theme-dark"
-  | "search" | "check" | "close" | "info" | "spark" | "grid" | "target";
+  | "search" | "check" | "close" | "info" | "spark" | "grid" | "target"
+  | "atom" | "external";
 
 interface IconProps {
   name: IconName;
@@ -72,6 +73,8 @@ const P: Record<IconName, React.ReactNode> = {
   spark: <path d="M12 3.5 13.9 9l5.6 1.9-5.6 1.9L12 20.5l-1.9-5.7-5.6-1.9L10.1 9z" />,
   grid: <><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></>,
   target: <><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3" /></>,
+  atom: <><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none" /><ellipse cx="12" cy="12" rx="9" ry="3.5" /><ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(60 12 12)" /><ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(-60 12 12)" /></>,
+  external: <><path d="M14 4.5h5.5V10M19.5 4.5 11 13" /><path d="M18 13.5v4a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 5 17.5v-10A1.5 1.5 0 0 1 6.5 6h4" /></>,
 };
 
 export function Icon({ name, size = 18, className, label }: IconProps) {

@@ -2,10 +2,11 @@ import { BrandLockup } from "./Brand";
 import { Icon, type IconName } from "./Icon";
 import type { ThemeMode } from "./theme";
 
-export type NavKey = "library" | "catalog" | "formulas" | "notebook";
+export type NavKey = "library" | "hs" | "catalog" | "formulas" | "notebook";
 
 const NAV: { key: NavKey; label: string; icon: IconName }[] = [
   { key: "library", label: "Courses", icon: "library" },
+  { key: "hs", label: "Higher Secondary", icon: "atom" },
   { key: "catalog", label: "Simulations", icon: "grid" },
   { key: "formulas", label: "Formulas", icon: "spark" },
   { key: "notebook", label: "Notebook", icon: "notebook" },
@@ -17,7 +18,7 @@ const NAV: { key: NavKey; label: string; icon: IconName }[] = [
  * Before this, every screen was a full-page swap with no shared furniture, so
  * a student who opened a simulation had no way back except the browser and no
  * sense of where they were. One bar, always present, carrying the brand on the
- * left, the four places you can be in the middle, and settings on the right.
+ * left, the places you can be in the middle, and settings on the right.
  */
 export function TopBar(
   { active, onNavigate, themeMode, onCycleTheme }: {

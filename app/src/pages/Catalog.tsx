@@ -4,6 +4,7 @@ import { Icon } from "@ui/Icon";
 import { SUBJECT_LABEL } from "@engine/types";
 import { SIMS, bandForGrade, filterSims } from "@sims/registry";
 import { CURRICULA, countTopics } from "../curriculum";
+import { HS_LABS } from "../curriculum/hsLabs";
 
 const SUBJECT_ORDER: Subject[] = ["physics", "chemistry", "biology", "earth", "math", "engineering"];
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -12,9 +13,10 @@ interface CatalogProps {
   onOpen: (id: string, band: GradeBand) => void;
   onOpenNotebook: () => void;
   onOpenLibrary: (grade?: number) => void;
+  onOpenHS: () => void;
 }
 
-export function Catalog({ onOpen, onOpenNotebook, onOpenLibrary }: CatalogProps) {
+export function Catalog({ onOpen, onOpenNotebook, onOpenLibrary, onOpenHS }: CatalogProps) {
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<Subject | "all">("all");
   const [grade, setGrade] = useState<number | "all">("all");
@@ -65,6 +67,10 @@ export function Catalog({ onOpen, onOpenNotebook, onOpenLibrary }: CatalogProps)
                   <span className="cat-course-t">{c.units.length} units · {countTopics(c)} topics</span>
                 </button>
               ))}
+              <button type="button" className="cat-course" onClick={onOpenHS}>
+                <span className="cat-course-g">Class 11–12</span>
+                <span className="cat-course-t">Higher Secondary · {HS_LABS.length} labs</span>
+              </button>
             </div>
           </div>
 

@@ -7,11 +7,14 @@ import {
   CURRICULA, countSubtopics, countTopics, gradeCoverage, unitCoverage,
   type Topic, type Unit,
 } from "../curriculum";
+import { HS_LABS } from "../curriculum/hsLabs";
 
 interface LibraryProps {
   onOpen: (id: string, band: GradeBand) => void;
   /** Grade to open on; falls back to the first curriculum. */
   initialGrade?: number;
+  /** Class 11–12 lives on its own page (the Smart Lab engine), not in a curriculum tab. */
+  onOpenHS: () => void;
 }
 
 /**
@@ -23,7 +26,7 @@ interface LibraryProps {
  * Units run in the order they are taught, topics in the order they are taught,
  * and each subtopic carries the simulations that teach it.
  */
-export function Library({ onOpen, initialGrade }: LibraryProps) {
+export function Library({ onOpen, initialGrade, onOpenHS }: LibraryProps) {
   const [grade, setGrade] = useState<number>(initialGrade ?? CURRICULA[0].grade);
   const curriculum = CURRICULA.find((c) => c.grade === grade) ?? CURRICULA[0];
   const [openUnit, setOpenUnit] = useState<string>(curriculum.units[0].code);
@@ -60,6 +63,10 @@ export function Library({ onOpen, initialGrade }: LibraryProps) {
               </span>
             </button>
           ))}
+          <button type="button" className="lib-grade" onClick={onOpenHS}>
+            <span className="lib-grade-n">Class 11–12</span>
+            <span className="lib-grade-meta">Higher Secondary · {HS_LABS.length} labs</span>
+          </button>
         </div>
 
         <p className="lib-coverage">
