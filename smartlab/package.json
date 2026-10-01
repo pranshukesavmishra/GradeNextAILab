@@ -1,0 +1,9 @@
+{
+  "name": "gradenext-smartlab-harness",
+  "private": true,
+  "description": "Verification harness for the Smart Lab engine (audit, screenshots, sweeps). Not part of the deployed site; the browsers themselves are preinstalled at /opt/pw-browsers.",
+  "type": "module",
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

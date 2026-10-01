@@ -1,6 +1,9 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import { CONSTANTS, q } from "@engine/units";
-import { arrow, camera, ground, label, roundRect } from "@ui/draw";
+import { arrow, camera, roundRect } from "@ui/draw";
+import {
+  badge, caption, contactShadow, groundPlane, hexA, material, sky, vignette,
+} from "@ui/scene";
 
 /**
  * Forces & Newton's Laws — Grades 4-12.
@@ -187,87 +190,186 @@ const model: SimModel<State> = {
  * Render
  * ------------------------------------------------------------------ */
 
+/** A deterministic 0..1 hash, so the surface grain never swims between frames. */
+function grain(i: number): number {
+  const s = Math.sin(i * 12.9898) * 43758.5453;
+  return s - Math.floor(s);
+}
+
 function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, overlays, band } = rc;
   const m = Math.max(0.1, params.mass as number);
   const g = params.gravity as number;
   const target = params.targetX as number;
+  const surf = coefficients(params);
+  const surfaceName = params.surface as string;
 
+  // The park fills the width, and the ground sits low enough that the box, its
+  // arrows and its numbers all have air above them instead of a white void.
   const cam = camera({
-    x0: -1, y0: -2.5, x1: TRACK_LENGTH + 1, y1: 9.5,
+    x0: -1.5, y0: -3, x1: TRACK_LENGTH + 1.5, y1: 8,
     width, height, square: false,
   });
   const X = (x: number) => cam.toScreenX(x);
   const Y = (y: number) => cam.toScreenY(y);
   const floorY = Y(0);
 
-  // ---- Target zone ------------------------------------------------------
-  {
-    const zx0 = X(target - 0.5), zx1 = X(target + 0.5);
-    ctx.save();
-    ctx.fillStyle = theme.accent;
-    ctx.globalAlpha = 0.16;
-    ctx.fillRect(zx0, floorY - 60, zx1 - zx0, 60);
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(X(target), floorY - 66);
-    ctx.lineTo(X(target), floorY);
-    ctx.stroke();
-    ctx.restore();
-    if (band !== "K-2") {
-      label(ctx, "target", X(target), floorY - 76, theme, {
-        align: "center", color: theme.accent, size: 11,
-      });
+  // ---- The place ---------------------------------------------------------
+  sky(ctx, width, height, theme, "day", floorY);
+  groundPlane(ctx, floorY, 0, width, height, theme, "grass");
+
+  // ---- The surface the box slides on --------------------------------------
+  // Colour and texture both carry the friction: ice is a cold polished sheet,
+  // carpet a dense warm pile, wood sits between them. A student can see how
+  // rough the ground is before reading a single coefficient.
+  const stripColor =
+    surfaceName === "ice" ? theme.sci["cold"]
+      : surfaceName === "carpet" ? theme.sci["energy-thermal"]
+        : surfaceName === "custom" ? theme.sci["field"]
+          : theme.sci["decomposer"];
+  const stripH = Math.max(16, Math.min(30, height * 0.055));
+  material(ctx, -2, floorY, width + 4, stripH, stripColor, 0);
+
+  const rough = Math.max(0, Math.min(1, surf.muK));
+  ctx.save();
+  if (rough < 0.15) {
+    // Almost frictionless: long specular streaks, the way polished ice reads.
+    ctx.strokeStyle = hexA(theme.surface, 0.5);
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+    for (let k = 0; k < 8; k++) {
+      const yy = floorY + 3 + grain(k * 17 + 2) * (stripH - 6);
+      const x0 = grain(k * 7 + 1) * width * 0.78;
+      ctx.beginPath();
+      ctx.moveTo(x0, yy);
+      ctx.lineTo(x0 + width * 0.18, yy);
+      ctx.stroke();
     }
   }
+  // Tufts: more of them, and longer, the rougher the surface.
+  const tufts = Math.round(20 + rough * 300);
+  ctx.strokeStyle = hexA(theme.ink, 0.12 + rough * 0.28);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let k = 0; k < tufts; k++) {
+    const tx = grain(k * 3 + 11) * (width + 8) - 4;
+    const ty = floorY + 2 + grain(k * 5 + 3) * (stripH - 5);
+    const len = 1.5 + rough * 6 * (0.5 + grain(k * 9 + 7));
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx + (grain(k * 13 + 5) - 0.5) * 3, ty - len);
+  }
+  ctx.stroke();
+  ctx.restore();
 
-  // ---- Floor and ruler ---------------------------------------------------
-  ground(ctx, floorY, X(-1), X(TRACK_LENGTH + 1), theme);
+  if (band !== "K-2") {
+    caption(ctx, width - 12, floorY + stripH * 0.55, surf.label, theme, {
+      align: "right", size: 12,
+    });
+  }
+
+  // ---- Distance ruler ------------------------------------------------------
   if (overlays.ruler) {
     ctx.save();
-    ctx.strokeStyle = theme.line;
+    ctx.strokeStyle = hexA(theme.surface, 0.6);
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let x = 0; x <= TRACK_LENGTH; x += 5) {
       ctx.moveTo(X(x), floorY);
-      ctx.lineTo(X(x), floorY + 10);
+      ctx.lineTo(X(x), floorY + stripH * 0.5);
     }
     ctx.stroke();
     ctx.restore();
     if (band !== "K-2") {
       for (let x = 0; x <= TRACK_LENGTH; x += 10) {
-        label(ctx, `${x} m`, X(x), floorY + 22, theme, {
-          align: "center", color: theme.inkSoft, size: 10, plate: false,
+        caption(ctx, X(x), floorY + stripH + 11, `${x} m`, theme, {
+          align: "center", size: 10, color: theme.inkSoft,
         });
       }
     }
   }
 
-  // ---- The box -------------------------------------------------------------
+  // ---- Target zone ----------------------------------------------------------
+  {
+    const zx0 = X(target - 0.5), zx1 = X(target + 0.5);
+    const topY = floorY - Math.min(160, height * 0.36);
+    ctx.save();
+    const zg = ctx.createLinearGradient(0, topY, 0, floorY);
+    zg.addColorStop(0, hexA(theme.accent, 0));
+    zg.addColorStop(1, hexA(theme.accent, 0.32));
+    ctx.fillStyle = zg;
+    ctx.fillRect(zx0, topY, Math.max(2, zx1 - zx0), floorY - topY);
+    ctx.strokeStyle = hexA(theme.accent, 0.75);
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(X(target), topY);
+    ctx.lineTo(X(target), floorY);
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.strokeStyle = hexA(theme.accent, 0.85);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(X(target), floorY + 2, Math.max(7, (zx1 - zx0) / 2), 4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    if (band !== "K-2") {
+      caption(ctx, X(target), topY - 10, "target", theme, {
+        align: "center", color: theme.accent, size: 12,
+      });
+    }
+  }
+
+  // ---- The box ---------------------------------------------------------------
   // Side length grows with the cube root of mass: same stuff, bigger block.
   const side = Math.max(26, Math.min(76, 22 * Math.cbrt(m / 20) * 1.35));
-  const bx = X(state.x) - side / 2;
+  const cxs = X(state.x);
+  const bx = cxs - side / 2;
   const by = floorY - side;
+
+  // A motion smear behind the box, so a fast slide reads as fast before a
+  // single number has been looked at.
+  if (Math.abs(state.v) > 0.6) {
+    ctx.save();
+    for (let k = 3; k >= 1; k--) {
+      const off = -state.v * cam.scale * 0.03 * k;
+      ctx.fillStyle = hexA(theme.sci["mass"], 0.16 / k);
+      roundRect(ctx, bx + off, by, side, side, 6);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  contactShadow(ctx, cxs, floorY, side * 0.44, 0);
+  material(ctx, bx, by, side, side, theme.sci["mass"], 6);
+
+  // Battens and an inset frame: a plain rectangle is a token, a braced crate
+  // is an object with a front, a top and a weight.
   ctx.save();
-  ctx.fillStyle = theme.sci["mass"];
-  roundRect(ctx, bx, by, side, side, 5);
-  ctx.fill();
-  ctx.strokeStyle = theme.surface;
-  ctx.lineWidth = 2;
+  const inset = side * 0.14;
+  ctx.strokeStyle = hexA(theme.ink, 0.24);
+  ctx.lineWidth = Math.max(1, side * 0.035);
+  ctx.beginPath();
+  ctx.moveTo(bx + inset, by + side * 0.28);
+  ctx.lineTo(bx + side - inset, by + side * 0.28);
+  ctx.moveTo(bx + inset, by + side * 0.72);
+  ctx.lineTo(bx + side - inset, by + side * 0.72);
+  ctx.stroke();
+  ctx.strokeStyle = hexA(theme.surface, 0.32);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.rect(bx + inset, by + inset, side - inset * 2, side - inset * 2);
   ctx.stroke();
   ctx.restore();
+
   if (band !== "K-2") {
-    label(ctx, `${m.toFixed(0)} kg`, X(state.x), by + side / 2, theme, {
-      align: "center", color: theme.ink, size: 11,
+    caption(ctx, cxs, by + side / 2, `${m.toFixed(0)} kg`, theme, {
+      align: "center", size: Math.max(10, Math.min(13, side * 0.21)),
     });
   }
 
   // ---- Force arrows ---------------------------------------------------------
   if (overlays.forces) {
-    const cx = X(state.x);
     const cy = by + side / 2;
     const weight = m * g;
     // One shared scale so arrow lengths are honestly comparable.
@@ -288,8 +390,8 @@ function render(rc: RenderContext<State>) {
       });
     }
     if (band === "6-8" || band === "9-12") {
-      arrow(ctx, cx, cy, cx, cy + weight * scale, F, { width: 2, dashed: true, label: "weight" });
-      arrow(ctx, cx, floorY, cx, floorY - weight * scale, F, { width: 2, dashed: true, label: "ground" });
+      arrow(ctx, cxs, cy, cxs, cy + weight * scale, F, { width: 2, dashed: true, label: "weight" });
+      arrow(ctx, cxs, floorY, cxs, floorY - weight * scale, F, { width: 2, dashed: true, label: "ground" });
     }
 
     // The net force gets its own lane above the box, because it is the one
@@ -297,11 +399,11 @@ function render(rc: RenderContext<State>) {
     const net = state.applied + state.friction;
     if (band !== "K-2" && Math.abs(net) > 0.5) {
       const ny = by - 26;
-      arrow(ctx, cx, ny, cx + net * scale, ny, F, {
+      arrow(ctx, cxs, ny, cxs + net * scale, ny, F, {
         width: 4, label: `net ${net.toFixed(0)} N`,
       });
     } else if (band !== "K-2" && state.hasMoved === false && Math.abs(state.applied) > 0.5) {
-      label(ctx, "forces balance — no movement", cx, by - 30, theme, {
+      caption(ctx, cxs, by - 30, "forces balance — no movement", theme, {
         align: "center", color: theme.inkSoft, size: 11,
       });
     }
@@ -309,25 +411,31 @@ function render(rc: RenderContext<State>) {
 
   if (overlays.velocity && Math.abs(state.v) > 0.05) {
     const vy = by - 54;
-    arrow(ctx, X(state.x), vy, X(state.x) + state.v * 26, vy, theme.sci["velocity"], {
-      width: 3, label: band === "K-2" ? undefined : `${state.v.toFixed(1)} m/s`,
-    });
+    arrow(ctx, cxs, vy, cxs + state.v * 26, vy, theme.sci["velocity"], { width: 3 });
+    if (band !== "K-2") {
+      badge(ctx, cxs, vy - 20, `${state.v.toFixed(1)} m/s`, theme, {
+        align: "center", color: theme.sci["velocity"],
+      });
+    }
   }
 
-  // ---- Numbers ---------------------------------------------------------------
+  // ---- Numbers ----------------------------------------------------------------
   if (band === "6-8" || band === "9-12") {
     const net = state.applied + state.friction;
-    label(ctx, `a = ${state.a.toFixed(2)} m/s²`, 14, 22, theme, { color: theme.sci["acceleration"] });
+    badge(ctx, 14, 26, `a = ${state.a.toFixed(2)} m/s²`, theme, {
+      color: theme.sci["acceleration"],
+    });
     if (band === "9-12") {
-      label(ctx, `F_net = ${net.toFixed(1)} N = ${m.toFixed(0)} kg × ${state.a.toFixed(2)} m/s²`, 14, 44, theme, {
+      caption(ctx, 14, 52, `F_net ${net.toFixed(1)} N = ${m.toFixed(0)} kg × ${state.a.toFixed(2)} m/s²`, theme, {
         color: theme.inkSoft, size: 11,
       });
-      const { muS, muK } = coefficients(params);
-      label(ctx, `μs = ${muS.toFixed(2)}   μk = ${muK.toFixed(2)}`, 14, 64, theme, {
+      caption(ctx, 14, 70, `μs ${surf.muS.toFixed(2)}    μk ${surf.muK.toFixed(2)}`, theme, {
         color: theme.inkSoft, size: 11,
       });
     }
   }
+
+  vignette(ctx, width, height, 0.14);
 }
 
 /* ------------------------------------------------------------------ *

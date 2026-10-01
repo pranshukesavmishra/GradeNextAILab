@@ -1,7 +1,10 @@
 import type { ParamValues, RenderContext, SimManifest, SimModel } from "@engine/types";
 import type { Rng } from "@engine/rng";
 import { CONSTANTS, q } from "@engine/units";
-import { camera, disc, label, roundRect } from "@ui/draw";
+import { camera, roundRect } from "@ui/draw";
+import {
+  badge, caption, contactShadow, groundPlane, hexA, isDarkTheme, lifted, sky, sphere, vignette,
+} from "@ui/scene";
 
 /**
  * Reaction Rates & Collisions — Grades 7-12.
@@ -350,42 +353,75 @@ const model: SimModel<State> = {
 const WORLD_W = 35;
 const WORLD_H = 18;
 
+/** Mix two theme colours into a hex, so the result can feed the scene kit. */
+function blend(a: string, b: string, t: number): string {
+  const k = Math.max(0, Math.min(1, t));
+  const ca = a.replace("#", "");
+  const cb = b.replace("#", "");
+  let out = "#";
+  for (let i = 0; i < 3; i++) {
+    const va = parseInt(ca.slice(i * 2, i * 2 + 2), 16) || 0;
+    const vb = parseInt(cb.slice(i * 2, i * 2 + 2), 16) || 0;
+    out += Math.round(va + (vb - va) * k).toString(16).padStart(2, "0");
+  }
+  return out;
+}
+
+/**
+ * A molecule as two bonded atoms with volume: a stick between two lit spheres.
+ * `heat` (0..1) adds a halo, so the fast molecules — the ones that actually
+ * clear the barrier — are the ones that look energetic.
+ */
 function drawMolecule(
   ctx: CanvasRenderingContext2D, cx: number, cy: number, kind: number, angle: number,
-  scale: number, theme: RenderContext<State>["theme"],
+  scale: number, theme: RenderContext<State>["theme"], heat = 0,
 ) {
   const dx = Math.cos(angle);
   const dy = -Math.sin(angle);
-  if (kind === KIND_A) {
-    const r = 0.2 * scale, sep = 0.17 * scale;
-    const c = theme.sci["energy-potential"];
-    disc(ctx, cx - dx * sep, cy - dy * sep, r, c, { stroke: theme.surface, lineWidth: 1 });
-    disc(ctx, cx + dx * sep, cy + dy * sep, r, c, { stroke: theme.surface, lineWidth: 1 });
-  } else if (kind === KIND_B) {
-    const r = 0.3 * scale, sep = 0.24 * scale;
-    const c = theme.sci["mass"];
-    disc(ctx, cx - dx * sep, cy - dy * sep, r, c, { stroke: theme.surface, lineWidth: 1 });
-    disc(ctx, cx + dx * sep, cy + dy * sep, r, c, { stroke: theme.surface, lineWidth: 1 });
-  } else {
-    const c = theme.sci["energy-kinetic"];
-    disc(ctx, cx - dx * 0.2 * scale, cy - dy * 0.2 * scale, 0.29 * scale, c, { stroke: theme.surface, lineWidth: 1 });
-    disc(ctx, cx + dx * 0.24 * scale, cy + dy * 0.24 * scale, 0.18 * scale, c, { stroke: theme.surface, lineWidth: 1 });
-  }
+  const spec = kind === KIND_A
+    ? { r1: 0.21, r2: 0.21, sep: 0.17, c: theme.sci["energy-potential"] }
+    : kind === KIND_B
+      ? { r1: 0.31, r2: 0.31, sep: 0.25, c: theme.sci["mass"] }
+      : { r1: 0.3, r2: 0.19, sep: 0.23, c: theme.sci["energy-kinetic"] };
+
+  const ax = cx - dx * spec.sep * scale, ay = cy - dy * spec.sep * scale;
+  const bx = cx + dx * spec.sep * scale, by = cy + dy * spec.sep * scale;
+
+  ctx.save();
+  ctx.strokeStyle = hexA(spec.c, 0.85);
+  ctx.lineWidth = Math.max(1.5, spec.r2 * scale * 0.9);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(bx, by);
+  ctx.stroke();
+  ctx.restore();
+
+  const glow = heat > 0.6 ? (heat - 0.6) * 1.6 : 0;
+  sphere(ctx, ax, ay, spec.r1 * scale, spec.c, { glow });
+  sphere(ctx, bx, by, spec.r2 * scale, spec.c, { glow });
 }
 
 function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, overlays, band } = rc;
-  const cam = camera({ x0: -0.6, y0: -1.0, x1: WORLD_W + 0.6, y1: WORLD_H + 0.6, width, height });
+  const cam = camera({ x0: -0.4, y0: -0.8, x1: WORLD_W + 0.4, y1: WORLD_H + 0.5, width, height });
   const px = (x: number) => cam.toScreenX(x);
   const py = (y: number) => cam.toScreenY(y);
   const scale = cam.scale;
+  const dark = isDarkTheme(theme);
 
   const ea = activationEnergy(params);
   const eaBare = (params.activationEnergy as number) / 1000;
   const t = params.temperature as number;
   const rt = R_KJ * t;
+  const glass = theme.sci["solid"];
 
-  /* ---- the reaction box ---- */
+  /* ---- the bench the vessel is clamped to ---- */
+  sky(ctx, width, height, theme, "indoor");
+  const benchY = py(0.05);
+  groundPlane(ctx, benchY, 0, px(22.2), height, theme, "lab");
+
+  /* ---- the reaction vessel ---- */
   // The drawing scale is pinned to the largest possible container, so shrinking
   // the box really does crowd the molecules together on screen.
   const maxW = BASE_W * Math.sqrt(MAX_SIZE);
@@ -396,41 +432,77 @@ function render(rc: RenderContext<State>) {
   const bx = region.x + (region.w - bw) / 2;
   const by = region.y + (region.h - bh) / 2;
 
+  const vl = px(bx), vr = px(bx + bw), vt = py(by + bh), vb = py(by);
+  const wall = Math.max(3, scale * 0.18);
+
+  contactShadow(ctx, (vl + vr) / 2, benchY + 1, (vr - vl) * 0.32, 0);
+
+  // The gas inside, tinted by how hot the bath is holding it.
+  const heatFrac = Math.min(1, Math.max(0, (t - 300) / 700));
+  const gasTint = blend(theme.sci["cold"], theme.sci["hot"], heatFrac);
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, px(bx), py(by + bh), bw * scale, bh * scale, 5);
+  const fill = ctx.createLinearGradient(0, vt, 0, vb);
+  fill.addColorStop(0, hexA(gasTint, dark ? 0.1 : 0.06));
+  fill.addColorStop(1, hexA(gasTint, dark ? 0.24 : 0.16));
+  ctx.fillStyle = fill;
+  roundRect(ctx, vl, vt, vr - vl, vb - vt, 6);
   ctx.fill();
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 2;
-  ctx.stroke();
   ctx.restore();
 
   const mScale = inner * scale;
+  const vRef = 2.4 * Math.sqrt(R_KJ * t);
   for (let i = 0; i < state.n; i++) {
+    const speed = Math.hypot(state.vx[i], state.vy[i]);
     drawMolecule(
       ctx,
       px(bx + state.x[i] * inner),
       py(by + state.y[i] * inner),
       state.kind[i], state.th[i], mScale, theme,
+      Math.min(1, speed / vRef),
     );
   }
 
-  label(ctx, "H₂ + I₂ → 2 HI", px(region.x), py(region.y + region.h + 0.5), theme, {
-    size: band === "3-5" ? 15 : 14,
+  // The glass, over the contents, so the molecules read as being inside it.
+  ctx.save();
+  ctx.beginPath();
+  roundRect(ctx, vl, vt, vr - vl, vb - vt, 6);
+  ctx.strokeStyle = hexA(glass, 0.45);
+  ctx.lineWidth = wall;
+  ctx.stroke();
+  ctx.strokeStyle = hexA(glass, 0.9);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  const sheen = ctx.createLinearGradient(vl, vt, vl + (vr - vl) * 0.35, vb);
+  sheen.addColorStop(0, "rgba(255,255,255,0.15)");
+  sheen.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = sheen;
+  ctx.beginPath();
+  ctx.moveTo(vl + wall, vt + wall);
+  ctx.lineTo(vl + (vr - vl) * 0.22, vt + wall);
+  ctx.lineTo(vl + wall, vb - wall);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  caption(ctx, px(region.x), py(region.y + region.h + 0.55), "H₂ + I₂ → 2 HI", theme, {
+    size: band === "3-5" ? 17 : 16,
   });
   const pct = state.maxProduct > 0 ? (state.countC / state.maxProduct) * 100 : 0;
-  label(ctx, `${pct.toFixed(0)}% complete`, px(region.x + region.w), py(region.y + region.h + 0.5), theme, {
-    align: "right", size: 14, color: theme.sci["energy-kinetic"],
+  badge(ctx, px(region.x + region.w), py(region.y + region.h + 0.55), `${pct.toFixed(0)}%`, theme, {
+    align: "right", color: theme.sci["energy-kinetic"], sub: "complete",
   });
 
   /* ---- legend ---- */
-  const legendY = 0.2;
+  const legendY = 0.42;
   const items: [number, string][] = [[KIND_A, "H₂"], [KIND_B, "I₂"], [KIND_C, "HI"]];
   for (let k = 0; k < items.length; k++) {
-    const lx = region.x + 0.6 + k * 3.4;
+    const lx = region.x + 0.8 + k * 3.4;
     drawMolecule(ctx, px(lx), py(legendY), items[k][0], 0, mScale, theme);
-    label(ctx, items[k][1], px(lx + 0.7), py(legendY), theme, { size: 11, color: theme.inkSoft, plate: false });
+    caption(ctx, px(lx + 0.75), py(legendY), items[k][1], theme, { size: 12, color: theme.inkSoft });
   }
+  badge(ctx, px(region.x + region.w), py(legendY), `${t.toFixed(0)} K`, theme, {
+    align: "right", color: gasTint,
+  });
 
   /* ---- activation-energy diagram ---- */
   const gx = 22.6, gw = WORLD_W - gx - 0.4;
@@ -438,18 +510,25 @@ function render(rc: RenderContext<State>) {
   const eTop = 38, eBottom = -70;
   const eToY = (e: number) => gy + ((e - eBottom) / (eTop - eBottom)) * gh;
 
-  ctx.save();
-  ctx.strokeStyle = theme.line;
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(px(gx), py(gy + gh), gw * scale, gh * scale);
-  ctx.restore();
+  const panel = (x0: number, y0: number, w0: number, h0: number) => {
+    ctx.save();
+    ctx.fillStyle = hexA(theme.surface, dark ? 0.44 : 0.66);
+    roundRect(ctx, px(x0), py(y0 + h0), w0 * scale, h0 * scale, 7);
+    ctx.fill();
+    ctx.strokeStyle = hexA(theme.line, 0.9);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  };
+  panel(gx, gy, gw, gh);
 
   const path = (barrier: number, colour: string, dashed: boolean) => {
     ctx.save();
     ctx.strokeStyle = colour;
-    ctx.lineWidth = dashed ? 2 : 2.5;
+    ctx.lineWidth = dashed ? 2 : 3;
     if (dashed) ctx.setLineDash([6, 4]);
     ctx.lineJoin = "round";
+    ctx.lineCap = "round";
     ctx.beginPath();
     const STEPS = 60;
     for (let i = 0; i <= STEPS; i++) {
@@ -467,7 +546,7 @@ function render(rc: RenderContext<State>) {
 
   // The uncatalysed route is always shown, so the catalyst's shortcut is visible.
   if (params.catalyst) path(eaBare, theme.inkSoft, true);
-  path(ea, theme.sci["energy-potential"], false);
+  lifted(ctx, 8, 2, () => path(ea, theme.sci["energy-potential"], false), 0.3);
 
   ctx.save();
   ctx.strokeStyle = theme.sci["energy-thermal"];
@@ -478,25 +557,21 @@ function render(rc: RenderContext<State>) {
   ctx.lineTo(px(gx + gw - 0.3), py(eToY(ea)));
   ctx.stroke();
   ctx.restore();
-  label(ctx, `Ea ${ea.toFixed(0)} kJ/mol`, px(gx + 0.5), py(eToY(ea) + 0.55), theme, {
+  caption(ctx, px(gx + 0.5), py(eToY(ea) + 0.55), `Ea ${ea.toFixed(0)} kJ/mol`, theme, {
     size: 11, color: theme.sci["energy-thermal"],
   });
   if (band === "9-12") {
-    label(ctx, `ΔH ${DELTA_H} kJ/mol`, px(gx + gw - 0.4), py(eToY(DELTA_H) + 0.6), theme, {
+    caption(ctx, px(gx + gw - 0.4), py(eToY(DELTA_H) + 0.6), `ΔH ${DELTA_H} kJ/mol`, theme, {
       align: "right", size: 10, color: theme.sci["energy-kinetic"],
     });
   }
-  label(ctx, "Energy along the reaction", px(gx), py(gy + gh + 0.55), theme, { size: 12 });
+  caption(ctx, px(gx), py(gy + gh + 0.55), "Energy along the reaction", theme, { size: 12 });
 
   /* ---- how many collisions carry enough energy ---- */
   if (overlays.distribution && band === "9-12") {
     const dy0 = 1.2, dh = 6.6;
     const eMax = 45;
-    ctx.save();
-    ctx.strokeStyle = theme.line;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(px(gx), py(dy0 + dh), gw * scale, dh * scale);
-    ctx.restore();
+    panel(gx, dy0, gw, dh);
 
     const dxAt = (e: number) => gx + 0.3 + (e / eMax) * (gw - 0.6);
     const peak = 1 / rt;
@@ -504,8 +579,10 @@ function render(rc: RenderContext<State>) {
 
     // Shade the tail beyond the barrier: those are the collisions that react.
     ctx.save();
-    ctx.fillStyle = theme.sci["energy-thermal"];
-    ctx.globalAlpha = 0.3;
+    const tail = ctx.createLinearGradient(0, py(dy0 + dh), 0, py(dy0));
+    tail.addColorStop(0, hexA(theme.sci["energy-thermal"], 0.55));
+    tail.addColorStop(1, hexA(theme.sci["energy-thermal"], 0.12));
+    ctx.fillStyle = tail;
     ctx.beginPath();
     ctx.moveTo(px(dxAt(ea)), py(dy0 + 0.3));
     for (let e = ea; e <= eMax; e += eMax / 90) {
@@ -519,6 +596,7 @@ function render(rc: RenderContext<State>) {
     ctx.save();
     ctx.strokeStyle = theme.sci["hot"];
     ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
     ctx.beginPath();
     for (let i = 0; i <= 90; i++) {
       const e = (i / 90) * eMax;
@@ -538,13 +616,15 @@ function render(rc: RenderContext<State>) {
     ctx.stroke();
     ctx.restore();
 
-    label(
-      ctx, `${(Math.exp(-ea / rt) * 100).toFixed(1)}% of collisions clear Ea`,
-      px(gx + gw - 0.3), py(dy0 + dh - 0.6), theme,
+    caption(
+      ctx, px(gx + gw - 0.3), py(dy0 + dh - 0.6),
+      `${(Math.exp(-ea / rt) * 100).toFixed(1)}% of collisions clear Ea`, theme,
       { align: "right", size: 11, color: theme.sci["energy-thermal"] },
     );
-    label(ctx, "Collision energies at this temperature", px(gx), py(dy0 + dh + 0.55), theme, { size: 12 });
+    caption(ctx, px(gx), py(dy0 + dh + 0.55), "Collision energies at this temperature", theme, { size: 12 });
   }
+
+  vignette(ctx, width, height, 0.14);
 }
 
 /* ------------------------------------------------------------------ *

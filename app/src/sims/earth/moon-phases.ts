@@ -1,6 +1,7 @@
 import type { RenderContext, SimManifest, SimModel, ThemeColors } from "@engine/types";
 import { q } from "@engine/units";
-import { disc, label, roundRect } from "@ui/draw";
+import { roundRect } from "@ui/draw";
+import { badge, glow, hexA, sky, sphere, starfield, vignette } from "@ui/scene";
 
 /**
  * Moon Phases & Eclipses — Grades 1-10.
@@ -252,25 +253,95 @@ const model: SimModel<State> = {
  * View
  * ------------------------------------------------------------------ */
 
+/** Mix two theme colours into a hex, so the result can feed the scene kit. */
+function blend(a: string, b: string, t: number): string {
+  const k = Math.max(0, Math.min(1, t));
+  const ca = a.replace("#", "");
+  const cb = b.replace("#", "");
+  let out = "#";
+  for (let i = 0; i < 3; i++) {
+    const va = parseInt(ca.slice(i * 2, i * 2 + 2), 16) || 0;
+    const vb = parseInt(cb.slice(i * 2, i * 2 + 2), 16) || 0;
+    out += Math.round(va + (vb - va) * k).toString(16).padStart(2, "0");
+  }
+  return out;
+}
+
 /**
- * A disc lit from one side. `illum` is the fraction lit and `sunAngle` is the
+ * Text over the night sky. The whole stage is space in both themes, so the
+ * halo is always dark and the ink is always light — `caption` cannot assume
+ * that, because most scenes are not permanently black.
+ */
+function spaceText(
+  ctx: CanvasRenderingContext2D, x: number, y: number, text: string, color: string,
+  opts: { align?: CanvasTextAlign; size?: number; weight?: number } = {},
+) {
+  ctx.save();
+  ctx.font = `${opts.weight ?? 600} ${opts.size ?? 12}px "Bricolage Grotesque", system-ui, sans-serif`;
+  ctx.textAlign = opts.align ?? "left";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = "rgba(3,7,14,0.85)";
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+/** A ball lit from a direction: highlight toward the light, shadow away from it. */
+function litBody(
+  ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number,
+  color: string, sunAngle: number,
+) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  const hx = cx + Math.cos(sunAngle) * r * 0.42;
+  const hy = cy + Math.sin(sunAngle) * r * 0.42;
+  const hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 1.3);
+  hg.addColorStop(0, "rgba(255,255,255,0.55)");
+  hg.addColorStop(0.4, "rgba(255,255,255,0.14)");
+  hg.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = hg;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  const sx = cx - Math.cos(sunAngle) * r * 0.6;
+  const sy = cy - Math.sin(sunAngle) * r * 0.6;
+  const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 1.6);
+  sg.addColorStop(0, "rgba(0,0,0,0.55)");
+  sg.addColorStop(0.55, "rgba(0,0,0,0.18)");
+  sg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = sg;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * A body lit from one side. `illum` is the fraction lit and `sunAngle` is the
  * screen direction the light comes from; the terminator is the correct
  * half-ellipse, so a gibbous moon bulges the right way and a crescent does not.
+ * Both halves are shaded, so the result reads as a ball rather than a token.
  */
 function phaseDisc(
   ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number,
   illum: number, sunAngle: number, lit: string, dark: string,
+  opts: { maria?: boolean } = {},
 ) {
   const t = 2 * Math.max(0, Math.min(1, illum)) - 1;
+
+  // The night side first: faintly lit by earthshine, never a flat hole.
+  litBody(ctx, cx, cy, r, dark, sunAngle + Math.PI);
+
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(sunAngle);
-
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
-  ctx.fillStyle = dark;
-  ctx.fill();
-
   ctx.beginPath();
   ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, false);
   ctx.ellipse(
@@ -279,28 +350,74 @@ function phaseDisc(
     t < 0,
   );
   ctx.closePath();
-  ctx.fillStyle = lit;
-  ctx.fill();
+  ctx.clip();
+  ctx.rotate(-sunAngle);
+  ctx.translate(-cx, -cy);
+  litBody(ctx, cx, cy, r, lit, sunAngle);
+
+  if (opts.maria) {
+    // The maria: the dark seas that make the Moon look like the Moon.
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    const seas: [number, number, number][] = [
+      [-0.26, -0.3, 0.3], [0.18, -0.36, 0.19], [-0.34, 0.18, 0.22],
+      [0.1, 0.12, 0.26], [0.38, 0.34, 0.13], [-0.05, 0.46, 0.15],
+    ];
+    for (const [dx, dy, rr] of seas) {
+      ctx.beginPath();
+      ctx.ellipse(cx + dx * r, cy + dy * r, rr * r, rr * r * 0.82, dx, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.16)";
+    for (const [dx, dy, rr] of [[0.42, -0.12, 0.06], [-0.5, -0.1, 0.05]] as [number, number, number][]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx * r, cy + dy * r, rr * r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  // A limb, so the ball has an edge against the black.
+  ctx.save();
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.lineWidth = Math.max(1, r * 0.05);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
   ctx.restore();
 }
 
 /** Earth's shadow, drawn whether or not anything is in it. That is the point. */
 function shadowCone(
   ctx: CanvasRenderingContext2D, x: number, y: number, angle: number,
-  bodyR: number, length: number, theme: ThemeColors,
+  bodyR: number, length: number, _theme: ThemeColors,
 ) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
-  const grad = ctx.createLinearGradient(0, 0, length, 0);
-  grad.addColorStop(0, theme.inkSoft);
-  grad.addColorStop(1, theme.surface);
-  ctx.globalAlpha = 0.42;
-  ctx.fillStyle = grad;
+
+  // Penumbra: wide, soft, and the reason partial eclipses exist.
+  const pen = ctx.createLinearGradient(0, 0, length, 0);
+  pen.addColorStop(0, "rgba(0,0,0,0.34)");
+  pen.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = pen;
   ctx.beginPath();
   ctx.moveTo(0, -bodyR);
-  ctx.lineTo(length, -bodyR * 0.25);
-  ctx.lineTo(length, bodyR * 0.25);
+  ctx.lineTo(length, -bodyR * 1.5);
+  ctx.lineTo(length, bodyR * 1.5);
+  ctx.lineTo(0, bodyR);
+  ctx.closePath();
+  ctx.fill();
+
+  // Umbra: the tapering core that actually has to hit the Moon.
+  const umb = ctx.createLinearGradient(0, 0, length, 0);
+  umb.addColorStop(0, "rgba(0,0,0,0.72)");
+  umb.addColorStop(0.75, "rgba(0,0,0,0.4)");
+  umb.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = umb;
+  ctx.beginPath();
+  ctx.moveTo(0, -bodyR);
+  ctx.lineTo(length, -bodyR * 0.12);
+  ctx.lineTo(length, bodyR * 0.12);
   ctx.lineTo(0, bodyR);
   ctx.closePath();
   ctx.fill();
@@ -311,46 +428,71 @@ function drawSpaceView(
   rc: RenderContext<State>, geo: MoonGeometry, x: number, y: number, w: number, h: number,
 ) {
   const { ctx, theme, band, overlays } = rc;
-  const cx = x + w * 0.58;
+  const cx = x + w * 0.6;
   const cy = y + h * 0.5;
-  const orbitR = Math.min(w * 0.34, h * 0.36);
-  const earthR = band === "K-2" ? 16 : 13;
-  const moonR = band === "K-2" ? 9 : 7;
+  const orbitR = Math.min(w * 0.36, h * 0.4);
+  const earthR = band === "K-2" ? 22 : 18;
+  const moonR = band === "K-2" ? 11 : 8.5;
 
-  /* --- sunlight arriving from the left --------------------------- */
   const lightColor = theme.sci["light"];
+  const rock = theme.sci["mass"];
+  const ink = theme.surface;
+
+  /* --- the Sun, off the left edge, with light crossing the frame --- */
+  const sunX = x - w * 0.06;
+  const sunR = Math.min(h * 0.34, w * 0.2);
+  glow(ctx, sunX, cy, sunR * 3.4, lightColor, 0.5);
+  sphere(ctx, sunX, cy, sunR, lightColor, { glow: 1.1, rim: false });
+
   ctx.save();
-  ctx.strokeStyle = lightColor;
-  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = hexA(lightColor, 0.45);
   ctx.lineWidth = 2;
-  for (let i = 0; i < 5; i++) {
-    const ry = y + h * (0.2 + i * 0.15);
+  ctx.lineCap = "round";
+  for (let i = 0; i < 6; i++) {
+    const ry = y + h * (0.14 + i * 0.145);
     ctx.beginPath();
-    ctx.moveTo(x + 6, ry);
-    ctx.lineTo(x + w * 0.2, ry);
+    ctx.moveTo(sunX + sunR + 8, ry);
+    ctx.lineTo(cx - orbitR - 16, ry);
     ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - orbitR - 24, ry);
+    ctx.lineTo(cx - orbitR - 16, ry - 5);
+    ctx.lineTo(cx - orbitR - 16, ry + 5);
+    ctx.closePath();
+    ctx.fillStyle = hexA(lightColor, 0.45);
+    ctx.fill();
   }
   ctx.restore();
-  disc(ctx, x + 2, cy, Math.min(h * 0.3, 46), lightColor, { alpha: 0.9 });
-  label(ctx, "Sun", x + 26, cy, theme, { size: 11, color: theme.inkSoft, plate: false });
+  spaceText(ctx, sunX + sunR + 12, cy - sunR * 0.7, "Sun", lightColor, { size: 12 });
 
   /* --- orbit --------------------------------------------------------- */
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.strokeStyle = hexA(ink, 0.28);
   ctx.lineWidth = 1.5;
-  ctx.setLineDash([4, 4]);
+  ctx.setLineDash([5, 6]);
   ctx.beginPath();
   ctx.arc(cx, cy, orbitR, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
   /* --- Earth, its shadow, and the observer ------------------------- */
-  shadowCone(ctx, cx, cy, 0, earthR, orbitR * 1.7, theme);
-  phaseDisc(ctx, cx, cy, earthR, 0.5, Math.PI, theme.sci["liquid"], theme.sci["mass"]);
+  shadowCone(ctx, cx, cy, 0, earthR, orbitR * 1.9, theme);
+  phaseDisc(ctx, cx, cy, earthR, 0.5, Math.PI, theme.sci["liquid"], blend(theme.sci["liquid"], theme.ink, 0.6));
+  // A hint of land, so Earth is a world and not a blue dot.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, earthR, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = hexA(theme.sci["producer"], 0.75);
+  ctx.beginPath();
+  ctx.ellipse(cx - earthR * 0.3, cy - earthR * 0.2, earthR * 0.42, earthR * 0.3, 0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + earthR * 0.25, cy + earthR * 0.4, earthR * 0.34, earthR * 0.2, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
   if (band !== "K-2") {
-    label(ctx, "Earth", cx, cy + earthR + 12, theme, {
-      align: "center", size: 11, color: theme.inkSoft, plate: false,
-    });
+    spaceText(ctx, cx, cy + earthR + 14, "Earth", ink, { align: "center", size: 12 });
   }
 
   /* --- Moon ---------------------------------------------------------- */
@@ -359,21 +501,20 @@ function drawSpaceView(
   // Screen angle π points at the Sun, so the Moon sits at π + elongation.
   const mx = cx - Math.cos(geo.elongation) * orbitR;
   const my = cy - Math.sin(geo.elongation) * orbitR;
-  shadowCone(ctx, mx, my, 0, moonR, orbitR * 0.9, theme);
+  shadowCone(ctx, mx, my, 0, moonR, orbitR * 1.0, theme);
   // The Moon's lit half always faces the Sun, which is off to the left.
-  phaseDisc(ctx, mx, my, moonR, 0.5, Math.PI, theme.sci["light"], theme.sci["mass"]);
+  phaseDisc(ctx, mx, my, moonR, 0.5, Math.PI, blend(lightColor, theme.surface, 0.35),
+    blend(rock, theme.ink, 0.55), { maria: true });
   if (band !== "K-2") {
-    label(ctx, "Moon", mx, my - moonR - 12, theme, {
-      align: "center", size: 11, color: theme.inkSoft, plate: false,
-    });
+    spaceText(ctx, mx, my - moonR - 14, "Moon", ink, { align: "center", size: 12 });
   }
 
   /* --- the 5° tilt, shown edge-on ----------------------------------- */
   if (overlays.tilt && band !== "K-2" && band !== "3-5") {
-    const sy = y + h - 26;
+    const sy = y + h - 24;
     const halfW = w * 0.4;
     ctx.save();
-    ctx.strokeStyle = theme.line;
+    ctx.strokeStyle = hexA(ink, 0.25);
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x + w * 0.5 - halfW, sy);
@@ -381,7 +522,7 @@ function drawSpaceView(
     ctx.stroke();
 
     ctx.strokeStyle = theme.sci["distance"];
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     for (let i = 0; i <= 60; i++) {
       const frac = i / 60;
@@ -395,10 +536,8 @@ function drawSpaceView(
     }
     ctx.stroke();
     ctx.restore();
-    disc(ctx, x + w * 0.5, sy - (geo.beta / (6 * DEG)) * 16, 4, theme.sci["light"]);
-    label(ctx, "Moon's tilted path", x + w * 0.5 - halfW, sy - 26, theme, {
-      size: 10, color: theme.inkSoft, plate: false,
-    });
+    sphere(ctx, x + w * 0.5, sy - (geo.beta / (6 * DEG)) * 16, 4.5, lightColor, { glow: 0.7 });
+    spaceText(ctx, x + w * 0.5 - halfW, sy - 26, "Moon's tilted path", hexA(ink, 0.75), { size: 11 });
   }
 }
 
@@ -406,43 +545,83 @@ function drawEarthView(
   rc: RenderContext<State>, geo: MoonGeometry, x: number, y: number, w: number, h: number,
 ) {
   const { ctx, theme, band, state, params } = rc;
-
-  ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, x + 6, y + 6, w - 12, h - 12, 8);
-  ctx.fill();
-  ctx.restore();
+  const ink = theme.surface;
 
   const cx = x + w * 0.5;
-  const cy = y + h * 0.46;
-  const r = Math.min(w * 0.3, h * 0.3);
+  const cy = y + h * 0.44;
+  const r = Math.min(w * 0.34, h * 0.34);
+
+  // A horizon at the bottom of the panel: this is a view from the ground, and
+  // the ground is what makes it one.
+  const horizon = y + h - 34;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x + 4, y + 4, w - 8, h - 8);
+  ctx.clip();
+  const night = ctx.createLinearGradient(0, y, 0, horizon);
+  night.addColorStop(0, "rgba(255,255,255,0)");
+  night.addColorStop(1, hexA(theme.sci["velocity"], 0.16));
+  ctx.fillStyle = night;
+  ctx.fillRect(x, y, w, horizon - y);
+
+  // Moonlight halo, brighter the more of the Moon is lit.
+  glow(ctx, cx, cy, r * (2 + geo.illuminated * 2.6), blend(theme.sci["light"], theme.surface, 0.4),
+    0.1 + geo.illuminated * 0.3);
 
   // Waxing moons are lit on the right; waning moons on the left.
   const waxing = geo.elongation < Math.PI;
-  phaseDisc(ctx, cx, cy, r, geo.illuminated, waxing ? 0 : Math.PI,
-    theme.sci["light"], theme.sci["mass"]);
+  phaseDisc(
+    ctx, cx, cy, r, geo.illuminated, waxing ? 0 : Math.PI,
+    blend(theme.sci["light"], theme.surface, 0.35),
+    blend(theme.sci["mass"], theme.ink, 0.62),
+    { maria: true },
+  );
+
+  // The ground, with a treeline, so the Moon is above something.
+  ctx.fillStyle = blend(theme.sci["producer"], theme.ink, 0.78);
+  ctx.beginPath();
+  ctx.moveTo(x, horizon + 6);
+  for (let i = 0; i <= 18; i++) {
+    const tx = x + (i / 18) * w;
+    const th = 4 + ((Math.sin(i * 2.3) + 1) / 2) * 12;
+    ctx.lineTo(tx, horizon - th);
+    ctx.lineTo(tx + w / 36, horizon);
+  }
+  ctx.lineTo(x + w, horizon + 6);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = hexA(theme.line, 0.35);
+  ctx.lineWidth = 1;
+  roundRect(ctx, x + 4, y + 4, w - 8, h - 8, 10);
+  ctx.stroke();
+  ctx.restore();
 
   const facts = model.facts?.(state, params) ?? {};
   const name = String(facts.phase ?? "");
-  label(ctx, name, cx, cy + r + 22, theme, {
-    align: "center", size: band === "K-2" ? 16 : 14,
+  spaceText(ctx, cx, horizon + 18, name, ink, {
+    align: "center", size: band === "K-2" ? 17 : 15, weight: 700,
   });
   if (band !== "K-2") {
-    label(ctx, `${Math.round(geo.illuminated * 100)}% lit`, cx, cy + r + 42, theme, {
-      align: "center", size: 12, color: theme.inkSoft,
+    badge(ctx, cx, y + h - 4, `${Math.round(geo.illuminated * 100)}% lit`, theme, {
+      align: "center", color: theme.sci["light"],
     });
   }
-  label(ctx, "What you see from Earth", cx, y + 20, theme, {
-    align: "center", size: 11, color: theme.inkSoft, plate: false,
+  spaceText(ctx, cx, y + 20, "What you see from Earth", hexA(ink, 0.7), {
+    align: "center", size: 11, weight: 500,
   });
 
   if (facts.solarEclipseNow) {
-    label(ctx, "Solar eclipse!", cx, y + h - 22, theme, {
-      align: "center", size: 13, color: theme.sci["light"],
+    badge(ctx, x + w / 2, y + 44, "Solar eclipse!", theme, {
+      align: "center", color: theme.sci["light"],
     });
   } else if (facts.lunarEclipseNow) {
-    label(ctx, "Lunar eclipse!", cx, y + h - 22, theme, {
-      align: "center", size: 13, color: theme.sci["acceleration"],
+    badge(ctx, x + w / 2, y + 44, "Lunar eclipse!", theme, {
+      align: "center", color: theme.sci["acceleration"],
     });
   }
 }
@@ -451,14 +630,17 @@ function drawEarthView(
 function drawEclipseLog(rc: RenderContext<State>, x: number, y: number, w: number, h: number) {
   const { ctx, state, theme } = rc;
   ctx.save();
-  ctx.fillStyle = theme.surfaceAlt;
-  roundRect(ctx, x, y, w, h, 5);
+  ctx.fillStyle = "rgba(255,255,255,0.07)";
+  roundRect(ctx, x, y, w, h, 6);
   ctx.fill();
+  ctx.strokeStyle = hexA(theme.line, 0.3);
+  ctx.lineWidth = 1;
+  ctx.stroke();
   ctx.restore();
 
   if (state.eclipses.length === 0) {
-    label(ctx, "No eclipses logged yet", x + 8, y + h / 2, theme, {
-      size: 10, color: theme.inkSoft, plate: false,
+    spaceText(ctx, x + 10, y + h / 2, "No eclipses logged yet", hexA(theme.surface, 0.6), {
+      size: 10, weight: 500,
     });
     return;
   }
@@ -469,47 +651,45 @@ function drawEclipseLog(rc: RenderContext<State>, x: number, y: number, w: numbe
   for (let i = 0; i < state.eclipses.length; i++) {
     const e = state.eclipses[i];
     const px = x + 10 + ((e.day - first) / span) * (w - 20);
-    disc(ctx, px, y + h / 2, 3 + e.depth * 3,
-      e.solar ? theme.sci["light"] : theme.sci["acceleration"]);
+    sphere(ctx, px, y + h / 2, 3 + e.depth * 3.5,
+      e.solar ? theme.sci["light"] : theme.sci["acceleration"], { glow: 0.7 });
   }
-  label(ctx, `${state.solarCount} solar · ${state.lunarCount} lunar`, x + w - 8, y + h / 2, theme, {
-    align: "right", size: 10, color: theme.inkSoft, plate: false,
-  });
+  spaceText(ctx, x + w - 8, y + h / 2, `${state.solarCount} solar · ${state.lunarCount} lunar`,
+    hexA(theme.surface, 0.75), { align: "right", size: 10, weight: 500 });
 }
 
 function render(rc: RenderContext<State>) {
   const { ctx, state, params, theme, width, height, band, overlays } = rc;
   const geo = moonGeometry(currentDay(state, params), inclinationOf(params));
 
-  ctx.save();
-  ctx.fillStyle = theme.surface;
-  ctx.fillRect(0, 0, width, height);
-  ctx.restore();
+  /* ---- one night sky behind both views ---- */
+  sky(ctx, width, height, theme, "space");
+  starfield(ctx, width, height, 170, 4);
 
   const logH = overlays.log !== false && band !== "K-2" ? 26 : 0;
   const bodyH = height - logH - (logH ? 8 : 0);
-  const splitX = width * 0.56;
+  const splitX = width * 0.58;
 
   drawSpaceView(rc, geo, 0, 0, splitX, bodyH);
   drawEarthView(rc, geo, splitX, 0, width - splitX, bodyH);
 
   ctx.save();
-  ctx.strokeStyle = theme.line;
+  ctx.strokeStyle = hexA(theme.surface, 0.16);
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(splitX, 10);
-  ctx.lineTo(splitX, bodyH - 10);
+  ctx.moveTo(splitX, 12);
+  ctx.lineTo(splitX, bodyH - 12);
   ctx.stroke();
   ctx.restore();
 
   if (band !== "K-2") {
-    label(
-      ctx,
-      `Day ${currentDay(state, params).toFixed(1)}   ·   cycle day ${geo.cycleDay.toFixed(1)}`,
-      8, 16, theme, { size: 11, color: theme.inkSoft },
-    );
+    badge(ctx, 10, 20, `Day ${currentDay(state, params).toFixed(1)}`, theme, {
+      color: theme.accent, sub: `cycle day ${geo.cycleDay.toFixed(1)}`,
+    });
   }
   if (logH) drawEclipseLog(rc, 0, bodyH + 8, width, logH - 4);
+
+  vignette(ctx, width, height, 0.24);
 }
 
 /* ------------------------------------------------------------------ *

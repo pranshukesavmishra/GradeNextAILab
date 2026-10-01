@@ -62,11 +62,16 @@ export function useSim(opts: UseSimOptions): SimHandle {
   const runnerRef = useRef<SimRunner | null>(null);
   if (runnerRef.current === null || runnerRef.current.manifest.id !== manifest.id) {
     runnerRef.current = new SimRunner({ manifest, params: initial, band });
+    runnerRef.current.playing = true;
   }
   const runner = runnerRef.current;
 
   const [params, setParamsState] = useState<ParamValues>(initial);
-  const [playing, setPlaying] = useState(false);
+  // Simulations start running. A science simulation that opens frozen reads as
+  // broken: the student sees a still picture, and nothing invites them to press
+  // anything. Whatever the sim does - particles jostling, a heart beating, a
+  // wave travelling - is the reason it exists, so it should already be doing it.
+  const [playing, setPlaying] = useState(true);
   const [speed, setSpeedState] = useState(1);
   const [frame, setFrame] = useState(0);
   const [series, setSeries] = useState<DataRow[]>([]);
@@ -105,9 +110,16 @@ export function useSim(opts: UseSimOptions): SimHandle {
     let last = performance.now();
     let mounted = true;
 
-    const tick = (now: number) => {
+    const tick = () => {
       if (!mounted) return;
-      const delta = (now - last) / 1000;
+      // Measured from `performance.now()`, never from the timestamp the frame
+      // callback is handed. Those two can disagree — the first frame after a
+      // slow start-up arrives carrying a timestamp from before the loop was
+      // set up — and a negative delta drives the runner's accumulator deeply
+      // negative, after which it never reaches one tick and the simulation
+      // stays frozen at zero seconds for as long as the page is open.
+      const now = performance.now();
+      const delta = Math.max(0, (now - last) / 1000);
       last = now;
       const ran = runner.advance(delta);
 
@@ -203,7 +215,7 @@ export function useSim(opts: UseSimOptions): SimHandle {
   );
 
   const recordPoint = useCallback(() => {
-    setData((prev) => [...prev, runner.snapshotRow()]);
+    setData((prev) => [...prev, { ...runner.snapshotRow(), trial: prev.length + 1 }]);
   }, [runner]);
 
   const clearData = useCallback(() => setData([]), []);
