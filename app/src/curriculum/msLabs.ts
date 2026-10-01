@@ -1,3 +1,22 @@
+import { LABS_6A } from "./ms/g6a";
+import { LABS_6B } from "./ms/g6b";
+import { LABS_6C } from "./ms/g6c";
+import { LABS_6D } from "./ms/g6d";
+import { LABS_6E } from "./ms/g6e";
+import { LABS_6F } from "./ms/g6f";
+import { LABS_7A } from "./ms/g7a";
+import { LABS_7B } from "./ms/g7b";
+import { LABS_7C } from "./ms/g7c";
+import { LABS_7D } from "./ms/g7d";
+import { LABS_7E } from "./ms/g7e";
+import { LABS_7F } from "./ms/g7f";
+import { LABS_8A } from "./ms/g8a";
+import { LABS_8B } from "./ms/g8b";
+import { LABS_8C } from "./ms/g8c";
+import { LABS_8D } from "./ms/g8d";
+import { LABS_8E } from "./ms/g8e";
+import { LABS_8F } from "./ms/g8f";
+
 /** One experiment a Smart Lab lab can be set up to run. */
 export interface MsSetup {
   /** The engine's set-up value: smartlab/index.html#<lab>/<value> opens it. */
@@ -38,96 +57,25 @@ export interface MsLab {
  * Spheres, which both teach A4.5 and A4.6.
  */
 export const MS_LABS: MsLab[] = [
-  {
-    id: "g6a-living-tank", grade: 6, unit: "A", topics: ["A1", "A2"], subject: "engineering",
-    name: "The Living Tank — Parts, Boundaries and Flows",
-    setups: [
-      { value: "unplug", label: "Unplug a part", teaches: ["A1.1", "A1.3"] },
-      { value: "zoom", label: "Systems inside systems", teaches: ["A1.2", "A1.5"] },
-      { value: "shoal", label: "No fish in charge", teaches: ["A1.4"] },
-      { value: "boundary", label: "Draw the boundary", teaches: ["A2.1", "A2.5"] },
-      { value: "sealed", label: "Open, closed, sealed", teaches: ["A2.2"] },
-      { value: "trace", label: "Follow an atom and a joule", teaches: ["A2.3", "A2.4"] },
-    ],
-  },
-  {
-    id: "g6a-draining-tank", grade: 6, unit: "A", topics: ["A3"], subject: "engineering",
-    name: "The Draining Tank — Building, Testing and Revising a Model",
-    setups: [
-      { value: "why", label: "Why build a model?", teaches: ["A3.1"] },
-      { value: "diagram", label: "Diagram, flowchart, equation", teaches: ["A3.2"] },
-      { value: "scale", label: "Physical and digital models", teaches: ["A3.3"] },
-      { value: "leaves", label: "What a model leaves out", teaches: ["A3.4"] },
-      { value: "revise", label: "Build, test and revise", teaches: ["A3.5"] },
-    ],
-  },
-  {
-    id: "g6a-four-spheres", grade: 6, unit: "A", topics: ["A4"], subject: "earth",
-    name: "Earth’s Four Spheres — Rock, Water, Air and Life",
-    setups: [
-      { value: "geo", label: "Find the core without digging", teaches: ["A4.1"] },
-      { value: "hydro", label: "Where the water is, and how long it stays", teaches: ["A4.2"] },
-      { value: "atmo", label: "Climb through the air", teaches: ["A4.3"] },
-      { value: "bio", label: "What limits life here?", teaches: ["A4.4"] },
-      { value: "links", label: "Carbon through the four spheres", teaches: ["A4.5", "A4.6"] },
-    ],
-  },
-  {
-    id: "g6a-one-event", grade: 6, unit: "A", topics: ["A4"], subject: "earth",
-    name: "One Event, Four Spheres — Eruption, Hurricane, Wildfire, Drought",
-    setups: [
-      { value: "eruption", label: "A volcano erupts", teaches: ["A4.5", "A4.6"] },
-      { value: "hurricane", label: "A hurricane comes ashore", teaches: ["A4.5", "A4.6"] },
-      { value: "wildfire", label: "A wildfire, and the rain after it", teaches: ["A4.5", "A4.6"] },
-      { value: "drought", label: "A drought in a farming valley", teaches: ["A4.5", "A4.6"] },
-    ],
-  },
-  {
-    id: "g6a-measurement-bench", grade: 6, unit: "A", topics: ["A5"], subject: "engineering",
-    name: "The Measurement Bench — Safety, SI Units and Honest Numbers",
-    setups: [
-      { value: "hot", label: "Hot glass looks like cold glass", teaches: ["A5.1"] },
-      { value: "acid", label: "Acid into water — never water into acid", teaches: ["A5.1"] },
-      { value: "density", label: "Weigh it, measure it, name it", teaches: ["A5.3"] },
-      { value: "timing", label: "Stopwatch against light gates", teaches: ["A5.3", "A5.4"] },
-      { value: "graph", label: "From the table to the graph", teaches: ["A5.4"] },
-    ],
-  },
-  {
-    id: "g6a-fair-test", grade: 6, unit: "A", topics: ["A5"], subject: "engineering",
-    name: "The Fair Test — Variables, Evidence and Investigation Design",
-    setups: [
-      { value: "fair", label: "A fair test: change one thing", teaches: ["A5.2"] },
-      { value: "trials", label: "How many drops tell them apart?", teaches: ["A5.2", "A5.4"] },
-      { value: "cer", label: "Claim, evidence, reasoning", teaches: ["A5.5"] },
-      { value: "design", label: "Plan it, check it, run it", teaches: ["A5.6"] },
-    ],
-  },
-  {
-    id: "g6b-microscope", grade: 6, unit: "B", topics: ["B1"], subject: "biology",
-    name: "The Microscope — Discovering Cells",
-    setups: [
-      { value: "hooke", label: "Hooke's cork and Leeuwenhoek's animalcules", teaches: ["B1.2"] },
-      { value: "theory", label: "Every cell from a cell", teaches: ["B1.1"] },
-      { value: "living", label: "Alive or not?", teaches: ["B1.3"] },
-      { value: "unicellular", label: "One cell that does everything", teaches: ["B1.4"] },
-      { value: "multicellular", label: "From one cell to many", teaches: ["B1.5"] },
-      { value: "scale", label: "How small is small?", teaches: ["B1.6"] },
-    ],
-  },
-  {
-    id: "g6b-inside-cell", grade: 6, unit: "B", topics: ["B2"], subject: "biology",
-    name: "Inside the Cell — Membranes, Walls and Organelles",
-    setups: [
-      { value: "membrane", label: "What gets through a membrane?", teaches: ["B2.1"] },
-      { value: "wall", label: "What a wall is for", teaches: ["B2.2"] },
-      { value: "nucleus", label: "Whose cap? The nucleus decides", teaches: ["B2.3"] },
-      { value: "mito", label: "Cells that breathe", teaches: ["B2.4"] },
-      { value: "chloro", label: "Where light makes food", teaches: ["B2.5"] },
-      { value: "size", label: "Why cells are small", teaches: ["B2.6"] },
-    ],
-  },
-];
+  ...LABS_6A,
+  ...LABS_6B,
+  ...LABS_6C,
+  ...LABS_6D,
+  ...LABS_6E,
+  ...LABS_6F,
+  ...LABS_7A,
+  ...LABS_7B,
+  ...LABS_7C,
+  ...LABS_7D,
+  ...LABS_7E,
+  ...LABS_7F,
+  ...LABS_8A,
+  ...LABS_8B,
+  ...LABS_8C,
+  ...LABS_8D,
+  ...LABS_8E,
+  ...LABS_8F,
+]
 
 /** A set-up that teaches a subtopic, with the lab it belongs to. */
 export interface MsTeaching { lab: MsLab; setup: MsSetup }

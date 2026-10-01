@@ -12,7 +12,12 @@
 > by section. Where this file says *"InsightVis §x governs"*, read that section there; it is
 > binding here exactly as written, with only the adaptations stated below.
 
-Last updated: 2026-09-25 (v1 of the InsightVis-process memory)
+Last updated: 2026-10-01 (v2 — the fast build: parallel unit lanes, `docs/FAST_BUILD_PLAN.md`)
+
+> **Since 2026-10-01 the build runs by `docs/FAST_BUILD_PLAN.md`** (founder: finish all of Grades
+> 6–8 in 24–48 hours, quality raised not lowered). Unit lanes build in parallel from
+> `docs/LANE_BRIEF.md`; `smartlab/ship.mjs` is the one-command check. Where this file's process
+> (§0, §2.11 steps 9–10) differs, the fast plan wins; the mandates (§2.1–§2.8) are unchanged.
 
 ---
 
@@ -22,9 +27,9 @@ Last updated: 2026-09-25 (v1 of the InsightVis-process memory)
    and §14 (the lab specification) — every new lab is built from those two.
 2. `git status --short` and `git log --oneline -5` on branch
    `claude/gradenext-smart-lab-plan-yba89q`. Verify what is on disk before trusting §9.
-3. Open `docs/BATCH_PLAN.md` at the batch §9 names as current, and continue with the next lab
-   in it. One lab at a time, built to the end of the ship checklist (§2.11 step 9–10) before the
-   next one starts.
+3. Open `docs/FAST_BUILD_PLAN.md` and §9 below: see which unit lanes are done, running or next.
+   Lanes build from `docs/LANE_BRIEF.md`; the main session integrates (merge, full gate, `audit.mjs`,
+   contact sheets, this file).
 4. Fresh container: `cd app && npm install`, and `cd smartlab && npm install` (the harness).
 5. Never `git add -A`. `git status --short`, then stage the exact files.
 
@@ -264,7 +269,7 @@ erosion, fronts, moon-phases, plate-tectonics, radiometric, rock-cycle, seasons,
 unequal-heating, water-cycle, weather. Acceptance-gate triage: one open entry
 (`phys.collisions` · `massB`, frozen, awaits the founder).
 
-**Middle School on the Smart Lab engine** — Batch 1 (Grade 6 Unit A) in progress:
+**Middle School on the Smart Lab engine** — Batch 1 (Grade 6 Unit A) complete, Batch 2 (6B) in progress:
 - **6A-1 The Living Tank — Parts, Boundaries and Flows** (`smartlab/sims-g6a-1.js`, id
   `g6a-living-tank`, topics A1–A2, 10 subtopics). A planted 54 L tank integrated as one system:
   18-state RK4 model (O₂ Benson–Krause, CO₂/DIC Weiss + Harned speciation by bisection, two-step
@@ -466,7 +471,9 @@ in something real (`--phys #3DD6F5` oscilloscope phosphor, `--chem #FFAE4C` sodi
 **GradeNext additions to the accent set** — middle-school units carry two subjects the engine
 has never had, `earth` and `engineering`. Each gets an accent grounded the same way, chosen and
 recorded here with the first lab that needs it, added to `SUBJECTS` in `lab-core.js` and to the
-`--*` tokens and `[data-subject]` rules in `smartlab/index.html` (§8).
+`--*` tokens and `[data-subject]` rules in `smartlab/index.html` (§8). Chosen: **engineering
+`--eng #A98BFF`** (the blue-violet of a diazo whiteprint) and **earth `--earth #8BDC6A`** (olivine),
+pushed onto `SUBJECTS` in the GradeNext block of `lab-core.js`.
 
 **The React shell** keeps the LabKit system (`docs/DESIGN_SYSTEM.md`, light and dark themes);
 it frames the engine, whose stage stays dark in both.
@@ -714,7 +721,7 @@ Environment constants (this container family):
   `#<id>` into its own address. The integration code is one marked block in `lab-core.js`
   (*"GradeNext integration"*) — keep every GradeNext change to the engine inside marked blocks
   so upstream syncs stay clean.
-- **Set-up deep links** (to be built with Batch 1): a subtopic links to
+- **Set-up deep links** (built with Batch 1): a subtopic links to
   `#<labId>/<setupValue>`, which mounts the lab and selects that set-up.
 - **Curriculum links.** A subtopic in `grade*.ts` names the lab and set-up that teach it; the
   Course Library opens them in a framed lab view like the Higher Secondary one. Never attach a
@@ -736,7 +743,15 @@ Environment constants (this container family):
 
 ## 9. Current status
 
-**State as of 2026-09-25 (latest):**
+**State as of 2026-10-01 (latest):**
+- **Fast build adopted** (`docs/FAST_BUILD_PLAN.md`). Groundwork landed: the catalogue split one
+  file per unit (`app/src/curriculum/ms/g<u>.ts` + `ms/g<u>.test.ts`, engine loader `ms/engine.ts`),
+  a marked block per unit in `smartlab/index.html`, `smartlab/ship.mjs` (numbers + liveness + mounts
+  + contact sheet), `docs/LANE_BRIEF.md`. Found by ship.mjs: long standards tags pushed every
+  Grades 6–8 lab sideways at 390 px (fixed in the CSS; narrow.mjs ran at 430 px without `?grade`).
+  Wave 1 lanes: 6B (B3–B6), 6C, 6D, 6E, 6F, 7A, 7B, 7C. Keepers to be linked to subtopics.
+
+**State as of 2026-09-25:**
 - **6B-2 Inside the Cell built and verified** — audit CLEAN (50 sims), live.mjs LIVE-CLEAN
   (61 control × set-up pairs with `--presets`, sub-experiments included; all eight labs 304 pairs), every problem's measure matches
   its working (11.0 %, 1.10 %, 143 fL, 43 %, 0.34 mL, 150, 4.17 h, 106 µm), gate green (554 tests), all
@@ -858,6 +873,8 @@ Append only. Never rewrite history.
 | 2026-09-25 | **A close-up is drawn to its own scale beside the bench** (6B-2: a 12 nm window on the pores, a micrograph, the tank at a few times life size) and is driven by the same model: the molecules on each side are the concentrations, their crossings the fluxes | The founder wants visualised learning: the bench shows what a class sees, the close-up why — both from one set of numbers |
 | 2026-09-25 | **A change of condition is an event, not a restart**: sliders that change the conditions (salt round the cells, the bath's temperature, the spot's place) let the model carry on from where it is; only a new experiment restarts; readings are integrated in step() so a change mid-run carries on smoothly | Irrigating a slide with salt and watching the cells shrink is the experiment; a restart would hide it, and an analytic reading of time jumps when its rate changes |
 | 2026-09-25 | **live.mjs --presets** sweeps from every preset as well as every set-up | 6B-2's sub-experiments (Engelmann's spot, the leaf test) show controls the base parameters never reach; the plain sweep checked 35 pairs, the preset sweep 61 |
+| 2026-10-01 | **Fast build: unit lanes in parallel, 4–5 set-ups and 10–18 meaningful controls a lab, one figure library per unit, one-command check + contact sheet** | Founder: all of Grades 6–8 in 24–48 h, quality raised; the slow parts were serial work and review, not the science |
+| 2026-10-01 | **The 37 keepers are superseded by the new labs, not edited**; linked to subtopics beside them | Founder: earlier sims were made on the old model and must be upgraded; the new lab is the upgrade |
 | 2026-09-25 | **A comparison with a standard names the standard's criterion** (ISO 13732-1 is the onset of a burn; the scald table is a burn through the skin) | The lab's steel limit (73.5 °C) and ISO's (65–70 °C) differ because they measure different burns — said so, test checks the physical chain |
 
 ---
