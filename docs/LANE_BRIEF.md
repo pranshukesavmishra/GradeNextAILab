@@ -78,6 +78,11 @@ report instead.
   on happen in `step()`.
 
 ## 4. Per lab: build → check three times → commit
+**Upgrade twice (memory §2.13)** — after the lab first works (step 3), and again after you first
+look at its sheets (step 5), stop and ask: *how can this be made better — extraordinary?* More to
+see, build, change, measure, break and predict; richer visualisation; truer apparatus; sharper
+controls. Apply the answer, then re-check. Record both upgrade passes in `docs/labs/<u>.md`.
+
 1. Model in a scratch runner; numbers right.  2. Art (extend `art-g<u>.js`).  3. The lab file.
 4. Script tags in your index.html block; catalogue row in `ms/g<u>.ts` (setups mirror the engine).
 5. Check, from `smartlab/`:
