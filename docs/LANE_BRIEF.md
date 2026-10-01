@@ -71,6 +71,9 @@ report instead.
   `subject` (the unit's: physics | chemistry | biology | earth | engineering), `chapter` (unit
   title), `name`, `exams: ['NGSS MS-…', 'CAST']`. Lab files must load without a DOM (the tests run
   them in a bare VM): registration and model may not touch `window`/`document`; drawing may.
+- **Engine facts found by lanes**: the test VM has no `Float32Array` (use plain arrays or
+  `Float64Array` in model code); `mech.js` is the chemistry reaction-mechanism player, not a
+  mechanics engine; `TERRAIN.block` is square only.
 - Determinism: every random stream and accumulator reset in `setup()`; animations a run depends
   on happen in `step()`.
 
