@@ -13,7 +13,7 @@ stays the content source: what each lab computes, its set-ups, its traps.*
 | Old | Cost | New |
 |---|---|---|
 | One lab at a time, one session | 8 labs built, 77 to go | **Unit lanes in parallel** (§3) — 8 at once |
-| 6 set-ups, 25–38 presets, 85–200 KB a lab | 3× an InsightVis lab (≈40 KB) | **4–5 set-ups, 6–8 presets, 60–110 KB** — the InsightVis size, with more controls |
+| Every lab built serially to one template | slow | **No fixed limits**: each topic gets the set-ups, controls and visualisation that make it extraordinary (founder, 2026-10-01) |
 | A new figure library per lab, built and tested in grids first | hours per lab | **One library per unit** (`art-g<unit>.js`), extended by its labs; reuse the 15 existing libraries first |
 | Screenshots of every set-up × preset × width × 8–12 camera angles, looked at one by one | the slowest step | **One contact sheet** (`ship.mjs`) — every set-up, every preset, 390 px — read in one look |
 | `audit`, `live`, `probchk`, `narrow` run by hand, problems checked digit by digit by eye | many runs | **`node ship.mjs <id>`** — numbers, controls, mounts, sheet in one command |
@@ -29,7 +29,7 @@ stays the content source: what each lab computes, its set-ups, its traps.*
 - **The 37 React keepers are superseded, not copied**: where a keeper covers a topic, the new lab
   must clearly beat it — more set-ups, real apparatus, real equations, more controls. The keeper
   stays linked beside it as a second resource.
-- **Controls: 10–18 per lab, every one meaningful** — each is a variable a scientist would change
+- **Controls: as many as the experiment has, every one meaningful** — each is a variable a scientist would change
   in that experiment (a lamp's distance, a salt concentration, a slope's angle), changes the
   computed model, moves a readout or plot, and is grouped by the part of the apparatus it belongs
   to. No decorative or duplicate controls. Primary variables are drag handles on the stage too.
@@ -41,7 +41,7 @@ stays the content source: what each lab computes, its set-ups, its traps.*
 - **17 lanes, one per unit** still to build (6B finishes B3–B6; 6C … 8F in full). Each lane is one
   builder agent working in its own git worktree, building its unit's labs in BATCH_PLAN order:
   library first, then lab 1, 2, … each finished and committed before the next.
-- **8 lanes run at once** (4 CPUs); as one finishes, the next unit starts. Grade 6 first, then 7, 8.
+- **All lanes run at once.** The machine is shared (4 CPUs): a harness timeout under load is retried, not ignored.
 - **A lane touches only its own files**: `smartlab/art-g<u>*.js`, `smartlab/sims-g<u>-<n>.js`,
   its block in `smartlab/index.html`, `app/src/curriculum/ms/g<u>.ts` and `ms/g<u>.test.ts`,
   `docs/labs/<u>.md` (its build notes and calibration constants). Never the engine core, other
@@ -68,10 +68,7 @@ Plus the repo gate (`cd app && npx tsc -b --noEmit && npx vitest run && npm run 
 
 ## 5. Order
 
-| Wave | Lanes (units) |
-|---|---|
-| 1 | 6B (B3–B6) · 6C · 6D · 6E · 6F · 7A · 7B · 7C |
-| 2 | 7D · 7E · 7F · 8A · 8B · 8C · 8D · 8E |
-| 3 | 8F, and anything a review sends back |
+All 17 lanes run at once (founder: as fast as possible): 6B (B3–B6) · 6C · 6D · 6E · 6F · 7A ·
+7B · 7C, then 7D · 7E · 7F · 8A · 8B · 8C · 8D · 8E · 8F started the same hour.
 
 Each lane's unit report is its contact sheets; the founder reviews per unit on the live site.

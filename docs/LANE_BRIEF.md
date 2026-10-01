@@ -39,9 +39,13 @@ the app pages, or the frozen labs. If the engine truly needs a change, write it 
 report instead.
 
 ## 3. The lab — what "high quality" means here (higher than the earlier Grade 6 labs)
-- **One lab per topic** (or per the topics BATCH_PLAN groups). **4–5 set-ups** (a `setup` select,
-  `restructure: true`), each with `teaches: [subtopic codes]`; **every subtopic of every topic the
-  lab claims is taught by some set-up**. Merge BATCH_PLAN's set-ups where two are thin.
+- **No fixed limits — every topic extraordinary.** Before coding, think: how can THIS topic be made
+  extraordinary in a smart lab — what can the student see that no textbook shows, what can they
+  build, change, measure, break and predict? Give the topic as many set-ups and controls as that
+  vision needs; each topic finds its own way. One lab per topic (or as BATCH_PLAN groups), a
+  `setup` select (`restructure: true`), each set-up with `teaches: [subtopic codes]`; **every
+  subtopic of every topic the lab claims is taught by some set-up**. A set-up earns its place by
+  teaching something the others do not.
 - **Real model**: the equations BATCH_PLAN names, integrated/solved every step, SI units, published
   constants. Before drawing, check the model numerically with a throwaway node script in the
   session scratchpad; each lab reproduces **3+ published/textbook numbers**, written as tests in
@@ -50,15 +54,15 @@ report instead.
   wherever the thing is three-dimensional; organisms, glassware, instruments, planets drawn
   properly. **No boxes, blobs, cartoons, faces, emoji, mascots.** Drawing lives in your art file,
   not in the lab file. Close-ups/cards via KITMS (`header`, `card`, `cardSlot` for phones).
-- **Controls: 10–18, every one meaningful** — a variable a scientist would change in that
+- **Controls: as many as the experiment truly has, every one meaningful** — a variable a scientist would change in that
   experiment; grouped by the part of the apparatus (Set-up first, Display last); hidden with `when`
   where a set-up does not use them; real units/ranges incl. the failure; primary variables are
   also stage drag handles. View-only selects: `display: true` or `restructure: false`.
   Set-up defaults applied in `setup()` when the set-up changes; presets carry `pre: 1`.
-- **Anatomy (InsightVis §14)**: 6–8 presets (each an experiment), 2 plots (this run; the
-  landscape across conditions), 6–10 readouts, live `equation` + `eqNote` (may be a function),
-  4–5 problems (CAST pattern; `measure` reads the apparatus; the `working` ends with the answer in
-  `<b>…</b>` — `ship.mjs` checks it), 5–7 walkthrough steps (ask, then reveal), 4 quiz questions,
+- **Anatomy (InsightVis §14)**: presets (each an experiment), plots (this run; the
+  landscape across conditions), readouts, live `equation` + `eqNote` (may be a function),
+  problems (CAST pattern; `measure` reads the apparatus; the `working` ends with the answer in
+  `<b>…</b>` — `ship.mjs` checks it), walkthrough steps (ask, then reveal), quiz questions,
   `notes` closing on the misconception to catch.
 - **Registration fields**: `id: 'g<u>-<slug>'`, `grade`, `unit: '6C'`, `topics: ['C1']`,
   `subject` (the unit's: physics | chemistry | biology | earth | engineering), `chapter` (unit
@@ -80,7 +84,10 @@ report instead.
    that names the science, the published numbers reproduced and the bugs found. Do not push.
 Then the next lab. Write `docs/labs/<u>.md` as you go and commit it with each lab.
 
-## 5. Be economical
+## 5. Fast and economical
+Speed matters: the founder needs every unit as soon as possible. Keep moving; no idle polishing
+of one tile while labs wait — but ship nothing below the bar.
+
 Tokens are limited. Read with grep/sed ranges, not whole 100 KB files. No long explanations to
 yourself; write code. Do not re-read a file you just wrote. But never skip a check.
 
