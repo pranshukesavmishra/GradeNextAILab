@@ -13,6 +13,9 @@ ln -s /home/user/GradeNextAILab/smartlab/node_modules smartlab/node_modules
 Never run `npm install` or `playwright install`. Chromium: `/opt/pw-browsers/chromium-1194/…` (the
 harness already points there).
 
+**Scratch files** (model runners, test scripts) go ONLY in your own folder: `<session scratchpad>/<unit>/`
+(e.g. `…/scratchpad/g7a/`). Lanes share the scratchpad; never write at its top level.
+
 ## 1. Read first (targeted — do not read huge files whole; use grep / sed ranges)
 1. `memory.md` §2 (the mandates — binding), §6 rules 11–20, §8, §14, §15 (lessons: real bugs, avoid them).
 2. `docs/insightvis/memory.md` §14 (the lab specification, every field) and §2.7, §2.8, §2.9,
