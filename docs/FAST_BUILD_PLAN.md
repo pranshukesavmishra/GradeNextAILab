@@ -41,7 +41,7 @@ stays the content source: what each lab computes, its set-ups, its traps.*
 - **17 lanes, one per unit** still to build (6B finishes B3–B6; 6C … 8F in full). Each lane is one
   builder agent working in its own git worktree, building its unit's labs in BATCH_PLAN order:
   library first, then lab 1, 2, … each finished and committed before the next.
-- **All lanes run at once.** The machine is shared (4 CPUs): a harness timeout under load is retried, not ignored.
+- **At most 3 lanes at once**, refilled one by one as each finishes (§5).
 - **A lane touches only its own files**: `smartlab/art-g<u>*.js`, `smartlab/sims-g<u>-<n>.js`,
   its block in `smartlab/index.html`, `app/src/curriculum/ms/g<u>.ts` and `ms/g<u>.test.ts`,
   `docs/labs/<u>.md` (its build notes and calibration constants). Never the engine core, other
@@ -68,7 +68,9 @@ Plus the repo gate (`cd app && npx tsc -b --noEmit && npx vitest run && npm run 
 
 ## 5. Order
 
-All 17 lanes run at once (founder: as fast as possible): 6B (B3–B6) · 6C · 6D · 6E · 6F · 7A ·
-7B · 7C, then 7D · 7E · 7F · 8A · 8B · 8C · 8D · 8E · 8F started the same hour.
+**At most 3 lanes run at once** (founder, 2026-10-01: rate limits; one failure must not take
+everything down). Teaching order: 6B · 6C · 6D → 6E · 6F · 7A → 7B · 7C · 7D → 7E · 7F · 8A →
+8B · 8C · 8D → 8E · 8F. When a lane finishes it is merged and checked, and the next one starts.
+Lanes started earlier and then paused resume from their own commits and their "Resume here" notes.
 
 Each lane's unit report is its contact sheets; the founder reviews per unit on the live site.
