@@ -38,4 +38,16 @@ export const LABS_6C: MsLab[] = [
       { value: "equilibrium", label: "Mix them: thermal equilibrium", teaches: ["C3.6"] },
     ],
   },
+  {
+    id: "g6c-specific-heat", grade: 6, unit: "C", topics: ["C4"], subject: "physics",
+    name: "The Specific Heat Investigation — Planning, Data and Explanation",
+    setups: [
+      { value: "material", label: "Same mass, same heater, two materials", teaches: ["C4.1"] },
+      { value: "mass", label: "Same material, two masses", teaches: ["C4.2"] },
+      { value: "plan", label: "Plan a fair test — and spoil it", teaches: ["C4.3"] },
+      { value: "collect", label: "Log the data: interval, probe, resolution", teaches: ["C4.4"] },
+      { value: "analyze", label: "Fit the lines, find c", teaches: ["C4.5"] },
+      { value: "explain", label: "Why the sand burns and the sea does not", teaches: ["C4.6"] },
+    ],
+  },
 ];

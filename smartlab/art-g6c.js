@@ -649,5 +649,46 @@
     }, -0.005);
   }
 
-  window.G6C = { FORM, quad, track, cart, launcher, clay, cellTex, solarPanel, floodlight, battery, motorPulley, slottedMass, lamp, lead, kettle, bikeWheel, phone, charger, sankey, energyBars, mono, syringe, iceJar, glassThermometer, probe, irGun, cellPlate, particles, microField, trough, waxRod, leslieCube, thermopile, glassTank, iceCube };
+
+  /* ============================================================
+     THE CALORIMETRY BENCH — an immersion heater, a foam cup, a 1 kg block, a tray
+     ============================================================ */
+  /* a 12 V immersion heater: a steel sheath from tip (in the sample) up to a black head, its leads trailing to to */
+  function immersionHeater(F, tip, len, on, to, o) {
+    o = o || {};
+    const top = [tip[0], tip[1], tip[2] + len];
+    R3.cylinder(F, tip, top, 0.0045, on ? mix('#B9C1CB', '#FF8A5A', 0.25) : '#B9C1CB', { segments: 12, shadow: false, ambient: 0.5 });
+    R3.cylinder(F, top, [top[0], top[1], top[2] + 0.025], 0.008, '#22262E', { segments: 14, shadow: false });
+    if (to) { lead(F, [top[0] + 0.004, top[1], top[2] + 0.025], to, '#C8463A', 0.04); lead(F, [top[0] - 0.004, top[1], top[2] + 0.025], [to[0] - 0.012, to[1], to[2]], '#2A2F38', 0.04); }
+    return top;
+  }
+  /* a foam cup holding liquid (or sand): fill colour, level 0..1 of its 10 cm height */
+  function foamCup(F, base, r, H, level, fill, o) {
+    o = o || {};
+    R3.cylinder(F, base, [base[0], base[1], base[2] + H], r, '#F4F2EC', { segments: 30, caps: false, ambient: 0.55, shadowK: 0.6 });
+    R3.cylinder(F, [base[0], base[1], base[2] + H], [base[0], base[1], base[2] + H + 0.006], r + 0.004, '#E4E0D6', { segments: 30, inner: o.lid ? 0 : r - 0.004, ambient: 0.55, shadow: false });
+    if (!o.lid && level > 0) F.push([base[0], base[1], base[2] + H * level], () => {
+      const P = []; for (let i = 0; i < 28; i++) { const a = i / 28 * TAU, q = F.cam.project([base[0] + (r - 0.003) * Math.cos(a), base[1] + (r - 0.003) * Math.sin(a), base[2] + H * Math.min(0.97, level)]); if (!q.ok) return; P.push(q); }
+      const ctx = F.ctx; ctx.save(); ctx.fillStyle = fill; ctx.beginPath(); P.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.stroke(); ctx.restore();
+    }, -0.01);
+  }
+  /* a school specific-heat block: a metal cylinder with two holes on top (heater, thermometer), optionally lagged in foam */
+  function shcBlock(F, base, r, H, colour, lagged) {
+    if (lagged) R3.cylinder(F, base, [base[0], base[1], base[2] + H + 0.004], r + 0.014, '#ECEEF0', { segments: 30, ambient: 0.55, capColour: '#DCDED8' });
+    else R3.cylinder(F, base, [base[0], base[1], base[2] + H], r, colour, { segments: 30, ambient: 0.45, capColour: mix(colour, '#FFFFFF', 0.12) });
+    [-1, 1].forEach(s => R3.cylinder(F, [base[0] + s * r * 0.4, base[1], base[2] + H + (lagged ? 0.0045 : 0.0005)], [base[0] + s * r * 0.4, base[1], base[2] + H + (lagged ? 0.005 : 0.001)], 0.0055, '#0C0E12', { segments: 14, shadow: false }));
+  }
+  /* a shallow tray of sand or water on the bench: c the centre, w × d, depth h */
+  function tray(F, c, w, d, h, kind, T, o) {
+    o = o || {};
+    R3.box(F, [c[0], c[1], h / 2 + 0.002], [w + 0.01, d + 0.01, h + 0.004], '#2C3442', { ambient: 0.4 });
+    const top = kind === 'sand' ? mix('#D8C08A', '#F2A060', clamp((T - 20) / 40, 0, 1) * 0.5) : mix('#4F86B8', '#7FB0D8', clamp((T - 20) / 20, 0, 1) * 0.4);
+    quad(F, [[c[0] - w / 2, c[1] - d / 2, h], [c[0] + w / 2, c[1] - d / 2, h], [c[0] + w / 2, c[1] + d / 2, h], [c[0] - w / 2, c[1] + d / 2, h]], top, { ambient: 0.6, bias: -0.01, after: kind === 'sand' ? (ctx, q) => {
+      const r = (function (s) { return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 10000) / 10000; }; })(11);
+      ctx.save(); ctx.clip(); for (let i = 0; i < 260; i++) { const u = r(), v = r(), x = q[0].x + (q[1].x - q[0].x) * u + (q[3].x - q[0].x) * v, y = q[0].y + (q[1].y - q[0].y) * u + (q[3].y - q[0].y) * v; ctx.fillStyle = r() < 0.5 ? 'rgba(120,90,40,.35)' : 'rgba(255,240,200,.35)'; ctx.fillRect(x, y, 1.4, 1.4); } ctx.restore();
+    } : (ctx, q) => { ctx.save(); ctx.strokeStyle = 'rgba(230,245,255,.35)'; ctx.lineWidth = 1; for (let i = 1; i < 6; i++) { const u = i / 6; ctx.beginPath(); ctx.moveTo(q[0].x + (q[3].x - q[0].x) * u, q[0].y + (q[3].y - q[0].y) * u); ctx.lineTo(q[1].x + (q[2].x - q[1].x) * u, q[1].y + (q[2].y - q[1].y) * u); ctx.stroke(); } ctx.restore(); } });
+  }
+
+  window.G6C = { FORM, quad, track, cart, launcher, clay, cellTex, solarPanel, floodlight, battery, motorPulley, slottedMass, lamp, lead, kettle, bikeWheel, phone, charger, sankey, energyBars, mono, syringe, iceJar, glassThermometer, probe, irGun, cellPlate, particles, microField, trough, waxRod, leslieCube, thermopile, glassTank, iceCube, immersionHeater, foamCup, shcBlock, tray };
 })();

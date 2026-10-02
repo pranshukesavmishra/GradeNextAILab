@@ -199,3 +199,37 @@ describe("6C-3 The Heat Transfer Bench — the models", () => {
     expect(Math.abs(e.lostH - e.gainC - e.toRoom)).toBeLessThan(1e-6 * e.lostH);
   });
 });
+
+describe("6C-4 The Specific Heat Investigation — the models", () => {
+  const M = engine.InsightLab.models["g6c-specific-heat"] as unknown as {
+    MATS: Record<string, { c: number }>;
+    sampleRun: (o: P) => { truth: { t: number; T: number }[]; reads: { t: number; T: number }[]; Ccont: number };
+    analyse: (R: unknown, o: P, w: P) => { raw: number; corr: number };
+    traysRun: (o: P) => { rows: { sand5: number; water: number }[] };
+    beachDay: (o: P) => { sandSwing: number; seaSwing: number };
+  };
+  const at = (rows: { t: number; T: number }[], t: number) => rows.filter((r) => r.t <= t + 1e-9).pop() as { T: number };
+
+  it("warms 500 g of water by 7.07 K and 500 g of sunflower oil by 14.8 K with 15 kJ (50 W × 300 s)", () => {
+    const o = (mat: string) => ({ mat, m: 0.5, P: 50, tOn: 300, tEnd: 600, cont: "foam", stir: true });
+    expect(at(M.sampleRun(o("water")).truth, 300).T - 20).toBeCloseTo(7.07, 1);
+    expect(at(M.sampleRun(o("oil")).truth, 300).T - 20).toBeCloseTo(14.8, 1);
+  });
+
+  it("recovers the book c of every material within 1.5 % with the cooling-line correction, and overestimates it without", () => {
+    ["water", "oil", "alu", "copper", "sand"].forEach((mat) => ["foam", "glass"].forEach((cont) => {
+      const o = { mat, m: 0.5, P: 50, tOn: 300, tEnd: 600, cont, stir: true, probe: "digital", dts: 10 };
+      const A = M.analyse(M.sampleRun(o), o, { t1: 60, t2: 300 }), book = M.MATS[mat].c;
+      expect(Math.abs(A.corr / book - 1)).toBeLessThan(0.015);
+      expect(A.raw).toBeGreaterThan(book);
+    }));
+  });
+
+  it("keeps a lamp-heated sand tray far hotter near its surface than a water tray, and swings a beach 30× more than the sea", () => {
+    const r = M.traysRun({ I: 600, depth: 0.03, tEnd: 900 }).rows.pop() as { sand5: number; water: number };
+    expect(r.sand5 - 20).toBeGreaterThan(3 * (r.water - 20));
+    const B = M.beachDay({ S: 900, mix: 5 });
+    expect(B.sandSwing).toBeGreaterThan(25);
+    expect(B.sandSwing / B.seaSwing).toBeGreaterThan(20);
+  });
+});
