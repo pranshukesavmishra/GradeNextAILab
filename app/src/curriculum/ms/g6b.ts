@@ -26,4 +26,15 @@ export const LABS_6B: MsLab[] = [
       { value: "size", label: "Why cells are small", teaches: ["B2.6"] },
     ],
   },
+  {
+    id: "g6b-levels", grade: 6, unit: "B", topics: ["B3"], subject: "biology",
+    name: "Levels of Organization",
+    setups: [
+      { value: "hierarchy", label: "Zoom from a body to a molecule", teaches: ["B3.1", "B3.6"] },
+      { value: "special", label: "Same genes, different jobs", teaches: ["B3.2"] },
+      { value: "tissues", label: "Cells working together: tissues", teaches: ["B3.3"] },
+      { value: "organs", label: "An organ: the stomach, layer by layer", teaches: ["B3.4"] },
+      { value: "systems", label: "Knock one organ out", teaches: ["B3.5", "B3.6"] },
+    ],
+  },
 ];
