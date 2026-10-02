@@ -25,4 +25,16 @@ export const LABS_6D: MsLab[] = [
       { value: "rise", label: "Will the balloon fly?", teaches: ["D2.5"] },
     ],
   },
+  {
+    id: "g6d-weather-station", grade: 6, unit: "D", topics: ["D3"], subject: "earth",
+    name: "The Weather Station",
+    setups: [
+      { value: "temperature", label: "The thermometer: in the screen or in the sun?", teaches: ["D3.1"] },
+      { value: "barometer", label: "The aneroid barometer and the falling glass", teaches: ["D3.2"] },
+      { value: "humidity", label: "Wet and dry bulbs: the psychrometer", teaches: ["D3.3"] },
+      { value: "precipitation", label: "Rain gauges, and the rain they miss", teaches: ["D3.4"] },
+      { value: "wind", label: "Cups and a vane", teaches: ["D3.5"] },
+      { value: "station", label: "Four days at the station", teaches: ["D3.6"] },
+    ],
+  },
 ];

@@ -165,3 +165,67 @@ describe("6D-2 The Atmosphere Column — the models", () => {
     expect(M.tempToFloat({ ...p, Tg: 35 }, 0)).toBeGreaterThan(M.tempToFloat({ ...p, Tg: 5 }, 0) + 25);
   });
 });
+
+describe("6D-3 The Weather Station — the models", () => {
+  const M = engine.InsightLab.models["g6d-weather-station"] as unknown as {
+    es: (T: number) => number; dewOf: (e: number) => number;
+    weather: (p: P, t: number) => { T: number; Td: number; Psl: number; u10: number; dir: number; R: number; S: number };
+    radErr: (p: P, w: P, u: number) => number;
+    wetBulb: (T: number, Td: number, P: number, A: number) => number;
+    fromBulbs: (T: number, Tw: number, P: number) => { rh: number; Td: number };
+    PSY: { whirled: number; still: number };
+    stationP: (P: number, z: number, T: number) => number; toSeaLevel: (P: number, z: number, T: number) => number;
+    catchEff: (p: P, u: number, snow: boolean) => number;
+    cupRPM: (u: number) => number; beaufort: (u: number) => number; windAt: (u: number, z: number, z0: number) => number;
+    stationStart: (p: P) => { tips: number; rain: number; caught: number };
+    stationStep: (St: unknown, p: P, h: number) => { tips: number; rain: number; caught: number };
+    TF: number;
+  };
+
+  it("reads 13.8 °C on a whirled wet bulb at 20 °C and 50 %, and a still one reads high", () => {
+    const Td = M.dewOf(0.5 * M.es(20));
+    expect(M.wetBulb(20, Td, 101325, M.PSY.whirled)).toBeCloseTo(13.8, 1);
+    expect(M.wetBulb(20, Td, 101325, M.PSY.still)).toBeGreaterThan(M.wetBulb(20, Td, 101325, M.PSY.whirled) + 0.8);
+    expect(M.fromBulbs(20, 14, 101325).rh).toBeCloseTo(51.2, 1);
+  });
+
+  it("puts a sunlit thermometer 3.5 °C high, a screened one within a few tenths, and less in wind", () => {
+    const sun = { sensor: "glass", expose: "sun" }, scr = { sensor: "glass", expose: "screen" };
+    expect(M.radErr(sun, { S: 800 }, 1)).toBeCloseTo(3.52, 2);
+    expect(M.radErr(scr, { S: 800 }, 1)).toBeLessThan(0.3);
+    expect(M.radErr(sun, { S: 800 }, 6)).toBeLessThan(M.radErr(sun, { S: 800 }, 1));
+    expect(M.radErr({ sensor: "black", expose: "sun" }, { S: 800 }, 1)).toBeGreaterThan(10);
+  });
+
+  it("reduces Denver's 840 hPa to 1,013 hPa at sea level", () => {
+    expect(M.toSeaLevel(840, 1609, 15)).toBeCloseTo(1013.1, 0);
+    expect(M.toSeaLevel(M.stationP(1020, 2000, 10), 2000, 10)).toBeCloseTo(1020, 6);
+  });
+
+  it("drops the pressure into the front, veers the wind and rains, then clears colder and drier", () => {
+    const p = { pattern: "front" }, before = M.weather(p, M.TF - 12), at = M.weather(p, M.TF - 0.5), after = M.weather(p, M.TF + 12);
+    expect(at.Psl).toBeLessThan(before.Psl);
+    expect(after.Psl).toBeGreaterThan(at.Psl + 8);
+    expect(at.R).toBeGreaterThan(5);
+    expect(after.dir).toBeGreaterThan(270);
+    expect(before.dir).toBeLessThan(240);
+    expect(after.Td).toBeLessThan(before.Td - 5);
+  });
+
+  it("catches 40 % of snow at 3 m/s unshielded (WMO), a few per cent less rain, and counts 0.2 mm tips", () => {
+    expect(100 * M.catchEff({ rim: 10, site: "grass", shield: false }, 3, true)).toBeCloseTo(39.9, 1);
+    expect(M.catchEff({ rim: 10, site: "grass", shield: false }, 3, false)).toBeGreaterThan(0.95);
+    const p = { pattern: "front", sensor: "glass", expose: "screen", alt: 0, whirl: true, rim: 0.5, site: "grass", shield: false, t0: 0, mast: 10 };
+    const St = M.stationStart(p); M.stationStep(St, p, 96);
+    expect(St.tips).toBe(Math.floor(St.caught / 0.2));
+    expect(St.caught).toBeLessThan(St.rain);
+  });
+
+  it("turns the cups at 254 rpm in 5 m/s, gives Beaufort 5 for 10 m/s, and slows the wind near rough ground", () => {
+    expect(M.cupRPM(5)).toBeCloseTo(254.5, 0);
+    expect(M.cupRPM(0.2)).toBe(0);
+    expect(M.beaufort(10)).toBe(5);
+    expect(M.windAt(10, 2, 0.03)).toBeCloseTo(7.23, 2);
+    expect(M.windAt(10, 2, 1.5)).toBeLessThan(M.windAt(10, 2, 0.03));
+  });
+});

@@ -745,6 +745,170 @@
     cache.wicker = c; return c;
   }
 
+
+  const sans = (px, w) => (w || 600) + ' ' + px + 'px "IBM Plex Sans Condensed","IBM Plex Sans",sans-serif';
+  /* ================= 6D-3: the weather station ================= */
+  /* a Stevenson screen: a white louvred box on four legs, its door open toward the viewer to show the thermometers */
+  function stevenson(F, c, o) {
+    o = o || {};
+    const w = 0.8, d = 0.55, h = 0.62, z0 = c[2] + 1.05, white = '#F2F2EE';
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => R3.box(F, [c[0] + sx * (w / 2 - 0.04), c[1] + sy * (d / 2 - 0.04), c[2] + z0 / 2 - c[2] / 2], [0.05, 0.05, z0 - c[2]], white, { ambient: 0.55 }));
+    const slats = (P0, P1, P3) => {                                     // a louvred face: a lit panel with dark slat lines
+      const n = norm(cross(sub(P1, P0), sub(P3, P0))), col = F.shade(white, R3.dot(n, sub(F.cam.eye, P0)) > 0 ? n : scale(n, -1), { ambient: 0.55 });
+      F.push(centroid([P0, P1, add(P1, sub(P3, P0)), P3]), () => {
+        const q = P(F.cam, [P0, P1, add(P1, sub(P3, P0)), P3]); if (!q) return;
+        const ctx = F.ctx; ctx.save(); path(ctx, q); ctx.fillStyle = col; ctx.fill(); ctx.clip();
+        ctx.strokeStyle = 'rgba(60,60,60,.45)'; ctx.lineWidth = 1;
+        for (let k = 1; k < 14; k++) { const u = k / 14, a = F.cam.project(add(P0, scale(sub(P3, P0), u))), b = F.cam.project(add(P1, scale(sub(P3, P0), u))); if (a.ok && b.ok) { ctx.beginPath(); ctx.moveTo(a.x, a.y + 1.5); ctx.lineTo(b.x, b.y - 1); ctx.stroke(); } }
+        ctx.restore(); ctx.save(); ctx.strokeStyle = 'rgba(40,40,40,.6)'; ctx.lineWidth = 1; path(ctx, q); ctx.stroke(); ctx.restore();
+      });
+    };
+    const x0 = c[0] - w / 2, x1 = c[0] + w / 2, y0 = c[1] - d / 2, y1 = c[1] + d / 2, z1 = z0 + h;
+    slats([x0, y1, z0], [x1, y1, z0], [x0, y1, z1]);
+    slats([x0, y0, z0], [x0, y1, z0], [x0, y0, z1]);
+    slats([x1, y0, z0], [x1, y1, z0], [x1, y0, z1]);
+    face(F, [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]], '#E6E6E0', { ambient: 0.5 });
+    // the open door, swung out to the right
+    slats([x1, y0, z0], [x1 + 0.05, y0 - w * 0.95, z0], [x1, y0, z1]);
+    // a double roof
+    face(F, [[x0 - 0.05, y0 - 0.05, z1 + 0.02], [x1 + 0.05, y0 - 0.05, z1 + 0.02], [x1 + 0.05, c[1], z1 + 0.14], [x0 - 0.05, c[1], z1 + 0.14]], white, { ambient: 0.6 });
+    face(F, [[x0 - 0.05, y1 + 0.05, z1 + 0.02], [x1 + 0.05, y1 + 0.05, z1 + 0.02], [x1 + 0.05, c[1], z1 + 0.14], [x0 - 0.05, c[1], z1 + 0.14]], '#DADAD4', { ambient: 0.6 });
+    // the thermometers inside: dry bulb, wet bulb with its wick and water pot, a max and a min lying flat
+    const th = (x, col, reading) => {
+      const a = [x, c[1] + 0.05, z0 + 0.1], b = [x, c[1] + 0.05, z0 + 0.5];
+      glassTube(F, [a, b], 0.006, { fill: [{ from: 0, to: 0.06 + 0.32 * clamp((reading + 20) / 70, 0, 1), col }], inner: 0.5, bias: -0.06 });
+      R3.sphere(F, a, 0.008, col, { shadow: false });
+    };
+    th(c[0] - 0.12, '#D8302C', o.dry == null ? 15 : o.dry);
+    th(c[0] + 0.02, '#D8302C', o.wet == null ? 12 : o.wet);
+    R3.cylinder(F, [c[0] + 0.02, c[1] + 0.05, z0 + 0.0], [c[0] + 0.02, c[1] + 0.05, z0 + 0.05], 0.025, '#E4EEF4', { shadow: false });
+    return { door: [x1, y0, z0 + h / 2], inside: [c[0], c[1], z0 + 0.3] };
+  }
+  /* a mast with three cups on arms and a vane; dir is where the wind comes FROM (degrees, 0 = north = +y) */
+  function windMast(F, base, H, rpmPhase, dir) {
+    R3.cylinder(F, base, add(base, [0, 0, H]), 0.04, '#B9C2CC', { segments: 14 });
+    [[0.6, 0], [-0.3, 0.52], [-0.3, -0.52]].forEach(([x, y]) => R3.tube(F, [add(base, [0, 0, H * 0.25]), add(base, [x * H * 0.35, y * H * 0.35, 0])], 0.006, '#7A828C', { shadow: false }));
+    const top = add(base, [0, 0, H]);
+    R3.cylinder(F, add(top, [-0.5, 0, 0]), add(top, [0.5, 0, 0]), 0.025, '#9AA4AE', { shadow: false });
+    // cups on the left end of the cross-arm
+    const cu = add(top, [-0.5, 0, 0.12]);
+    R3.cylinder(F, add(top, [-0.5, 0, 0]), cu, 0.012, '#5A626C', { shadow: false });
+    for (let k = 0; k < 3; k++) {
+      const a = rpmPhase + k * TAU / 3, tip = add(cu, [Math.cos(a) * 0.16, Math.sin(a) * 0.16, 0.02]);
+      R3.tube(F, [add(cu, [0, 0, 0.02]), tip], 0.005, '#4A525C', { shadow: false });
+      R3.sphere(F, tip, 0.055, '#2A2E34', { shadow: false });
+    }
+    // the vane on the right end: its arrow points into the wind
+    const vc = add(top, [0.5, 0, 0.12]), rad = dir * Math.PI / 180, toward = [Math.sin(rad), Math.cos(rad), 0];
+    R3.cylinder(F, add(top, [0.5, 0, 0]), vc, 0.012, '#5A626C', { shadow: false });
+    const head = add(vc, scale(toward, 0.28)), tail = add(vc, scale(toward, -0.3));
+    R3.tube(F, [tail, head], 0.008, '#2A2E34', { shadow: false });
+    face(F, [add(head, [0, 0, 0]), add(head, add(scale(toward, -0.1), [toward[1] * 0.05, -toward[0] * 0.05, 0])), add(head, add(scale(toward, -0.1), [-toward[1] * 0.05, toward[0] * 0.05, 0]))], '#2A2E34', { ambient: 0.5 });
+    face(F, [add(tail, [0, 0, -0.08]), add(tail, [0, 0, 0.1]), add(tail, add(scale(toward, 0.14), [0, 0, 0.06])), add(tail, add(scale(toward, 0.14), [0, 0, -0.04]))], '#C8302C', { ambient: 0.5 });
+    return { cups: cu, vane: vc, top };
+  }
+  /* a standard copper rain gauge and a white tipping-bucket gauge, rims at their heights */
+  function rainGauges(F, a, b, rim) {
+    R3.cylinder(F, a, add(a, [0, 0, rim]), 0.065, '#B87A44', { segments: 24 });
+    R3.cylinder(F, add(a, [0, 0, rim - 0.01]), add(a, [0, 0, rim + 0.012]), 0.066, '#D49A60', { segments: 24, shadow: false });
+    R3.cylinder(F, b, add(b, [0, 0, rim]), 0.11, '#ECEEEC', { segments: 26 });
+    R3.cylinder(F, add(b, [0, 0, rim - 0.01]), add(b, [0, 0, rim + 0.015]), 0.112, '#D8DCDE', { segments: 26, shadow: false });
+  }
+  /* an Alter shield: hanging slats round the gauge */
+  function alterShield(F, c, rim) {
+    for (let k = 0; k < 18; k++) { const a = k / 18 * TAU; face(F, [[c[0] + Math.cos(a) * 0.32, c[1] + Math.sin(a) * 0.32, rim + 0.05], [c[0] + Math.cos(a + 0.25) * 0.32, c[1] + Math.sin(a + 0.25) * 0.32, rim + 0.05], [c[0] + Math.cos(a + 0.25) * 0.24, c[1] + Math.sin(a + 0.25) * 0.24, rim - 0.35], [c[0] + Math.cos(a) * 0.24, c[1] + Math.sin(a) * 0.24, rim - 0.35]], '#8A949E', { ambient: 0.5 }); }
+  }
+  /* ---- 2D instrument faces for the cards ---- */
+  function thermoFace(ctx, x, y, w, h, o) {                       // a liquid-in-glass thermometer and its scale, lo..hi °C
+    const lo = o.lo, hi = o.hi, bx = x + w * 0.38, top = y + 10, bot = y + h - 26, yOf = T => bot - (T - lo) / (hi - lo) * (bot - top);
+    ctx.save();
+    const gb = ctx.createLinearGradient(bx - 9, 0, bx + 9, 0); gb.addColorStop(0, 'rgba(200,225,240,.25)'); gb.addColorStop(0.4, 'rgba(255,255,255,.55)'); gb.addColorStop(1, 'rgba(160,190,210,.25)');
+    ctx.fillStyle = gb; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(bx - 7, top - 8, 14, bot - top + 16, 7); else ctx.rect(bx - 7, top - 8, 14, bot - top + 16); ctx.fill();
+    ctx.fillStyle = o.col || '#D8302C'; ctx.fillRect(bx - 2, clamp(yOf(o.T), top, bot), 4, bot - clamp(yOf(o.T), top, bot) + 6);
+    RX.ball(ctx, bx, bot + 12, 11, o.col || '#D8302C', { rim: 0.6 });
+    if (o.wick) { ctx.fillStyle = 'rgba(245,245,235,.85)'; ctx.beginPath(); ctx.ellipse(bx, bot + 12, 13, 14, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(160,150,120,.8)'; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(bx + k * 4, bot); ctx.lineTo(bx + k * 4, bot + 25); ctx.stroke(); } }
+    ctx.font = mono(8.5); ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    for (let T = Math.ceil(lo); T <= hi; T++) { const yy = yOf(T), big = T % 5 === 0; ctx.strokeStyle = 'rgba(230,236,246,.85)'; ctx.lineWidth = big ? 1.2 : 0.6; ctx.beginPath(); ctx.moveTo(bx + 9, yy); ctx.lineTo(bx + (big ? 20 : 14), yy); ctx.stroke(); if (big) { ctx.fillStyle = '#DCE6F6'; ctx.fillText(String(T), bx + 23, yy); } }
+    if (o.truth != null) { const yy = yOf(o.truth); ctx.strokeStyle = '#7CF0B0'; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(bx - 26, yy); ctx.lineTo(bx + 8, yy); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = '#7CF0B0'; ctx.textAlign = 'right'; ctx.fillText('air', bx - 28, yy); }
+    if (o.label) { ctx.fillStyle = '#C9D4EA'; ctx.textAlign = 'center'; ctx.fillText(o.label, bx, y + h - 4); }
+    ctx.restore();
+  }
+  function aneroid(ctx, cx, cy, R, P, set) {                      // a barometer dial, 950–1050 hPa, with the setting hand
+    const ang = v => Math.PI * 0.75 + (clamp(v, 950, 1050) - 950) / 100 * Math.PI * 1.5;
+    ctx.save();
+    const rim = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, R * 0.2, cx, cy, R * 1.08); rim.addColorStop(0, '#E8C878'); rim.addColorStop(1, '#8A6420');
+    ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(cx, cy, R * 1.08, 0, TAU); ctx.fill();
+    const fc = ctx.createRadialGradient(cx, cy - R * 0.3, R * 0.1, cx, cy, R); fc.addColorStop(0, '#FBF7EC'); fc.addColorStop(1, '#E4DCC8');
+    ctx.fillStyle = fc; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#2A2418'; ctx.fillStyle = '#2A2418'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let v = 950; v <= 1050; v += 2) { const a = ang(v), big = v % 10 === 0, r0 = R * (big ? 0.78 : 0.84); ctx.lineWidth = big ? 1.4 : 0.6; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); ctx.lineTo(cx + Math.cos(a) * R * 0.92, cy + Math.sin(a) * R * 0.92); ctx.stroke(); if (big && v % 20 === 0) { ctx.font = mono(Math.max(7, R * 0.11), 600); ctx.fillText(String(v), cx + Math.cos(a) * R * 0.64, cy + Math.sin(a) * R * 0.64); } }
+    ctx.font = sans(Math.max(7, R * 0.105), 700); [['STORMY', 960], ['RAIN', 983], ['CHANGE', 1000], ['FAIR', 1018], ['VERY DRY', 1040]].forEach(([w2, v]) => { const a = ang(v); ctx.fillStyle = '#6A2018'; ctx.fillText(w2, cx + Math.cos(a) * R * 0.36, cy + Math.sin(a) * R * 0.36); });
+    if (set != null) { const a = ang(set); ctx.strokeStyle = '#B8902C'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9); ctx.stroke(); }
+    const a = ang(P); ctx.strokeStyle = '#141414'; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(cx - Math.cos(a) * R * 0.15, cy - Math.sin(a) * R * 0.15); ctx.lineTo(cx + Math.cos(a) * R * 0.86, cy + Math.sin(a) * R * 0.86); ctx.stroke();
+    ctx.fillStyle = '#B8902C'; ctx.beginPath(); ctx.arc(cx, cy, R * 0.06, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  function tippingBucket(ctx, x, y, w, h, tips, rate, t) {        // a cutaway: funnel, the see-saw, its magnet and counter
+    ctx.save();
+    ctx.strokeStyle = '#C9D4EA'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x + w * 0.1, y + 6); ctx.lineTo(x + w * 0.46, y + h * 0.36); ctx.lineTo(x + w * 0.46, y + h * 0.42); ctx.moveTo(x + w * 0.9, y + 6); ctx.lineTo(x + w * 0.54, y + h * 0.36); ctx.lineTo(x + w * 0.54, y + h * 0.42); ctx.stroke();
+    if (rate > 0.05) { ctx.fillStyle = 'rgba(140,200,255,.9)'; for (let k = 0; k < 4; k++) { const yy = y + h * 0.43 + ((t * 3 + k * 0.25) % 1) * h * 0.1; ctx.beginPath(); ctx.arc(x + w * 0.5, yy, 2, 0, TAU); ctx.fill(); } }
+    const tilt = (tips % 2 ? 1 : -1) * 0.32, cx = x + w * 0.5, cy = y + h * 0.66;
+    ctx.translate(cx, cy); ctx.rotate(tilt);
+    ctx.fillStyle = '#E6E8EC'; ctx.strokeStyle = '#6A7480'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-w * 0.32, -h * 0.12); ctx.lineTo(-w * 0.32, 0); ctx.lineTo(w * 0.32, 0); ctx.lineTo(w * 0.32, -h * 0.12); ctx.lineTo(w * 0.29, -h * 0.12); ctx.lineTo(w * 0.29, -h * 0.02); ctx.lineTo(w * 0.02, -h * 0.02); ctx.lineTo(0, -h * 0.16); ctx.lineTo(-w * 0.02, -h * 0.02); ctx.lineTo(-w * 0.29, -h * 0.02); ctx.lineTo(-w * 0.29, -h * 0.12); ctx.closePath(); ctx.fill(); ctx.stroke();
+    const fillK = clamp((tips % 1 === 0 ? 0.5 : 0), 0, 1);
+    ctx.fillStyle = 'rgba(120,180,240,.8)'; ctx.fillRect(tilt < 0 ? w * 0.03 : -w * 0.28, -h * 0.07, w * 0.25, h * 0.05 * (0.3 + fillK));
+    ctx.fillStyle = '#C83A2A'; ctx.fillRect(-4, 1, 8, 6);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.restore();
+    ctx.save(); ctx.fillStyle = '#4A525C'; ctx.beginPath(); ctx.moveTo(cx - 8, cy + 10); ctx.lineTo(cx + 8, cy + 10); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#0A1410'; ctx.fillRect(x + w * 0.25, y + h - 26, w * 0.5, 20); ctx.fillStyle = '#7CF0B0'; ctx.font = mono(12, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(tips).padStart(4, '0') + ' tips', x + w * 0.5, y + h - 16);
+    ctx.restore();
+  }
+  function windRose(ctx, cx, cy, R, dir, u, phase) {              // a top view: compass, the vane into the wind, the cups
+    ctx.save();
+    ctx.strokeStyle = 'rgba(201,212,234,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+    ctx.font = mono(10, 700); ctx.fillStyle = '#DCE6F6'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([n, a]) => { const r = a * Math.PI / 180; ctx.fillText(n, cx + Math.sin(r) * (R + 11), cy - Math.cos(r) * (R + 11)); });
+    for (let a = 0; a < 360; a += 22.5) { const r = a * Math.PI / 180; ctx.beginPath(); ctx.moveTo(cx + Math.sin(r) * R * 0.92, cy - Math.cos(r) * R * 0.92); ctx.lineTo(cx + Math.sin(r) * R, cy - Math.cos(r) * R); ctx.stroke(); }
+    // the wind itself: streaks blowing across from where it comes from
+    const r = dir * Math.PI / 180, fx = Math.sin(r), fy = -Math.cos(r);
+    ctx.strokeStyle = 'rgba(143,200,255,.55)'; ctx.lineWidth = 1.2;
+    for (let k = -3; k <= 3; k++) { const off = k * R * 0.22, ph = ((phase * (0.2 + u * 0.05)) % 1) * 2 - 1; const sx = cx + fx * R * (1 - ph) - fy * off, sy = cy + fy * R * (1 - ph) + fx * off; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - fx * R * 0.25, sy - fy * R * 0.25); ctx.stroke(); }
+    // the vane: arrow pointing FROM where the wind blows, tail fin downwind
+    ctx.strokeStyle = '#F2F6FF'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx + fx * R * 0.7, cy + fy * R * 0.7); ctx.lineTo(cx - fx * R * 0.6, cy - fy * R * 0.6); ctx.stroke();
+    ctx.fillStyle = '#F2F6FF'; ctx.beginPath(); ctx.moveTo(cx + fx * R * 0.8, cy + fy * R * 0.8); ctx.lineTo(cx + fx * R * 0.6 - fy * 8, cy + fy * R * 0.6 + fx * 8); ctx.lineTo(cx + fx * R * 0.6 + fy * 8, cy + fy * R * 0.6 - fx * 8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#C8302C'; ctx.beginPath(); ctx.moveTo(cx - fx * R * 0.45 - fy * 12, cy - fy * R * 0.45 + fx * 12); ctx.lineTo(cx - fx * R * 0.7 - fy * 12, cy - fy * R * 0.7 + fx * 12); ctx.lineTo(cx - fx * R * 0.7 + fy * 12, cy - fy * R * 0.7 - fx * 12); ctx.lineTo(cx - fx * R * 0.45 + fy * 12, cy - fy * R * 0.45 - fx * 12); ctx.closePath(); ctx.fill();
+    for (let k = 0; k < 3; k++) { const a = phase + k * TAU / 3, px = cx + Math.cos(a) * R * 0.3, py = cy + Math.sin(a) * R * 0.3; ctx.strokeStyle = '#8A949E'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(px, py); ctx.stroke(); RX.ball(ctx, px, py, 6, '#2A2E34', { rim: 0.5 }); }
+    ctx.restore();
+  }
+  /* the station model a forecaster plots: cloud cover in the circle, a wind barb from where the wind comes, temperature and
+     dew point on the left, pressure (three figures) and its 3-hour change on the right, the present weather between */
+  function stationModel(ctx, cx, cy, s, m) {
+    ctx.save(); ctx.strokeStyle = '#F2F6FF'; ctx.fillStyle = '#F2F6FF'; ctx.lineWidth = 1.6;
+    const r = s * 0.16;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+    const ok = Math.round(m.oktas);
+    if (ok >= 8) { ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill(); }
+    else if (ok > 0) { ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + TAU * ok / 8); ctx.closePath(); ctx.fill(); }
+    // the barb: a shaft toward where the wind comes from, a full feather per 10 knots, a half per 5, a pennant per 50
+    const kt = m.u * 1.94384, a = m.dir * Math.PI / 180, fx = Math.sin(a), fy = -Math.cos(a), L = s * 0.62;
+    if (kt >= 2.5) {
+      ctx.beginPath(); ctx.moveTo(cx + fx * r, cy + fy * r); ctx.lineTo(cx + fx * L, cy + fy * L); ctx.stroke();
+      let k5 = Math.round(kt / 5), pos = L; const px = fy, py = -fx;   // feathers on the clockwise side
+      while (k5 >= 10) { ctx.beginPath(); ctx.moveTo(cx + fx * pos, cy + fy * pos); ctx.lineTo(cx + fx * (pos - s * 0.05) + px * s * 0.22, cy + fy * (pos - s * 0.05) + py * s * 0.22); ctx.lineTo(cx + fx * (pos - s * 0.1), cy + fy * (pos - s * 0.1)); ctx.fill(); pos -= s * 0.13; k5 -= 10; }
+      while (k5 >= 2) { ctx.beginPath(); ctx.moveTo(cx + fx * pos, cy + fy * pos); ctx.lineTo(cx + fx * (pos + s * 0.05) + px * s * 0.24, cy + fy * (pos + s * 0.05) + py * s * 0.24); ctx.stroke(); pos -= s * 0.07; k5 -= 2; }
+      if (k5 === 1) { if (pos === L) pos -= s * 0.07; ctx.beginPath(); ctx.moveTo(cx + fx * pos, cy + fy * pos); ctx.lineTo(cx + fx * (pos + s * 0.025) + px * s * 0.12, cy + fy * (pos + s * 0.025) + py * s * 0.12); ctx.stroke(); }
+    } else { ctx.beginPath(); ctx.arc(cx, cy, r * 1.4, 0, TAU); ctx.stroke(); }
+    ctx.font = mono(s * 0.13, 700); ctx.textBaseline = 'middle';
+    ctx.textAlign = 'right'; ctx.fillStyle = '#FF9A8A'; ctx.fillText(m.Tlab, cx - r * 1.5, cy - r * 1.3); ctx.fillStyle = '#7CF0B0'; ctx.fillText(m.Tdlab, cx - r * 1.5, cy + r * 1.3);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#F2F6FF'; ctx.fillText(m.Pcode, cx + r * 1.5, cy - r * 1.3); ctx.fillStyle = '#FFD27A'; ctx.fillText(m.tend, cx + r * 1.5, cy + r * 0.2);
+    if (m.rain) { ctx.fillStyle = '#7FC4FF'; for (let k = 0; k < (m.rain > 4 ? 3 : m.rain > 1 ? 2 : 1); k++) { ctx.beginPath(); ctx.arc(cx - r * 2.2 - k * s * 0.05, cy, s * 0.022, 0, TAU); ctx.fill(); } }
+    ctx.restore();
+  }
+
   window.G6D = { face, pane, chamber, lid, glassTube, fan, fog, rainRig, soilTray, stream, leafShape, leaf, shoot, bag, lamp, stomata, skinTex, spotPlate, tag, hull2, mistTex, rng,
-                 glassHull, liquid, ironWool, granules, scaleBoard, flask, pump, bellJar, gasSyringe, balloon };
+                 glassHull, liquid, ironWool, granules, scaleBoard, flask, pump, bellJar, gasSyringe, balloon,
+                 stevenson, windMast, rainGauges, alterShield, thermoFace, aneroid, tippingBucket, windRose, stationModel };
 })();
