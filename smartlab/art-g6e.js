@@ -325,6 +325,193 @@
     ctx.restore();
   }
 
+  /* =====================================================================
+     6E-2 — circulation apparatus
+     ===================================================================== */
+  /* a glass pane: tinted, with an edge of green float glass and a reflection streak */
+  function glassPane(F, P0, P1, P3, o) {
+    o = o || {};
+    const ctx = F.ctx, cam = F.cam, P2 = add(P1, sub(P3, P0)), c = scale(add(P0, P2), 0.5);
+    F.push(c, () => {
+      const q = [P0, P1, P2, P3].map(p => cam.project(p));
+      if (q.some(v => !v.ok)) return;
+      ctx.save();
+      ctx.beginPath(); q.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath();
+      ctx.fillStyle = o.tint || 'rgba(190,225,235,.06)'; ctx.fill();
+      ctx.clip();
+      if (o.streak !== false) {
+        const g = ctx.createLinearGradient(q[0].x, q[0].y, q[2].x, q[2].y);
+        g.addColorStop(0.18, 'rgba(255,255,255,0)'); g.addColorStop(0.24, 'rgba(255,255,255,' + (o.gloss || 0.10) + ')'); g.addColorStop(0.30, 'rgba(255,255,255,0)');
+        g.addColorStop(0.62, 'rgba(255,255,255,0)'); g.addColorStop(0.65, 'rgba(255,255,255,' + (o.gloss || 0.10) * 0.6 + ')'); g.addColorStop(0.68, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g; ctx.fill();
+      }
+      ctx.restore();
+      ctx.strokeStyle = o.edge || 'rgba(150,215,200,.75)'; ctx.lineWidth = o.edgeW || 1.6;
+      ctx.beginPath(); q.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); ctx.stroke();
+    }, o.bias);
+  }
+  /* a rectangular glass tank: c = centre of its floor, L along x, D along y, Hg the glass, Hw the water.
+     The water shows as a tinted body with a bright meniscus line; contents are drawn by the caller. */
+  function glassTank(F, c, L, D, Hg, Hw, o) {
+    o = o || {};
+    const x0 = c[0] - L / 2, x1 = c[0] + L / 2, y0 = c[1] - D / 2, y1 = c[1] + D / 2, z0 = c[2], zg = z0 + Hg, zw = z0 + Hw;
+    const ctx = F.ctx, cam = F.cam, tint = o.water || 'rgba(120,180,210,.16)';
+    // the floor (a thick slab of glass) and the far wall
+    R3.box(F, [c[0], c[1], z0 - 0.003], [L + 0.008, D + 0.008, 0.006], '#9FC9C2', { shadow: false, ambient: 0.5, alpha: 0.55 });
+    glassPane(F, [x0, y1, z0], [x1, y1, z0], [x0, y1, zg], { tint: 'rgba(170,210,225,.10)', streak: false });
+    // the water: the far face and the floor, darker, then the surface
+    F.push([c[0], y1 - 0.001, (z0 + zw) / 2], () => {
+      const q = [[x0, y1, z0], [x1, y1, z0], [x1, y1, zw], [x0, y1, zw]].map(p => cam.project(p)); if (q.some(v => !v.ok)) return;
+      ctx.fillStyle = o.waterBack || 'rgba(70,130,170,.28)'; ctx.beginPath(); q.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); ctx.fill();
+    });
+    F.push([c[0], c[1], zw], () => {
+      const q = [[x0, y0, zw], [x1, y0, zw], [x1, y1, zw], [x0, y1, zw]].map(p => cam.project(p)); if (q.some(v => !v.ok)) return;
+      ctx.fillStyle = 'rgba(200,232,245,.16)'; ctx.beginPath(); q.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(235,250,255,.55)'; ctx.lineWidth = 1.2; ctx.stroke();
+    }, 0.01);
+    // the side walls and the near wall, the near one carrying the water's front face
+    glassPane(F, [x0, y0, z0], [x0, y1, z0], [x0, y0, zg], { tint: 'rgba(170,210,225,.08)' });
+    glassPane(F, [x1, y1, z0], [x1, y0, z0], [x1, y1, zg], { tint: 'rgba(170,210,225,.08)' });
+    F.push([c[0], y0, (z0 + zw) / 2], () => {
+      const q = [[x0, y0, z0], [x1, y0, z0], [x1, y0, zw], [x0, y0, zw]].map(p => cam.project(p)); if (q.some(v => !v.ok)) return;
+      ctx.fillStyle = tint; ctx.beginPath(); q.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(235,250,255,.75)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(q[3].x, q[3].y); ctx.lineTo(q[2].x, q[2].y); ctx.stroke();
+    }, -0.004);
+    glassPane(F, [x0, y0, z0], [x1, y0, z0], [x0, y0, zg], { tint: 'rgba(190,225,235,.05)', gloss: 0.13, bias: -0.006 });
+    return { x0, x1, y0, y1, z0, zw, zg };
+  }
+  /* an ice cube floating: nine-tenths under, frosted, rounded as it melts */
+  function iceCube(F, c, s, o) {
+    o = o || {};
+    if (s < 0.002) return;
+    R3.box(F, c, [s, s, s], '#DDEFFB', { shadow: false, ambient: 0.75, alpha: 0.72, edges: true });
+    const ctx = F.ctx, q = F.cam.project([c[0] - s * 0.2, c[1] - s / 2, c[2] + s * 0.25]);
+    F.push(add(c, [0, -s / 2 - 0.001, 0]), () => { if (!q.ok) return; ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(1, s * q.s * 0.12), 0, TAU); ctx.fill(); }, -0.01);
+  }
+  /* a glass thermometer standing in the water, its bulb at `bottom`, reading v °C */
+  function dipThermo(F, bottom, len, v, o) {
+    o = o || {};
+    const top = add(bottom, [0, 0, len]);
+    R3.cylinder(F, bottom, top, 0.0035, '#E3F0F6', { shadow: false, segments: 10, alpha: 0.6 });
+    R3.sphere(F, bottom, 0.006, '#D8463A', { shadow: false });
+    const k = clamp((v + 10) / 110, 0, 1);
+    R3.cylinder(F, bottom, add(bottom, [0, 0, len * 0.08 + len * 0.86 * k]), 0.0016, '#D8463A', { shadow: false, segments: 6, caps: false, bias: -0.003 });
+    return top;
+  }
+  /* the dye: particles, each with its own alpha, drawn as one item at the plane they sit in */
+  function dots(F, at, pts, colour, r, o) {
+    o = o || {};
+    const ctx = F.ctx, cam = F.cam;
+    F.push(at, () => {
+      ctx.save();
+      for (const p of pts) {
+        const q = cam.project(p.w || p); if (!q.ok) continue;
+        ctx.globalAlpha = p.a == null ? (o.alpha || 0.6) : p.a;
+        ctx.fillStyle = p.c || colour; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(0.8, (p.r || r) * q.s), 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+    }, o.bias == null ? -0.002 : o.bias);
+  }
+  /* a turntable: a steel base with its motor, a white disc with a printed polar grid that turns
+     by `angle`, and whatever has been drawn on it (pts in the disc's own frame, metres) */
+  function turntable(F, c, R, angle, o) {
+    o = o || {};
+    const ctx = F.ctx, cam = F.cam, zt = c[2] + 0.09;
+    // the base and spindle sit under the disc: pushed back so the disc always covers them
+    R3.cylinder(F, [c[0], c[1], c[2]], [c[0], c[1], c[2] + 0.05], R * 0.45, '#3A4250', { segments: 32, bias: 0.5 });
+    R3.cylinder(F, [c[0], c[1], c[2] + 0.05], [c[0], c[1], zt - 0.012], 0.03, '#8A939E', { segments: 16, shadow: false, bias: 0.5 });
+    R3.cylinder(F, [c[0], c[1], zt - 0.012], [c[0], c[1], zt], R, '#E9ECEF', { segments: 64, shadow: false, ambient: 0.6 });
+    const toW = (x, y) => { const ca = Math.cos(angle), sa = Math.sin(angle); return [c[0] + x * ca - y * sa, c[1] + x * sa + y * ca, zt + 0.0008]; };
+    F.push([c[0], c[1], zt + 0.0005], () => {
+      ctx.save();
+      // the printed grid: rings every 5 cm, spokes every 30°
+      ctx.strokeStyle = 'rgba(70,85,105,.45)'; ctx.lineWidth = 1;
+      for (let r = 0.05; r < R - 1e-6; r += 0.05) { ctx.beginPath(); for (let k = 0; k <= 72; k++) { const a = k / 72 * TAU, q = cam.project(toW(r * Math.cos(a), r * Math.sin(a))); if (!q.ok) { ctx.restore(); return; } k ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); } ctx.stroke(); }
+      for (let k = 0; k < 12; k++) { const a = k / 12 * TAU, q0 = cam.project(toW(0, 0)), q1 = cam.project(toW(R * 0.97 * Math.cos(a), R * 0.97 * Math.sin(a))); ctx.strokeStyle = k === 0 ? 'rgba(220,60,50,.85)' : 'rgba(70,85,105,.35)'; ctx.lineWidth = k === 0 ? 2 : 1; ctx.beginPath(); ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.stroke(); }
+      // the chalk line the puck left on the turning disc
+      if (o.trace && o.trace.length > 1) {
+        ctx.strokeStyle = o.traceColour || '#2A6FD6'; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+        o.trace.forEach((p, i) => { const q = cam.project(toW(p[0], p[1])); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }); ctx.stroke();
+      }
+      ctx.restore();
+    }, -0.002);
+    return { zt, toW };
+  }
+  /* a hydrometer floating in a column of liquid: the deeper it sits, the lighter the liquid.
+     at: where the liquid surface meets its stem; sink: how far the stem is under (m) */
+  function hydrometer(F, at, sink, o) {
+    o = o || {};
+    const bulbZ = at[2] - sink - 0.03;
+    R3.cylinder(F, [at[0], at[1], bulbZ - 0.03], [at[0], at[1], bulbZ + 0.03], 0.011, '#E6F2F6', { shadow: false, segments: 14, alpha: 0.7 });
+    R3.sphere(F, [at[0], at[1], bulbZ - 0.036], 0.008, '#3A3E46', { shadow: false });
+    R3.cylinder(F, [at[0], at[1], bulbZ + 0.03], [at[0], at[1], at[2] + 0.06], 0.0035, '#F2F7F2', { shadow: false, segments: 10 });
+    const ctx = F.ctx, cam = F.cam;
+    F.push([at[0], at[1] - 0.004, at[2] + 0.02], () => {
+      ctx.save(); ctx.strokeStyle = 'rgba(30,40,60,.85)'; ctx.lineWidth = 1;
+      for (let k = 0; k <= 8; k++) { const z = at[2] - 0.01 + k * 0.008, q0 = cam.project([at[0] - 0.003, at[1] - 0.004, z]), q1 = cam.project([at[0] + (k % 2 ? 0.001 : 0.003), at[1] - 0.004, z]); if (!q0.ok) continue; ctx.beginPath(); ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.stroke(); }
+      ctx.restore();
+    }, -0.01);
+  }
+  /* an arrowhead for 2D figures */
+  function arrowHead(ctx, x, y, ang, s, col) {
+    ctx.save(); ctx.fillStyle = col; ctx.translate(x, y); ctx.rotate(ang);
+    ctx.beginPath(); ctx.moveTo(s, 0); ctx.lineTo(-s * 0.7, s * 0.6); ctx.lineTo(-s * 0.4, 0); ctx.lineTo(-s * 0.7, -s * 0.6); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  /* the atmosphere cut from pole to pole: the cells as turning loops under the tropopause,
+     rising air with its towering cloud and rain, sinking air over the deserts.
+     cells: [{a, b, dir}] in degrees (south −90 … north +90); dir +1 rises at a. t animates the flow. */
+  function cellSection(ctx, x, y, w, h, cells, o) {
+    o = o || {};
+    const X = lat => x + (lat + 90) / 180 * w, top = y + 16, bot = y + h - 22, tp = lat => top + 10 + (bot - top) * 0.14 * Math.pow(Math.abs(lat) / 90, 1.2);
+    ctx.save();
+    // the sky above the tropopause, the troposphere below it
+    const g = ctx.createLinearGradient(0, top, 0, bot); g.addColorStop(0, '#0E1A33'); g.addColorStop(1, '#2A5A8C');
+    ctx.fillStyle = g; ctx.fillRect(x, top, w, bot - top);
+    ctx.fillStyle = 'rgba(8,12,24,.65)'; ctx.beginPath(); ctx.moveTo(x, top);
+    for (let la = -90; la <= 90; la += 3) ctx.lineTo(X(la), tp(la)); ctx.lineTo(x + w, top); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(200,215,240,.5)'; ctx.setLineDash([4, 3]); ctx.beginPath(); for (let la = -90; la <= 90; la += 3) la === -90 ? ctx.moveTo(X(la), tp(la)) : ctx.lineTo(X(la), tp(la)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = mono(8.5); ctx.fillStyle = 'rgba(200,215,240,.75)'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText('tropopause', x + 4, tp(-80) - 2);
+    // the ground: green where air rises and rain falls, sand where it sinks, ice at the poles
+    for (let la = -90; la < 90; la += 1) {
+      const wet = o.wet ? o.wet(la + 0.5) : 0.5, ice = Math.abs(la) > 66;
+      ctx.fillStyle = ice ? '#E6EEF5' : css(mixc([214, 180, 120], [60, 130, 70], clamp(wet, 0, 1)));
+      ctx.fillRect(X(la), bot, w / 180 + 0.6, 8);
+    }
+    // each cell: a loop of moving air
+    cells.forEach(cl => {
+      const xa = X(cl.a), xb = X(cl.b), xm = (xa + xb) / 2, ya = bot - 6, yb = Math.min(tp(cl.a), tp(cl.b)) + 10, ym = (ya + yb) / 2;
+      const rx = (xb - xa) / 2 - 6, ry = (ya - yb) / 2;
+      if (rx < 3) return;
+      ctx.strokeStyle = cl.dir > 0 ? 'rgba(255,170,120,.9)' : 'rgba(140,190,255,.9)'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.ellipse(xm, ym, rx, ry, 0, 0, TAU); ctx.stroke();
+      // arrows round the loop, moving with t; dir +1: up at a, along the top to b, down at b
+      for (let k = 0; k < 4; k++) {
+        const ph = ((o.t || 0) * 0.15 + k / 4) % 1, ang = cl.dir > 0 ? Math.PI - ph * TAU : ph * TAU;     // screen angle on the ellipse
+        const ex = xm + rx * Math.cos(ang), ey = ym + ry * Math.sin(ang);
+        const tan = cl.dir > 0 ? Math.atan2(-ry * Math.cos(ang), rx * Math.sin(ang)) : Math.atan2(ry * Math.cos(ang), -rx * Math.sin(ang));
+        arrowHead(ctx, ex, ey, tan, 6, cl.dir > 0 ? '#FFC8A0' : '#B8D6FF');
+      }
+      if (o.names && cl.name && rx > 22) { ctx.font = sans(10, 700); ctx.fillStyle = '#EAF1FF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(cl.name, xm, ym); }
+    });
+    // towering cloud where air rises, clear sky where it sinks
+    (o.rising || []).forEach(la => {
+      // a thunderstorm: a narrow tower that spreads into an anvil under the tropopause
+      const xc = X(la), yt = tp(la) + 4, yb = bot - 10;
+      const cg = ctx.createLinearGradient(0, yt, 0, yb); cg.addColorStop(0, 'rgba(245,248,255,.92)'); cg.addColorStop(1, 'rgba(170,185,205,.85)');
+      ctx.fillStyle = cg; ctx.beginPath();
+      ctx.moveTo(xc - 5, yb); ctx.quadraticCurveTo(xc - 7, (yt + yb) / 2, xc - 4, yt + 8); ctx.quadraticCurveTo(xc - 16, yt + 6, xc - 18, yt + 2);
+      ctx.quadraticCurveTo(xc, yt - 3, xc + 18, yt + 2); ctx.quadraticCurveTo(xc + 16, yt + 6, xc + 4, yt + 8); ctx.quadraticCurveTo(xc + 7, (yt + yb) / 2, xc + 5, yb); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(150,200,255,.7)'; ctx.lineWidth = 1;
+      for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.moveTo(xc - 8 + k * 4, bot - 10); ctx.lineTo(xc - 10 + k * 4, bot - 2); ctx.stroke(); }
+    });
+    // the latitude axis
+    ctx.font = mono(9); ctx.fillStyle = '#9FB0CC'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    [-90, -60, -30, 0, 30, 60, 90].forEach(la => ctx.fillText(la === 0 ? 'Eq' : Math.abs(la) + (la > 0 ? 'N' : 'S'), X(la), bot + 10));
+    ctx.restore();
+    return { X, bot, top };
+  }
+
   window.G6E = { tempRGB, rainRGB, anomRGB, kgRGB, KG, css, mixc, grassTex, lawn, louvredFace, stevenson, SCREEN, rainGauge, sky, precip,
-                 thermoPair, climograph, raster, colourBar, pin, rng, canvas, mono, sans };
+                 thermoPair, climograph, raster, colourBar, pin, rng, canvas, mono, sans,
+                 glassPane, glassTank, iceCube, dipThermo, dots, turntable, hydrometer, arrowHead, cellSection };
 })();

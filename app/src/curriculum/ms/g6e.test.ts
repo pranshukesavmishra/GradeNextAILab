@@ -68,3 +68,76 @@ describe("6E-1 Climate from Weather — the models", () => {
     expect(M.koppen(Mi.T, Mi.P.map((v) => v * 0.9), Mi.lat).code).toBe("Aw");
   });
 });
+
+describe("6E-2 Circulation of Air and Ocean — the models", () => {
+  type P = Record<string, unknown>;
+  const M = engine.InsightLab.models["g6e-circulation"] as unknown as {
+    rhoSW: (S: number, T: number) => number; freezeT: (S: number) => number; lockSpeed: (a: number, b: number, H: number) => number;
+    hadleyLat: (dayH: number, dT: number) => number; cellsOf: (p: P) => { n: number; phH: number }; uM: (Om: number, lat: number) => number; OMEGA: number;
+    crossing: (p: P) => { miss: number; t: number }; rossby: (k: string) => number; coriolisF: (lat: number) => number;
+    stommel: (p: P) => { sverdrup: number | null; delta: number | null }; boundary: (m: unknown) => { vmax: number; at: number; transport: number };
+    ebmSteady: (p: P) => Float64Array; ebmSummary: (T: Float64Array, D: number) => { mean: number; eq: number; pole: number; peak: number; peakLat: number };
+    convRun: (p: P, secs: number) => { umax: number; Tl: number; Tr: number };
+  };
+
+  it("reproduces the UNESCO equation of state: 1023.343 kg/m³ at 35 g/kg and 25 °C, fresh water densest near 4 °C, seawater freezing at −1.92 °C", () => {
+    expect(M.rhoSW(35, 25)).toBeCloseTo(1023.343, 3);
+    expect(M.rhoSW(0, 4)).toBeCloseTo(999.975, 3);
+    expect(M.rhoSW(0, 4)).toBeGreaterThan(M.rhoSW(0, 2));
+    expect(M.rhoSW(0, 4)).toBeGreaterThan(M.rhoSW(0, 6));
+    expect(M.freezeT(35)).toBeCloseTo(-1.922, 3);
+  });
+
+  it("runs a lock-exchange front at ½√(g′H): 11.4 cm/s for fresh against 35 g/kg water 20 cm deep", () => {
+    expect(M.lockSpeed(M.rhoSW(35, 20), M.rhoSW(0, 20), 0.2)).toBeCloseTo(0.1142, 3);
+  });
+
+  it("puts Earth's Hadley edge at 28.8° (Held & Hou 1980), halves it for a 12 h day, and reaches the pole on a slow planet", () => {
+    expect(M.hadleyLat(24, 96)).toBeCloseTo(28.8, 0);
+    expect(M.hadleyLat(12, 96) / M.hadleyLat(24, 96)).toBeCloseTo(0.5, 2);
+    expect(M.cellsOf({ dayH: 24, dT: 96, sunLat: 0 }).n).toBe(3);
+    expect(M.cellsOf({ dayH: 2400, dT: 96, sunLat: 0 }).n).toBe(1);
+    expect(M.uM(M.OMEGA, 30)).toBeCloseTo(134, 0);
+    expect(M.coriolisF(45)).toBeCloseTo(1.031e-4, 6);
+  });
+
+  it("bends a straight puck path on a turning disc by RΩt (18.4 cm at 10 rpm, 1 m/s) and not at all on a still one", () => {
+    const c = M.crossing({ rpm: 10, sense: "ccw", speed: 1, aim: 0 });
+    expect(Math.abs(c.miss)).toBeCloseTo(0.30 * (10 * 2 * Math.PI / 60) * c.t, 3);
+    expect(c.miss).toBeLessThan(0);
+    expect(M.crossing({ rpm: 10, sense: "cw", speed: 1, aim: 0 }).miss).toBeGreaterThan(0);
+    expect(Math.abs(M.crossing({ rpm: 0, sense: "ccw", speed: 1, aim: 0 }).miss)).toBeLessThan(1e-9);
+    expect(M.rossby("sink")).toBeGreaterThan(1000);
+    expect(M.rossby("gyre")).toBeLessThan(0.01);
+  });
+
+  it("intensifies the gyre on the west only with β (Stommel 1948) and carries Sverdrup's 18.4 Sv", () => {
+    const base = { width: 6000, logR: -6, tau: 0.1 };
+    const W = M.stommel({ ...base, beta: 1 }), B = M.boundary(W);
+    expect((W.sverdrup ?? 0) / 1e6).toBeCloseTo(18.39, 1);
+    expect(B.transport / ((W.sverdrup ?? 1) / 1e6)).toBeGreaterThan(0.85);
+    expect(B.at).toBeLessThan(200e3);
+    expect(B.vmax).toBeGreaterThan(0);
+    const B0 = M.boundary(M.stommel({ ...base, beta: 0 }));
+    expect(Math.abs(B.vmax)).toBeGreaterThan(2 * Math.abs(B0.vmax));
+    expect(W.delta).toBeCloseTo(50e3, -3);
+  });
+
+  it("balances the planet's energy (North 1975): a 15 °C world moving ~5 PW poleward near 35°, a 56 °C equator without transport", () => {
+    const s = M.ebmSummary(M.ebmSteady({ Dt: 0.55, S0: 1361, iceAlb: true }), 0.55);
+    expect(s.mean).toBeGreaterThan(14); expect(s.mean).toBeLessThan(17);
+    expect(s.peak).toBeGreaterThan(4.5); expect(s.peak).toBeLessThan(6);
+    expect(s.peakLat).toBeGreaterThan(30); expect(s.peakLat).toBeLessThan(40);
+    const s0 = M.ebmSummary(M.ebmSteady({ Dt: 0, S0: 1361, iceAlb: true }), 0);
+    expect(Math.abs(s0.eq - (340.25 * (1 + 0.482 / 2) * (1 - 0.24) - 203.3) / 2.09)).toBeLessThan(0.5);
+  });
+
+  it("drives a convection cell that runs faster with more heat, and still turns over in syrup, more slowly", () => {
+    const p = { ice: false, heatAt: "end", fluid: "water", waterT: 20 };
+    const a = M.convRun({ ...p, power: 30 }, 60), b = M.convRun({ ...p, power: 120 }, 60), s = M.convRun({ ...p, power: 120, fluid: "syrup" }, 60);
+    expect(b.umax).toBeGreaterThan(a.umax);
+    expect(s.umax).toBeGreaterThan(0);
+    expect(s.umax).toBeLessThan(b.umax);
+    expect(b.Tl).toBeGreaterThan(20);
+  }, 30000);
+});
