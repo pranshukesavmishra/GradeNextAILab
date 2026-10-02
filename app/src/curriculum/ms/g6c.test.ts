@@ -233,3 +233,37 @@ describe("6C-4 The Specific Heat Investigation — the models", () => {
     expect(B.sandSwing / B.seaSwing).toBeGreaterThan(20);
   });
 });
+
+describe("6C-5 The Thermal Design Studio — the models", () => {
+  const M = engine.InsightLab.models["g6c-design-studio"] as unknown as {
+    panelTest: (o: P) => { U: number };
+    coolerRun: (o: P) => { hoursIce: number; D: { UA: number; seal: number } };
+    cookerRun: (o: P) => { boiled: number | null; peak: number };
+  };
+  const cooler = (o: P) => M.coolerRun({ device: "cooler", mat: "foam", cm: 5, foil: false, seal: "poor", lid: "white", Ta: 30, ice: 2, drinks: 1, Gpk: 0, hours: 120, ...o });
+
+  it("gives a 5 cm polystyrene panel U = 1/ΣR = 0.590 W/m²K, and a foil-lined air gap a lower U than a plain one", () => {
+    expect(M.panelTest({ mat: "foam", cm: 5, Th: 60 }).U).toBeCloseTo(0.590, 3);
+    expect(M.panelTest({ mat: "air", cm: 2, foil: true, Th: 60 }).U).toBeLessThan(0.6 * M.panelTest({ mat: "air", cm: 2, foil: false, Th: 60 }).U);
+  });
+
+  it("keeps 2 kg of ice 7.0 h with a loose lid and 18.4 h with a gasket — m·L_f ÷ ((UA + G)·ΔT)", () => {
+    const loose = cooler({}), sealed = cooler({ seal: "good" });
+    expect(loose.hoursIce).toBeCloseTo(7.0, 1);
+    expect(sealed.hoursIce).toBeCloseTo(18.4, 1);
+    expect(loose.hoursIce).toBeCloseTo((2 * 334000) / ((loose.D.UA + loose.D.seal) * 30) / 3600, 1);
+  });
+
+  it("gains less from thicker walls than from fixing the seal while the lid leaks", () => {
+    expect(cooler({ cm: 8 }).hoursIce - cooler({}).hoursIce).toBeLessThan(cooler({ seal: "good" }).hoursIce - cooler({}).hoursIce);
+  });
+
+  it("boils a litre in a glazed, reflector-fed cooker with a black pot, but not without glass or with a shiny pot", () => {
+    const run = (o: P) => M.cookerRun({ device: "cooker", mat: "card", cm: 3, foil: true, seal: "good", glaze: "single", refl: 1, absb: "black", Ta: 30, Gpk: 900, start: 10, hours: 6, ...o });
+    const ok = run({});
+    expect(ok.boiled as number / 60).toBeGreaterThan(35);
+    expect(ok.boiled as number / 60).toBeLessThan(70);
+    expect(run({ glaze: "none", refl: 0 }).peak).toBeLessThan(90);
+    expect(run({ absb: "shiny" }).peak).toBeLessThan(90);
+  });
+});

@@ -50,4 +50,16 @@ export const LABS_6C: MsLab[] = [
       { value: "explain", label: "Why the sand burns and the sea does not", teaches: ["C4.6"] },
     ],
   },
+  {
+    id: "g6c-design-studio", grade: 6, unit: "C", topics: ["C5"], subject: "engineering",
+    name: "The Thermal Design Studio — Coolers and Solar Cookers",
+    setups: [
+      { value: "materials", label: "Test the materials: U-values", teaches: ["C5.1"] },
+      { value: "define", label: "Define it: criteria and constraints", teaches: ["C5.2"] },
+      { value: "build", label: "Build it: choose every layer", teaches: ["C5.3"] },
+      { value: "test", label: "Test it for hours", teaches: ["C5.4"] },
+      { value: "compare", label: "Compare two designs", teaches: ["C5.5"] },
+      { value: "redesign", label: "Find the leak, redesign", teaches: ["C5.6"] },
+    ],
+  },
 ];

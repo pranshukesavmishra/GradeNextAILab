@@ -690,5 +690,49 @@
     } : (ctx, q) => { ctx.save(); ctx.strokeStyle = 'rgba(230,245,255,.35)'; ctx.lineWidth = 1; for (let i = 1; i < 6; i++) { const u = i / 6; ctx.beginPath(); ctx.moveTo(q[0].x + (q[3].x - q[0].x) * u, q[0].y + (q[3].y - q[0].y) * u); ctx.lineTo(q[1].x + (q[2].x - q[1].x) * u, q[1].y + (q[2].y - q[1].y) * u); ctx.stroke(); } ctx.restore(); } });
   }
 
-  window.G6C = { FORM, quad, track, cart, launcher, clay, cellTex, solarPanel, floodlight, battery, motorPulley, slottedMass, lamp, lead, kettle, bikeWheel, phone, charger, sankey, energyBars, mono, syringe, iceJar, glassThermometer, probe, irGun, cellPlate, particles, microField, trough, waxRod, leslieCube, thermopile, glassTank, iceCube, immersionHeater, foamCup, shcBlock, tray };
+
+  /* ============================================================
+     THE DESIGN STUDIO — a cutaway insulated box (cooler or cooker), reflectors, a panel rig
+     ============================================================ */
+  /* an insulated box W × D × H at c (base centre), walls t thick of insulation (colour) between a shell (shell colour) and a
+     liner; the front wall drawn cut away so the layers and the contents show. o.lid: 'closed' | 'glass' | null; o.foil liner */
+  function insulatedBox(F, c, W, D, H, t, o) {
+    o = o || {};
+    const sh = o.shell || '#3E78C8', ins = o.ins || '#ECEEF0', liner = o.foil ? '#D8DEE6' : (o.linerCol || '#E6EAEE'), x = c[0], y = c[1];
+    // base, back and sides: the shell outside, the insulation as the slab's body
+    R3.box(F, [x, y, t / 2], [W, D, t], ins, { ambient: 0.45, shadowK: 0.25 });
+    R3.box(F, [x, y + D / 2 - t / 2, H / 2], [W, t, H], ins, { ambient: 0.45, shadow: false });
+    R3.box(F, [x - W / 2 + t / 2, y, H / 2], [t, D, H], ins, { ambient: 0.45, shadow: false });
+    R3.box(F, [x + W / 2 - t / 2, y, H / 2], [t, D, H], ins, { ambient: 0.45, shadow: false });
+    // the shell's outer skins on the faces we see, and the liner inside
+    quad(F, [[x - W / 2, y + D / 2 + 0.001, 0], [x + W / 2, y + D / 2 + 0.001, 0], [x + W / 2, y + D / 2 + 0.001, H], [x - W / 2, y + D / 2 + 0.001, H]], sh, { ambient: 0.5 });
+    [-1, 1].forEach(s => quad(F, [[x + s * (W / 2 + 0.001), y - D / 2, 0], [x + s * (W / 2 + 0.001), y + D / 2, 0], [x + s * (W / 2 + 0.001), y + D / 2, H], [x + s * (W / 2 + 0.001), y - D / 2, H]], sh, { ambient: 0.5 }));
+    quad(F, [[x - W / 2 + t, y + D / 2 - t - 0.001, t], [x + W / 2 - t, y + D / 2 - t - 0.001, t], [x + W / 2 - t, y + D / 2 - t - 0.001, H], [x - W / 2 + t, y + D / 2 - t - 0.001, H]], liner, { ambient: 0.6, bias: 0.01 });
+    // the front wall, cut down to a low sill so the inside shows: its cut face shows the three layers
+    const sill = Math.max(t * 1.2, H * 0.22);
+    R3.box(F, [x, y - D / 2 + t / 2, sill / 2], [W, t, sill], ins, { ambient: 0.45, shadow: false });
+    quad(F, [[x - W / 2, y - D / 2 - 0.001, 0], [x + W / 2, y - D / 2 - 0.001, 0], [x + W / 2, y - D / 2 - 0.001, sill], [x - W / 2, y - D / 2 - 0.001, sill]], sh, { ambient: 0.5 });
+    // the lid
+    if (o.lid === 'closed') { R3.box(F, [x, y, H + t / 2], [W, D, t], ins, { ambient: 0.5, alpha: 0.35, shadow: false }); quad(F, [[x - W / 2, y - D / 2, H + t + 0.001], [x + W / 2, y - D / 2, H + t + 0.001], [x + W / 2, y + D / 2, H + t + 0.001], [x - W / 2, y + D / 2, H + t + 0.001]], o.lidCol || sh, { ambient: 0.55, alpha: 0.55 }); }
+    if (o.lid === 'glass') { quad(F, [[x - W / 2, y - D / 2, H + 0.004], [x + W / 2, y - D / 2, H + 0.004], [x + W / 2, y + D / 2, H + 0.004], [x - W / 2, y + D / 2, H + 0.004]], '#CFE8F6', { alpha: 0.22, edge: 'rgba(230,245,255,.9)', flat: true, bias: -0.05 }); if (o.double) quad(F, [[x - W / 2, y - D / 2, H + 0.016], [x + W / 2, y - D / 2, H + 0.016], [x + W / 2, y + D / 2, H + 0.016], [x - W / 2, y + D / 2, H + 0.016]], '#CFE8F6', { alpha: 0.18, edge: 'rgba(230,245,255,.9)', flat: true, bias: -0.06 }); }
+    return { inside: [x, y, t], innerW: W - 2 * t, innerD: D - 2 * t, top: H };
+  }
+  /* a reflector panel hinged on one top edge of the cooker, tilted outward */
+  function reflector(F, a, b, out, tilt, len) {
+    const up = [0, 0, 1], d = [out[0] * Math.sin(tilt) + up[0] * Math.cos(tilt), out[1] * Math.sin(tilt) + up[1] * Math.cos(tilt), Math.cos(tilt)];
+    const a2 = add(a, scale(d, len)), b2 = add(b, scale(d, len));
+    quad(F, [a, b, b2, a2], '#E4E9EF', { ambient: 0.75, edge: '#9AA4B0' });
+    quad(F, [a2, b2, b, a], '#9AA4B0', { ambient: 0.4 });
+  }
+  /* a test panel on a hot plate with a heat-flux sensor on top */
+  function panelRig(F, c, cm, colour, foil, Th) {
+    const M = window.MEAS, HP = M.hotplate(F, c, { top: Th, set: (Th - 20) / 330, on: true, hot: Th > 50, topSize: 0.18 });
+    const t = Math.max(0.003, cm / 100), z0 = HP.topZ + 0.001;
+    R3.box(F, [c[0], c[1] + 0.01, z0 + t / 2], [0.22, 0.22, t], colour, { ambient: 0.5 });
+    if (foil) quad(F, [[c[0] - 0.11, c[1] - 0.1, z0 + t + 0.0008], [c[0] + 0.11, c[1] - 0.1, z0 + t + 0.0008], [c[0] + 0.11, c[1] + 0.12, z0 + t + 0.0008], [c[0] - 0.11, c[1] + 0.12, z0 + t + 0.0008]], '#E4E9EF', { ambient: 0.8 });
+    R3.box(F, [c[0], c[1] + 0.01, z0 + t + 0.003], [0.05, 0.05, 0.004], '#2A303A', { shadow: false });
+    return z0 + t + 0.005;
+  }
+
+  window.G6C = { FORM, quad, track, cart, launcher, clay, cellTex, solarPanel, floodlight, battery, motorPulley, slottedMass, lamp, lead, kettle, bikeWheel, phone, charger, sankey, energyBars, mono, syringe, iceJar, glassThermometer, probe, irGun, cellPlate, particles, microField, trough, waxRod, leslieCube, thermopile, glassTank, iceCube, immersionHeater, foamCup, shcBlock, tray, insulatedBox, reflector, panelRig };
 })();
