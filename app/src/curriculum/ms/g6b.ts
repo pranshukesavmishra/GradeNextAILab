@@ -61,4 +61,16 @@ export const LABS_6B: MsLab[] = [
       { value: "break", label: "Break one system: watch the others", teaches: ["B5.6"] },
     ],
   },
+  {
+    id: "g6b-senses", grade: 6, unit: "B", topics: ["B6"], subject: "biology",
+    name: "Stimulus, Signal, Response, Memory",
+    setups: [
+      { value: "receptors", label: "Receptors: how fine is your touch?", teaches: ["B6.1"] },
+      { value: "pathway", label: "The path to the brain: first and second pain", teaches: ["B6.2"] },
+      { value: "processing", label: "Processing: more choices, more time", teaches: ["B6.3"] },
+      { value: "reflex", label: "Reflex or voluntary?", teaches: ["B6.4"] },
+      { value: "memory", label: "Memory: what stays, what goes, what is made up", teaches: ["B6.5"] },
+      { value: "together", label: "A ball thrown at you: every stage", teaches: ["B6.6"] },
+    ],
+  },
 ];

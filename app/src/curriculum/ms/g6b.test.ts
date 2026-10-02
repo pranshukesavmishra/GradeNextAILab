@@ -495,3 +495,70 @@ describe("6B-5 The Body During Exercise — the models", () => {
     expect(wet[719].HR).toBeLessThan(dry[719].HR);
   });
 });
+
+describe("6B-6 Stimulus, Signal, Response, Memory — the models", () => {
+  type P = Record<string, unknown>;
+  const M = engine.InsightLab.models["g6b-senses"] as unknown as {
+    SITES: Record<string, { T: number }>; fieldSpacing: (s: string) => number; density: (s: string) => number;
+    pTwo: (s: string, sep: number, f?: number) => number; pHeavier: (I: number, d: number, f?: number) => number; vol: (p: P) => number;
+    touchTrials: (p: P) => boolean[]; arrival: (p: P, f: string) => number; hickRT: (p: P, n: number) => number;
+    reflexTimes: (p: P) => { reflex: number; felt: number; voluntary: number; gain: number };
+    pRecall: (p: P, i: number, N: number) => number; ebb: (t: number) => number;
+    forgetRun: (p: P) => { at: (t: number) => number }; budget: (p: P) => { total: number }; flightOf: (p: P) => number; pCatch: (p: P) => number;
+    BASE: () => P;
+  };
+  const p = (o: P) => ({ ...M.BASE(), ...o });
+
+  it("touch: thresholds follow receptor spacing; 50 % felt as two at the threshold; Weber's 5 % gives 75 % right", () => {
+    expect(M.SITES.finger.T).toBeLessThan(M.SITES.palm.T); expect(M.SITES.palm.T).toBeLessThan(M.SITES.back.T);
+    expect(M.pTwo("finger", 2.5)).toBeCloseTo(0.5, 6); expect(M.pTwo("finger", 4)).toBeGreaterThan(0.95);
+    expect(M.pTwo("forearm", 3)).toBeLessThan(0.01);
+    expect(M.density("finger") / M.density("back")).toBeGreaterThan(200);
+    expect(M.pHeavier(400, 20)).toBeCloseTo(0.75, 3); expect(M.pHeavier(50, 10)).toBeGreaterThan(M.pHeavier(1000, 10));
+    expect(M.vol(p({ seed: 1 }))).toBe(1);
+    expect(M.touchTrials(p({ site: "finger", sep: 3, trials: 40 })).filter(Boolean).length).toBeGreaterThan(25);
+  });
+
+  it("nerves: touch ~30 ms, dull C-fibre pain over a second from the toe; cold and lost myelin slow them", () => {
+    const q = p({ setup: "pathway", from: "toe", height: 170 });
+    expect(M.arrival(q, "Ab")).toBeLessThan(0.04); expect(M.arrival(q, "C")).toBeCloseTo(1.4514, 3);
+    expect(M.arrival({ ...q, limbT: 20 }, "Ab")).toBeGreaterThan(1.5 * M.arrival(q, "Ab"));
+    expect(M.arrival({ ...q, demy: 60 }, "Ab")).toBeGreaterThan(M.arrival(q, "Ab"));
+    expect(M.arrival({ ...q, demy: 60 }, "C")).toBeCloseTo(M.arrival(q, "C"), 9);
+    expect(M.arrival({ ...q, from: "finger" }, "C")).toBeLessThan(M.arrival(q, "C"));
+  });
+
+  it("Hick: each bit adds ~150 ms; a compatible mapping or practice flattens it", () => {
+    const q = p({ setup: "processing" });
+    expect(M.hickRT(q, 7)).toBeCloseTo(0.65, 6);
+    expect(M.hickRT(q, 3) - M.hickRT(q, 1)).toBeCloseTo(0.15, 6);
+    expect(M.hickRT({ ...q, compat: true }, 7)).toBeLessThan(0.4);
+    expect(M.hickRT({ ...q, practice: 10 }, 7)).toBeLessThan(M.hickRT(q, 7));
+  });
+
+  it("reflex: the knee jerk in ~23 ms, well before it is felt or a kick on purpose; a cut cord keeps the reflex only", () => {
+    const k = M.reflexTimes(p({ setup: "reflex", rx: "knee", height: 170 }));
+    expect(k.reflex * 1000).toBeCloseTo(23.45, 1); expect(k.felt).toBeGreaterThan(k.reflex); expect(k.voluntary).toBeGreaterThan(k.felt);
+    const c = M.reflexTimes(p({ setup: "reflex", rx: "knee", cut: true }));
+    expect(c.reflex).toBeCloseTo(M.reflexTimes(p({ setup: "reflex", rx: "knee" })).reflex, 9); expect(Number.isFinite(c.voluntary)).toBe(false);
+    expect(M.reflexTimes(p({ setup: "reflex", rx: "withdraw" })).reflex).toBeGreaterThan(k.reflex);
+  });
+
+  it("memory: a U-shaped serial-position curve whose recency a delay erases; Ebbinghaus's curve; reviews help", () => {
+    const q = p({ setup: "memory" }), d = p({ setup: "memory", delay: 30 });
+    expect(M.pRecall(q, 0, 15)).toBeGreaterThan(M.pRecall(q, 7, 15)); expect(M.pRecall(q, 14, 15)).toBeGreaterThan(M.pRecall(q, 7, 15));
+    expect(M.pRecall(d, 14, 15)).toBeLessThan(M.pRecall(q, 7, 15) + 0.05); expect(M.pRecall(d, 0, 15)).toBeCloseTo(M.pRecall(q, 0, 15), 3);
+    expect(M.ebb(20)).toBeCloseTo(0.58, 1); expect(M.ebb(1440)).toBeGreaterThan(0.28); expect(M.ebb(1440)).toBeLessThan(0.36); expect(M.ebb(44640)).toBeCloseTo(0.21, 2);
+    const none = M.forgetRun(p({ setup: "memory", mexp: "forget" })).at(43200), three = M.forgetRun(p({ setup: "memory", mexp: "forget", reviews: 3, gap: 24 })).at(43200);
+    expect(three).toBeGreaterThan(1.8 * none);
+  });
+
+  it("catching: flight = distance ÷ speed; caught when it outlasts the stages; practice and a ready hand help", () => {
+    expect(M.flightOf(p({ dist: 10, speed: 90 }))).toBeCloseTo(0.4, 6);
+    expect(M.pCatch(p({ setup: "together", speed: 30 }))).toBeGreaterThan(0.99);
+    const fast = p({ setup: "together", speed: 110, dist: 7 });
+    expect(M.pCatch(fast)).toBeLessThan(0.5);
+    expect(M.pCatch({ ...fast, hand: "down", distract: true })).toBeLessThan(M.pCatch(fast));
+    expect(M.budget({ ...fast, skill: 1 }).total).toBeLessThan(M.budget(fast).total);
+  });
+});
