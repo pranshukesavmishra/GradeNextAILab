@@ -49,4 +49,17 @@ export const LABS_6E: MsLab[] = [
       { value: "hydrangea", label: "Blue or pink hydrangeas", teaches: ["E4.1", "E4.4"] },
     ],
   },
+  {
+    id: "g6e-heredity", grade: 6, unit: "E", topics: ["E5", "E6"], subject: "biology",
+    name: "The Heredity Lab",
+    setups: [
+      { value: "sexual", label: "Meiosis and fertilisation", teaches: ["E5.1", "E6.3"] },
+      { value: "resemble", label: "A pod of brothers and sisters", teaches: ["E5.2", "E6.2"] },
+      { value: "asexual", label: "Strawberry runners: clones", teaches: ["E5.3", "E5.4", "E6.4"] },
+      { value: "compare", label: "Sex against clones in a lake", teaches: ["E5.5"] },
+      { value: "genes", label: "From plant to gene to DNA", teaches: ["E6.1"] },
+      { value: "diagrams", label: "Inheritance diagrams", teaches: ["E6.5"] },
+      { value: "punnett", label: "Punnett squares", teaches: ["E6.6"] },
+    ],
+  },
 ];

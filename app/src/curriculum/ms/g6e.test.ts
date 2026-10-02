@@ -266,3 +266,83 @@ describe("6E-4 Nature and Nurture Growth Chambers — the models", () => {
   });
 });
 
+describe("6E-5 The Heredity Lab — the models", () => {
+  type Hom = { segs: [number, number, string][]; al: Record<string, number> };
+  type Ind = { h: [Hom, Hom][] };
+  type Mei = { rec: { xo: unknown[] }[]; gam: Hom[][] };
+  const M = engine.InsightLab.models["g6e-heredity"] as unknown as {
+    GENES: Record<string, { chr: number; mendel: [number, number] }>; GKEYS: string[]; CHR_LEN: number[];
+    makeInd: (g: Record<string, number>, c1: string, c2: string) => Ind;
+    meiosis: (ind: Ind, r: () => number, cross: boolean) => Mei;
+    fertilise: (egg: Hom[], pollen: Hom[]) => Ind; shows: (ind: Ind, k: string) => boolean;
+    shareFrom: (gam: Hom[], src: string) => number; pSibAlike: (a: number, b: number) => number;
+    bedOf: (p: Record<string, unknown>) => { plants: unknown[]; lam: number };
+    popRun: (p: Record<string, unknown>, G: number) => { lakes: { N: number; nAs: number }[] }[];
+    shareAfter: (p0: number, g: number) => number;
+    pedigreeOf: (p: Record<string, unknown>) => { dogs: { g: number; choc: boolean }[]; infer: { poss: number[][]; count: number } };
+    expected: (p: Record<string, unknown>) => number[];
+    chiSquare: (obs: number[], exp: number[]) => { chi: number; df: number; p: number };
+  };
+  const rng = (seed: number) => { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 1000003 + 0.5) / 1000003.5; }; };
+  const hyb = () => M.makeInd({ A: 1, I: 1, Fa: 1, Le: 1, V: 1, Gp: 1, R: 1 }, "F1", "F2");
+  const al = (g: Hom[], k: string) => g[M.GENES[k].chr].al[k];
+
+  it("segregates every gene 1 : 1 into the gametes and gives Mendel's 3 : 1 in the F2", () => {
+    const r = rng(7), H = hyb(), N = 12000; let a = 0, dom = 0;
+    for (let i = 0; i < N; i++) { const m = M.meiosis(H, r, true); a += al(m.gam[i % 4], "R"); const z = M.fertilise(M.meiosis(H, r, true).gam[0], m.gam[1]); if (M.shows(z, "A")) dom++; }
+    expect(a / N).toBeCloseTo(0.5, 1);
+    expect(dom / N).toBeGreaterThan(0.73); expect(dom / N).toBeLessThan(0.77);
+   }, 30000);
+
+  it("assorts genes on different chromosomes independently and recombines linked ones at Haldane's rate", () => {
+    const r = rng(11), H = hyb(), N = 16000; let aR = 0, leV = 0, xo = 0;
+    for (let i = 0; i < N; i++) { const m = M.meiosis(H, r, true), g = m.gam[i % 4]; if (al(g, "A") === al(g, "R")) aR++; if (al(g, "Le") === al(g, "V")) leV++; xo += m.rec.reduce((s, q) => s + q.xo.length, 0); }
+    expect(aR / N).toBeCloseTo(0.5, 1);                            // A and R: different pairs
+    const rLeV = 1 - leV / N, haldane = 0.5 * (1 - Math.exp(-2 * 0.13 / 0.96));
+    expect(Math.abs(rLeV - haldane)).toBeLessThan(0.015);           // Le and V: 13 cM apart on one pair
+    expect(xo / N).toBeCloseTo(2 * M.CHR_LEN.reduce((s, v) => s + v, 0), 0);
+   }, 30000);
+
+  it("halves the chromosomes: each gamete one of each of 7 pairs; without crossing over 2^7 = 128 kinds, all whole", () => {
+    const r = rng(3), H = hyb(), seen = new Set<string>();
+    for (let i = 0; i < 4000; i++) { const g = M.meiosis(H, r, false).gam[0]; expect(g.length).toBe(7); g.forEach(h => expect(h.segs.length).toBe(1)); seen.add(g.map(h => h.segs[0][2]).join("")); }
+    expect(seen.size).toBe(128);
+    const g = M.meiosis(H, rng(5), true).gam[0], s = M.shareFrom(g, "F1") + M.shareFrom(g, "F2");
+    expect(s).toBeCloseTo(1, 6);
+  });
+
+  it("gives siblings of hybrids a 5/8 chance of looking alike for one gene, and clones (1 + r)^g plants", () => {
+    expect(M.pSibAlike(1, 1)).toBeCloseTo(0.625, 6);
+    expect(M.pSibAlike(2, 0)).toBe(1);
+    expect(M.bedOf({ seed: 1, gens: 3, runners: 3, mut: "none" }).plants.length).toBe(64);
+    expect(M.bedOf({ seed: 1, gens: 1, runners: 1, mut: "real" }).lam).toBeCloseTo(3.36, 2);
+  });
+
+  it("lets clones take over a stable lake, loses them to parasites, and lets a warming lake outrun them", () => {
+    const share = (h: { lakes: { N: number; nAs: number }[] }) => h.lakes[0].N ? h.lakes[0].nAs / h.lakes[0].N : 0;
+    const base = { seed: 1, arr: "together", K: 400, p0: 0.1, vir: 0.6, warm: 0.12 };
+    expect(share(M.popRun({ ...base, env: "stable" }, 30)[30])).toBeGreaterThan(0.95);
+    expect(share(M.popRun({ ...base, env: "parasites" }, 60)[60])).toBeLessThan(0.05);
+    const apart = M.popRun({ ...base, env: "warming", arr: "apart" }, 120)[120];
+    expect(apart.lakes[0].N).toBeGreaterThan(300); expect(apart.lakes[1].N).toBe(0);
+    expect(M.shareAfter(0.1, 3)).toBeCloseTo(8 / 17, 6);
+  }, 30000);
+
+  it("deduces a Labrador family's genotypes: every chocolate bb, every black parent of a chocolate Bb", () => {
+    for (const family of ["carriers", "carrierChoc", "blackCarrier"]) for (const seed of [1, 2, 3, 4]) {
+      const P = M.pedigreeOf({ seed, family });
+      expect(P.infer.count).toBeGreaterThan(0);
+      P.dogs.forEach((d, i) => { expect(P.infer.poss[i]).toContain(d.g); if (d.choc) expect(P.infer.poss[i]).toEqual([0]); });
+    }
+  });
+
+  it("predicts 3 : 1 and 9 : 3 : 3 : 1 and finds Mendel's counts a good fit (chi-square)", () => {
+    expect(M.expected({ pmode: "mono", pf: 1, pm: 1 })).toEqual([0.75, 0.25]);
+    expect(M.expected({ pmode: "mono", pf: 1, pm: 0 })).toEqual([0.5, 0.5]);
+    const di = M.expected({ pmode: "di", pf: 1, pm: 1, pf2: 1, pm2: 1 });
+    expect(di.map(v => v * 16)).toEqual([9, 3, 3, 1]);
+    const c1 = M.chiSquare([705, 224], [0.75, 0.25]); expect(c1.chi).toBeCloseTo(0.39, 2); expect(c1.p).toBeGreaterThan(0.5);
+    const c2 = M.chiSquare([315, 108, 101, 32], di); expect(c2.df).toBe(3); expect(c2.chi).toBeCloseTo(0.47, 2); expect(c2.p).toBeGreaterThan(0.9);
+    expect(M.chiSquare([60, 40], [0.5, 0.5]).p).toBeCloseTo(0.0455, 3);
+  });
+});
