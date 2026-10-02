@@ -751,7 +751,16 @@ Environment constants (this container family):
 
 ## 9. Current status
 
-**State as of 2026-10-01 (latest):**
+**State as of 2026-10-02 (latest):**
+- **Merged from lanes**: 6B-3 Levels of Organization (`g6b-levels`), 6C-1 The Energy Chain Bench
+  (`g6c-energy-chain`), 6D-1 The Water Cycle Machine (`g6d-water-cycle`), 6E-1 Climate from Weather
+  (`g6e-climate`). Gate green (629 tests); integrator reviewed their sheets. Open: 6D-1 throws in the
+  audit's DOM click-through (sent to the 6D lane); 6C-1 set-up 1 labels overlap the ruler (sent to 6C).
+- `ship.mjs` now runs `audit.mjs <id>` (new one-lab mode) — ship.mjs alone had missed 6D-1's bug.
+- Lanes active: 6B, 6C, 6D, 6E (4, the founder's limit). Paused with plans committed in their
+  worktrees: 6F, 7A–7F, 8A–8F. The 2026-10-01 night stop was the account's usage limit, not a bug.
+
+**State as of 2026-10-01:**
 - **Fast build adopted** (`docs/FAST_BUILD_PLAN.md`). Groundwork landed: the catalogue split one
   file per unit (`app/src/curriculum/ms/g<u>.ts` + `ms/g<u>.test.ts`, engine loader `ms/engine.ts`),
   a marked block per unit in `smartlab/index.html`, `smartlab/ship.mjs` (numbers + liveness + mounts
@@ -893,6 +902,12 @@ Append only. Never rewrite history.
 ## 13. Session log
 
 Newest first.
+
+- **2026-10-01 → 10-02** — **Fast build started.** Per-unit catalogue split, `ship.mjs`, lane brief,
+  plan; existing React sims linked to 239 subtopics; 17 lanes started then capped at 4 by the founder
+  (rate limits); rules added: no fixed counts, two upgrade passes (§2.13), scratch per lane. First four
+  lab merges (6B-3, 6C-1, 6D-1, 6E-1). Found: phone overflow from long tags (fixed), worktrees created
+  from old `main` (lanes moved to the right base), a page error ship.mjs could not see (now audited).
 
 - **2026-09-25 (latest)** — **6B-2 Inside the Cell built.** Every model checked in a scratch runner first (the
   bag against the class data, plasmolysis and fragility curves, Hämmerling's graft sequence, the
