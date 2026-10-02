@@ -1,0 +1,91 @@
+import { describe, expect, it } from "vitest";
+import { engine } from "./engine";
+
+type P = Record<string, unknown>;
+type Row = Record<string, number>;
+
+describe("6C-1 The Energy Chain Bench — the models", () => {
+  const M = engine.InsightLab.models["g6c-energy-chain"] as unknown as {
+    cartRun: (o: P) => { rows: Row[]; gates: { v: number; dt: number }[]; E0: number; dent: number; peaks: { z: number }[] };
+    chainRun: (o: P) => { rows: { Ein: number; Ebat: number; PE: number; light: number; Q: Row }[]; overall: number };
+    kettleRun: (o: P) => { t: number; ideal: number; eff: number };
+    bikeRun: (o: P) => { KE0: number; Qb: number; Qa: number; Qr: number; dT: number };
+    phoneRun: (o: P) => { Ein: number; Es: number; Qc: number; Qcab: number; Qb: number };
+    equivalents: (E: number, m: number) => Row;
+  };
+  const total = (r: Row) => r.KE + r.PE + r.Esp + r.Q;
+
+  it("launches ½kx² = 0.50 J (400 N/m, 5 cm) into a 0.5 kg cart at √(2E/m) = 1.41 m/s, less the rolling losses", () => {
+    const R = M.cartRun({ kind: "flat", len: 1.8, m: 0.5, mu: 0.0004, k: 400, x0: 0.05, gates: [0.7, 1.0], flag: 0.05, tEnd: 3 });
+    expect(R.E0).toBeCloseTo(0.5, 9);
+    expect(R.gates[0].v).toBeGreaterThan(1.40);
+    expect(R.gates[0].v).toBeLessThan(Math.sqrt(2));
+  });
+
+  it("gives v = √(2gh) at the foot of a ramp whatever the mass: 2.43 m/s from 0.30 m on Earth, 0.986 m/s on the Moon", () => {
+    const run = (m: number, g: number) => {
+      const o = { kind: "ramp", h: 0.3, ang: 30, flat: 1.0, m, g, mu: 0.0004 };
+      const len = M.cartRun({ ...o, tEnd: 0.01 }) as unknown as { pr: { len: number } };
+      return M.cartRun({ ...o, gates: [len.pr.len - 1.0 + 0.2], flag: 0.05, tEnd: 3 }).gates[0].v;
+    };
+    expect(run(0.5, 9.81) / Math.sqrt(2 * 9.81 * 0.3)).toBeGreaterThan(0.99);
+    expect(Math.abs(run(2.0, 9.81) - run(0.5, 9.81))).toBeLessThan(0.01);
+    expect(run(0.5, 1.62) / 0.986).toBeGreaterThan(0.99);
+    expect(run(0.5, 1.62) / 0.986).toBeLessThan(1.0);
+  });
+
+  it("keeps the ledger KE + PE + spring + thermal equal to the start, to a part in ten thousand, in every case", () => {
+    const cases: P[] = [
+      { kind: "flat", len: 1.8, m: 0.5, mu: 0.004, k: 400, x0: 0.05, gates: [0.7, 1.0], flag: 0.05, clay: 1.55, tEnd: 5 },
+      { kind: "valley", H: 0.45, ang: 30, m: 0.5, mu: 0.035, sail: 0.04, brake: 0, s0: 0.2, tEnd: 30 },
+      { kind: "valley", H: 0.45, ang: 30, m: 1.0, mu: 0.004, sail: 0, brake: 0.6, s0: 0.2, tEnd: 30 },
+    ];
+    cases.forEach((o) => {
+      const R = M.cartRun(o);
+      R.rows.filter((_, i) => i % 50 === 0).forEach((r) => expect(Math.abs(total(r) - R.E0) / R.E0).toBeLessThan(1e-3));
+    });
+  });
+
+  it("loses height every swing in the valley, faster on a rougher track", () => {
+    const peaks = (mu: number) => M.cartRun({ kind: "valley", H: 0.45, ang: 30, m: 0.5, mu, s0: 0.2, tEnd: 30 }).peaks.map((q) => q.z);
+    const alu = peaks(0.004), felt = peaks(0.035);
+    for (let i = 1; i < 5; i++) expect(alu[i]).toBeLessThan(alu[i - 1]);
+    expect(felt[0]).toBeLessThan(alu[0]);
+  });
+
+  it("multiplies the chain's efficiencies: 21 × 95 × 78 × 90 × 90 × 78 × 35 % = 3.44 %, and the ledger balances", () => {
+    const C = M.chainRun({ G: 1000, tilt: 0, panel: "mono", batt: "liion", motor: "coreless", lamp: "led", m: 0.5, h: 0.5, tEnd: 90 });
+    expect(C.overall).toBeCloseTo(0.21 * 0.95 * 0.78 * 0.9 * 0.9 * 0.78 * 0.35, 9);
+    const r = C.rows[C.rows.length - 1], heat = Object.values(r.Q).reduce((u, v) => u + v, 0);
+    expect(r.Ein).toBeCloseTo(1000 * 0.05 * 90, 0);
+    expect(Math.abs(r.Ebat + r.PE + r.light + heat - r.Ein) / r.Ein).toBeLessThan(1e-3);
+  });
+
+  it("boils 1 L from 20 °C at 2 kW in about 3 minutes against mcΔT/P = 167 s", () => {
+    const K = M.kettleRun({ P: 2000, V: 1, T0: 20, lid: true });
+    expect(K.ideal).toBeCloseTo((4186 * 80) / 2000, 6);
+    expect(K.t).toBeGreaterThan(170);
+    expect(K.t).toBeLessThan(200);
+    expect(K.eff).toBeGreaterThan(0.85);
+  });
+
+  it("stops an 80 kg rider from 8 m/s: 2560 J, the disc rotor about 35 K hotter", () => {
+    const B = M.bikeRun({ m: 80, v0: 8, brake: "disc", decel: 4 });
+    expect(B.KE0).toBe(2560);
+    expect(B.Qb + B.Qa + B.Qr).toBeCloseTo(2560, 0);
+    expect(B.dT).toBeGreaterThan(34);
+    expect(B.dT).toBeLessThan(37);
+  });
+
+  it("charges a phone with every joule from the wall accounted for", () => {
+    const R = M.phoneRun({ W: 20, cap: 15, charger: "std" });
+    expect(Math.abs(R.Es + R.Qc + R.Qcab + R.Qb - R.Ein) / R.Ein).toBeLessThan(1e-9);
+  });
+
+  it("shows one joule as 1.02 m of lift for an apple, 4.47 m/s, and 2.39 mK in 100 mL of water", () => {
+    const Q = M.equivalents(1, 0.1);
+    expect(Q.lift).toBeCloseTo(1 / 0.981, 6);
+    expect(Q.speed).toBeCloseTo(Math.sqrt(20), 6);
+    expect(Q.warm).toBeCloseTo(1 / 418.6, 8);
+  });
+});
