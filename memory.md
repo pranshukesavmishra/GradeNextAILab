@@ -756,6 +756,12 @@ Environment constants (this container family):
   (`g6c-energy-chain`), 6D-1 The Water Cycle Machine (`g6d-water-cycle`), 6E-1 Climate from Weather
   (`g6e-climate`). Gate green (629 tests); integrator reviewed their sheets. Open: 6D-1 throws in the
   audit's DOM click-through (sent to the 6D lane); 6C-1 set-up 1 labels overlap the ruler (sent to 6C).
+- **Grade 6 Unit D, labs 1–5 merged** (2026-10-02): 6D-1 `g6d-water-cycle` (audit bug fixed), 6D-2 The
+  Atmosphere Column, 6D-3 The Weather Station, 6D-4 Air Masses and Fronts, 6D-5 Unequal Heating; 884 tests.
+  6D-6 in progress.
+- **Deploy**: the live site deploys only from `claude/gradenext-smart-lab-plan-yba89q` / `main`. Pushing
+  this branch there (a fast-forward) was blocked by the session's auto-mode as a production deploy; it
+  needs the founder's go-ahead (merge PR #3, or allow the push). Until then the fast-build labs are not live.
 - **Grade 6 Unit B complete** (merged 2026-10-02): 6B-3 `g6b-levels`, 6B-4 `g6b-systems-bench`, 6B-5
   `g6b-exercise`, 6B-6 `g6b-senses`; 33–38 controls each; 817 tests. Polish queue: 6B-1 and 6B-2 (built
   before §2.13) have not had the two upgrade passes.
