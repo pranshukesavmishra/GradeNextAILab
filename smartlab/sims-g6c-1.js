@@ -521,7 +521,7 @@
     BENCH.string(F, [[mx, 0.12, hub], [mx, 0.12, mz]], {});
     A.slottedMass(F, [mx, 0.12, mz], Math.min(p.mRef, 2), { colour: p.mRef >= 50 ? '#8E98A8' : '#C7A24A' });
     BENCH.rule(F, [mx + 0.06, 0.08, 0], [0, 0, 1], 0.6, { up: [-1, 0, 0], width: 0.03 });
-    co([mx, 0.12, mz - 0.03], 34, 30, 'gravitational: lifts ' + mTxt + ' ' + fLen(hl) + (hl > 0.55 ? ' ↑' : ''), A.FORM.gravitational);
+    co([mx, 0.12, mz - 0.03], 40, 24, 'gravitational: lifts ' + mTxt + ' ' + fLen(hl) + (hl > 0.55 ? ' ↑' : ''), A.FORM.gravitational);
     // 2. speed: a cart on a short track, its arrow the speed
     const pr = profile('flat', { len: 0.36 }), offx = -0.40;
     A.track(F, pr.pts, { off: [offx, -0.08, 0.022], legs: false, seg: 0.06 });
@@ -535,7 +535,7 @@
     R3.box(F, [spx, 0.02, 0.01], [0.09, 0.09, 0.02], '#2F3744', { shadow: false });
     BENCH.spring(F, [spx, 0.02, 0.02], [spx, 0.02, 0.02 + free - xs], 0.022, 10, { colour: '#4DD9A8' });
     R3.cylinder(F, [spx, 0.02, 0.02 + free - xs], [spx, 0.02, 0.03 + free - xs], 0.035, '#AEB7C3', { segments: 22, shadow: false });
-    co([spx, 0.02, 0.03 + free - xs], 8, -60, 'elastic: squeezes ' + fLen(xsp), A.FORM.elastic);
+    co([spx, 0.02, 0.03 + free - xs], 46, -96, 'elastic: squeezes ' + fLen(xsp), A.FORM.elastic);
     // 4. warm: a beaker of water and a thermometer
     const bx = 0.19, bh = p.wV >= 1 ? 0.15 : p.wV >= 0.1 ? 0.085 : 0.045, br = p.wV >= 1 ? 0.058 : p.wV >= 0.1 ? 0.034 : 0.016;
     const lv = (p.wV / 1000) / (Math.PI * (br - 0.002) * (br - 0.002));
