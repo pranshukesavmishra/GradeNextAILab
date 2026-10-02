@@ -756,6 +756,9 @@ Environment constants (this container family):
   (`g6c-energy-chain`), 6D-1 The Water Cycle Machine (`g6d-water-cycle`), 6E-1 Climate from Weather
   (`g6e-climate`). Gate green (629 tests); integrator reviewed their sheets. Open: 6D-1 throws in the
   audit's DOM click-through (sent to the 6D lane); 6C-1 set-up 1 labels overlap the ruler (sent to 6C).
+- **Grade 6 Unit B complete** (merged 2026-10-02): 6B-3 `g6b-levels`, 6B-4 `g6b-systems-bench`, 6B-5
+  `g6b-exercise`, 6B-6 `g6b-senses`; 33–38 controls each; 817 tests. Polish queue: 6B-1 and 6B-2 (built
+  before §2.13) have not had the two upgrade passes.
 - **Grade 6 Unit C complete** (merged 2026-10-02): 6C-1 `g6c-energy-chain`, 6C-2 `g6c-particle-box`,
   6C-3 `g6c-heat-transfer`, 6C-4 `g6c-specific-heat`, 6C-5 `g6c-design-studio`; 6 set-ups and 22–34
   controls each; 765 tests. **Polish queue** (integrator review): 6C-3 convection tank is dots in a flat
