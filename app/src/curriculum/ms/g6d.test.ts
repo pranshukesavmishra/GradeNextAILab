@@ -98,3 +98,70 @@ describe("6D-1 The Water Cycle Machine — the models", () => {
     expect(M.lakeOf({ lake: "erie", inflow: 100, closed: true }).tauDye).toBe(Infinity);
   });
 });
+
+describe("6D-2 The Atmosphere Column — the models", () => {
+  const M = engine.InsightLab.models["g6d-atmosphere"] as unknown as {
+    airOf: (p: P) => { x: Record<string, number>; M: number; rho: number };
+    column: (p: P) => { at: (z: number) => { T: number; P: number } };
+    boundaries: (C: unknown) => { z: number; T: number }[];
+    baroOf: (p: P) => { P: number; h: number; len: number };
+    flaskOf: (p: P) => { mAir: number; mNow: number };
+    syrStart: (p: P) => { V: number; P: number };
+    candleState: (p: P, t: number) => { rise: number; x: Record<string, number> };
+    atmRho: (p: P, z: number) => number; atmP: (p: P, z: number) => number;
+    tempToFloat: (p: P, z: number) => number; RD: number;
+  };
+  const std = { lat: "mid", dTs: 0, ozone: 100, sun: "average", P0: 1013.25 };
+
+  it("gives dry air 28.97 g/mol and 1.204 kg/m³ at 20 °C, and makes damp air lighter", () => {
+    const dry = M.airOf({ co2: 420, hum: 0, T: 20, press: 1013.25 });
+    expect(dry.M).toBeCloseTo(28.97, 2);
+    expect(dry.rho).toBeCloseTo(1.204, 3);
+    expect(dry.x.O2).toBeCloseTo(0.2095, 4);
+    expect(M.airOf({ co2: 420, hum: 100, T: 30, press: 1013.25 }).rho).toBeLessThan(dry.rho);
+  });
+
+  it("reproduces the U.S. Standard Atmosphere 1976: 226.32 hPa at 11 km, 54.75 at 20, 8.680 at 32, 1.109 at 47", () => {
+    const C = M.column(std);
+    expect(C.at(11).T).toBeCloseTo(216.65, 2);
+    expect(C.at(11).P / 100).toBeCloseTo(226.32, 1);
+    expect(C.at(20).P / 100).toBeCloseTo(54.75, 1);
+    expect(C.at(32).P / 100).toBeCloseTo(8.680, 2);
+    expect(C.at(47).P / 100).toBeCloseTo(1.109, 2);
+    expect(M.boundaries(C).map((b) => +b.z.toFixed(2))).toEqual([11, 47, 84.85]);           // tropopause, stratopause, mesopause
+  });
+
+  it("loses the stratosphere without ozone and lifts the tropopause to 17 km over the tropics", () => {
+    expect(M.boundaries(M.column({ ...std, ozone: 0 })).length).toBe(1);
+    expect(M.boundaries(M.column({ ...std, lat: "tropics" }))[0].z).toBeCloseTo(17, 1);
+  });
+
+  it("holds up 760 mm of mercury and 10.11 m of water at sea level, a tilted tube longer but no higher", () => {
+    expect(M.baroOf({ alt: 0, wx: 0, fluid: "mercury", tilt: 0 }).h * 1000).toBeCloseTo(760.0, 1);
+    expect(M.baroOf({ alt: 0, wx: 0, fluid: "water", tilt: 0 }).h).toBeCloseTo(10.11, 2);
+    const t = M.baroOf({ alt: 0, wx: 0, fluid: "mercury", tilt: 60 });
+    expect(t.len / t.h).toBeCloseTo(2, 6);
+    expect(M.flaskOf({ alt: 0, wx: 0, fluid: "mercury", tilt: 0, flask: 1000, pump: 0 }).mAir).toBeCloseTo(1.225, 3);
+  });
+
+  it("obeys Boyle and Charles: 50 mL → 72.3 mL at 70.1 kPa, → 60.2 mL at 80 °C, 122.1 kPa if clamped", () => {
+    expect(M.syrStart({ v0: 50, Tb: 20, pout: 70.1, clamp: false }).V).toBeCloseTo(72.27, 1);
+    expect(M.syrStart({ v0: 50, Tb: 80, pout: 101.325, clamp: false }).V).toBeCloseTo(60.23, 1);
+    expect(M.syrStart({ v0: 50, Tb: 80, pout: 101.325, clamp: true }).P / 1000).toBeCloseTo(122.06, 1);
+  });
+
+  it("puts out the candle with about 16 % oxygen left, the water rising mostly as the air cools", () => {
+    const end = M.candleState({ co2: 420, hum: 50, T: 20 }, 1e6);
+    expect(end.x.O2).toBeGreaterThan(0.15);
+    expect(end.x.O2).toBeLessThan(0.165);
+    expect(end.rise).toBeGreaterThan(0.10);
+    expect(end.rise).toBeLessThan(0.20);
+  });
+
+  it("lifts 781 kg with 2,800 m³ at 100 °C on a 15 °C day, and needs a hotter envelope on a hot day", () => {
+    const p = { vol: 2800, mass: 600, Tg: 15 };
+    expect(2800 * (M.atmRho(p, 0) - M.atmP(p, 0) / (M.RD * 373.15))).toBeCloseTo(781, 0);
+    expect(M.tempToFloat(p, 0)).toBeCloseTo(76.1, 1);
+    expect(M.tempToFloat({ ...p, Tg: 35 }, 0)).toBeGreaterThan(M.tempToFloat({ ...p, Tg: 5 }, 0) + 25);
+  });
+});

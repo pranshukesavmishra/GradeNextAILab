@@ -14,4 +14,15 @@ export const LABS_6D: MsLab[] = [
       { value: "residence", label: "Dye a lake: how long does water stay?", teaches: ["D1.6"] },
     ],
   },
+  {
+    id: "g6d-atmosphere", grade: 6, unit: "D", topics: ["D2"], subject: "earth",
+    name: "The Atmosphere Column",
+    setups: [
+      { value: "composition", label: "Take a sample of air apart", teaches: ["D2.1"] },
+      { value: "layers", label: "A rocket through the layers", teaches: ["D2.2"] },
+      { value: "pressure", label: "The weight of the air: Torricelli’s barometer", teaches: ["D2.3"] },
+      { value: "ptrho", label: "Squeeze, heat, seal: a syringe of gas", teaches: ["D2.4"] },
+      { value: "rise", label: "Will the balloon fly?", teaches: ["D2.5"] },
+    ],
+  },
 ];

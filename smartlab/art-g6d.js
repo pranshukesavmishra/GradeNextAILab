@@ -170,9 +170,10 @@
           if (s1 <= s0) return;
           const p0 = F.cam.project(at(s0)), p1 = F.cam.project(at(s1));
           if (!p0.ok || !p1.ok) return;
-          const k = 0.62, r0 = Math.max(0.8, r * p0.s * k), r1 = Math.max(0.8, r * p1.s * k);
+          const k = o.inner || 0.62, r0 = Math.max(0.8, r * p0.s * k), r1 = Math.max(0.8, r * p1.s * k);
           ctx.fillStyle = fl.col; ctx.beginPath(); ctx.moveTo(p0.x + nx * r0, p0.y + ny * r0); ctx.lineTo(p1.x + nx * r1, p1.y + ny * r1); ctx.lineTo(p1.x - nx * r1, p1.y - ny * r1); ctx.lineTo(p0.x - nx * r0, p0.y - ny * r0); ctx.closePath(); ctx.fill();
           if (fl.bubble) { ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1; ctx.stroke(); }
+          if (fl.metal) { ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = Math.max(1, (r0 + r1) * 0.25); ctx.beginPath(); ctx.moveTo(p0.x + nx * r0 * 0.35, p0.y + ny * r0 * 0.35); ctx.lineTo(p1.x + nx * r1 * 0.35, p1.y + ny * r1 * 0.35); ctx.stroke(); }
         });
         ctx.strokeStyle = 'rgba(225,242,250,.75)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(qa.x + nx * ra, qa.y + ny * ra); ctx.lineTo(qb.x + nx * rb, qb.y + ny * rb); ctx.moveTo(qa.x - nx * ra, qa.y - ny * ra); ctx.lineTo(qb.x - nx * rb, qb.y - ny * rb); ctx.stroke();
@@ -561,5 +562,189 @@
     return { x0, x1: x0 + pw };
   }
 
-  window.G6D = { face, pane, chamber, lid, glassTube, fan, fog, rainRig, soilTray, stream, leafShape, leaf, shoot, bag, lamp, stomata, skinTex, spotPlate, tag, hull2, mistTex, rng };
+
+  /* ================= 6D-2: the air ================= */
+  /* a glass cylinder (or bell) as a lit transparent hull between two rings: rim highlights, a reflection band */
+  function glassHull(F, c0, c1, r0, r1, o) {
+    o = o || {};
+    F.push(scale(add(c0, c1), 0.5), () => {
+      const ctx = F.ctx, cam = F.cam, ring = (c, r) => { const q = []; for (let i = 0; i < 32; i++) { const a = i / 32 * TAU; q.push(cam.project([c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r, c[2]])); } return q.some(z => !z.ok) ? null : q; };
+      const a = ring(c0, r0), b = ring(c1, r1); if (!a || !b) return;
+      const H = hull2(a.concat(b)); let x0 = 1e9, x1 = -1e9; H.forEach(q => { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); });
+      ctx.save(); path(ctx, H); ctx.fillStyle = o.tint || 'rgba(200,228,245,.07)'; ctx.fill(); ctx.clip();
+      const gr = ctx.createLinearGradient(x0, 0, x1, 0);
+      gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.1, 'rgba(255,255,255,.32)'); gr.addColorStop(0.17, 'rgba(255,255,255,.04)'); gr.addColorStop(0.82, 'rgba(255,255,255,.03)'); gr.addColorStop(0.9, 'rgba(255,255,255,.18)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gr; ctx.fillRect(x0, -1e4, x1 - x0, 2e4);
+      ctx.restore();
+      ctx.save(); ctx.strokeStyle = o.strong ? 'rgba(225,244,255,.85)' : 'rgba(215,238,255,.55)'; ctx.lineWidth = o.strong ? 1.5 : 1; path(ctx, H); ctx.stroke();
+      ctx.strokeStyle = 'rgba(240,250,255,.8)'; ctx.lineWidth = 1.2; path(ctx, o.openTop ? b : a); ctx.stroke(); if (o.strong) path(ctx, b), ctx.stroke(); ctx.restore();
+    }, o.bias == null ? -0.03 : o.bias);
+  }
+  /* a liquid column inside a round vessel, from z0 to z1 */
+  function liquid(F, c, r, z0, z1, col, o) {
+    o = o || {};
+    if (z1 - z0 < 1e-5) return;
+    F.push([c[0], c[1], (z0 + z1) / 2], () => {
+      const ctx = F.ctx, cam = F.cam, ring = (z, rr) => { const q = []; for (let i = 0; i < 28; i++) { const a = i / 28 * TAU; q.push(cam.project([c[0] + Math.cos(a) * rr, c[1] + Math.sin(a) * rr, z])); } return q.some(v => !v.ok) ? null : q; };
+      const a = ring(z0, r), b = ring(z1, r); if (!a || !b) return;
+      const H = hull2(a.concat(b)); let x0 = 1e9, x1 = -1e9; H.forEach(q => { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); });
+      ctx.save(); path(ctx, H); const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, RX.mix(col, '#000000', 0.35)); g.addColorStop(0.35, RX.mix(col, '#FFFFFF', o.metal ? 0.45 : 0.15)); g.addColorStop(1, RX.mix(col, '#000000', 0.45));
+      ctx.globalAlpha = o.alpha == null ? 0.85 : o.alpha; ctx.fillStyle = g; ctx.fill(); ctx.globalAlpha = 1;
+      path(ctx, b); ctx.fillStyle = RX.mix(col, '#FFFFFF', 0.3); ctx.fill(); ctx.restore();
+    }, o.bias == null ? -0.02 : o.bias);
+  }
+  /* iron wool: a tangle of fine brown-grey strands, rusting orange as it works */
+  function ironWool(F, c, r, h, rust) {
+    F.push(c, () => {
+      const ctx = F.ctx, cam = F.cam, rr = rng(61);
+      ctx.save(); ctx.lineWidth = 0.7;
+      for (let i = 0; i < 90; i++) {
+        const a = rr() * TAU, d = rr() * r, z = c[2] + (rr() - 0.5) * h, p0 = cam.project([c[0] + Math.cos(a) * d, c[1] + Math.sin(a) * d, z]);
+        const a2 = a + (rr() - 0.5) * 2, d2 = rr() * r, p1 = cam.project([c[0] + Math.cos(a2) * d2, c[1] + Math.sin(a2) * d2, z + (rr() - 0.5) * h * 0.6]);
+        if (!p0.ok || !p1.ok) continue;
+        ctx.strokeStyle = RX.mix('#8A8F96', '#B8561E', clamp(rust * (0.6 + 0.6 * rr()), 0, 1));
+        ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.quadraticCurveTo((p0.x + p1.x) / 2 + (rr() - 0.5) * 8, (p0.y + p1.y) / 2 + (rr() - 0.5) * 8, p1.x, p1.y); ctx.stroke();
+      }
+      ctx.restore();
+    }, -0.01);
+  }
+  /* granules (soda lime, calcium chloride) in a little wire basket */
+  function granules(F, c, r, col) {
+    const rr = rng(13);
+    for (let i = 0; i < 26; i++) { const a = rr() * TAU, d = rr() * r; R3.sphere(F, [c[0] + Math.cos(a) * d, c[1] + Math.sin(a) * d, c[2] + rr() * r * 0.8], r * 0.16, col, { shadow: false }); }
+  }
+  /* a vertical scale board with ticks every `step` metres and a label every `big` */
+  function scaleBoard(F, base, H, o) {
+    o = o || {};
+    const w = o.w || 0.05, step = o.step || 0.01, big = o.big || 0.1;
+    R3.box(F, [base[0], base[1] + 0.006, base[2] + H / 2], [w, 0.008, H], o.wood || '#C9A46A', { shadow: false, ambient: 0.55 });
+    F.push([base[0], base[1] - 0.001, base[2] + H / 2], () => {
+      const ctx = F.ctx, cam = F.cam; ctx.save(); ctx.font = mono(o.font || 8); ctx.textBaseline = 'middle';
+      const n = Math.round(H / step);
+      for (let k = 0; k <= n; k++) {
+        const z = base[2] + k * step, isBig = Math.abs(k * step / big - Math.round(k * step / big)) < 1e-6;
+        const a = cam.project([base[0] - w / 2, base[1], z]), b = cam.project([base[0] - w / 2 + w * (isBig ? 0.55 : 0.28), base[1], z]);
+        if (!a.ok || !b.ok) continue;
+        ctx.strokeStyle = 'rgba(30,20,10,.85)'; ctx.lineWidth = isBig ? 1.2 : 0.6; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        if (isBig && k > 0 && (o.every == null || Math.round(k * step / big) % o.every === 0)) { ctx.fillStyle = '#20140A'; ctx.fillText(o.fmt ? o.fmt(k * step) : String(Math.round(k * step * 1000)), b.x + 2, b.y); }
+      }
+      ctx.restore();
+    }, -0.02);
+  }
+  /* a round-bottomed flask with a stopper and tap */
+  function flask(F, base, r, o) {
+    o = o || {};
+    const c = [base[0], base[1], base[2] + r];
+    F.push(c, () => {
+      const ctx = F.ctx, q = F.cam.project(c); if (!q.ok) return;
+      const rp = r * q.s, g = ctx.createRadialGradient(q.x - rp * 0.35, q.y - rp * 0.4, rp * 0.05, q.x, q.y, rp);
+      g.addColorStop(0, 'rgba(255,255,255,.45)'); g.addColorStop(0.3, 'rgba(210,232,248,.10)'); g.addColorStop(0.85, 'rgba(160,200,230,.12)'); g.addColorStop(1, 'rgba(230,245,255,.55)');
+      ctx.save(); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, rp, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(225,242,255,.7)'; ctx.lineWidth = 1.1; ctx.stroke();
+      if (o.vacuum != null) { ctx.fillStyle = 'rgba(160,200,240,' + (0.10 * (1 - o.vacuum)).toFixed(3) + ')'; ctx.beginPath(); ctx.arc(q.x, q.y, rp * 0.96, 0, TAU); ctx.fill(); }
+      ctx.restore();
+    }, -0.02);
+    glassHull(F, [c[0], c[1], c[2] + r * 0.85], [c[0], c[1], c[2] + r * 1.6], r * 0.28, r * 0.28, { bias: -0.025 });
+    R3.cylinder(F, [c[0], c[1], c[2] + r * 1.55], [c[0], c[1], c[2] + r * 1.75], r * 0.3, '#B5462E', { shadow: false });
+    R3.cylinder(F, [c[0], c[1], c[2] + r * 1.75], [c[0], c[1], c[2] + r * 1.95], r * 0.07, '#D8DDE2', { shadow: false });
+    R3.cylinder(F, [c[0] - r * 0.12, c[1], c[2] + r * 1.85], [c[0] + r * 0.12, c[1], c[2] + r * 1.85], r * 0.05, o.open ? '#3A9A5A' : '#C83A2A', { shadow: false });
+    return [c[0], c[1], c[2] + r * 1.95];
+  }
+  /* a hand vacuum pump: barrel, handle, gauge */
+  function pump(F, at, stroke) {
+    R3.cylinder(F, at, add(at, [0, 0, 0.16]), 0.02, '#3A4A62', { segments: 18 });
+    R3.cylinder(F, add(at, [0, 0, 0.16]), add(at, [0, 0, 0.2 + 0.05 * stroke]), 0.005, '#C9D2DC', { shadow: false });
+    R3.box(F, add(at, [0, 0, 0.205 + 0.05 * stroke]), [0.09, 0.016, 0.014], '#1E242C', { shadow: false });
+    R3.cylinder(F, add(at, [0.02, 0, 0.11]), add(at, [0.035, 0, 0.11]), 0.022, '#E9ECEF', { shadow: false });
+  }
+  /* a bell jar on its plate */
+  function bellJar(F, base, r, h) {
+    R3.cylinder(F, base, add(base, [0, 0, 0.012]), r * 1.2, '#8A949E', { segments: 32 });
+    F.push(add(base, [0, 0, h * 0.55]), () => {
+      const ctx = F.ctx, cam = F.cam, pts = [];
+      for (let k = 0; k <= 10; k++) { const u = k / 10, z = base[2] + 0.012 + h * (u < 0.7 ? u / 0.7 * 0.7 : 0.7 + 0.3 * Math.sin((u - 0.7) / 0.3 * Math.PI / 2)), rr = u < 0.7 ? r : r * Math.cos((u - 0.7) / 0.3 * Math.PI / 2); for (let i = 0; i < 24; i++) { const a = i / 24 * TAU; pts.push(cam.project([base[0] + Math.cos(a) * rr, base[1] + Math.sin(a) * rr, z])); } }
+      if (pts.some(p => !p.ok)) return;
+      const H = hull2(pts); let x0 = 1e9, x1 = -1e9; H.forEach(q => { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); });
+      ctx.save(); path(ctx, H); ctx.fillStyle = 'rgba(200,228,245,.06)'; ctx.fill(); ctx.clip();
+      const gr = ctx.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.12, 'rgba(255,255,255,.28)'); gr.addColorStop(0.2, 'rgba(255,255,255,.03)'); gr.addColorStop(0.85, 'rgba(255,255,255,.12)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gr; ctx.fillRect(x0, -1e4, x1 - x0, 2e4); ctx.restore();
+      ctx.save(); ctx.strokeStyle = 'rgba(215,238,255,.6)'; ctx.lineWidth = 1.1; path(ctx, H); ctx.stroke(); ctx.restore();
+    }, -0.04);
+  }
+  /* a gas syringe standing upright: barrel with its scale, the plunger at the gas's volume */
+  function gasSyringe(F, base, o) {
+    const r = 0.015, L = o.len || 0.2, zTop = base[2] + L, zP = base[2] + 0.012 + clamp(o.frac, 0, 1.15) * (L - 0.02);
+    R3.cylinder(F, base, add(base, [0, 0, 0.012]), 0.006, '#D8DDE2', { shadow: false });              // the sealed nozzle
+    liquid(F, base.slice(0, 2).concat([0]), r * 0.92, base[2] + 0.012, zP, '#B8DCFF', { alpha: 0.42 });   // the gas, tinted so it can be seen
+    R3.cylinder(F, [base[0], base[1], zP], [base[0], base[1], zP + 0.01], r * 0.95, '#1A1D22', { shadow: false });   // plunger seal
+    R3.cylinder(F, [base[0], base[1], zP + 0.008], [base[0], base[1], Math.max(zTop + 0.05, zP + 0.06)], 0.004, '#EEF2F6', { shadow: false });
+    R3.cylinder(F, [base[0], base[1], Math.max(zTop + 0.05, zP + 0.06)], [base[0], base[1], Math.max(zTop + 0.056, zP + 0.066)], 0.012, '#EEF2F6', { shadow: false });
+    glassHull(F, [base[0], base[1], base[2] + 0.004], [base[0], base[1], zTop], r, r, { bias: -0.035 });
+    F.push([base[0], base[1] - r, (base[2] + zTop) / 2], () => {
+      const ctx = F.ctx, cam = F.cam; ctx.save(); ctx.font = mono(7.5); ctx.textBaseline = 'middle';
+      for (let v = 0; v <= o.cap; v += 5) {
+        const z = base[2] + 0.012 + v / o.cap * (L - 0.02), a = cam.project([base[0] - r * 0.7, base[1] - r * 0.7, z]), b = cam.project([base[0] - r * 0.2, base[1] - r, z]);
+        if (!a.ok || !b.ok) continue;
+        ctx.strokeStyle = 'rgba(245,250,255,.8)'; ctx.lineWidth = v % 20 === 0 ? 1.1 : 0.6; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x + (v % 20 === 0 ? 4 : 0), b.y); ctx.stroke();
+        if (v % 20 === 0) { ctx.fillStyle = '#F4F8FF'; ctx.fillText(String(v), b.x + 6, b.y); }
+      }
+      ctx.restore();
+    }, -0.045);
+    return { zP };
+  }
+  /* a hot-air balloon: an envelope of twelve gores, its mouth, the burner's flame, the basket and its ropes.
+     c is the basket floor's centre; r the envelope's radius (m) */
+  function balloon(F, c, r, o) {
+    o = o || {};
+    const nG = 16, nV = 14, cols = o.cols || ['#D8342C', '#F2C230', '#2A6FC0', '#F4F0E6'];
+    const mouthZ = c[2] + 1.6 + r * 0.55, ctrZ = mouthZ + r * 1.2;
+    const prof = t => {                                       // t 0 (mouth) .. 1 (crown): radius and height
+      if (t < 0.45) { const u = t / 0.45; return [r * (0.28 + 0.72 * Math.sin(u * Math.PI / 2)), mouthZ + u * (ctrZ - mouthZ)]; }
+      const a = (t - 0.45) / 0.55 * Math.PI / 2; return [r * Math.cos(a), ctrZ + r * Math.sin(a)];
+    };
+    for (let i = 0; i < nG; i++) {
+      const a0 = i / nG * TAU, a1 = (i + 1) / nG * TAU, col = cols[i % cols.length];
+      for (let j = 0; j < nV; j++) {
+        const [r0, z0] = prof(j / nV), [r1, z1] = prof((j + 1) / nV);
+        const P = [[c[0] + Math.cos(a0) * r0, c[1] + Math.sin(a0) * r0, z0], [c[0] + Math.cos(a1) * r0, c[1] + Math.sin(a1) * r0, z0], [c[0] + Math.cos(a1) * r1, c[1] + Math.sin(a1) * r1, z1], [c[0] + Math.cos(a0) * r1, c[1] + Math.sin(a0) * r1, z1]];
+        const am = (a0 + a1) / 2, slope = Math.atan2(r0 - r1, z1 - z0), n = [Math.cos(am) * Math.cos(slope), Math.sin(am) * Math.cos(slope), Math.sin(slope)];
+        const view = sub(F.cam.eye, centroid(P)); if (R3.dot(view, n) < 0) continue;      // only the faces that look at us
+        const lit = F.shade(col, n, { ambient: 0.42 }), glow = o.glow || 0;
+        F.push(centroid(P), () => {
+          const q = P.map(p => F.cam.project(p)); if (q.some(v => !v.ok)) return;
+          const ctx = F.ctx; ctx.fillStyle = glow > 0 && j < 4 ? RX.mix(lit, '#FFB050', glow * (1 - j / 4) * 0.4) : lit; path(ctx, q); ctx.fill(); ctx.strokeStyle = 'rgba(30,20,10,.25)'; ctx.lineWidth = 0.5; ctx.stroke();
+        });
+      }
+    }
+    // ropes from the mouth's load ring to the basket's corners
+    const bw = 0.75, bz = c[2] + 1.1;
+    const load = [];
+    for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2; load.push([[c[0] + Math.cos(a) * r * 0.28, c[1] + Math.sin(a) * r * 0.28, mouthZ], [c[0] + Math.cos(a) * bw * 0.7, c[1] + Math.sin(a) * bw * 0.7, bz]]); }
+    F.push([c[0], c[1], (mouthZ + bz) / 2], () => { const ctx = F.ctx; ctx.save(); ctx.strokeStyle = 'rgba(60,50,40,.85)'; ctx.lineWidth = 1; load.forEach(([a, b]) => { const p = F.cam.project(a), q = F.cam.project(b); if (p.ok && q.ok) { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); } }); ctx.restore(); });
+    // the burner and its flame
+    R3.cylinder(F, [c[0], c[1], bz + 0.15], [c[0], c[1], bz + 0.45], 0.16, '#9AA4AE', { shadow: false });
+    if (o.flame > 0.02) F.push([c[0], c[1], bz + 0.9], () => {
+      const ctx = F.ctx, a = F.cam.project([c[0], c[1], bz + 0.5]), b = F.cam.project([c[0], c[1], bz + 0.5 + 1.2 + 2.2 * o.flame]);
+      if (!a.ok || !b.ok) return;
+      const w = Math.max(3, 0.35 * a.s), fl = 0.85 + 0.15 * Math.sin((o.t || 0) * 23);
+      const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y); g.addColorStop(0, 'rgba(120,170,255,.95)'); g.addColorStop(0.25, 'rgba(255,200,90,.95)'); g.addColorStop(0.7, 'rgba(255,120,30,.75)'); g.addColorStop(1, 'rgba(255,90,20,0)');
+      ctx.save(); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(a.x - w, a.y); ctx.quadraticCurveTo(a.x - w * 1.4, (a.y + b.y) / 2, b.x, a.y + (b.y - a.y) * fl); ctx.quadraticCurveTo(a.x + w * 1.4, (a.y + b.y) / 2, a.x + w, a.y); ctx.closePath(); ctx.fill();
+      const gl = ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, w * 6); gl.addColorStop(0, 'rgba(255,190,90,.45)'); gl.addColorStop(1, 'rgba(255,190,90,0)'); ctx.fillStyle = gl; ctx.fillRect(a.x - w * 6, a.y - w * 6, w * 12, w * 12); ctx.restore();
+    }, -0.05);
+    // the wicker basket
+    window.BENCH.texBox(F, [c[0], c[1], c[2] + 0.55], [bw * 1.4, bw * 1.4, 1.1], wickerTex(), { ambient: 0.5 });
+    return { mouthZ, topZ: ctrZ + r, ctrZ };
+  }
+  function wickerTex() {
+    if (cache.wicker) return cache.wicker;
+    const c = canvas(128, 128), x = c.getContext('2d');
+    x.fillStyle = '#8A5E2E'; x.fillRect(0, 0, 128, 128);
+    for (let y = 0; y < 128; y += 6) for (let k = 0; k < 128; k += 12) { x.fillStyle = (y / 6 + k / 12) % 2 ? '#B07A40' : '#9A6634'; x.fillRect(k, y, 12, 5); }
+    x.strokeStyle = 'rgba(40,24,10,.6)'; for (let k = 0; k < 128; k += 12) { x.beginPath(); x.moveTo(k, 0); x.lineTo(k, 128); x.stroke(); }
+    x.fillStyle = '#5A3A1C'; x.fillRect(0, 0, 128, 8);
+    cache.wicker = c; return c;
+  }
+
+  window.G6D = { face, pane, chamber, lid, glassTube, fan, fog, rainRig, soilTray, stream, leafShape, leaf, shoot, bag, lamp, stomata, skinTex, spotPlate, tag, hull2, mistTex, rng,
+                 glassHull, liquid, ironWool, granules, scaleBoard, flask, pump, bellJar, gasSyringe, balloon };
 })();
