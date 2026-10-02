@@ -756,6 +756,10 @@ Environment constants (this container family):
   (`g6c-energy-chain`), 6D-1 The Water Cycle Machine (`g6d-water-cycle`), 6E-1 Climate from Weather
   (`g6e-climate`). Gate green (629 tests); integrator reviewed their sheets. Open: 6D-1 throws in the
   audit's DOM click-through (sent to the 6D lane); 6C-1 set-up 1 labels overlap the ruler (sent to 6C).
+- **Grade 6 Unit E complete** (merged 2026-10-02): 6E-1 `g6e-climate`, 6E-2 `g6e-circulation`, 6E-3
+  `g6e-generation`, 6E-4 `g6e-nurture`, 6E-5 `g6e-heredity` (E5+E6), 18–34 controls each, two upgrade
+  passes recorded in `docs/labs/6e.md`; 702 tests. Watch: `g6a-living-tank/shoal` failed once in the full
+  suite while four lanes loaded the CPU and passed 4/4 after; unconfirmed whether it is a timeout.
 - `ship.mjs` now runs `audit.mjs <id>` (new one-lab mode) — ship.mjs alone had missed 6D-1's bug.
 - Lanes active: 6B, 6C, 6D, 6E (4, the founder's limit). Paused with plans committed in their
   worktrees: 6F, 7A–7F, 8A–8F. The 2026-10-01 night stop was the account's usage limit, not a bug.
