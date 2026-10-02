@@ -49,4 +49,16 @@ export const LABS_6B: MsLab[] = [
       { value: "nervous", label: "Nervous: the ruler-drop test", teaches: ["B4.6"] },
     ],
   },
+  {
+    id: "g6b-exercise", grade: 6, unit: "B", topics: ["B5"], subject: "biology",
+    name: "The Body During Exercise",
+    setups: [
+      { value: "meal", label: "A meal: from gut to blood to muscle", teaches: ["B5.1"] },
+      { value: "oxygen", label: "What makes us breathe harder?", teaches: ["B5.2"] },
+      { value: "move", label: "Nerves recruit muscle fibres", teaches: ["B5.3"] },
+      { value: "balance", label: "A long ride in the heat: water and the kidneys", teaches: ["B5.4"] },
+      { value: "exercise", label: "Rest, ride, recover: every system", teaches: ["B5.5"] },
+      { value: "break", label: "Break one system: watch the others", teaches: ["B5.6"] },
+    ],
+  },
 ];

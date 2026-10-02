@@ -432,3 +432,66 @@ describe("6B-4 The Body Systems Bench — the models", () => {
     expect(D.filter((t) => !t.caught).length).toBeGreaterThan(T.filter((t) => !t.caught).length);
   });
 });
+
+describe("6B-5 The Body During Exercise — the models", () => {
+  type P = Record<string, unknown>;
+  type Row = { HR: number; SV: number; CO: number; vo2: number; vmax: number; VE: number; paco2: number; pao2: number; sat: number; L: number; temp: number; water: number; flow: Record<string, number> };
+  type Proto = { T: (p: P) => number; power: (p: P) => (t: number) => number; gas: (p: P) => (t: number) => string };
+  const M = engine.InsightLab.models["g6b-exercise"] as unknown as {
+    bodyRun: (p: P, power: (t: number) => number, gas: (t: number) => string, T: number, dt: number) => Row[];
+    PROTO: Record<string, Proto>; mealRun: (p: P) => { peak: { G: number; m: number }; g2h: number; at: (m: number) => { G: number } };
+    endurance: (p: P, f: number) => number; holdRun: (p: P, T: number, dt: number) => { out: { n: number; emg: number; F: number }[] }; BASE: () => P;
+  };
+  const p = (o: P) => ({ ...M.BASE(), ...o });
+  const run = (o: P, dt = 1) => { const q = p(o), pr = M.PROTO[q.setup as string]; return M.bodyRun(q, pr.power(q), pr.gas(q), pr.T(q), dt); };
+
+  it("riding: O₂ rises ~11.8 mL/min per W; heart rate = output ÷ stroke volume; breathing holds CO₂ at 40", () => {
+    const R = run({ setup: "exercise", power: 120, ride: 6 }), r = R[15 + 350];
+    expect(r.vo2).toBeCloseTo(0.216 + 0.0118 * 120, 2);
+    expect(r.HR).toBeCloseTo((r.CO * 1000) / r.SV, 6);
+    expect(r.HR).toBeGreaterThan(140); expect(r.HR).toBeLessThan(165);
+    expect(r.paco2).toBeCloseTo(40, 0); expect(r.sat).toBeGreaterThan(0.95);
+    expect(r.flow.muscle).toBeGreaterThan(4 * R[5].flow.muscle);
+    expect(r.flow.gut).toBeLessThan(R[5].flow.gut);
+  });
+
+  it("training raises stroke volume and VO₂max, so the same ride costs fewer beats", () => {
+    const u = run({ setup: "exercise", power: 100 })[300], t = run({ setup: "exercise", power: 100, fit: "trained" })[300];
+    expect(t.HR).toBeLessThan(u.HR - 20); expect(t.vmax).toBeGreaterThan(u.vmax);
+  });
+
+  it("breathing follows CO₂: 5 % CO₂ nearly quadruples it; 12 % O₂ barely raises it though SpO₂ falls to ~75 %", () => {
+    const c = run({ setup: "oxygen", gas: "co2", power: 0 }), h = run({ setup: "oxygen", gas: "hypox", power: 0 });
+    expect(c[290].VE / c[10].VE).toBeGreaterThan(3.3);
+    expect(h[290].VE / h[10].VE).toBeLessThan(1.4); expect(h[290].sat).toBeLessThan(0.8);
+  });
+
+  it("a 75 g glucose drink: peak ~9, back under 7.8 by 2 h when healthy; type 2 at or above 11.1 (WHO)", () => {
+    const n = M.mealRun(p({ setup: "meal" })), t2 = M.mealRun(p({ setup: "meal", diab: "type2" }));
+    expect(n.peak.G).toBeGreaterThan(7.5); expect(n.peak.G).toBeLessThan(10); expect(n.g2h).toBeLessThan(7.8);
+    expect(t2.g2h).toBeGreaterThanOrEqual(11.1);
+    expect(M.mealRun(p({ setup: "meal", food: "pasta" })).peak.G).toBeLessThan(n.peak.G);
+    expect(M.mealRun(p({ setup: "meal", carbs: 10 })).at(240).G).toBeCloseTo(5, 1);
+  });
+
+  it("motor units: Rohmert's endurance — 50 % held about a minute, 15 % for many minutes; EMG grows as units tire", () => {
+    const q = p({ setup: "move" });
+    expect(M.endurance(q, 50)).toBeGreaterThan(45); expect(M.endurance(q, 50)).toBeLessThan(90);
+    expect(M.endurance(q, 15)).toBeGreaterThan(300);
+    const H = M.holdRun(p({ setup: "move", force: 30 }), 60, 0.5).out;
+    expect(H[120].emg).toBeGreaterThan(H[0].emg); expect(H[120].n).toBeGreaterThanOrEqual(H[0].n);
+    expect(H[120].F).toBeCloseTo(30, 0);
+  });
+
+  it("broken systems are covered by the others: anaemia raises heart rate and lactate, asthma lets CO₂ rise", () => {
+    const h = run({ setup: "break", fault: "anaemia", power: 0 + 100 }), healthy = run({ setup: "exercise", power: 100 });
+    expect(h[300].HR).toBeGreaterThan(healthy[300].HR + 20); expect(h[300].L).toBeGreaterThan(2);
+    expect(run({ setup: "break", fault: "asthma", power: 100 })[300].paco2).toBeGreaterThan(45);
+  });
+
+  it("two hours in the heat: water lost, the heart drifts up, drinking softens it", () => {
+    const dry = run({ setup: "balance", airT: 32, power: 80, drink: 0, hours: 2 }, 10), wet = run({ setup: "balance", airT: 32, power: 80, drink: 0.8, hours: 2 }, 10);
+    expect(dry[719].water).toBeGreaterThan(0.8); expect(dry[719].HR).toBeGreaterThan(dry[60].HR);
+    expect(wet[719].HR).toBeLessThan(dry[719].HR);
+  });
+});
