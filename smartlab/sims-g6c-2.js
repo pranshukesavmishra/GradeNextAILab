@@ -353,7 +353,7 @@
     if (!S.cam || S.camFor !== p.setup) {
       const H = { particles: { theta: -1.40, phi: 0.18, dist: 0.72, target: [0.10, 0, 0.19] }, total: { theta: -1.35, phi: 0.30, dist: 0.95, target: [0.10, 0, 0.12] }, thermometer: { theta: -1.30, phi: 0.26, dist: 0.62, target: [0.10, 0, 0.11] } }[p.setup];
       S.cam = Camera({ theta: H.theta, phi: H.phi, dist: H.dist, target: H.target.slice(), fov: 0.72 });
-      S.cam.minDist = 0.3; S.cam.maxDist = 4; S.camFor = p.setup;
+      S.cam.minDist = 0.3; S.cam.maxDist = 4; S.camFor = p.setup; S._nar = null;
     }
   }
   /* the run's own clock: what each set-up advances */
@@ -413,6 +413,8 @@
   /* ============================================================
      HELPERS
      ============================================================ */
+  let NAR = false;                                                    // set each frame: callouts lead out less far on a phone
+  const co = (F, at, dx, dy, t, c, o) => window.R3.callout(F, at, NAR ? dx * 0.45 : dx, dy, t, c, o);
   const mono = (s, w) => (w || 500) + ' ' + s + 'px "IBM Plex Mono",monospace';
   function tag(ctx, x, y, text, col, o) {
     o = o || {};
@@ -649,7 +651,7 @@
     else if (p.obj === 'tea') M.beaker(F, [oc[0], oc[1], J.top - 0.02], 0.04, 0.09, 0.07 * (1 - f * 0.0), { T: p.objT * (1 - f), tint: '#C88A4A' });
     else { R3.cylinder(F, [oc[0] - 0.22, oc[1] + 0.05, 0], [oc[0] - 0.22, oc[1] + 0.05, 0.20], 0.10, '#C9D0D8', { segments: 30, caps: false, ambient: 0.45 }); R3.label(F, [oc[0] - 0.22, oc[1] - 0.06, 0.24], 'poured over the ice', '#E8EEF8', { size: 9 }); }
     if (glow > 0.02) F.push(oc, () => { const q = S.cam.project(oc); if (!q.ok) return; const r = 30 * (0.3 + glow), gr = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, r); gr.addColorStop(0, 'rgba(255,190,90,' + (0.8 * glow).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,140,40,0)'); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(q.x - r, q.y - r, 2 * r, 2 * r); ctx.restore(); }, -0.03);
-    R3.callout(F, oc, -70, -40, O.name + ' · ' + p.objT.toFixed(0) + ' °C · ' + (I.m < 1e-3 ? (I.m * 1e6).toFixed(I.m < 1e-5 ? 3 : 1) + ' mg' : I.m < 1 ? (I.m * 1000).toFixed(0) + ' g' : I.m.toFixed(1) + ' kg'), '#FFD27A', { keep: true });
+    co(F, oc, -70, -40, O.name + ' · ' + p.objT.toFixed(0) + ' °C · ' + (I.m < 1e-3 ? (I.m * 1e6).toFixed(I.m < 1e-5 ? 3 : 1) + ' mg' : I.m < 1 ? (I.m * 1000).toFixed(0) + ' g' : I.m.toFixed(1) + ' kg'), '#FFD27A', { keep: true });
     F.render();
     // the card: two particle boxes at the same temperature
     const cw = Math.min(270, W * 0.31), at = K.cardSlot(g, S, 'same temperature, more particles', cw, { x: W - cw - 10, y: K.HDR + 4 });
@@ -703,6 +705,8 @@
 
   function drawStage(S, g) {
     const p = S.p;
+    const nar = g.w < kit().NARROW; NAR = nar;                          // a phone: step back so the labels fit
+    if (S.cam && S._nar !== nar) { if (S._nar != null || nar) S.cam.dist *= nar ? 1.4 : 1 / 1.4; S._nar = nar; }
     if (p.setup === 'particles') return drawParticles(S, g);
     if (p.setup === 'brownian') return drawBrownian(S, g);
     if (p.setup === 'phases') return drawPhases(S, g);

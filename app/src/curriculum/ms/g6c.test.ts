@@ -139,3 +139,63 @@ describe("6C-2 The Particle Box — the models", () => {
     expect(M.thermoRun({ th: "glass", V: 1, Ts: 80, Tp0: 20, surf: "water", epsSet: 0.95 }).eq).toBeCloseTo(66.63, 1);
   });
 });
+
+describe("6C-3 The Heat Transfer Bench — the models", () => {
+  const M = engine.InsightLab.models["g6c-heat-transfer"] as unknown as {
+    MAT: Record<string, { k: number }>; ROD: { dip: number }; RODS: string[];
+    blocksRun: (o: P) => { rows: { TA: number; TB: number; q: number }[]; Tmix: number };
+    rodsRun: (o: P) => Record<string, { frames: { x: number }[]; xSteady: number }>;
+    tankNew: (o: P) => { T: Float64Array; heat: number }; tankStep: (K: unknown, dt: number) => void;
+    tankStats: (K: unknown) => { top: number; bot: number; umax: number };
+    leslie: (o: P) => { mV: number; M: number };
+    contactT: (a: unknown, TA: number, b: unknown, TB: number) => number;
+    iceBlock: (o: P) => { tMelt: number | null };
+    mixRun: (o: P) => { Tideal: number; rows: { TH: number; TC: number; lostH: number; gainC: number; toRoom: number }[] };
+  };
+
+  it("sends heat from hot to cold whichever block is which, and meets at ΣmcT/Σmc = 59.0 °C", () => {
+    const a = M.blocksRun({ mA: 0.5, TA: 80, matA: "alu", mB: 0.5, TB: 10, matB: "copper", contact: "paste" });
+    const b = M.blocksRun({ mA: 0.5, TA: 10, matA: "alu", mB: 0.5, TB: 80, matB: "copper", contact: "paste" });
+    expect(a.Tmix).toBeCloseTo(58.98, 2);
+    a.rows.forEach((r) => expect(Math.sign(r.q) === Math.sign(r.TA - r.TB) || Math.abs(r.q) < 1e-9).toBe(true));
+    expect(b.rows[1].q).toBeLessThan(0);
+  });
+
+  it("reproduces Ingen-Housz: the rods' melted lengths in the order of k, copper/steel lengths² near the k ratio 25", () => {
+    const R = M.rodsRun({ Tb: 95, d: 6, h: 10, Tw: 58, tEnd: 1800 }), len = (k: string) => R[k].frames[R[k].frames.length - 1].x - M.ROD.dip;
+    const order = ["copper", "alu", "brass", "iron", "steel", "glass", "wood"];
+    for (let i = 1; i < order.length; i++) expect(len(order[i])).toBeLessThan(len(order[i - 1]));
+    expect((R.copper.xSteady - M.ROD.dip) * 100).toBeCloseTo(16.7, 1);
+    const ratio = (len("copper") / len("steel")) ** 2;
+    expect(ratio / (401 / 16)).toBeGreaterThan(0.95);
+    expect(ratio / (401 / 16)).toBeLessThan(1.15);
+  });
+
+  it("turns the tank over when heated from below, and stratifies it when heated from the top", { timeout: 30000 }, () => {
+    const run = (pos: string) => { const K = M.tankNew({ liq: "water", P: 30, pos }); for (let i = 0; i < 800; i++) M.tankStep(K, 0.1); return M.tankStats(K); };
+    const low = run("left"), top = run("top");
+    expect(low.umax).toBeGreaterThan(2 * top.umax);
+    expect(top.top - top.bot).toBeGreaterThan(0.3);
+  });
+
+  it("gives Leslie's cube at 90 °C the readings in the ratio of ε: black 5.73 mV, white 5.49, polished 0.30", () => {
+    const r = (f: string) => M.leslie({ Tw: 90, face: f, d: 0.1 }).mV;
+    expect(r("black")).toBeCloseTo(5.727, 2);
+    expect(r("white") / r("black")).toBeCloseTo(0.91 / 0.95, 6);
+    expect(r("shiny")).toBeCloseTo(0.301, 2);
+  });
+
+  it("lowers skin to 20.6 °C on aluminium and 30.2 °C on wood, and melts ice far faster on aluminium than acrylic", () => {
+    expect(M.contactT(M.MAT.skin, 33, M.MAT.alu, 20)).toBeCloseTo(20.6, 1);
+    expect(M.contactT(M.MAT.skin, 33, M.MAT.wood, 20)).toBeCloseTo(30.2, 1);
+    const a = M.iceBlock({ mat: "alu", Troom: 20, tEnd: 3000 }).tMelt as number, b = M.iceBlock({ mat: "acrylic", Troom: 20, tEnd: 3000 }).tMelt as number;
+    expect(a).toBeGreaterThan(60); expect(a).toBeLessThan(150);
+    expect(b / a).toBeGreaterThan(10);
+  });
+
+  it("mixes 100 g at 80 °C with 100 g at 20 °C to 50.2 °C, and balances the ledger: lost = gained + leaked", () => {
+    const X = M.mixRun({ mH: 0.1, TH: 80, add: "cold", mC: 0.1, TC: 20, cup: "foam" }), e = X.rows[X.rows.length - 1];
+    expect(X.Tideal).toBeCloseTo(50.21, 2);
+    expect(Math.abs(e.lostH - e.gainC - e.toRoom)).toBeLessThan(1e-6 * e.lostH);
+  });
+});

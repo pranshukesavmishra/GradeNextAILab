@@ -569,5 +569,85 @@
     ctx.restore();
   }
 
-  window.G6C = { FORM, quad, track, cart, launcher, clay, cellTex, solarPanel, floodlight, battery, motorPulley, slottedMass, lamp, lead, kettle, bikeWheel, phone, charger, sankey, energyBars, mono, syringe, iceJar, glassThermometer, probe, irGun, cellPlate, particles, microField };
+
+  /* ============================================================
+     THE HEAT BENCH — Ingen-Housz's trough, Leslie's cube, a thermopile, a convection tank
+     ============================================================ */
+  /* a steel trough of hot water; rods leave its side along +x. c: the trough's centre on the bench */
+  function trough(F, c, w, d, h, o) {
+    o = o || {}; const ir = o.ir, M = window.MEAS;
+    const col = ir ? M.irc(ir, o.T || 20, 0.16, '#000') : '#A9B2BD';
+    R3.box(F, [c[0], c[1], h / 2], [w, d, h], col, { ambient: 0.45 });
+    // the water surface, steaming
+    quad(F, [[c[0] - w / 2 + 0.006, c[1] - d / 2 + 0.006, h - 0.004], [c[0] + w / 2 - 0.006, c[1] - d / 2 + 0.006, h - 0.004], [c[0] + w / 2 - 0.006, c[1] + d / 2 - 0.006, h - 0.004], [c[0] - w / 2 + 0.006, c[1] + d / 2 - 0.006, h - 0.004]], ir ? M.irc(ir, o.T || 20, 0.96, '#000') : '#5E8FB8', { ambient: 0.6, bias: -0.01 });
+    if (!ir && (o.T || 20) > 60) M.steam(F, [c[0], c[1], h], clamp(((o.T || 20) - 60) / 40, 0, 1), o.phase || 0, { rise: 0.14 });
+  }
+  /* one rod out of the trough along +x: Ts its temperatures (node 0 at the trough), wax melted up to xMelt (m from the trough) */
+  function waxRod(F, a, L, r, mat, Ts, xMelt, o) {
+    o = o || {}; const ir = o.ir, M = window.MEAS, n = 12;
+    for (let k = 0; k < n; k++) {
+      const x0 = a[0] + k / n * L, x1 = a[0] + (k + 1) / n * L, i = Math.round((k + 0.5) / n * (Ts.length - 1)), T = Ts[i];
+      const col = ir ? M.irc(ir, T, o.eps == null ? 0.3 : o.eps, '#000') : o.colour;
+      R3.cylinder(F, [x0, a[1], a[2]], [x1, a[1], a[2]], r, col, { segments: 12, caps: false, shadow: false, ambient: 0.45 });
+      // the wax coat, where it has not melted: a pale sleeve
+      if (!ir && (k + 0.5) / n * L > xMelt) R3.cylinder(F, [x0, a[1], a[2]], [x1, a[1], a[2]], r * 1.18, mix(o.colour, '#F4E8C4', 0.55), { segments: 10, caps: false, shadow: false, ambient: 0.6 });
+    }
+    R3.cylinder(F, [a[0] + L, a[1], a[2]], [a[0] + L + 0.001, a[1], a[2]], r, ir ? M.irc(ir, Ts[Ts.length - 1], 0.3, '#000') : o.colour, { segments: 12, shadow: false });
+    // the beads: stuck under the rod every 3 cm until the wax holding them melts, then lying on the bench below
+    if (!ir) for (let x = 0.03; x < L - 0.005; x += 0.03) {
+      const fallen = x <= xMelt;
+      R3.sphere(F, fallen ? [a[0] + x, a[1] + 0.006 * Math.sin(x * 97), 0.004] : [a[0] + x, a[1], a[2] - r - 0.004], 0.0035, fallen ? '#C9A44A' : '#E8C25A', { shadow: false });
+    }
+  }
+  /* Leslie's cube on a turntable: four vertical faces with their own finishes; faceTo is the face turned toward −y (the detector) */
+  function leslieCube(F, c, s, faces, rot, o) {
+    o = o || {}; const ir = o.ir, M = window.MEAS, T = o.T || 20, h = s / 2;
+    R3.cylinder(F, [c[0], c[1], 0], [c[0], c[1], 0.012], s * 0.7, '#2A303A', { segments: 28 });
+    const z0 = 0.012, z1 = 0.012 + s, ang = rot;
+    const P = (dx, dy, z) => [c[0] + dx * Math.cos(ang) - dy * Math.sin(ang), c[1] + dx * Math.sin(ang) + dy * Math.cos(ang), z];
+    // faces in order: −y, +x, +y, −x of the cube's own frame
+    const sides = [[[-h, -h], [h, -h]], [[h, -h], [h, h]], [[h, h], [-h, h]], [[-h, h], [-h, -h]]];
+    sides.forEach((sd, k) => {
+      const f = faces[k], col = ir ? M.irc(ir, T, f.eps, '#000') : f.colour;
+      quad(F, [P(sd[0][0], sd[0][1], z0), P(sd[1][0], sd[1][1], z0), P(sd[1][0], sd[1][1], z1), P(sd[0][0], sd[0][1], z1)], col, { ambient: f.eps < 0.3 ? 0.65 : 0.45, edge: '#3A414C' });
+    });
+    quad(F, [P(-h, -h, z1), P(h, -h, z1), P(h, h, z1), P(-h, h, z1)], ir ? M.irc(ir, T, 0.3, '#000') : '#B8C0CA', { ambient: 0.55 });
+    R3.cylinder(F, P(0, 0, z1), P(0, 0, z1 + 0.03), 0.012, '#2A303A', { segments: 14, shadow: false });
+    return { top: z1 };
+  }
+  /* a thermopile detector: a polished cone collecting onto a black disc, on a stand, aimed along dir */
+  function thermopile(F, at, dir, o) {
+    o = o || {}; const d = norm(dir);
+    R3.cylinder(F, [at[0], at[1], 0], [at[0], at[1], at[2] - 0.02], 0.006, '#596372', { segments: 8, shadow: false });
+    R3.box(F, [at[0], at[1], 0.008], [0.08, 0.08, 0.016], '#2A303A', { shadow: false });
+    R3.cylinder(F, at, add(at, scale(d, -0.05)), 0.022, '#2E3440', { segments: 18, capColour: '#0C0E12' });
+    R3.cylinder(F, add(at, scale(d, 0.035)), at, 0.03, '#D8DEE6', { segments: 20, inner: 0.012, ambient: 0.65 });
+  }
+  /* a glass tank seen from the front: the field image (temperature or dye) painted on its mid-plane */
+  function glassTank(F, c, W, H, D, img, o) {
+    o = o || {};
+    R3.box(F, [c[0], c[1], 0.006], [W + 0.03, D + 0.03, 0.012], '#2A303A', { shadow: false });
+    if (img) R3.texPlane(F, [c[0], c[1], 0.012 + H / 2], [W / 2, 0, 0], [0, 0, -H / 2], img, { grid: 2, bias: 0.0 });
+    // the glass: four panes as tinted outlines, the near one faintest
+    const z0 = 0.012, z1 = 0.012 + H + 0.01, x0 = c[0] - W / 2, x1 = c[0] + W / 2, y0 = c[1] - D / 2, y1 = c[1] + D / 2;
+    const pane = (P, a) => quad(F, P, '#CFE8F6', { alpha: a, edge: 'rgba(220,240,255,.8)', flat: true, bias: -0.02 });
+    pane([[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], 0.08);
+    pane([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], 0.12);
+    pane([[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]], 0.12);
+    pane([[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], 0.12);
+  }
+  /* an ice cube of side s on a surface at z, melting: frac 1 → 0 */
+  function iceCube(F, c, s, frac, o) {
+    const f = clamp(frac, 0, 1), sz = s * Math.cbrt(Math.max(0.02, f));
+    if (frac > 0.005) R3.box(F, [c[0], c[1], c[2] + sz / 2], [sz, sz, sz], '#DCEEFA', { ambient: 0.7, shadow: false, alpha: 0.85 });
+    const pr = s * (0.6 + 1.1 * Math.sqrt(1 - f));
+    F.push([c[0], c[1], c[2] + 0.0005], () => {
+      const q = F.cam.project([c[0], c[1], c[2] + 0.0005]), e = F.cam.project([c[0] + pr, c[1], c[2]]), g = F.cam.project([c[0], c[1] + pr, c[2]]);
+      if (!q.ok || !e.ok || !g.ok) return;
+      const ctx = F.ctx; ctx.save(); ctx.fillStyle = 'rgba(150,200,240,.35)'; ctx.strokeStyle = 'rgba(230,245,255,.6)';
+      ctx.beginPath(); ctx.ellipse(q.x, q.y, Math.hypot(e.x - q.x, e.y - q.y), Math.max(1, Math.hypot(g.x - q.x, g.y - q.y)), Math.atan2(e.y - q.y, e.x - q.x), 0, TAU); ctx.fill(); ctx.stroke(); ctx.restore();
+    }, -0.005);
+  }
+
+  window.G6C = { FORM, quad, track, cart, launcher, clay, cellTex, solarPanel, floodlight, battery, motorPulley, slottedMass, lamp, lead, kettle, bikeWheel, phone, charger, sankey, energyBars, mono, syringe, iceJar, glassThermometer, probe, irGun, cellPlate, particles, microField, trough, waxRod, leslieCube, thermopile, glassTank, iceCube };
 })();

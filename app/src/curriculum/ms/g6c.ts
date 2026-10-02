@@ -26,4 +26,16 @@ export const LABS_6C: MsLab[] = [
       { value: "thermometer", label: "A thermometer changes what it measures", teaches: ["C2.6"] },
     ],
   },
+  {
+    id: "g6c-heat-transfer", grade: 6, unit: "C", topics: ["C3"], subject: "physics",
+    name: "The Heat Transfer Bench — Conduction, Convection, Radiation",
+    setups: [
+      { value: "direction", label: "Which way does the energy go?", teaches: ["C3.1"] },
+      { value: "conduction", label: "Ingen-Housz’s rods: conduction", teaches: ["C3.2"] },
+      { value: "convection", label: "A tank of water: convection", teaches: ["C3.3"] },
+      { value: "radiation", label: "Leslie’s cube: radiation", teaches: ["C3.4"] },
+      { value: "materials", label: "Metal feels colder: conductors and insulators", teaches: ["C3.5"] },
+      { value: "equilibrium", label: "Mix them: thermal equilibrium", teaches: ["C3.6"] },
+    ],
+  },
 ];
