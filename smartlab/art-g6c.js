@@ -409,5 +409,165 @@
     ctx.restore();
   }
 
-  window.G6C = { FORM, quad, track, cart, launcher, clay, cellTex, solarPanel, floodlight, battery, motorPulley, slottedMass, lamp, lead, kettle, bikeWheel, phone, charger, sankey, energyBars, mono };
+
+  /* ============================================================
+     THE PARTICLE BENCH — a Boyle syringe, an ice calorimeter, thermometers
+     ============================================================ */
+  /* a 60 mL syringe standing nozzle-down in a clamp, sealed, a platform on its plunger carrying slotted masses.
+     base: the sealed tip on the bench; V (mL) the gas/liquid volume; o.fill colour, o.load kg, o.cap mL */
+  function syringe(F, base, V, o) {
+    o = o || {};
+    const cap = o.cap || 60, r = 0.0145, Lb = cap * 1e-6 / (Math.PI * r * r), z0 = base[2] + 0.03, ctx = F.ctx;
+    const zV = z0 + V * 1e-6 / (Math.PI * r * r);
+    // the sealed nozzle and its cap
+    R3.cylinder(F, [base[0], base[1], base[2] + 0.012], [base[0], base[1], z0], 0.004, '#E8EEF4', { segments: 12, shadow: false });
+    R3.cylinder(F, [base[0], base[1], base[2]], [base[0], base[1], base[2] + 0.014], 0.007, '#C8463A', { segments: 14 });
+    // the contents: a column inside the barrel
+    if (o.fill) F.push([base[0], base[1] - r * 0.5, (z0 + zV) / 2], () => {
+      const a = F.cam.project([base[0] - r * 0.92, base[1], z0]), b = F.cam.project([base[0] + r * 0.92, base[1], zV]);
+      if (!a.ok || !b.ok) return;
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+      const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, rgba(o.fill, 0.35)); g.addColorStop(0.45, rgba(mix(o.fill, '#FFFFFF', 0.4), 0.55)); g.addColorStop(1, rgba(o.fill, 0.4));
+      ctx.save(); ctx.fillStyle = g; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); ctx.restore();
+    }, -0.01);
+    // the barrel: clear plastic, with its printed scale
+    F.push([base[0], base[1] - r, z0 + Lb / 2], () => {
+      const a = F.cam.project([base[0] - r, base[1], z0]), b = F.cam.project([base[0] + r, base[1], z0 + Lb]);
+      if (!a.ok || !b.ok) return;
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+      ctx.save();
+      const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, 'rgba(210,225,240,.35)'); g.addColorStop(0.2, 'rgba(255,255,255,.12)'); g.addColorStop(0.7, 'rgba(255,255,255,.05)'); g.addColorStop(1, 'rgba(160,180,200,.4)');
+      ctx.fillStyle = g; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      ctx.strokeStyle = 'rgba(230,240,250,.8)'; ctx.lineWidth = 1; ctx.strokeRect(x0 + 0.5, y0, x1 - x0 - 1, y1 - y0);
+      ctx.fillStyle = '#1C2230'; ctx.strokeStyle = 'rgba(20,28,40,.85)'; ctx.font = mono(Math.max(7, (x1 - x0) * 0.22), 600); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      for (let v = 0; v <= cap + 1e-9; v += 1) {
+        const q = F.cam.project([base[0], base[1] - r, z0 + v * 1e-6 / (Math.PI * r * r)]); if (!q.ok) continue;
+        const big = v % 10 === 0, mid = v % 5 === 0, w = big ? (x1 - x0) * 0.45 : mid ? (x1 - x0) * 0.32 : (x1 - x0) * 0.2;
+        ctx.lineWidth = big ? 1.1 : 0.7; ctx.beginPath(); ctx.moveTo(x0 + 2, q.y); ctx.lineTo(x0 + 2 + w, q.y); ctx.stroke();
+        if (big && v > 0 && (x1 - x0) > 18) ctx.fillText(String(v), x0 + 4 + w, q.y);
+      }
+      ctx.restore();
+    }, -0.03);
+    // flange, plunger seal (black rubber at the volume), rod, thumb plate and the load platform
+    R3.box(F, [base[0], base[1], z0 + Lb + 0.002], [0.07, 0.03, 0.004], '#E8EEF4', { shadow: false, ambient: 0.6 });
+    R3.cylinder(F, [base[0], base[1], zV], [base[0], base[1], zV + 0.008], r * 0.96, '#1A1D22', { segments: 20, shadow: false });
+    const top = zV + 0.008 + Lb * 0.9;
+    R3.box(F, [base[0], base[1], (zV + 0.008 + top) / 2], [0.004, r * 1.4, top - zV - 0.008], '#E8EEF4', { shadow: false, ambient: 0.6 });
+    R3.cylinder(F, [base[0], base[1], top], [base[0], base[1], top + 0.004], 0.03, '#E8EEF4', { segments: 22, shadow: false });
+    // slotted masses on the plate
+    const n = Math.round((o.load || 0) / 0.5);
+    for (let k = 0; k < n; k++) R3.cylinder(F, [base[0], base[1], top + 0.004 + k * 0.009], [base[0], base[1], top + 0.012 + k * 0.009], 0.034, k % 2 ? '#8E98A8' : '#A7B1C0', { segments: 22, shadow: false });
+    return { topZ: top + 0.004 + n * 0.009, z0, zV, r };
+  }
+  /* Lavoisier's ice calorimeter, simplified: a jar of crushed ice on a funnel; meltwater drips into a cylinder */
+  function iceJar(F, c, r, H, iceFrac, o) {
+    o = o || {};
+    const ctx = F.ctx, R = r;
+    // the jar (insulated: a double wall)
+    window.MEAS.beaker(F, c, R + 0.004, H, 0, { tint: '#E8F2FA' });                    // a glass jar, so the ice can be seen
+    // the crushed ice: a cloud of facets filling the jar to iceFrac
+    const top = c[2] + 0.004 + (H - 0.01) * clamp(iceFrac, 0, 1);
+    F.push([c[0], c[1] - R * 0.7, (c[2] + top) / 2], () => {
+      const r0 = F.cam.project([c[0] - R, c[1], c[2] + 0.004]), r1 = F.cam.project([c[0] + R, c[1], top]); if (!r0.ok || !r1.ok) return;
+      const x0 = Math.min(r0.x, r1.x), x1 = Math.max(r0.x, r1.x), y0 = Math.min(r0.y, r1.y), y1 = Math.max(r0.y, r1.y);
+      ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, x1 - x0, y1 - y0); ctx.clip();
+      ctx.fillStyle = 'rgba(214,232,246,.9)'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      const rr = (function (s) { return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 10000) / 10000; }; })(17);
+      for (let k = 0; k < 160; k++) {
+        const x = x0 + rr() * (x1 - x0), y = y0 + rr() * (y1 - y0 + 6), sz = 3 + rr() * 6;
+        ctx.fillStyle = rr() < 0.5 ? 'rgba(255,255,255,.75)' : 'rgba(170,200,226,.6)';
+        ctx.beginPath(); ctx.moveTo(x, y - sz); ctx.lineTo(x + sz * 0.8, y); ctx.lineTo(x, y + sz * 0.7); ctx.lineTo(x - sz * 0.9, y + 0.1); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }, -0.02);
+    // the funnel under the jar and its drip
+    R3.cylinder(F, [c[0], c[1], c[2] - 0.004], [c[0], c[1], c[2]], R + 0.006, '#BFC8D2', { segments: 30, shadow: false });
+    return { top };
+  }
+  /* a liquid-in-glass thermometer: a bulb, a bore with its red column, a scale; tip at the bulb, reading in °C */
+  function glassThermometer(F, tip, dir, reading, o) {
+    o = o || {};
+    const d = norm(dir), L = o.len || 0.26, lo = o.lo == null ? -10 : o.lo, hi = o.hi == null ? 110 : o.hi, ctx = F.ctx;
+    const b = add(tip, scale(d, 0.012)), e = add(tip, scale(d, L));
+    R3.sphere(F, add(tip, scale(d, 0.006)), 0.0055, '#C8302A', { shadow: false, rim: 0.4 });
+    R3.cylinder(F, b, e, 0.0042, '#E8F1F8', { segments: 14, shadow: false, ambient: 0.7 });
+    const f = clamp((reading - lo) / (hi - lo), 0, 1), col = add(b, scale(d, (L - 0.02) * f));
+    R3.cylinder(F, b, col, 0.0012, '#D8302A', { segments: 8, shadow: false, bias: -0.004, vivid: true });
+    if (o.scale !== false) F.push(add(b, scale(d, L / 2)), () => {
+      ctx.save(); ctx.strokeStyle = 'rgba(30,36,48,.8)'; ctx.fillStyle = '#1C2230'; ctx.font = mono(7.5, 600); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      for (let v = Math.ceil(lo / 10) * 10; v <= hi; v += 10) {
+        const q = F.cam.project(add(b, scale(d, (L - 0.02) * (v - lo) / (hi - lo)))); if (!q.ok) continue;
+        ctx.beginPath(); ctx.moveTo(q.x + 3, q.y); ctx.lineTo(q.x + 7, q.y); ctx.stroke(); if (v % 20 === 0) ctx.fillText(String(v), q.x + 8, q.y);
+      }
+      ctx.restore();
+    }, -0.006);
+    return e;
+  }
+  /* a stainless probe on its lead to a handheld meter */
+  function probe(F, tip, dir, len, r, o) {
+    o = o || {};
+    const d = norm(dir), e = add(tip, scale(d, len));
+    R3.cylinder(F, tip, e, r, '#C9D0D8', { segments: 12, shadow: false, ambient: 0.55 });
+    R3.cylinder(F, e, add(e, scale(d, 0.06)), r * 2.6, '#2A2F38', { segments: 14, shadow: false });
+    return add(e, scale(d, 0.06));
+  }
+  /* an infrared gun: a pistol body aimed along dir, its red aiming spot on the target */
+  function irGun(F, at, target, o) {
+    o = o || {};
+    const d = norm(sub(target, at)), up = [0, 0, 1], side = norm(cross(d, up)), u2 = cross(side, d);
+    R3.box(F, at, [0.12, 0.035, 0.05], '#2C3442', { axes: [d, side, u2], ambient: 0.45 });
+    R3.box(F, add(add(at, scale(d, -0.03)), scale(u2, -0.06)), [0.03, 0.03, 0.08], '#C8463A', { axes: [d, side, u2], ambient: 0.45, shadow: false });
+    R3.cylinder(F, add(at, scale(d, 0.06)), add(at, scale(d, 0.07)), 0.016, '#596372', { segments: 16, shadow: false });
+    R3.polyline(F, [add(at, scale(d, 0.07)), target], '#FF3B3B', { width: 1, alpha: 0.6, bias: -0.02 });
+    R3.sphere(F, target, 0.004, '#FF3B3B', { shadow: false, vivid: true, bias: -0.03 });
+  }
+
+  /* ============================================================
+     2D — the particle cell and the microscope field
+     ============================================================ */
+  /* a flat glass cell holding the particles, standing on a Peltier stage that glows warm or cool.
+     box: {x, y, w, h} in px; heat −1..1 (cold..hot); returns the inner rectangle */
+  function cellPlate(ctx, box, heat, o) {
+    o = o || {};
+    const { x, y, w, h } = box, wall = 7;
+    ctx.save();
+    // the stage
+    const sh = 26, sy = y + h;
+    const sg = ctx.createLinearGradient(0, sy, 0, sy + sh); sg.addColorStop(0, '#3A4252'); sg.addColorStop(1, '#1C222C');
+    ctx.fillStyle = sg; ctx.fillRect(x - 18, sy, w + 36, sh);
+    const hc = heat > 0 ? '255,110,60' : '90,170,255', ha = Math.min(1, Math.abs(heat));
+    const gl = ctx.createLinearGradient(0, sy - 2, 0, sy + 8); gl.addColorStop(0, 'rgba(' + hc + ',' + (0.85 * ha).toFixed(3) + ')'); gl.addColorStop(1, 'rgba(' + hc + ',0)');
+    ctx.fillStyle = gl; ctx.fillRect(x, sy - 2, w, 10);
+    ctx.fillStyle = '#9AA4B4'; ctx.font = mono(9, 600); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(o.stageLabel != null ? o.stageLabel : (heat > 0.02 ? 'HEATER' : heat < -0.02 ? 'COOLER' : 'STAGE'), x + w / 2, sy + sh / 2 + 2);
+    // the cell: dark inside, glass walls catching the light
+    const bg = ctx.createRadialGradient(x + w * 0.4, y + h * 0.3, 0, x + w / 2, y + h / 2, Math.max(w, h) * 0.75);
+    bg.addColorStop(0, '#16223A'); bg.addColorStop(1, '#070C18');
+    ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
+    const gw = (x0, y0, ww, hh, horiz) => { const g = horiz ? ctx.createLinearGradient(0, y0, 0, y0 + hh) : ctx.createLinearGradient(x0, 0, x0 + ww, 0); g.addColorStop(0, 'rgba(200,225,245,.55)'); g.addColorStop(0.5, 'rgba(255,255,255,.18)'); g.addColorStop(1, 'rgba(150,180,210,.5)'); ctx.fillStyle = g; ctx.fillRect(x0, y0, ww, hh); };
+    gw(x - wall, y - (o.lid === false ? 0 : wall), wall, h + (o.lid === false ? 0 : wall), false); gw(x + w, y - (o.lid === false ? 0 : wall), wall, h + (o.lid === false ? 0 : wall), false);
+    if (o.lid !== false) gw(x, y - wall, w, wall, true);
+    ctx.restore();
+    return { x, y, w, h };
+  }
+  /* particles as lit spheres: pts [{x, y, r, c}] in px, drawn back to front by size */
+  function particles(ctx, pts, o) {
+    o = o || {};
+    pts.forEach(q => {
+      if (q.r < 1.6) { ctx.fillStyle = q.c; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(0.8, q.r), 0, TAU); ctx.fill(); return; }
+      RX.ball(ctx, q.x, q.y, q.r, q.c, { rim: 0.5, sub: 0.3, shadow: false });
+    });
+  }
+  /* a round microscope field with a µm scale */
+  function microField(ctx, cx, cy, R, o) {
+    o = o || {};
+    ctx.save();
+    ctx.fillStyle = '#05070C'; ctx.fillRect(cx - R - 20, cy - R - 20, 2 * R + 40, 2 * R + 40);
+    const g = ctx.createRadialGradient(cx - R * 0.15, cy - R * 0.2, R * 0.1, cx, cy, R);
+    g.addColorStop(0, o.bright || '#E9EFE6'); g.addColorStop(0.8, o.mid || '#CFD8CC'); g.addColorStop(1, '#8D978A');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  window.G6C = { FORM, quad, track, cart, launcher, clay, cellTex, solarPanel, floodlight, battery, motorPulley, slottedMass, lamp, lead, kettle, bikeWheel, phone, charger, sankey, energyBars, mono, syringe, iceJar, glassThermometer, probe, irGun, cellPlate, particles, microField };
 })();

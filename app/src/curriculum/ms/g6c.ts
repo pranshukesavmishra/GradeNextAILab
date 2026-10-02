@@ -14,4 +14,16 @@ export const LABS_6C: MsLab[] = [
       { value: "everyday", label: "A kettle, a brake, a charger", teaches: ["C1.6", "C1.4"] },
     ],
   },
+  {
+    id: "g6c-particle-box", grade: 6, unit: "C", topics: ["C2"], subject: "physics",
+    name: "The Particle Box — Matter, Motion and Temperature",
+    setups: [
+      { value: "particles", label: "Squeeze it: the space between particles", teaches: ["C2.1"] },
+      { value: "brownian", label: "A bead that will not keep still", teaches: ["C2.2"] },
+      { value: "phases", label: "Solid, liquid, gas: one substance", teaches: ["C2.3"] },
+      { value: "temperature", label: "Two gases, one temperature", teaches: ["C2.4"] },
+      { value: "total", label: "A spark against a bucket of bathwater", teaches: ["C2.5"] },
+      { value: "thermometer", label: "A thermometer changes what it measures", teaches: ["C2.6"] },
+    ],
+  },
 ];

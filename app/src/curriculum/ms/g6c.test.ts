@@ -89,3 +89,53 @@ describe("6C-1 The Energy Chain Bench — the models", () => {
     expect(Q.warm).toBeCloseTo(1 / 418.6, 8);
   });
 });
+
+describe("6C-2 The Particle Box — the models", () => {
+  const M = engine.InsightLab.models["g6c-particle-box"] as unknown as {
+    mdNew: (o: P) => unknown; mdStep: (m: unknown, dt: number, o?: P) => void; energy: (m: unknown) => number;
+    tempOf: (m: unknown, k?: number) => number; coordination: (m: unknown) => number;
+    syringeOf: (p: P, t: number) => { V: number; dV: number; P: number };
+    Dof: (d: number, T: number, liq: string) => number;
+    beadTracks: (d: number, T: number, liq: string, n: number, f: number, s: number) => Float64Array[];
+    perrin: (d: number, T: number, liq: string, tr: Float64Array[], lag: number) => number;
+    iceRun: (o: P) => { melt: number; Q: number };
+    thermoRun: (o: P) => { eq: number };
+    vrms3: (m: number, T: number) => number;
+  };
+
+  it("conserves energy in the bare molecular dynamics (velocity Verlet, no bath) to 0.5 %", () => {
+    const m = M.mdNew({ N: 100, W: 16, H: 16, T: 0.6, seed: 3, jitter: 0.1 }), E0 = M.energy(m);
+    for (let i = 0; i < 1500; i++) M.mdStep(m, 0.004);
+    expect(Math.abs((M.energy(m) - E0) / E0)).toBeLessThan(5e-3);
+  });
+
+  it("holds the heat bath's temperature and packs a cold crystal tighter than a hot fluid", () => {
+    const run = (T: number) => { const m = M.mdNew({ N: 120, W: 24, H: 28, T, seed: 5, andersen: 2, gravity: 0.004, jitter: 0.04 }); for (let i = 0; i < 1200; i++) M.mdStep(m, 0.005); return m; };
+    const cold = run(0.3), hot = run(1.5);
+    expect(M.tempOf(cold)).toBeGreaterThan(0.25);
+    expect(M.tempOf(cold)).toBeLessThan(0.35);
+    expect(M.coordination(cold)).toBeGreaterThan(4.8);
+    expect(M.coordination(hot)).toBeLessThan(M.coordination(cold) - 1.5);
+  });
+
+  it("squeezes 40 mL of air to 25.3 mL under 4 kg (Boyle) and 40 mL of water by only 1.08 µL (K = 2.2 GPa)", () => {
+    expect(M.syringeOf({ fill: "air", V0: 40, load: 4, Tc: 20 }, 1e9).V).toBeCloseTo(25.30, 1);
+    expect(M.syringeOf({ fill: "water", V0: 40, load: 4, Tc: 20 }, 1e9).dV * 1000).toBeCloseTo(1.08, 2);
+  });
+
+  it("gives a 1 µm bead in water D = kT/6πηr = 0.429 µm²/s, and Perrin's count within 5 % of 6.022 × 10²³", () => {
+    expect(M.Dof(1, 20, "water") * 1e12).toBeCloseTo(0.4286, 3);
+    const NA = M.perrin(1, 20, "water", M.beadTracks(1, 20, "water", 300, 600, 5), 300);
+    expect(Math.abs(NA / 6.022e23 - 1)).toBeLessThan(0.05);
+  });
+
+  it("melts 219 g of ice with a 250 g mug of tea at 70 °C, and gives xenon 239 m/s to helium's 1368 at 300 K", () => {
+    expect(M.iceRun({ obj: "tea", T: 70, logm: Math.log10(0.25), ice: 1 }).melt * 1000).toBeCloseTo(219.3, 0);
+    expect(M.vrms3(4.0, 300)).toBeCloseTo(1368, -1);
+    expect(M.vrms3(131.29, 300)).toBeCloseTo(239, 0);
+  });
+
+  it("settles a 20 °C glass thermometer in a 1 mL drop at 80 °C at 66.6 °C", () => {
+    expect(M.thermoRun({ th: "glass", V: 1, Ts: 80, Tp0: 20, surf: "water", epsSet: 0.95 }).eq).toBeCloseTo(66.63, 1);
+  });
+});
