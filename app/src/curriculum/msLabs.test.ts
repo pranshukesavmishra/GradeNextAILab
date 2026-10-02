@@ -49,7 +49,7 @@ describe("Grades 6–8 labs run every set-up without a page", () => {
         expect(ro.length).toBeGreaterThan(0);
         for (const r of ro) expect(String(r.value), r.label).not.toMatch(/NaN|Infinity|undefined/);
         if (run.equation) expect(run.equation(S)).not.toMatch(/NaN|undefined/);
-      });
+      }, 30_000); // heavy set-ups (the 6A-1 shoal) pass 5 s idle but not on a loaded machine; the checks are unchanged
     }
   }
 });
