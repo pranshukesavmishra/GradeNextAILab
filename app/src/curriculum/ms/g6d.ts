@@ -37,4 +37,16 @@ export const LABS_6D: MsLab[] = [
       { value: "station", label: "Four days at the station", teaches: ["D3.6"] },
     ],
   },
+  {
+    id: "g6d-fronts", grade: 6, unit: "D", topics: ["D4"], subject: "earth",
+    name: "Air Masses and Fronts",
+    setups: [
+      { value: "masses", label: "Air masses on the move", teaches: ["D4.1"] },
+      { value: "highs", label: "Highs, lows and the wind between", teaches: ["D4.2"] },
+      { value: "cold", label: "A cold front, in section", teaches: ["D4.3"] },
+      { value: "warm", label: "A warm front, in section", teaches: ["D4.4"] },
+      { value: "occluded", label: "Occluded and stationary fronts", teaches: ["D4.5"] },
+      { value: "track", label: "Track a front from three stations", teaches: ["D4.6"] },
+    ],
+  },
 ];

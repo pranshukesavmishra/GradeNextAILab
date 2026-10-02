@@ -229,3 +229,61 @@ describe("6D-3 The Weather Station — the models", () => {
     expect(M.windAt(10, 2, 1.5)).toBeLessThan(M.windAt(10, 2, 0.03));
   });
 });
+
+describe("6D-4 Air Masses and Fronts — the models", () => {
+  const M = engine.InsightLab.models["g6d-fronts"] as unknown as {
+    airStart: (p: P) => { T: number; Td: number; snow: number; lake: number };
+    airStep: (A: unknown, p: P, d: number) => { T: number; Td: number; snow: number; lake: number };
+    geostrophic: (dP: number, dn: number, lat: number) => number;
+    windAt: (p: P, x: number, y: number) => { u: number; v: number; ug: number; vg: number };
+    divAt: (p: P, x: number, y: number) => number;
+    margules: (p: P) => number; LCL: (T: number, Td: number) => number;
+    frontOf: (p: P) => { slope: number; lift: number; R: number; hours: number; unstable: boolean };
+    arrival: (p: P, k: number) => number;
+  };
+  const run = (o: P) => { const p = { speed: 10, ...o }, A = M.airStart(p); M.airStep(A, p, 10); return A; };
+
+  it("grows lake-effect snow from winter cP air over the Great Lakes, but not in summer", () => {
+    const w = run({ path: "lakes", season: "winter" }), s = run({ path: "lakes", season: "summer" });
+    expect(w.lake).toBeGreaterThanOrEqual(13);
+    expect(w.snow).toBeGreaterThan(10);
+    expect(s.snow).toBe(0);
+  });
+
+  it("turns Gulf air to fog going north in winter, and wrings Pacific air dry over the Rockies", () => {
+    const mt = run({ path: "mtnorth", season: "winter" });
+    expect(mt.T - mt.Td).toBeLessThan(0.5);
+    const mp = run({ path: "mprockies", season: "winter" });
+    expect(mp.Td).toBeLessThan(-8);
+  });
+
+  it("gives a 10.8 m/s geostrophic wind for 4 hPa per 300 km at 45° N", () => {
+    expect(M.geostrophic(4, 300, 45)).toBeCloseTo(10.77, 2);
+  });
+
+  it("spins air anticlockwise and inward round a northern low, the other way in the south, and lifts it there", () => {
+    const base = { lx: -600, ly: 0, hx: 700, hy: 0, low: 990, high: 1030, lat: 45, surface: "land" };
+    const n = M.windAt({ ...base, hemi: "north" }, -600, 300), s = M.windAt({ ...base, hemi: "south" }, -600, 300);
+    expect(n.u).toBeLessThan(0);                                         // north of a northern low the wind blows west
+    expect(s.u).toBeGreaterThan(0);
+    expect(n.v).toBeLessThan(0);                                         // and in toward the low
+    expect(M.divAt({ ...base, hemi: "north" }, -450, 0)).toBeLessThan(0);
+    expect(M.divAt({ ...base, hemi: "north" }, 700, 0)).toBeGreaterThan(0);
+  });
+
+  it("slopes a cold front 1:117 by Margules and lifts warm air faster than a warm front's 1:189", () => {
+    const cold = { setup: "cold", Tw: 18, Tdw: 15, Tc: 4, shear: 40, fspeed: 12, lapse: 7.5 }, warm = { setup: "warm", Tw: 16, Tdw: 13, Tc: 2, shear: 25, fspeed: 7, lapse: 4.5 };
+    expect(1 / M.margules(cold)).toBeCloseTo(117.2, 0);
+    expect(1 / M.margules(warm)).toBeCloseTo(188.6, 0);
+    const C = M.frontOf(cold), Wf = M.frontOf(warm);
+    expect(C.lift).toBeGreaterThan(2 * Wf.lift);
+    expect(C.R).toBeGreaterThan(Wf.R);
+    expect(Wf.hours).toBeGreaterThan(5 * C.hours);
+    expect(M.LCL(18, 15)).toBe(375);
+  });
+
+  it("times the front between stations: 300 km in 7.5 h is 40 km/h", () => {
+    const p = { x0: -200, trackSpeed: 40, spacing: 300 };
+    expect(M.arrival(p, 2) - M.arrival(p, 1)).toBeCloseTo(7.5, 6);
+  });
+});
