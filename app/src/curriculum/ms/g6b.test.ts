@@ -360,3 +360,205 @@ describe("6B-3 Levels of Organization — the models", () => {
     expect(at({ organ: "skin", act: "run", airT: 25 }) / 60).toBeLessThan(45);
   });
 });
+
+describe("6B-4 The Body Systems Bench — the models", () => {
+  type P = Record<string, unknown>;
+  type Kid = { at: (m: number) => { V: number; Uosm: number; urine: number; adh: number } };
+  const M = engine.InsightLab.models["g6b-systems-bench"] as unknown as {
+    amyRun: (p: P) => { end: number }; amyRate: (p: P, S: number, a: number) => number;
+    kidneyRun: (p: P) => Kid; sgOf: (o: number) => number; KID: { GFR: number };
+    cardiacOut: (p: P) => number; meanP: (p: P) => number; pulseP: (p: P) => number; branchFlow: (p: P, n?: number) => number;
+    poiseuilleRatio: (p: P) => number; eta: (h: number) => number;
+    boyle: (p: P, pull: number) => { vb: number; dP: number; dV: number };
+    armForces: (p: P) => { bic: number; tri: number; load: number };
+    trialsOf: (p: P) => { t: number; d: number; caught: boolean }[]; tOfD: (d: number) => number; BASE: () => P;
+  };
+  const p = (o: P) => ({ ...M.BASE(), ...o });
+
+  it("amylase: Q10 = 2 halves the rate 10 °C colder; it clears starch fastest near 40 °C and never at 60 °C or in stomach acid", () => {
+    expect(M.amyRate(p({ temp: 27 }), 1, 1) / M.amyRate(p({ temp: 37 }), 1, 1)).toBeCloseTo(0.5, 6);
+    const end = (o: P) => M.amyRun(p(o)).end;
+    expect(end({ temp: 37 })).toBeLessThan(end({ temp: 20 }));
+    expect(end({ temp: 45 })).toBeLessThan(end({ temp: 37 }));
+    expect(end({ temp: 60 })).toBe(Infinity); expect(end({ temp: 5 })).toBe(Infinity);
+    expect(end({ pH: 2 })).toBe(Infinity); expect(end({ boiled: true })).toBe(Infinity);
+  });
+
+  it("kidneys: 125 mL/min is 180 L a day; a litre of water brings ~12 mL/min of dilute urine, saline barely any; no ADH, ~17 L a day", () => {
+    expect(M.KID.GFR * 1440 / 1000).toBe(180);
+    const w = M.kidneyRun(p({ kind: "water" })), s = M.kidneyRun(p({ kind: "saline" }));
+    let peak = 0; for (let m = 0; m <= 240; m += 1) peak = Math.max(peak, w.at(m).V);
+    expect(peak).toBeGreaterThan(10); expect(peak).toBeLessThan(14);
+    expect(w.at(180).urine / s.at(180).urine).toBeGreaterThan(3.5);
+    expect(w.at(90).Uosm).toBeLessThan(100);
+    expect(M.kidneyRun(p({ kind: "none", adh: "none" })).at(200).V * 1.44).toBeCloseTo(17.3, 0);
+    expect(M.sgOf(1000)).toBeCloseTo(1.026, 3);
+  });
+
+  it("circulation: 70 × 70 mL ≈ 4.9 L/min at 93 mmHg, 120/73; halving the width is 16× the resistance; flow halves near 80 %", () => {
+    expect(M.cardiacOut(p({}))).toBeCloseTo(4.9, 6);
+    expect(M.meanP(p({}))).toBeCloseTo(93, 6);
+    expect(M.pulseP(p({}))).toBeCloseTo(46.7, 1);
+    expect(M.poiseuilleRatio(p({ narrow: 50 }))).toBeCloseTo(16, 6);
+    const f = (n: number) => M.branchFlow(p({}), n) / M.branchFlow(p({}), 0);
+    expect(f(0.5)).toBeGreaterThan(0.95); expect(f(0.8)).toBeGreaterThan(0.4); expect(f(0.8)).toBeLessThan(0.5); expect(f(0.9)).toBeLessThan(0.1);
+    expect(M.eta(0.45)).toBeCloseTo(4.34, 2);
+    const ex = p({ hr: 150, sv: 100 });
+    expect(M.meanP(ex)).toBeGreaterThan(100); expect(M.meanP(ex)).toBeLessThan(120);     // exercise: resistance falls, pressure rises gently
+    expect(M.branchFlow(ex, 0.7) / M.branchFlow(ex, 0)).toBeLessThan(0.65);               // the same plaque bites harder in exercise
+  });
+
+  it("bell jar: Boyle's law; a hole stops the lungs filling; a real chest takes ~370 mL for 1.5 cm of diaphragm", () => {
+    const B = M.boyle(p({}), 3);
+    expect(101325 * 2.0 / (2.0 + B.dV - B.vb)).toBeCloseTo(101325 + B.dP, 3);
+    expect(B.vb).toBeGreaterThan(0.2);
+    expect(M.boyle(p({ hole: true }), 3).vb).toBe(0);
+    expect(M.boyle(p({ model: "chest" }), 1.5).vb).toBeCloseTo(0.37, 2);
+    expect(M.boyle(p({ model: "chest", comp: "stiff" }), 1.5).vb).toBeLessThan(M.boyle(p({ model: "chest" }), 1.5).vb);
+  });
+
+  it("forearm lever: 5 kg at 90° takes ~490 N of biceps; pushing down works the triceps instead", () => {
+    const A = M.armForces(p({}));
+    expect(A.bic).toBeCloseTo(488.7, 0); expect(A.tri).toBe(0);
+    const Pu = M.armForces(p({ mode: "push" }));
+    expect(Pu.bic).toBe(0); expect(Pu.tri).toBeGreaterThan(500);
+  });
+
+  it("ruler drop: t = √(2d/g) — 19.6 cm is 0.200 s; a 30 cm ruler times up to 0.247 s; texting drops it", () => {
+    expect(M.tOfD(0.196)).toBeCloseTo(0.2, 3);
+    expect(M.tOfD(0.3)).toBeCloseTo(0.247, 3);
+    const T = M.trialsOf(p({})), D = M.trialsOf(p({ distract: true }));
+    T.forEach((t) => expect(t.d).toBeCloseTo(0.5 * 9.81 * t.t * t.t, 9));
+    expect(D.filter((t) => !t.caught).length).toBeGreaterThan(T.filter((t) => !t.caught).length);
+  });
+});
+
+describe("6B-5 The Body During Exercise — the models", () => {
+  type P = Record<string, unknown>;
+  type Row = { HR: number; SV: number; CO: number; vo2: number; vmax: number; VE: number; paco2: number; pao2: number; sat: number; L: number; temp: number; water: number; flow: Record<string, number> };
+  type Proto = { T: (p: P) => number; power: (p: P) => (t: number) => number; gas: (p: P) => (t: number) => string };
+  const M = engine.InsightLab.models["g6b-exercise"] as unknown as {
+    bodyRun: (p: P, power: (t: number) => number, gas: (t: number) => string, T: number, dt: number) => Row[];
+    PROTO: Record<string, Proto>; mealRun: (p: P) => { peak: { G: number; m: number }; g2h: number; at: (m: number) => { G: number } };
+    endurance: (p: P, f: number) => number; holdRun: (p: P, T: number, dt: number) => { out: { n: number; emg: number; F: number }[] }; BASE: () => P;
+  };
+  const p = (o: P) => ({ ...M.BASE(), ...o });
+  const run = (o: P, dt = 1) => { const q = p(o), pr = M.PROTO[q.setup as string]; return M.bodyRun(q, pr.power(q), pr.gas(q), pr.T(q), dt); };
+
+  it("riding: O₂ rises ~11.8 mL/min per W; heart rate = output ÷ stroke volume; breathing holds CO₂ at 40", () => {
+    const R = run({ setup: "exercise", power: 120, ride: 6 }), r = R[15 + 350];
+    expect(r.vo2).toBeCloseTo(0.216 + 0.0118 * 120, 2);
+    expect(r.HR).toBeCloseTo((r.CO * 1000) / r.SV, 6);
+    expect(r.HR).toBeGreaterThan(140); expect(r.HR).toBeLessThan(165);
+    expect(r.paco2).toBeCloseTo(40, 0); expect(r.sat).toBeGreaterThan(0.95);
+    expect(r.flow.muscle).toBeGreaterThan(4 * R[5].flow.muscle);
+    expect(r.flow.gut).toBeLessThan(R[5].flow.gut);
+  });
+
+  it("training raises stroke volume and VO₂max, so the same ride costs fewer beats", () => {
+    const u = run({ setup: "exercise", power: 100 })[300], t = run({ setup: "exercise", power: 100, fit: "trained" })[300];
+    expect(t.HR).toBeLessThan(u.HR - 20); expect(t.vmax).toBeGreaterThan(u.vmax);
+  });
+
+  it("breathing follows CO₂: 5 % CO₂ nearly quadruples it; 12 % O₂ barely raises it though SpO₂ falls to ~75 %", () => {
+    const c = run({ setup: "oxygen", gas: "co2", power: 0 }), h = run({ setup: "oxygen", gas: "hypox", power: 0 });
+    expect(c[290].VE / c[10].VE).toBeGreaterThan(3.3);
+    expect(h[290].VE / h[10].VE).toBeLessThan(1.4); expect(h[290].sat).toBeLessThan(0.8);
+  });
+
+  it("a 75 g glucose drink: peak ~9, back under 7.8 by 2 h when healthy; type 2 at or above 11.1 (WHO)", () => {
+    const n = M.mealRun(p({ setup: "meal" })), t2 = M.mealRun(p({ setup: "meal", diab: "type2" }));
+    expect(n.peak.G).toBeGreaterThan(7.5); expect(n.peak.G).toBeLessThan(10); expect(n.g2h).toBeLessThan(7.8);
+    expect(t2.g2h).toBeGreaterThanOrEqual(11.1);
+    expect(M.mealRun(p({ setup: "meal", food: "pasta" })).peak.G).toBeLessThan(n.peak.G);
+    expect(M.mealRun(p({ setup: "meal", carbs: 10 })).at(240).G).toBeCloseTo(5, 1);
+  });
+
+  it("motor units: Rohmert's endurance — 50 % held about a minute, 15 % for many minutes; EMG grows as units tire", () => {
+    const q = p({ setup: "move" });
+    expect(M.endurance(q, 50)).toBeGreaterThan(45); expect(M.endurance(q, 50)).toBeLessThan(90);
+    expect(M.endurance(q, 15)).toBeGreaterThan(300);
+    const H = M.holdRun(p({ setup: "move", force: 30 }), 60, 0.5).out;
+    expect(H[120].emg).toBeGreaterThan(H[0].emg); expect(H[120].n).toBeGreaterThanOrEqual(H[0].n);
+    expect(H[120].F).toBeCloseTo(30, 0);
+  });
+
+  it("broken systems are covered by the others: anaemia raises heart rate and lactate, asthma lets CO₂ rise", () => {
+    const h = run({ setup: "break", fault: "anaemia", power: 0 + 100 }), healthy = run({ setup: "exercise", power: 100 });
+    expect(h[300].HR).toBeGreaterThan(healthy[300].HR + 20); expect(h[300].L).toBeGreaterThan(2);
+    expect(run({ setup: "break", fault: "asthma", power: 100 })[300].paco2).toBeGreaterThan(45);
+  });
+
+  it("two hours in the heat: water lost, the heart drifts up, drinking softens it", () => {
+    const dry = run({ setup: "balance", airT: 32, power: 80, drink: 0, hours: 2 }, 10), wet = run({ setup: "balance", airT: 32, power: 80, drink: 0.8, hours: 2 }, 10);
+    expect(dry[719].water).toBeGreaterThan(0.8); expect(dry[719].HR).toBeGreaterThan(dry[60].HR);
+    expect(wet[719].HR).toBeLessThan(dry[719].HR);
+  });
+});
+
+describe("6B-6 Stimulus, Signal, Response, Memory — the models", () => {
+  type P = Record<string, unknown>;
+  const M = engine.InsightLab.models["g6b-senses"] as unknown as {
+    SITES: Record<string, { T: number }>; fieldSpacing: (s: string) => number; density: (s: string) => number;
+    pTwo: (s: string, sep: number, f?: number) => number; pHeavier: (I: number, d: number, f?: number) => number; vol: (p: P) => number;
+    touchTrials: (p: P) => boolean[]; arrival: (p: P, f: string) => number; hickRT: (p: P, n: number) => number;
+    reflexTimes: (p: P) => { reflex: number; felt: number; voluntary: number; gain: number };
+    pRecall: (p: P, i: number, N: number) => number; ebb: (t: number) => number;
+    forgetRun: (p: P) => { at: (t: number) => number }; budget: (p: P) => { total: number }; flightOf: (p: P) => number; pCatch: (p: P) => number;
+    BASE: () => P;
+  };
+  const p = (o: P) => ({ ...M.BASE(), ...o });
+
+  it("touch: thresholds follow receptor spacing; 50 % felt as two at the threshold; Weber's 5 % gives 75 % right", () => {
+    expect(M.SITES.finger.T).toBeLessThan(M.SITES.palm.T); expect(M.SITES.palm.T).toBeLessThan(M.SITES.back.T);
+    expect(M.pTwo("finger", 2.5)).toBeCloseTo(0.5, 6); expect(M.pTwo("finger", 4)).toBeGreaterThan(0.95);
+    expect(M.pTwo("forearm", 3)).toBeLessThan(0.01);
+    expect(M.density("finger") / M.density("back")).toBeGreaterThan(200);
+    expect(M.pHeavier(400, 20)).toBeCloseTo(0.75, 3); expect(M.pHeavier(50, 10)).toBeGreaterThan(M.pHeavier(1000, 10));
+    expect(M.vol(p({ seed: 1 }))).toBe(1);
+    expect(M.touchTrials(p({ site: "finger", sep: 3, trials: 40 })).filter(Boolean).length).toBeGreaterThan(25);
+  });
+
+  it("nerves: touch ~30 ms, dull C-fibre pain over a second from the toe; cold and lost myelin slow them", () => {
+    const q = p({ setup: "pathway", from: "toe", height: 170 });
+    expect(M.arrival(q, "Ab")).toBeLessThan(0.04); expect(M.arrival(q, "C")).toBeCloseTo(1.4514, 3);
+    expect(M.arrival({ ...q, limbT: 20 }, "Ab")).toBeGreaterThan(1.5 * M.arrival(q, "Ab"));
+    expect(M.arrival({ ...q, demy: 60 }, "Ab")).toBeGreaterThan(M.arrival(q, "Ab"));
+    expect(M.arrival({ ...q, demy: 60 }, "C")).toBeCloseTo(M.arrival(q, "C"), 9);
+    expect(M.arrival({ ...q, from: "finger" }, "C")).toBeLessThan(M.arrival(q, "C"));
+  });
+
+  it("Hick: each bit adds ~150 ms; a compatible mapping or practice flattens it", () => {
+    const q = p({ setup: "processing" });
+    expect(M.hickRT(q, 7)).toBeCloseTo(0.65, 6);
+    expect(M.hickRT(q, 3) - M.hickRT(q, 1)).toBeCloseTo(0.15, 6);
+    expect(M.hickRT({ ...q, compat: true }, 7)).toBeLessThan(0.4);
+    expect(M.hickRT({ ...q, practice: 10 }, 7)).toBeLessThan(M.hickRT(q, 7));
+  });
+
+  it("reflex: the knee jerk in ~23 ms, well before it is felt or a kick on purpose; a cut cord keeps the reflex only", () => {
+    const k = M.reflexTimes(p({ setup: "reflex", rx: "knee", height: 170 }));
+    expect(k.reflex * 1000).toBeCloseTo(23.45, 1); expect(k.felt).toBeGreaterThan(k.reflex); expect(k.voluntary).toBeGreaterThan(k.felt);
+    const c = M.reflexTimes(p({ setup: "reflex", rx: "knee", cut: true }));
+    expect(c.reflex).toBeCloseTo(M.reflexTimes(p({ setup: "reflex", rx: "knee" })).reflex, 9); expect(Number.isFinite(c.voluntary)).toBe(false);
+    expect(M.reflexTimes(p({ setup: "reflex", rx: "withdraw" })).reflex).toBeGreaterThan(k.reflex);
+  });
+
+  it("memory: a U-shaped serial-position curve whose recency a delay erases; Ebbinghaus's curve; reviews help", () => {
+    const q = p({ setup: "memory" }), d = p({ setup: "memory", delay: 30 });
+    expect(M.pRecall(q, 0, 15)).toBeGreaterThan(M.pRecall(q, 7, 15)); expect(M.pRecall(q, 14, 15)).toBeGreaterThan(M.pRecall(q, 7, 15));
+    expect(M.pRecall(d, 14, 15)).toBeLessThan(M.pRecall(q, 7, 15) + 0.05); expect(M.pRecall(d, 0, 15)).toBeCloseTo(M.pRecall(q, 0, 15), 3);
+    expect(M.ebb(20)).toBeCloseTo(0.58, 1); expect(M.ebb(1440)).toBeGreaterThan(0.28); expect(M.ebb(1440)).toBeLessThan(0.36); expect(M.ebb(44640)).toBeCloseTo(0.21, 2);
+    const none = M.forgetRun(p({ setup: "memory", mexp: "forget" })).at(43200), three = M.forgetRun(p({ setup: "memory", mexp: "forget", reviews: 3, gap: 24 })).at(43200);
+    expect(three).toBeGreaterThan(1.8 * none);
+  });
+
+  it("catching: flight = distance ÷ speed; caught when it outlasts the stages; practice and a ready hand help", () => {
+    expect(M.flightOf(p({ dist: 10, speed: 90 }))).toBeCloseTo(0.4, 6);
+    expect(M.pCatch(p({ setup: "together", speed: 30 }))).toBeGreaterThan(0.99);
+    const fast = p({ setup: "together", speed: 110, dist: 7 });
+    expect(M.pCatch(fast)).toBeLessThan(0.5);
+    expect(M.pCatch({ ...fast, hand: "down", distract: true })).toBeLessThan(M.pCatch(fast));
+    expect(M.budget({ ...fast, skill: 1 }).total).toBeLessThan(M.budget(fast).total);
+  });
+});

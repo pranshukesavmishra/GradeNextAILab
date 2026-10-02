@@ -593,7 +593,7 @@
 
   /* the stage for each set-up, then the cards and the header */
   function drawStage(S, g) {
-    const p = S.p, K = kit(); if (!K || !GA()) return;
+    const p = S.p, K = kit(); if (!K || !GA() || g.w < 160 || g.h < 200) return;     // a stage still being laid out has no room for a plate
     if (p.setup === 'hierarchy') stageHierarchy(S, g, lay(g));
     else if (p.setup === 'special') stageSpecial(S, g);
     else if (p.setup === 'tissues') stageTissues(S, g);

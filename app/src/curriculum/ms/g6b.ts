@@ -37,4 +37,40 @@ export const LABS_6B: MsLab[] = [
       { value: "systems", label: "Knock one organ out", teaches: ["B3.5", "B3.6"] },
     ],
   },
+  {
+    id: "g6b-systems-bench", grade: 6, unit: "B", topics: ["B4"], subject: "biology",
+    name: "The Body Systems Bench",
+    setups: [
+      { value: "digestive", label: "Digestive: amylase in a water bath", teaches: ["B4.1"] },
+      { value: "excretory", label: "Excretory: drink a litre, collect the urine", teaches: ["B4.2"] },
+      { value: "circulatory", label: "Circulatory: the pump and a narrowed artery", teaches: ["B4.3"] },
+      { value: "respiratory", label: "Respiratory: the bell-jar lung", teaches: ["B4.4"] },
+      { value: "muscular", label: "Muscular: the forearm lever", teaches: ["B4.5"] },
+      { value: "nervous", label: "Nervous: the ruler-drop test", teaches: ["B4.6"] },
+    ],
+  },
+  {
+    id: "g6b-exercise", grade: 6, unit: "B", topics: ["B5"], subject: "biology",
+    name: "The Body During Exercise",
+    setups: [
+      { value: "meal", label: "A meal: from gut to blood to muscle", teaches: ["B5.1"] },
+      { value: "oxygen", label: "What makes us breathe harder?", teaches: ["B5.2"] },
+      { value: "move", label: "Nerves recruit muscle fibres", teaches: ["B5.3"] },
+      { value: "balance", label: "A long ride in the heat: water and the kidneys", teaches: ["B5.4"] },
+      { value: "exercise", label: "Rest, ride, recover: every system", teaches: ["B5.5"] },
+      { value: "break", label: "Break one system: watch the others", teaches: ["B5.6"] },
+    ],
+  },
+  {
+    id: "g6b-senses", grade: 6, unit: "B", topics: ["B6"], subject: "biology",
+    name: "Stimulus, Signal, Response, Memory",
+    setups: [
+      { value: "receptors", label: "Receptors: how fine is your touch?", teaches: ["B6.1"] },
+      { value: "pathway", label: "The path to the brain: first and second pain", teaches: ["B6.2"] },
+      { value: "processing", label: "Processing: more choices, more time", teaches: ["B6.3"] },
+      { value: "reflex", label: "Reflex or voluntary?", teaches: ["B6.4"] },
+      { value: "memory", label: "Memory: what stays, what goes, what is made up", teaches: ["B6.5"] },
+      { value: "together", label: "A ball thrown at you: every stage", teaches: ["B6.6"] },
+    ],
+  },
 ];
