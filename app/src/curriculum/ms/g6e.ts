@@ -25,4 +25,15 @@ export const LABS_6E: MsLab[] = [
       { value: "heat", label: "The planet moves its heat", teaches: ["E2.6"] },
     ],
   },
+  {
+    id: "g6e-generation", grade: 6, unit: "E", topics: ["E3"], subject: "biology",
+    name: "Making the Next Generation",
+    setups: [
+      { value: "courtship", label: "Long tails and choosy females", teaches: ["E3.1"] },
+      { value: "care", label: "How many eggs?", teaches: ["E3.2"] },
+      { value: "flower", label: "Take a flower apart", teaches: ["E3.3"] },
+      { value: "pollinate", label: "Bees in a meadow", teaches: ["E3.4"] },
+      { value: "seeds", label: "How far do seeds go?", teaches: ["E3.5"] },
+    ],
+  },
 ];

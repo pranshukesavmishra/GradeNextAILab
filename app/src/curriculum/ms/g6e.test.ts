@@ -141,3 +141,61 @@ describe("6E-2 Circulation of Air and Ocean — the models", () => {
     expect(b.Tl).toBeGreaterThan(20);
   }, 30000);
 });
+
+describe("6E-3 Making the Next Generation — the models", () => {
+  type P = Record<string, unknown>;
+  const M = engine.InsightLab.models["g6e-generation"] as unknown as {
+    courtExpected: (p: P, n: number) => { nests: number; alive: number }[]; tailFitness: (p: P, L: number) => { total: number };
+    brood: (n: number, f: number, parents: number) => { D: number; recruits: number; mean: number; fledged: number };
+    bestClutch: (f: number, parents: number) => number; settle: (k: string) => number; reynolds: (k: string) => number;
+    terminal: (k: string, wing: number) => number; meadowRun: (p: P, secs: number) => { A: number; B: number; het: number };
+    disperse: (p: P) => { median: number; p95: number; v: number };
+  };
+  const court = { shortTo: 14, add: 25, risk: 1, display: 10, choosy: 4, females: 36 };
+
+  it("repeats Andersson (1982): lengthened males win the most nests, shortened the fewest, the two controls alike", () => {
+    const E = M.courtExpected(court, 120);
+    expect(E[3].nests).toBeGreaterThan(1.3 * E[2].nests);
+    expect(E[0].nests).toBeLessThan(0.5 * E[2].nests);
+    expect(Math.abs(E[1].nests - E[2].nests)).toBeLessThan(0.15);
+  });
+
+  it("moves the best tail shorter as predation grows — showier is not always better", () => {
+    const best = (risk: number) => { let b = [0, -1]; for (let L = 5; L <= 100; L += 2.5) { const v = M.tailFitness({ ...court, risk }, L).total; if (v > b[1]) b = [L, v]; } return b[0]; };
+    expect(best(0)).toBeGreaterThan(best(1));
+    expect(best(1)).toBeGreaterThan(best(4));
+    expect(best(4)).toBeGreaterThan(best(8));
+  });
+
+  it("finds Lack's most productive clutch near the great tit's 8–9 eggs, fewer in a poor spring or with one parent", () => {
+    expect(M.bestClutch(1, 2)).toBe(9);
+    expect(M.bestClutch(0.4, 2)).toBeLessThan(9);
+    expect(M.bestClutch(2, 2)).toBeGreaterThan(9);
+    expect(M.bestClutch(1, 1)).toBeLessThan(9);
+    expect(M.brood(14, 1, 2).recruits).toBeLessThan(0.5 * M.brood(9, 1, 2).recruits);
+    expect(M.brood(9, 1, 2).D).toBeCloseTo(286.7, 0);
+  });
+
+  it("drops pollen at Stokes' speed: grass 3.7 cm/s, ragweed 1.6 cm/s, all with Re below 1", () => {
+    expect(M.settle("grass") * 100).toBeCloseTo(3.68, 1);
+    expect(M.settle("rag") * 100).toBeCloseTo(1.56, 1);
+    for (const k of ["lily", "sun", "grass", "pine", "rag"]) expect(M.reynolds(k)).toBeLessThan(1);
+  });
+
+  it("gives a samara its measured 1 m/s and a dandelion its 0.39 m/s, and carries them about H·U/v", () => {
+    expect(M.terminal("maple", 3.5)).toBeCloseTo(0.96, 1);
+    expect(M.terminal("dandelion", 0)).toBeCloseTo(0.39, 2);
+    const d = M.disperse({ stype: "maple", wing: 3.5, wind: 6, turb: 1, relH: 12, nSeeds: 300, jay: 250, gut: 25, seed: 1 });
+    expect(d.median).toBeGreaterThan(35); expect(d.median).toBeLessThan(80);
+    const calm = M.disperse({ stype: "maple", wing: 3.5, wind: 1, turb: 1, relH: 12, nSeeds: 300, jay: 250, gut: 25, seed: 1 });
+    expect(calm.median).toBeLessThan(d.median / 3);
+  });
+
+  it("wastes pollen on the wrong species when bees are fickle, and sets more seed when they are faithful", () => {
+    const base = { bees: 8, fracB: 0.3, nFlowers: 60, carry: 0.25, mode: "bees", pesticide: false, seed: 1 };
+    const faithful = M.meadowRun({ ...base, constancy: 0.9 }, 1800), fickle = M.meadowRun({ ...base, constancy: 0.1 }, 1800);
+    expect(fickle.het).toBeGreaterThan(2 * faithful.het);
+    expect(faithful.B).toBeGreaterThan(fickle.B);
+  }, 30000);
+});
+
