@@ -759,9 +759,9 @@ Environment constants (this container family):
 - **Grade 6 Unit D, labs 1–5 merged** (2026-10-02): 6D-1 `g6d-water-cycle` (audit bug fixed), 6D-2 The
   Atmosphere Column, 6D-3 The Weather Station, 6D-4 Air Masses and Fronts, 6D-5 Unequal Heating; 884 tests.
   6D-6 in progress.
-- **Deploy**: the live site deploys only from `claude/gradenext-smart-lab-plan-yba89q` / `main`. Pushing
-  this branch there (a fast-forward) was blocked by the session's auto-mode as a production deploy; it
-  needs the founder's go-ahead (merge PR #3, or allow the push). Until then the fast-build labs are not live.
+- **Deploy** (founder, 2026-10-02: "yes, deploy"): after every verified merge (gate green), this branch
+  is fast-forwarded onto `claude/gradenext-smart-lab-plan-yba89q`, which deploys the live site. First
+  deploy of the fast-build labs: run 114 at `8259686`.
 - **Grade 6 Unit B complete** (merged 2026-10-02): 6B-3 `g6b-levels`, 6B-4 `g6b-systems-bench`, 6B-5
   `g6b-exercise`, 6B-6 `g6b-senses`; 33–38 controls each; 817 tests. Polish queue: 6B-1 and 6B-2 (built
   before §2.13) have not had the two upgrade passes.
@@ -909,6 +909,7 @@ Append only. Never rewrite history.
 | 2026-09-25 | **A change of condition is an event, not a restart**: sliders that change the conditions (salt round the cells, the bath's temperature, the spot's place) let the model carry on from where it is; only a new experiment restarts; readings are integrated in step() so a change mid-run carries on smoothly | Irrigating a slide with salt and watching the cells shrink is the experiment; a restart would hide it, and an analytic reading of time jumps when its rate changes |
 | 2026-09-25 | **live.mjs --presets** sweeps from every preset as well as every set-up | 6B-2's sub-experiments (Engelmann's spot, the leaf test) show controls the base parameters never reach; the plain sweep checked 35 pairs, the preset sweep 61 |
 | 2026-10-01 | **Fast build: unit lanes in parallel, 4–5 set-ups and 10–18 meaningful controls a lab, one figure library per unit, one-command check + contact sheet** | Founder: all of Grades 6–8 in 24–48 h, quality raised; the slow parts were serial work and review, not the science |
+| 2026-10-02 | **Deploy after every verified merge** by fast-forwarding onto `claude/gradenext-smart-lab-plan-yba89q` | Founder: the labs must reach the website; "yes, deploy" |
 | 2026-10-01 (latest) | **Two upgrade passes per lab before it ships (§2.13); every session logs its building here** | Founder: upgrade as much as possible, think twice how to make each lab extraordinary, and finish fast |
 | 2026-10-01 (later) | **At most 3 lanes at once; the rest paused (never cancelled) and resumed one by one in teaching order** | Founder: rate limits; 17 at once risks everything failing together |
 | 2026-10-01 (later) | **No fixed set-up or control counts; all 17 unit lanes at once** (supersedes the 4–5 / 10–18 figures above) | Founder: every topic has its own way to be extraordinary; as fast as possible |
