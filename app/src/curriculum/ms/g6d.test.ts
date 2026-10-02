@@ -287,3 +287,67 @@ describe("6D-4 Air Masses and Fronts — the models", () => {
     expect(M.arrival(p, 2) - M.arrival(p, 1)).toBeCloseTo(7.5, 6);
   });
 });
+
+describe("6D-5 Unequal Heating — the models", () => {
+  type Tr = { t: number; sand: number[]; water: number; E: number };
+  const M = engine.InsightLab.models["g6d-unequal-heating"] as unknown as {
+    dailyInsolation: (lat: number, day: number) => number; noonElev: (lat: number, day: number) => number;
+    airMass: (e: number) => number; beamAtGround: (e: number) => number;
+    cardTemp: (a: number, I: number, Ta: number, h: number, wet?: boolean) => number;
+    traysStart: (p: P) => Tr; traysStep: (T: Tr, p: P, dt: number) => Tr; sandAt: (T: Tr, cm: number) => number;
+    tempAt: (p: P, z: number) => number; freezingLevel: (p: P) => number;
+    patchSteady: (s: string, I: number, Ta: number) => number;
+    dayOf: (p: P, k: string) => number[][]; rangeOf: (r: number[][]) => number;
+    SAND: { c: number }; WATER: { c: number };
+  };
+  const trays = { room: 20, lampI: 600, lampMin: 30, fan: 0, rh: 50, wetSand: false };
+
+  it("gives 436 W/m² a day at the equinox equator, 524 at the June pole, and none at the December pole", () => {
+    expect(M.dailyInsolation(0, 80)).toBeCloseTo(436, 0);
+    expect(M.dailyInsolation(90, 172)).toBeCloseTo(524, 0);
+    expect(M.dailyInsolation(90, 355)).toBe(0);
+    expect(M.dailyInsolation(45, 172)).toBeGreaterThan(M.dailyInsolation(45, 355) * 4);
+    expect(M.noonElev(0, 80)).toBeCloseTo(90, 0);
+  });
+
+  it("doubles the air at 30° sun (Kasten–Young) and cools a card that turns away from the lamp", () => {
+    expect(M.airMass(30)).toBeCloseTo(1.99, 2);
+    expect(M.beamAtGround(30)).toBeLessThan(M.beamAtGround(90) / 2);
+    const t0 = M.cardTemp(0.05, 900, 20, 6.8), t60 = M.cardTemp(0.05, 450, 20, 6.8);
+    expect(t0).toBeGreaterThan(t60 + 20);
+    expect(M.cardTemp(0.8, 900, 20, 6.8)).toBeLessThan(t60);
+  });
+
+  it("heats sand's surface 16.6 °C and water 3.4 °C in 30 minutes, the heat staying near the sand's top", () => {
+    const T = M.traysStep(M.traysStart(trays), trays, 1800);
+    expect(T.sand[0] - 20).toBeCloseTo(16.6, 0);
+    expect(T.water - 20).toBeCloseTo(3.4, 0);
+    expect(M.sandAt(T, 4) - 20).toBeLessThan((T.sand[0] - 20) / 5);
+    expect(M.WATER.c / M.SAND.c).toBeCloseTo(5.04, 2);
+    M.traysStep(T, trays, 1800);
+    expect(T.sand[0]).toBeLessThan(T.water + 5);
+  });
+
+  it("puts Kilimanjaro's summit at −13.3 °C and the freezing level at 3.85 km", () => {
+    const p = { T0: 25, lapseKind: "standard" };
+    expect(M.tempAt(p, 5.895)).toBeCloseTo(-13.3, 1);
+    expect(M.freezingLevel(p)).toBeCloseTo(3.85, 2);
+    expect(M.tempAt({ T0: 25, lapseKind: "dry" }, 1)).toBeCloseTo(15.2, 1);
+  });
+
+  it("orders the patches by albedo, with water cooled below the curve by evaporation", () => {
+    const s = ["snow", "sand", "grass", "soil", "asphalt"].map(k => M.patchSteady(k, 600, 20));
+    for (let i = 1; i < s.length; i++) expect(s[i]).toBeGreaterThan(s[i - 1]);
+    expect(M.patchSteady("water", 600, 20)).toBeLessThan(M.patchSteady("sand", 600, 20));
+  });
+
+  it("swings a desert 44 °C day to night, grass 23, forest 18, the ocean under 1, and cloud damps it", () => {
+    const p = { lat: 35, day: 172, cloud: 1, airT: 25 };
+    expect(M.rangeOf(M.dayOf(p, "desert"))).toBeCloseTo(44.6, 0);
+    expect(M.rangeOf(M.dayOf(p, "grass"))).toBeGreaterThan(20);
+    expect(M.rangeOf(M.dayOf(p, "forest"))).toBeLessThan(M.rangeOf(M.dayOf(p, "grass")));
+    expect(M.rangeOf(M.dayOf(p, "ocean"))).toBeLessThan(1);
+    expect(M.rangeOf(M.dayOf({ ...p, cloud: 7 }, "desert"))).toBeLessThan(30);
+    expect(M.dayOf(p, "desert").length).toBe(96);
+  });
+});

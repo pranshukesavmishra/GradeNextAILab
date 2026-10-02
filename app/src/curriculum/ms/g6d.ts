@@ -49,4 +49,15 @@ export const LABS_6D: MsLab[] = [
       { value: "track", label: "Track a front from three stations", teaches: ["D4.6"] },
     ],
   },
+  {
+    id: "g6d-unequal-heating", grade: 6, unit: "D", topics: ["D5"], subject: "earth",
+    name: "Unequal Heating",
+    setups: [
+      { value: "angle", label: "A lamp at a slant, the Sun on a sphere", teaches: ["D5.1"] },
+      { value: "landwater", label: "Sand and water under the same lamp", teaches: ["D5.2"] },
+      { value: "altitude", label: "Climb a mountain with a thermometer", teaches: ["D5.3"] },
+      { value: "albedo", label: "Six surfaces through a thermal camera", teaches: ["D5.4"] },
+      { value: "combined", label: "Three days, four surfaces", teaches: ["D5.5"] },
+    ],
+  },
 ];
