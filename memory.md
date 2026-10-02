@@ -756,6 +756,11 @@ Environment constants (this container family):
   (`g6c-energy-chain`), 6D-1 The Water Cycle Machine (`g6d-water-cycle`), 6E-1 Climate from Weather
   (`g6e-climate`). Gate green (629 tests); integrator reviewed their sheets. Open: 6D-1 throws in the
   audit's DOM click-through (sent to the 6D lane); 6C-1 set-up 1 labels overlap the ruler (sent to 6C).
+- **Grade 6 Unit C complete** (merged 2026-10-02): 6C-1 `g6c-energy-chain`, 6C-2 `g6c-particle-box`,
+  6C-3 `g6c-heat-transfer`, 6C-4 `g6c-specific-heat`, 6C-5 `g6c-design-studio`; 6 set-ups and 22–34
+  controls each; 765 tests. **Polish queue** (integrator review): 6C-3 convection tank is dots in a flat
+  box (needs a real plume/dye render), Leslie's cube is small in frame, the mixing set-up is sparse.
+  The 6A-1 shoal flake was the 5 s test timeout under load: the run-every-set-up test now allows 30 s.
 - **Grade 6 Unit E complete** (merged 2026-10-02): 6E-1 `g6e-climate`, 6E-2 `g6e-circulation`, 6E-3
   `g6e-generation`, 6E-4 `g6e-nurture`, 6E-5 `g6e-heredity` (E5+E6), 18–34 controls each, two upgrade
   passes recorded in `docs/labs/6e.md`; 702 tests. Watch: `g6a-living-tank/shoal` failed once in the full
