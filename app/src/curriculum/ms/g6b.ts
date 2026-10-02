@@ -37,4 +37,16 @@ export const LABS_6B: MsLab[] = [
       { value: "systems", label: "Knock one organ out", teaches: ["B3.5", "B3.6"] },
     ],
   },
+  {
+    id: "g6b-systems-bench", grade: 6, unit: "B", topics: ["B4"], subject: "biology",
+    name: "The Body Systems Bench",
+    setups: [
+      { value: "digestive", label: "Digestive: amylase in a water bath", teaches: ["B4.1"] },
+      { value: "excretory", label: "Excretory: drink a litre, collect the urine", teaches: ["B4.2"] },
+      { value: "circulatory", label: "Circulatory: the pump and a narrowed artery", teaches: ["B4.3"] },
+      { value: "respiratory", label: "Respiratory: the bell-jar lung", teaches: ["B4.4"] },
+      { value: "muscular", label: "Muscular: the forearm lever", teaches: ["B4.5"] },
+      { value: "nervous", label: "Nervous: the ruler-drop test", teaches: ["B4.6"] },
+    ],
+  },
 ];

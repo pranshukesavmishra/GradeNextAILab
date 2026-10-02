@@ -360,3 +360,75 @@ describe("6B-3 Levels of Organization — the models", () => {
     expect(at({ organ: "skin", act: "run", airT: 25 }) / 60).toBeLessThan(45);
   });
 });
+
+describe("6B-4 The Body Systems Bench — the models", () => {
+  type P = Record<string, unknown>;
+  type Kid = { at: (m: number) => { V: number; Uosm: number; urine: number; adh: number } };
+  const M = engine.InsightLab.models["g6b-systems-bench"] as unknown as {
+    amyRun: (p: P) => { end: number }; amyRate: (p: P, S: number, a: number) => number;
+    kidneyRun: (p: P) => Kid; sgOf: (o: number) => number; KID: { GFR: number };
+    cardiacOut: (p: P) => number; meanP: (p: P) => number; pulseP: (p: P) => number; branchFlow: (p: P, n?: number) => number;
+    poiseuilleRatio: (p: P) => number; eta: (h: number) => number;
+    boyle: (p: P, pull: number) => { vb: number; dP: number; dV: number };
+    armForces: (p: P) => { bic: number; tri: number; load: number };
+    trialsOf: (p: P) => { t: number; d: number; caught: boolean }[]; tOfD: (d: number) => number; BASE: () => P;
+  };
+  const p = (o: P) => ({ ...M.BASE(), ...o });
+
+  it("amylase: Q10 = 2 halves the rate 10 °C colder; it clears starch fastest near 40 °C and never at 60 °C or in stomach acid", () => {
+    expect(M.amyRate(p({ temp: 27 }), 1, 1) / M.amyRate(p({ temp: 37 }), 1, 1)).toBeCloseTo(0.5, 6);
+    const end = (o: P) => M.amyRun(p(o)).end;
+    expect(end({ temp: 37 })).toBeLessThan(end({ temp: 20 }));
+    expect(end({ temp: 45 })).toBeLessThan(end({ temp: 37 }));
+    expect(end({ temp: 60 })).toBe(Infinity); expect(end({ temp: 5 })).toBe(Infinity);
+    expect(end({ pH: 2 })).toBe(Infinity); expect(end({ boiled: true })).toBe(Infinity);
+  });
+
+  it("kidneys: 125 mL/min is 180 L a day; a litre of water brings ~12 mL/min of dilute urine, saline barely any; no ADH, ~17 L a day", () => {
+    expect(M.KID.GFR * 1440 / 1000).toBe(180);
+    const w = M.kidneyRun(p({ kind: "water" })), s = M.kidneyRun(p({ kind: "saline" }));
+    let peak = 0; for (let m = 0; m <= 240; m += 1) peak = Math.max(peak, w.at(m).V);
+    expect(peak).toBeGreaterThan(10); expect(peak).toBeLessThan(14);
+    expect(w.at(180).urine / s.at(180).urine).toBeGreaterThan(3.5);
+    expect(w.at(90).Uosm).toBeLessThan(100);
+    expect(M.kidneyRun(p({ kind: "none", adh: "none" })).at(200).V * 1.44).toBeCloseTo(17.3, 0);
+    expect(M.sgOf(1000)).toBeCloseTo(1.026, 3);
+  });
+
+  it("circulation: 70 × 70 mL ≈ 4.9 L/min at 93 mmHg, 120/73; halving the width is 16× the resistance; flow halves near 80 %", () => {
+    expect(M.cardiacOut(p({}))).toBeCloseTo(4.9, 6);
+    expect(M.meanP(p({}))).toBeCloseTo(93, 6);
+    expect(M.pulseP(p({}))).toBeCloseTo(46.7, 1);
+    expect(M.poiseuilleRatio(p({ narrow: 50 }))).toBeCloseTo(16, 6);
+    const f = (n: number) => M.branchFlow(p({}), n) / M.branchFlow(p({}), 0);
+    expect(f(0.5)).toBeGreaterThan(0.95); expect(f(0.8)).toBeGreaterThan(0.4); expect(f(0.8)).toBeLessThan(0.5); expect(f(0.9)).toBeLessThan(0.1);
+    expect(M.eta(0.45)).toBeCloseTo(4.34, 2);
+    const ex = p({ hr: 150, sv: 100 });
+    expect(M.meanP(ex)).toBeGreaterThan(100); expect(M.meanP(ex)).toBeLessThan(120);     // exercise: resistance falls, pressure rises gently
+    expect(M.branchFlow(ex, 0.7) / M.branchFlow(ex, 0)).toBeLessThan(0.65);               // the same plaque bites harder in exercise
+  });
+
+  it("bell jar: Boyle's law; a hole stops the lungs filling; a real chest takes ~370 mL for 1.5 cm of diaphragm", () => {
+    const B = M.boyle(p({}), 3);
+    expect(101325 * 2.0 / (2.0 + B.dV - B.vb)).toBeCloseTo(101325 + B.dP, 3);
+    expect(B.vb).toBeGreaterThan(0.2);
+    expect(M.boyle(p({ hole: true }), 3).vb).toBe(0);
+    expect(M.boyle(p({ model: "chest" }), 1.5).vb).toBeCloseTo(0.37, 2);
+    expect(M.boyle(p({ model: "chest", comp: "stiff" }), 1.5).vb).toBeLessThan(M.boyle(p({ model: "chest" }), 1.5).vb);
+  });
+
+  it("forearm lever: 5 kg at 90° takes ~490 N of biceps; pushing down works the triceps instead", () => {
+    const A = M.armForces(p({}));
+    expect(A.bic).toBeCloseTo(488.7, 0); expect(A.tri).toBe(0);
+    const Pu = M.armForces(p({ mode: "push" }));
+    expect(Pu.bic).toBe(0); expect(Pu.tri).toBeGreaterThan(500);
+  });
+
+  it("ruler drop: t = √(2d/g) — 19.6 cm is 0.200 s; a 30 cm ruler times up to 0.247 s; texting drops it", () => {
+    expect(M.tOfD(0.196)).toBeCloseTo(0.2, 3);
+    expect(M.tOfD(0.3)).toBeCloseTo(0.247, 3);
+    const T = M.trialsOf(p({})), D = M.trialsOf(p({ distract: true }));
+    T.forEach((t) => expect(t.d).toBeCloseTo(0.5 * 9.81 * t.t * t.t, 9));
+    expect(D.filter((t) => !t.caught).length).toBeGreaterThan(T.filter((t) => !t.caught).length);
+  });
+});
