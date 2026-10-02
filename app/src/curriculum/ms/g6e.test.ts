@@ -199,3 +199,70 @@ describe("6E-3 Making the Next Generation — the models", () => {
   }, 30000);
 });
 
+describe("6E-4 Nature and Nurture Growth Chambers — the models", () => {
+  type Env = { ppfd: number; photo: number; water: number; N: number; T: number };
+  const M = engine.InsightLab.models["g6e-nurture"] as unknown as {
+    growPlant: (gk: string, env: Env, vig: number) => { W: number; h: number; fn: number; fw: number }[];
+    fTemp: (T: number) => number; fN: (N: number) => number;
+    welch: (a: unknown, b: unknown) => { t: number; p: number }; chamberRun: (gk: string, env: Env, n: number, noise: number, seed: number) => unknown;
+    anova2: (cells: number[][]) => { G: number; E: number; GE: number; R: number };
+    skinT: (r: string, Tair: number, ice: boolean) => number; darkness: (g: string, T: number) => number;
+    soilAl: (pH: number, sulf: number) => number; sepalAl: (p: Record<string, number>) => number; blueness: (al: number) => number;
+  };
+  const STD: Env = { ppfd: 400, photo: 16, water: 40, N: 200, T: 22 };
+  const W28 = (gk: string, env: Partial<Env> = {}) => M.growPlant(gk, { ...STD, ...env }, 1)[28];
+
+  it("grows a Fast Plant to about a gram and 25–30 cm in 28 days, and less in short supply of any factor", () => {
+    const s = W28("wt");
+    expect(s.W).toBeGreaterThan(0.8); expect(s.W).toBeLessThan(2.5);
+    expect(s.h).toBeGreaterThan(22); expect(s.h).toBeLessThan(32);
+    for (const env of [{ ppfd: 120 }, { water: 6 }, { N: 15 }, { T: 10 }, { T: 33 }]) expect(W28("wt", env).W).toBeLessThan(0.6 * s.W);
+    expect(M.fTemp(24)).toBeCloseTo(1, 6);
+    expect(M.fN(200)).toBeCloseTo(0.8333, 3);
+  });
+
+  it("stretches plants in dim light: less mass but more height for it", () => {
+    const dim = W28("wt", { ppfd: 120 }), std = W28("wt");
+    expect(dim.W).toBeLessThan(std.W / 5);
+    expect(dim.h / dim.W).toBeGreaterThan(5 * std.h / std.W);
+  });
+
+  it("crosses the reaction norms: the shade type wins in dim light, the sun type in bright", () => {
+    expect(W28("shade", { ppfd: 100 }).W).toBeGreaterThan(W28("wt", { ppfd: 100 }).W);
+    expect(W28("shade", { ppfd: 100 }).W).toBeGreaterThan(W28("sun", { ppfd: 100 }).W);
+    expect(W28("sun", { ppfd: 900 }).W).toBeGreaterThan(W28("wt", { ppfd: 900 }).W);
+    expect(W28("sun", { ppfd: 900 }).W).toBeGreaterThan(W28("shade", { ppfd: 900 }).W);
+    expect(W28("dwarf").h).toBeLessThan(0.4 * W28("wt").h);
+  });
+
+  it("gives Student's p correctly: t = 2.571 with 5 degrees of freedom is p = 0.05", () => {
+    const mk = (m: number, sd: number, n: number) => ({ mean: m, sd, final: new Array(n).fill(0) });
+    // equal groups of 6 with sd 1: df ≈ 10, t = 2.228 is p = 0.05
+    const r = M.welch(mk(2.228 * Math.sqrt(2 / 6), 1, 6), mk(0, 1, 6));
+    expect(r.p).toBeCloseTo(0.05, 3);
+  });
+
+  it("splits a pure genes-plus-environment 2 × 2 with no interaction, and finds one when the effects do not add", () => {
+    const add = M.anova2([[1, 1.1, 0.9], [2, 2.1, 1.9], [3, 3.1, 2.9], [4, 4.1, 3.9]]);
+    expect(add.GE).toBeLessThan(0.01);
+    const inter = M.anova2([[1, 1.1, 0.9], [4, 4.1, 3.9], [2, 2.1, 1.9], [2, 2.1, 1.9]]);
+    expect(inter.GE).toBeGreaterThan(0.2);
+  });
+
+  it("darkens the Himalayan rabbit only where the skin is below ~33.5 °C: ears at 27.2 °C black, back at 36.3 °C white", () => {
+    expect(M.skinT("ears", 20, false)).toBeCloseTo(27.22, 2);
+    expect(M.skinT("back", 20, false)).toBeCloseTo(36.34, 2);
+    expect(M.darkness("chch", M.skinT("ears", 20, false))).toBeGreaterThan(0.99);
+    expect(M.darkness("chch", M.skinT("back", 20, false))).toBeLessThan(0.02);
+    expect(M.darkness("chch", M.skinT("patch", 20, true))).toBeGreaterThan(0.99);
+    expect(M.darkness("cc", 10)).toBe(0);
+  });
+
+  it("turns hydrangeas blue below pH ~5.5 and pink above ~6.5, and phosphate keeps them pink", () => {
+    expect(M.soilAl(5, 0)).toBeCloseTo(9.49, 2);
+    expect(M.blueness(M.sepalAl({ pH: 5, sulf: 0, phos: 0 }))).toBeGreaterThan(0.9);
+    expect(M.blueness(M.sepalAl({ pH: 7, sulf: 0, phos: 0 }))).toBeLessThan(0.1);
+    expect(M.blueness(M.sepalAl({ pH: 5, sulf: 0, phos: 2 }))).toBeLessThan(M.blueness(M.sepalAl({ pH: 5, sulf: 0, phos: 0 })));
+  });
+});
+

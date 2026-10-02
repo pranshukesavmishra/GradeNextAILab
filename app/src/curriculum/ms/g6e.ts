@@ -36,4 +36,17 @@ export const LABS_6E: MsLab[] = [
       { value: "seeds", label: "How far do seeds go?", teaches: ["E3.5"] },
     ],
   },
+  {
+    id: "g6e-nurture", grade: 6, unit: "E", topics: ["E4"], subject: "biology",
+    name: "Nature and Nurture Growth Chambers",
+    setups: [
+      { value: "environment", label: "What a plant needs", teaches: ["E4.1"] },
+      { value: "test", label: "Test one factor fairly", teaches: ["E4.2"] },
+      { value: "genes", label: "Same chamber, different seeds", teaches: ["E4.3"] },
+      { value: "compare", label: "Every seed in every chamber", teaches: ["E4.4"] },
+      { value: "separate", label: "Genes or environment? A 2 × 2", teaches: ["E4.5"] },
+      { value: "coat", label: "The Himalayan rabbit", teaches: ["E4.3", "E4.5"] },
+      { value: "hydrangea", label: "Blue or pink hydrangeas", teaches: ["E4.1", "E4.4"] },
+    ],
+  },
 ];
