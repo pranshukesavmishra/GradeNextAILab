@@ -268,3 +268,95 @@ describe("6B-2 Inside the Cell — the models", () => {
     expect(M.coreOf("flat", f.a, 0.3)).toBeLessThan(M.coreOf("sphere", R, 0.3));
   });
 });
+
+describe("6B-3 Levels of Organization — the models", () => {
+  type P = Record<string, unknown>;
+  type Shape = { A: number; V: number; D: number; tube: number; t95: number };
+  type Run = { fails: Record<string, number>; T0: number };
+  const M = engine.InsightLab.models["g6b-levels"] as unknown as {
+    CELLS_70: number; cellsIn: (kg: number) => number; ANIMALS: Record<string, { kg: number; rbc: number }>;
+    rbcShape: (s: number) => Shape; loaded: (sh: Shape, t: number) => number;
+    oneCell: (L: number, d: number, my: boolean) => number; chainTime: (L: number, d: number, my: boolean, c: number) => number;
+    rootArea: (len: number, den: number) => { base: number; total: number };
+    peakForce: (p: P) => number; fMax: (p: P) => number; tewl: (n: number, rh: number, T: number) => number;
+    utsOf: (d: boolean) => number; strainOf: (s: number, d: boolean) => number;
+    barrier: (pH: number, L: number, J: number) => { pHs: number; surfH: number };
+    mealRun: (bite: number, waves: number, muscle: number, seed: number) => { t50: number; left4h: number };
+    bodyRun: (p: P) => Run; firstFail: (R: Run) => string | null; BASE: () => P;
+  };
+  const p = (o: P) => ({ ...M.BASE(), ...o });
+
+  it("counts 3.72 × 10¹³ cells in a 70 kg adult (Bianconi 2013); a mouse has as many per kilogram, not bigger ones", () => {
+    expect(M.CELLS_70 / 3.72e13).toBeCloseTo(1, 9);
+    expect(M.cellsIn(0.025) / 1e9).toBeCloseTo(13.29, 1);
+    expect(M.ANIMALS.elephant.rbc / M.ANIMALS.mouse.rbc).toBeLessThan(1.5);
+    expect(M.ANIMALS.goat.rbc).toBeLessThan(M.ANIMALS.cat.rbc);
+  });
+
+  it("builds the Evans–Fung red cell: 7.82 µm, 94 fL, 134 µm²; it folds through a 3.0 µm tube, a sphere of the same volume needs 5.64 µm", () => {
+    const d = M.rbcShape(0), s = M.rbcShape(1);
+    expect(d.D).toBeCloseTo(7.82, 2); expect(d.V).toBeCloseTo(94.1, 0); expect(d.A).toBeCloseTo(134.1, 0);
+    expect(d.tube).toBeGreaterThan(2.8); expect(d.tube).toBeLessThan(3.1);       // Canham & Burton 1968: about 2.8–3 µm
+    expect(s.tube).toBeCloseTo(Math.cbrt((6 * d.V) / Math.PI), 2);
+    expect(s.A).toBeCloseTo(4 * Math.PI * (s.tube / 2) ** 2, 0);
+  });
+
+  it("loads the disc about four times faster than the sphere; in a 0.25 s exercise transit the sphere falls short", () => {
+    const d = M.rbcShape(0), s = M.rbcShape(1);
+    expect(s.t95 / d.t95).toBeGreaterThan(3.5); expect(s.t95 / d.t95).toBeLessThan(4.5);
+    expect(M.loaded(d, 0.25)).toBeGreaterThan(0.98); expect(M.loaded(s, 0.25)).toBeLessThan(0.82);
+  });
+
+  it("carries a signal 1 m in 16.7 ms along one myelinated 10 µm axon; a chain of 100 µm cells takes 5 s", () => {
+    expect(M.oneCell(1, 10, true) * 1000).toBeCloseTo(16.67, 2);
+    expect(M.chainTime(1, 10, true, 100)).toBeCloseTo(5.0162, 3);
+  });
+
+  it("root hairs multiply 1 cm of root's surface several times; none, none added", () => {
+    const r = M.rootArea(0.7, 100);
+    expect(r.base).toBeCloseTo(2 * Math.PI * 0.25 * 10, 6);
+    expect(r.total / r.base).toBeGreaterThan(3); expect(M.rootArea(0, 0).total).toBeCloseTo(r.base, 9);
+  });
+
+  it("muscle: a twitch is ¼ of tetanus; slow fibres fuse by 50 Hz, fast ones need ~100; force = 22.5 N/cm² × area", () => {
+    expect(M.peakForce(p({ freq: 0.5 })) / M.fMax(p({}))).toBeCloseTo(0.25, 2);
+    expect(M.peakForce(p({ freq: 50, ftype: "slow" })) / M.fMax(p({}))).toBeGreaterThan(0.95);
+    expect(M.peakForce(p({ freq: 50, ftype: "fast" })) / M.fMax(p({}))).toBeLessThan(0.8);
+    expect(M.fMax(p({ lcsa: Math.log10(5), volt: 10 }))).toBeCloseTo(112.5, 0);
+    expect(M.fMax(p({ volt: 2 }))).toBeLessThan(0.1 * M.fMax(p({ volt: 8 })));
+  });
+
+  it("skin: about 8 g/m²/h through intact skin, rising steeply as tape strips the layers off", () => {
+    expect(M.tewl(0, 40, 22)).toBeCloseTo(8, 0);
+    expect(M.tewl(20, 40, 22)).toBeGreaterThan(2.5 * M.tewl(0, 40, 22));
+    expect(M.tewl(0, 90, 22)).toBeLessThan(M.tewl(0, 40, 22));
+  });
+
+  it("tendon: breaks at 100 MPa — an Achilles of 65 mm² at 6.5 kN; collagenase weakens it", () => {
+    expect(M.utsOf(false) * 65).toBe(6500);
+    expect(M.utsOf(true)).toBeLessThan(M.utsOf(false));
+    expect(M.strainOf(18, false)).toBeCloseTo(0.03, 3);
+  });
+
+  it("stomach: the gel keeps the lining near pH 7 at lumen pH 2; aspirin's thinner gel lets acid reach it at 1.5", () => {
+    expect(M.barrier(2, 150, 3).pHs).toBeGreaterThan(7);
+    expect(M.barrier(2, 0, 3).pHs).toBeCloseTo(2, 6);
+    expect(M.barrier(1.5, 82.5, 1.05).surfH).toBeGreaterThan(5);
+    const meal = M.mealRun(8, 3, 1, 7), weak = M.mealRun(8, 3, 0.25, 7);
+    expect(meal.t50).toBeGreaterThan(45); expect(meal.t50).toBeLessThan(90);     // solids: t½ about an hour
+    expect(meal.left4h).toBeLessThan(0.1); expect(weak.left4h).toBeGreaterThan(0.1);   // > 10 % at 4 h: gastroparesis
+  });
+
+  it("the whole body: heart 10 s, breath 2.9 min (10 after pure O₂), liver ~1 h, gut ~3 days, kidneys ~6 days", () => {
+    const at = (o: P) => { const R = M.bodyRun(p(o)), f = M.firstFail(R); return f ? R.fails[f] : Infinity; };
+    expect(at({ organ: "heart" })).toBeCloseTo(9.8, 0);
+    expect(at({ organ: "lungs" }) / 60).toBeCloseTo(2.9, 1);
+    expect(at({ organ: "lungs", pure: true }) / 60).toBeGreaterThan(9);
+    expect(at({ organ: "liver" }) / 3600).toBeLessThan(2);
+    expect(at({ organ: "gut" }) / 86400).toBeCloseTo(2.8, 0);
+    expect(at({ organ: "kidneys" }) / 86400).toBeGreaterThan(5);
+    expect(at({ organ: "none" })).toBe(Infinity);
+    expect(at({ organ: "skin" })).toBe(Infinity);
+    expect(at({ organ: "skin", act: "run", airT: 25 }) / 60).toBeLessThan(45);
+  });
+});

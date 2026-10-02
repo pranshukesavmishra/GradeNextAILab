@@ -16,13 +16,14 @@ p.on('pageerror',e=>errs.push('PAGEERROR: '+e.message));
 await p.goto('file://'+process.cwd()+'/_preview.html');
 await p.waitForTimeout(2500);
 
-const meta = await p.evaluate(()=> (window.__REG||[]).map(d=>({
+const ONLY = process.argv[2] || null;   // node audit.mjs [labId] — one lab only (ship.mjs uses this)
+const meta = await p.evaluate((only)=> (window.__REG||[]).filter(d=>!only||d.id===only).map(d=>({
   id:d.id, name:d.name, params:Object.keys(d.params||{}),
   controls:[].concat(...(d.controls||[]).map(g=>(g.items||[]).map(i=>({
     key:i.key, label:(i.label||'').replace(/<[^>]*>/g,''), type:i.type||'range',
     n:(i.options||[]).length })))),
   presets:(d.presets||[]).map(x=>Object.keys(x.params||{}))
-})));
+})), ONLY);
 
 let issues = 0;
 const say = (tag,msg)=>{ issues++; console.log(tag.padEnd(9)+msg); };

@@ -4,7 +4,7 @@
      1. NUMBERS  every problem: set its params, run, read `measure`, and compare it with the
                  bold answer in its `working` (within predict.tol, default 5 %). A problem whose
                  working has no bold number is listed for a human look.
-     2. CONTROLS live.mjs <id> --presets (every control in every set-up and preset moves the
+     2. CONTROLS audit.mjs <id> (DOM click-through) and live.mjs <id> --presets (every control in every set-up and preset moves the
                  model), plus a mount of every set-up and preset with no page error and no
                  NaN / undefined / Infinity on the readouts or the equation.
      3. EYES     sheet-<id>-<k>.png (6 tiles a page): every set-up and every preset at 1500 px, and every set-up at
@@ -64,6 +64,13 @@ for (let k = 0; k < meta.problems; k++) {
 }
 
 /* ---------- 2. CONTROLS ---------- */
+{ // the audit's own DOM click-through of every control and preset, this lab only
+  const au = spawnSync('node', ['audit.mjs', id], { encoding: 'utf8', timeout: 900000 });
+  const out = (au.stdout || '') + (au.stderr || '');
+  const bad = out.split('\n').filter(l => /^(ERROR|DEAD|WIRING|[A-Z]+ +)/.test(l) && !/^CLEAN/.test(l) && l.trim());
+  if (/CLEAN/.test(out)) console.log('ok       audit: ' + out.trim().split('\n').pop());
+  else { bad.forEach(l => fail('audit: ' + l.trim())); if (!bad.length) fail('audit: ' + out.trim().split('\n').pop()); }
+}
 if (!noLive) {
   const lv = spawnSync('node', ['live.mjs', id, '--presets'], { encoding: 'utf8', timeout: 900000 });
   const out = (lv.stdout || '') + (lv.stderr || '');

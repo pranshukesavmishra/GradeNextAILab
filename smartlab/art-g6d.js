@@ -1,0 +1,565 @@
+/* ============================================================
+   G6D — the apparatus of Grade 6 Unit D (water, air and weather).
+   Drawn as the real things on R3, beside MEAS (bench, hot plate, beakers,
+   cylinders), BENCH (rules, meters), TERRAIN (landscape blocks), GEO
+   (clouds, flux arrows) and EARTH (the globe):
+     glass chamber — four float-glass walls in an aluminium frame, misting
+                     with dew, holding a cloud of real drops;
+     a sloping glass lid with a tray of ice, beads of condensate under it,
+                     a gutter, and the pipe that drains it;
+     a desk fan; a glass tube of any path with water, air and a bubble;
+     a rainfall simulator — a frame, a manifold of nozzles, falling drops;
+     a tilted soil tray seen through its acrylic side: dry soil, the wet
+                     zone above the wetting front, ponded water, grass or
+                     straw on top, and the lip that pours the runoff;
+     a leafy shoot (sunflower, bean, oak, maize leaves drawn to shape),
+                     a polythene bag round it, a desk lamp and its beam;
+     a leaf's skin under the microscope — pavement cells and stomata with
+                     their guard cells and pore, and a coat of petroleum jelly;
+     a porcelain spot plate with drops of water counted out.
+   Every 3D function takes world metres (Z up, the bench top at z = 0) and
+   draws through the caller's R3 frame. Nothing here computes science.
+   ============================================================ */
+(function () {
+  'use strict';
+  const R3 = window.R3, RX = window.RX;
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const { add, sub, scale, norm, cross } = R3;
+  const cache = {};
+  const mono = (px, w) => (w || 600) + ' ' + px + 'px "IBM Plex Mono",monospace';
+  function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 100003) / 100003; }; }
+  function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  const P = (cam, pts) => { const q = pts.map(p => cam.project(p)); return q.some(v => !v.ok) ? null : q; };
+  const path = (ctx, q) => { ctx.beginPath(); q.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); };
+  const centroid = pts => pts.reduce((s, p) => [s[0] + p[0] / pts.length, s[1] + p[1] / pts.length, s[2] + p[2] / pts.length], [0, 0, 0]);
+  function hull2(Pt) {
+    const pts = Pt.slice().sort((a, b) => a.x - b.x || a.y - b.y);
+    if (pts.length < 3) return pts;
+    const cr = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    const lo = [], up = [];
+    for (const p of pts) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+    up.pop(); lo.pop(); return lo.concat(up);
+  }
+  /* a flat polygon, lit by its own normal */
+  function face(F, pts, colour, o) {
+    o = o || {};
+    const n = norm(cross(sub(pts[1], pts[0]), sub(pts[pts.length - 1], pts[0])));
+    const nn = R3.dot(n, sub(F.cam.eye, pts[0])) < 0 ? scale(n, -1) : n;
+    const col = o.flat ? colour : F.shade(colour, nn, { ambient: o.ambient == null ? 0.45 : o.ambient });
+    F.push(o.at || centroid(pts), () => {
+      const q = P(F.cam, pts); if (!q) return;
+      const ctx = F.ctx; ctx.save(); path(ctx, q); ctx.globalAlpha = o.alpha == null ? 1 : o.alpha; ctx.fillStyle = col; ctx.fill();
+      if (o.edge) { ctx.globalAlpha = 1; ctx.strokeStyle = o.edge; ctx.lineWidth = o.edgeW || 1; ctx.stroke(); } else { ctx.strokeStyle = col; ctx.lineWidth = 0.5; ctx.stroke(); }
+      ctx.restore();
+    }, o.bias);
+  }
+
+  /* ---------------- glass ---------------- */
+  /* condensation on glass: thousands of tiny beads, a few larger runs */
+  function mistTex() {
+    if (cache.mist) return cache.mist;
+    const c = canvas(256, 256), x = c.getContext('2d'), r = rng(41);
+    for (let i = 0; i < 1400; i++) {
+      const px = r() * 256, py = r() * 256, rr = 0.6 + Math.pow(r(), 3) * 3.2;
+      const g = x.createRadialGradient(px - rr * 0.3, py - rr * 0.3, 0, px, py, rr);
+      g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(0.6, 'rgba(225,238,248,.55)'); g.addColorStop(1, 'rgba(120,150,180,.15)');
+      x.fillStyle = g; x.beginPath(); x.arc(px, py, rr, 0, TAU); x.fill();
+    }
+    for (let i = 0; i < 9; i++) { const px = r() * 256; x.strokeStyle = 'rgba(255,255,255,.25)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(px, r() * 120); x.lineTo(px + (r() - 0.5) * 6, 256); x.stroke(); }
+    cache.mist = c; return c;
+  }
+  /* one pane of glass: P0, P1 (along), P3 (up); tint, mist 0..1, a reflection band */
+  function pane(F, P0, P1, P3, o) {
+    o = o || {};
+    const P2 = add(P1, sub(P3, P0));
+    F.push(o.at || centroid([P0, P1, P2, P3]), () => {
+      const q = P(F.cam, [P0, P1, P2, P3]); if (!q) return;
+      const ctx = F.ctx; ctx.save();
+      path(ctx, q); ctx.fillStyle = o.tint || 'rgba(190,225,235,.06)'; ctx.fill();
+      ctx.clip();
+      const m = o.mist || 0;
+      if (m > 0.01) {
+        ctx.fillStyle = 'rgba(232,242,250,' + (0.05 + 0.32 * m).toFixed(3) + ')'; ctx.fill();
+        const pat = ctx.createPattern(mistTex(), 'repeat');
+        if (pat) { ctx.globalAlpha = clamp(m * 1.3, 0, 0.9); ctx.fillStyle = pat; ctx.fillRect(-1e4, -1e4, 2e4, 2e4); ctx.globalAlpha = 1; }
+      }
+      const gx = ctx.createLinearGradient(q[0].x, q[0].y, q[2].x, q[2].y);
+      gx.addColorStop(0.0, 'rgba(255,255,255,0)'); gx.addColorStop(0.2, 'rgba(255,255,255,.10)'); gx.addColorStop(0.26, 'rgba(255,255,255,.02)');
+      gx.addColorStop(0.64, 'rgba(255,255,255,0)'); gx.addColorStop(0.71, 'rgba(255,255,255,.06)'); gx.addColorStop(0.76, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gx; ctx.fillRect(-1e4, -1e4, 2e4, 2e4);
+      ctx.restore();
+      ctx.save(); ctx.strokeStyle = o.edge || 'rgba(140,205,190,.55)'; ctx.lineWidth = 1.2; path(ctx, q); ctx.stroke(); ctx.restore();
+    }, o.bias);
+  }
+  /* a glass chamber on the bench: c the centre of its base, s = [w, d, h]; an aluminium angle on every edge */
+  function chamber(F, c, s, o) {
+    o = o || {};
+    const [w, d, h] = s, x0 = c[0] - w / 2, x1 = c[0] + w / 2, y0 = c[1] - d / 2, y1 = c[1] + d / 2, z0 = c[2], z1 = c[2] + h;
+    const m = o.mist || 0;
+    pane(F, [x0, y0, z0], [x1, y0, z0], [x0, y0, z1], { mist: m });          // front
+    pane(F, [x0, y1, z0], [x1, y1, z0], [x0, y1, z1], { mist: m * 0.8 });    // back
+    pane(F, [x0, y0, z0], [x0, y1, z0], [x0, y0, z1], { mist: m * 0.9 });    // left
+    pane(F, [x1, y0, z0], [x1, y1, z0], [x1, y0, z1], { mist: m * 0.9 });    // right
+    const al = '#B9C2CC', t = 0.008;
+    [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].forEach(([x, y]) => R3.box(F, [x, y, (z0 + z1) / 2], [t, t, h], al, { shadow: false, ambient: 0.5 }));
+    [[y0], [y1]].forEach(([y]) => { R3.box(F, [c[0], y, z0 + t / 2], [w, t, t], al, { shadow: false, ambient: 0.5 }); R3.box(F, [c[0], y, z1 - t / 2], [w, t, t], al, { shadow: false, ambient: 0.5 }); });
+    [[x0], [x1]].forEach(([x]) => { R3.box(F, [x, c[1], z0 + t / 2], [t, d, t], al, { shadow: false, ambient: 0.5 }); R3.box(F, [x, c[1], z1 - t / 2], [t, d, t], al, { shadow: false, ambient: 0.5 }); });
+    return { x0, x1, y0, y1, z0, z1 };
+  }
+  /* the lid: a glass sheet over the chamber, from zHi at x0 down to zLo at x1; ice on it (o.ice), beads under it
+     (o.film 0..1 of what glass can hold), a gutter at the low edge */
+  function lid(F, B, zHi, zLo, o) {
+    o = o || {};
+    const { x0, x1, y0, y1 } = B, zAt = x => zHi + (zLo - zHi) * (x - x0) / (x1 - x0);
+    pane(F, [x0, y0, zHi], [x1, y0, zLo], [x0, y1, zHi], { tint: 'rgba(200,230,240,.12)', mist: (o.film || 0) * 0.7, edge: 'rgba(170,220,210,.8)' });
+    if (o.ice) {                                        // an aluminium tray of ice cubes
+      const tx0 = x0 + 0.05, tx1 = x1 - 0.05, ty0 = y0 + 0.04, ty1 = y1 - 0.04, th = 0.03;
+      const tray = [[tx0, ty0, zAt(tx0) + 0.004], [tx1, ty0, zAt(tx1) + 0.004], [tx1, ty1, zAt(tx1) + 0.004], [tx0, ty1, zAt(tx0) + 0.004]];
+      face(F, tray, '#9AA6B2', { ambient: 0.5 });
+      face(F, [tray[0], tray[1], add(tray[1], [0, 0, th]), add(tray[0], [0, 0, th])], '#B6C0CA', { ambient: 0.5 });
+      face(F, [tray[3], tray[2], add(tray[2], [0, 0, th]), add(tray[3], [0, 0, th])], '#8E9AA6', { ambient: 0.5 });
+      const r = rng(7), melt = clamp(o.melt || 0, 0, 1), n = 26;
+      for (let i = 0; i < n; i++) {
+        const x = tx0 + 0.02 + r() * (tx1 - tx0 - 0.04), y = ty0 + 0.02 + r() * (ty1 - ty0 - 0.04), sz = 0.026 * (1 - 0.35 * melt) * (0.85 + 0.3 * r());
+        const a = r() * TAU;
+        R3.box(F, [x, y, zAt(x) + 0.006 + sz / 2], [sz, sz, sz * 0.9], o.warm ? '#D7E9F2' : '#E4F3FB', { shadow: false, ambient: 0.62, axes: [[Math.cos(a), Math.sin(a), 0], [-Math.sin(a), Math.cos(a), 0], [0, 0, 1]] });
+      }
+    }
+    // beads of condensate hanging under the glass
+    const f = o.film || 0;
+    if (f > 0.02) {
+      const r = rng(19), n = Math.round(30 + 160 * f);
+      F.push([(x0 + x1) / 2, (y0 + y1) / 2, zAt((x0 + x1) / 2) - 0.003], () => {
+        const ctx = F.ctx; ctx.save();
+        for (let i = 0; i < n; i++) {
+          const x = x0 + 0.01 + r() * (x1 - x0 - 0.02), y = y0 + 0.01 + r() * (y1 - y0 - 0.02), q = F.cam.project([x, y, zAt(x) - 0.002]);
+          if (!q.ok) continue;
+          const rr = Math.max(0.6, q.s * (0.0012 + 0.0028 * f * r()));
+          const g = ctx.createRadialGradient(q.x - rr * 0.3, q.y - rr * 0.3, 0, q.x, q.y, rr);
+          g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(0.7, 'rgba(170,205,230,.7)'); g.addColorStop(1, 'rgba(60,90,120,.4)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, rr, 0, TAU); ctx.fill();
+        }
+        ctx.restore();
+      }, -0.01);
+    }
+    // the gutter along the low edge
+    R3.box(F, [x1 - 0.012, (y0 + y1) / 2, zLo - 0.008], [0.02, y1 - y0 - 0.02, 0.012], '#A9B4BE', { shadow: false, ambient: 0.5 });
+    return { zAt };
+  }
+
+  /* ---------------- a glass tube along a path, with what is in it ----------------
+     pts: the centre line; r: outer radius; o.fill: [{ from, to, col }] in metres along the path (water, a bubble) */
+  function glassTube(F, pts, r, o) {
+    o = o || {};
+    const segs = []; let L = 0;
+    for (let i = 0; i < pts.length - 1; i++) { const l = Math.hypot(...sub(pts[i + 1], pts[i])); segs.push({ a: pts[i], b: pts[i + 1], s0: L, l }); L += l; }
+    const at = s => { for (const g of segs) if (s <= g.s0 + g.l + 1e-9) { const u = clamp((s - g.s0) / g.l, 0, 1); return add(g.a, scale(sub(g.b, g.a), u)); } return pts[pts.length - 1]; };
+    segs.forEach(g => {
+      F.push(scale(add(g.a, g.b), 0.5), () => {
+        const ctx = F.ctx, qa = F.cam.project(g.a), qb = F.cam.project(g.b);
+        if (!qa.ok || !qb.ok) return;
+        const dx = qb.x - qa.x, dy = qb.y - qa.y, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
+        const ra = Math.max(1.2, r * qa.s), rb = Math.max(1.2, r * qb.s);
+        const band = (k, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(qa.x + nx * ra * k, qa.y + ny * ra * k); ctx.lineTo(qb.x + nx * rb * k, qb.y + ny * rb * k); ctx.lineTo(qb.x - nx * rb * k, qb.y - ny * rb * k); ctx.lineTo(qa.x - nx * ra * k, qa.y - ny * ra * k); ctx.closePath(); ctx.fill(); };
+        ctx.save();
+        band(1, 'rgba(200,228,240,.16)');
+        (o.fill || []).forEach(fl => {                    // the contents, clipped to this segment
+          const s0 = Math.max(fl.from, g.s0), s1 = Math.min(fl.to, g.s0 + g.l);
+          if (s1 <= s0) return;
+          const p0 = F.cam.project(at(s0)), p1 = F.cam.project(at(s1));
+          if (!p0.ok || !p1.ok) return;
+          const k = 0.62, r0 = Math.max(0.8, r * p0.s * k), r1 = Math.max(0.8, r * p1.s * k);
+          ctx.fillStyle = fl.col; ctx.beginPath(); ctx.moveTo(p0.x + nx * r0, p0.y + ny * r0); ctx.lineTo(p1.x + nx * r1, p1.y + ny * r1); ctx.lineTo(p1.x - nx * r1, p1.y - ny * r1); ctx.lineTo(p0.x - nx * r0, p0.y - ny * r0); ctx.closePath(); ctx.fill();
+          if (fl.bubble) { ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1; ctx.stroke(); }
+        });
+        ctx.strokeStyle = 'rgba(225,242,250,.75)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(qa.x + nx * ra, qa.y + ny * ra); ctx.lineTo(qb.x + nx * rb, qb.y + ny * rb); ctx.moveTo(qa.x - nx * ra, qa.y - ny * ra); ctx.lineTo(qb.x - nx * rb, qb.y - ny * rb); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(qa.x + nx * ra * 0.45, qa.y + ny * ra * 0.45); ctx.lineTo(qb.x + nx * rb * 0.45, qb.y + ny * rb * 0.45); ctx.stroke();
+        ctx.restore();
+      }, o.bias == null ? -0.005 : o.bias);
+    });
+    return { L, at };
+  }
+
+  /* ---------------- a desk fan: base, stem, motor, a wire guard and three blades ---------------- */
+  function fan(F, at, dir, speed, phase, o) {
+    o = o || {};
+    const R = o.R || 0.07, d = norm(dir), hub = add(at, [0, 0, o.h || 0.13]);
+    R3.cylinder(F, at, add(at, [0, 0, 0.012]), 0.05, '#2C323C', { segments: 24 });
+    R3.cylinder(F, add(at, [0, 0, 0.012]), add(hub, [0, 0, -0.02]), 0.007, '#9AA4AE', { shadow: false });
+    R3.cylinder(F, add(hub, scale(d, -0.06)), add(hub, scale(d, -0.005)), 0.03, '#3A414C', { shadow: false });
+    const u = norm(cross(d, [0, 0, 1])), v = cross(u, d);
+    F.push(add(hub, scale(d, 0.01)), () => {
+      const ctx = F.ctx, c = F.cam.project(add(hub, scale(d, 0.01)));
+      if (!c.ok) return;
+      ctx.save();
+      const blades = 3, spin = speed > 0.05;
+      for (let b = 0; b < blades; b++) {
+        const a0 = phase + b * TAU / blades;
+        const pts = [];
+        for (let k = 0; k <= 10; k++) { const a = a0 + (k / 10 - 0.5) * 0.9, rr = R * (0.25 + 0.75 * Math.sin(Math.PI * k / 10) * 0.9 + 0.1); pts.push(add(add(hub, scale(u, Math.cos(a) * rr)), scale(v, Math.sin(a) * rr))); }
+        pts.push(hub);
+        const q = pts.map(p => F.cam.project(p)); if (q.some(z => !z.ok)) continue;
+        path(ctx, q); ctx.fillStyle = spin ? 'rgba(150,175,200,' + clamp(0.55 - speed * 0.1, 0.18, 0.55).toFixed(2) + ')' : '#8FA6BC'; ctx.fill();
+      }
+      if (spin) { const rp = R * c.s; const g = ctx.createRadialGradient(c.x, c.y, rp * 0.2, c.x, c.y, rp); g.addColorStop(0, 'rgba(170,190,215,.25)'); g.addColorStop(1, 'rgba(170,190,215,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, rp, 0, TAU); ctx.fill(); }
+      // the guard: rings and spokes of wire
+      ctx.strokeStyle = 'rgba(205,214,226,.85)'; ctx.lineWidth = 0.9;
+      [1.05, 0.7, 0.35].forEach(k => { const q = []; for (let i = 0; i <= 36; i++) { const a = i / 36 * TAU; q.push(F.cam.project(add(add(add(hub, scale(d, 0.02)), scale(u, Math.cos(a) * R * k)), scale(v, Math.sin(a) * R * k)))); } if (q.some(z => !z.ok)) return; ctx.beginPath(); q.forEach((z, i) => i ? ctx.lineTo(z.x, z.y) : ctx.moveTo(z.x, z.y)); ctx.stroke(); });
+      for (let i = 0; i < 8; i++) { const a = i / 8 * TAU, q0 = F.cam.project(add(hub, scale(d, 0.025))), q1 = F.cam.project(add(add(add(hub, scale(d, 0.02)), scale(u, Math.cos(a) * R * 1.05)), scale(v, Math.sin(a) * R * 1.05))); if (q0.ok && q1.ok) { ctx.beginPath(); ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.stroke(); } }
+      ctx.restore();
+    });
+    return hub;
+  }
+
+  /* ---------------- a cloud of drops in a box: soft, lit puffs, as dense as the liquid in the air ---------------- */
+  function fog(F, box, density, phase, o) {
+    o = o || {};
+    if (density < 0.01) return;
+    const r = rng(o.seed || 77), n = 46;
+    for (let i = 0; i < n; i++) {
+      const u = r(), v = r(), w = r(), drift = Math.sin(phase * 0.3 + i) * 0.02;
+      const p = [box.x0 + (box.x1 - box.x0) * (0.08 + 0.84 * u) + drift, box.y0 + (box.y1 - box.y0) * (0.1 + 0.8 * v), box.z0 + (box.z1 - box.z0) * (0.25 + 0.7 * Math.sqrt(w))];
+      const rad = (o.r || 0.07) * (0.6 + 0.8 * r());
+      F.push(p, () => {
+        const q = F.cam.project(p); if (!q.ok) return;
+        const rp = rad * q.s, a = clamp(density, 0, 1) * 0.42;
+        const g = F.ctx.createRadialGradient(q.x - rp * 0.2, q.y - rp * 0.3, rp * 0.1, q.x, q.y, rp);
+        g.addColorStop(0, 'rgba(250,252,255,' + a.toFixed(3) + ')'); g.addColorStop(0.6, 'rgba(225,232,242,' + (a * 0.6).toFixed(3) + ')'); g.addColorStop(1, 'rgba(210,220,235,0)');
+        F.ctx.fillStyle = g; F.ctx.beginPath(); F.ctx.arc(q.x, q.y, rp, 0, TAU); F.ctx.fill();
+      });
+    }
+  }
+
+  /* ---------------- a rainfall simulator ----------------
+     a square-tube frame over the tray, a manifold with nozzles at zTop; o.drops [[x, y, zFrom, zTo]] streaks to draw */
+  function rainRig(F, x0, x1, y0, y1, zTop, o) {
+    o = o || {};
+    const al = '#AEB8C3', t = 0.022;
+    [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].forEach(([x, y]) => R3.box(F, [x, y, zTop / 2], [t, t, zTop], al, { ambient: 0.5 }));
+    [y0, y1].forEach(y => R3.box(F, [(x0 + x1) / 2, y, zTop], [x1 - x0 + t, t, t], al, { shadow: false, ambient: 0.5 }));
+    [x0, x1].forEach(x => R3.box(F, [x, (y0 + y1) / 2, zTop], [t, y1 - y0, t], al, { shadow: false, ambient: 0.5 }));
+    const ym = (y0 + y1) / 2, n = o.nozzles || 4;
+    R3.cylinder(F, [x0, ym, zTop - 0.02], [x1, ym, zTop - 0.02], 0.012, '#C9A15A', { shadow: false });         // the brass manifold
+    R3.cylinder(F, [x0 - 0.12, ym, zTop - 0.02], [x0, ym, zTop - 0.02], 0.009, '#2B3240', { shadow: false });     // the hose in
+    const noz = [];
+    for (let i = 0; i < n; i++) {
+      const x = x0 + (i + 0.5) * (x1 - x0) / n;
+      R3.cylinder(F, [x, ym, zTop - 0.02], [x, ym, zTop - 0.055], 0.008, '#B8892F', { shadow: false });
+      noz.push([x, ym, zTop - 0.06]);
+    }
+    // the pressure gauge on the manifold
+    R3.cylinder(F, [x0 + 0.04, ym - 0.015, zTop], [x0 + 0.04, ym - 0.04, zTop], 0.022, '#E9ECEF', { shadow: false });
+    if (o.drops) F.push([(x0 + x1) / 2, ym, zTop * 0.5], () => {
+      const ctx = F.ctx; ctx.save(); ctx.lineCap = 'round';
+      o.drops.forEach(dp => {
+        const a = F.cam.project([dp[0], dp[1], dp[2]]), b = F.cam.project([dp[0], dp[1], dp[3]]);
+        if (!a.ok || !b.ok) return;
+        ctx.strokeStyle = 'rgba(200,226,250,.75)'; ctx.lineWidth = Math.max(0.8, (o.dropW || 0.002) * a.s); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      });
+      ctx.restore();
+    }, -0.02);
+    return noz;
+  }
+
+  /* ---------------- the soil tray ----------------
+     o: { x0, x1 (downhill end), y0, y1, zLip (top of soil at the lip), slope (rad), D (soil depth),
+          soil (colour), wetDepth (m below the surface), pond (m of water, drawn ×20), cover: 'bare'|'grass'|'mulch'|'paved', t } */
+  function soilTray(F, o) {
+    const { x0, x1, y0, y1, zLip, D } = o, tn = Math.tan(o.slope), top = x => zLip + (x1 - x) * tn;
+    const eye = F.cam.eye, front = eye[1] < (y0 + y1) / 2 ? y0 : y1, back = front === y0 ? y1 : y0;
+    const wall = 0.006, rim = 0.025;
+    const steel = '#8C97A3';
+    // the steel box: floor and walls (the side facing the camera is clear acrylic)
+    const pts = (y, z0f, z1f) => [[x0, y, z0f(x0)], [x1, y, z0f(x1)], [x1, y, z1f(x1)], [x0, y, z1f(x0)]];
+    face(F, pts(back, x => top(x) - D, x => top(x) + rim), steel, { ambient: 0.45 });
+    face(F, [[x0, y0, top(x0) - D], [x0, y1, top(x0) - D], [x0, y1, top(x0) + rim], [x0, y0, top(x0) + rim]], steel, { ambient: 0.45 });
+    // the soil, seen through the acrylic: dry below the wetting front, dark and wet above it
+    const soil = RX.mix(o.soil, '#000000', 0), wetC = RX.mix(o.soil, '#1A120C', 0.45);
+    F.push([(x0 + x1) / 2, front, top((x0 + x1) / 2) - D / 2], () => {
+      const ctx = F.ctx, cam = F.cam;
+      const q = P(cam, [[x0, front, top(x0)], [x1, front, top(x1)], [x1, front, top(x1) - D], [x0, front, top(x0) - D]]); if (!q) return;
+      ctx.save(); path(ctx, q); ctx.fillStyle = soil; ctx.fill(); ctx.clip();
+      // grains and pebbles
+      const r = rng(11);
+      for (let i = 0; i < 260; i++) { const u = r(), v = r(), p = cam.project([x0 + u * (x1 - x0), front, top(x0 + u * (x1 - x0)) - v * D]); if (!p.ok) continue; ctx.fillStyle = 'rgba(' + (r() < 0.5 ? '30,20,12' : '235,215,180') + ',' + (0.12 + 0.2 * r()).toFixed(2) + ')'; ctx.fillRect(p.x, p.y, 1.4 + r() * 1.6, 1.2 + r()); }
+      const wd = clamp(o.wetDepth || 0, 0, D);
+      if (wd > 0.0005) {
+        const w = P(cam, [[x0, front, top(x0)], [x1, front, top(x1)], [x1, front, top(x1) - wd], [x0, front, top(x0) - wd]]);
+        if (w) {
+          ctx.globalAlpha = 0.85; path(ctx, w); ctx.fillStyle = wetC; ctx.fill(); ctx.globalAlpha = 1;
+          ctx.strokeStyle = 'rgba(120,190,255,.95)'; ctx.lineWidth = 1.6; ctx.setLineDash([5, 3]); ctx.beginPath(); ctx.moveTo(w[3].x, w[3].y); ctx.lineTo(w[2].x, w[2].y); ctx.stroke(); ctx.setLineDash([]);
+        }
+      }
+      ctx.restore();
+      ctx.save(); ctx.strokeStyle = 'rgba(210,235,245,.6)'; ctx.lineWidth = 1; path(ctx, q); ctx.stroke(); ctx.restore();
+      o.frontAt = { a: cam.project([x0 + (x1 - x0) * 0.25, front, top(x0 + (x1 - x0) * 0.25) - clamp(o.wetDepth || 0, 0, D)]) };
+    }, 0.0);
+    // the surface, its cover, and water standing on it
+    const surf = [[x0, y0, top(x0)], [x1, y0, top(x1)], [x1, y1, top(x1)], [x0, y1, top(x0)]];
+    const sCol = o.cover === 'paved' ? '#5E6168' : RX.mix(o.soil, '#1A120C', clamp((o.wetDepth || 0) > 0.001 ? 0.35 : 0, 0, 0.5));
+    face(F, surf, sCol, { ambient: 0.55, at: [(x0 + x1) / 2, (y0 + y1) / 2, top((x0 + x1) / 2) - 0.02] });
+    F.push([(x0 + x1) / 2, (y0 + y1) / 2, top((x0 + x1) / 2) - 0.015], () => {
+      const ctx = F.ctx, cam = F.cam, r = rng(23);
+      ctx.save();
+      if (o.cover === 'grass') {
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 520; i++) {
+          const x = x0 + 0.01 + r() * (x1 - x0 - 0.02), y = y0 + 0.01 + r() * (y1 - y0 - 0.02), a = cam.project([x, y, top(x)]), b = cam.project([x + (r() - 0.5) * 0.01, y + (r() - 0.5) * 0.01, top(x) + 0.018 + 0.02 * r()]);
+          if (!a.ok || !b.ok) continue;
+          ctx.strokeStyle = r() < 0.5 ? '#4E8A3A' : '#78AE4E'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+      } else if (o.cover === 'mulch') {
+        for (let i = 0; i < 220; i++) {
+          const x = x0 + 0.01 + r() * (x1 - x0 - 0.02), y = y0 + 0.01 + r() * (y1 - y0 - 0.02), an = r() * TAU, l = 0.02 + 0.03 * r();
+          const a = cam.project([x, y, top(x) + 0.003]), b = cam.project([x + Math.cos(an) * l, y + Math.sin(an) * l, top(x + Math.cos(an) * l) + 0.003]);
+          if (!a.ok || !b.ok) continue;
+          ctx.strokeStyle = r() < 0.5 ? '#D8B860' : '#B8954A'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+      } else if (o.cover !== 'paved') {
+        for (let i = 0; i < 160; i++) { const x = x0 + r() * (x1 - x0), y = y0 + r() * (y1 - y0), q = cam.project([x, y, top(x)]); if (!q.ok) continue; ctx.fillStyle = 'rgba(30,20,12,' + (0.15 + 0.25 * r()).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(q.x, q.y, 0.6 + r() * 1.4, 0, TAU); ctx.fill(); }
+      }
+      // ponded water: a sheet over the hollows, drawn twenty times thicker than it is
+      const pond = o.pond || 0;
+      if (pond > 0.00002) {
+        const zz = Math.min(0.012, pond * 20), sh = [[x0, y0, top(x0) + zz], [x1, y0, top(x1) + zz], [x1, y1, top(x1) + zz], [x0, y1, top(x0) + zz]];
+        const q = P(cam, sh);
+        if (q) { path(ctx, q); ctx.fillStyle = 'rgba(120,175,215,' + clamp(0.25 + pond * 400, 0.25, 0.7).toFixed(2) + ')'; ctx.fill(); ctx.strokeStyle = 'rgba(220,240,255,.6)'; ctx.lineWidth = 1; ctx.stroke(); }
+        // rings where drops land in the puddle
+        if (o.rain) for (let i = 0; i < 24; i++) { const ph = ((o.t || 0) * 1.7 + i * 0.37) % 1, x = x0 + r() * (x1 - x0), y = y0 + r() * (y1 - y0), c = cam.project([x, y, top(x) + zz]); if (!c.ok) continue; ctx.strokeStyle = 'rgba(235,248,255,' + (0.7 * (1 - ph)).toFixed(2) + ')'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(c.x, c.y, 1 + 6 * ph, 0.5 + 2.4 * ph, 0, 0, TAU); ctx.stroke(); }
+      }
+      ctx.restore();
+    }, -0.01);
+    // the acrylic side, the near end wall and the rim
+    pane(F, [x0, front, top(x0) - D], [x1, front, top(x1) - D], [x0, front, top(x0) + rim], { tint: 'rgba(200,230,240,.05)', at: [(x0 + x1) / 2, front - 0.001, top((x0 + x1) / 2) - D / 2], bias: -0.005 });
+    // the lip and the spout at the downhill end
+    face(F, [[x1, y0, top(x1) - D], [x1, y1, top(x1) - D], [x1, y1, top(x1) - 0.003], [x1, y0, top(x1) - 0.003]], steel, { ambient: 0.45 });
+    const ym = (y0 + y1) / 2, sp = [x1 + 0.07, ym, top(x1) - 0.03];
+    face(F, [[x1, y0 + 0.02, top(x1)], [x1, y1 - 0.02, top(x1)], [sp[0], ym + 0.03, sp[2]], [sp[0], ym - 0.03, sp[2]]], '#A8B3BE', { ambient: 0.5 });
+    // legs: the uphill legs are longer
+    [[x0 + 0.02, y0 + 0.02], [x0 + 0.02, y1 - 0.02], [x1 - 0.02, y0 + 0.02], [x1 - 0.02, y1 - 0.02]].forEach(([x, y]) => R3.box(F, [x, y, (top(x) - D) / 2], [0.018, 0.018, Math.max(0.01, top(x) - D)], '#6A747F', { ambient: 0.45 }));
+    return { top, spout: sp };
+  }
+  /* a stream of water from a lip into a vessel: q is its flow (0..1 of the widest) */
+  function stream(F, from, toZ, q, t) {
+    if (q <= 0.002) return;
+    F.push([from[0] + 0.02, from[1], (from[2] + toZ) / 2], () => {
+      const ctx = F.ctx, pts = [];
+      for (let k = 0; k <= 12; k++) { const u = k / 12, z = from[2] - (from[2] - toZ) * u; pts.push(F.cam.project([from[0] + 0.035 * Math.sqrt(u) * (0.4 + q), from[1], z])); }
+      if (pts.some(p => !p.ok)) return;
+      ctx.save(); ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(150,195,225,.75)'; ctx.lineWidth = Math.max(1, 1 + 5 * q);
+      ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
+      ctx.strokeStyle = 'rgba(240,250,255,.7)'; ctx.lineWidth = Math.max(0.6, 1.4 * q); ctx.setLineDash([3, 5]); ctx.lineDashOffset = -t * 60;
+      ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
+      ctx.restore();
+    }, -0.01);
+  }
+
+  /* ---------------- leaves, a shoot, a bag, a lamp ---------------- */
+  /* a leaf's outline in its own frame: u along the midrib 0..1, v across, ±(half width) */
+  function leafShape(kind) {
+    const out = [], n = 26;
+    for (let i = 0; i <= n; i++) {
+      const u = i / n; let w;
+      if (kind === 'sunflower') w = 0.62 * Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.8) * (1 - 0.45 * u) + (u < 0.1 ? 0.25 * (u / 0.1) : 0);
+      else if (kind === 'bean') w = 0.42 * Math.pow(Math.sin(Math.PI * u), 0.75) * (1 - 0.2 * u);
+      else if (kind === 'oak') w = (0.30 + 0.12 * Math.max(0, Math.sin(u * Math.PI * 5.5 - 0.6))) * Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.02)), 0.6);
+      else w = 0.07 * (1 - 0.6 * u) + 0.02;                                  // maize: a long strap
+      out.push([u, w]);
+    }
+    return out;
+  }
+  /* a leaf: base point, the midrib direction, its length; lit by the angle its blade faces */
+  function leaf(F, base, dir, len, kind, o) {
+    o = o || {};
+    const d = norm(dir), s0 = norm(cross([0, 0, 1], d).every(v => Math.abs(v) < 1e-6) ? [1, 0, 0] : cross([0, 0, 1], d)), u0 = norm(cross(d, s0));
+    /* a leaf turns its blade toward the light: roll it about the midrib, whichever way faces the room */
+    const toward = o.face || [-0.35, -0.8, 0.5];
+    const roll = r => { const sd = add(scale(s0, Math.cos(r)), scale(u0, Math.sin(r))); return { side: sd, up: norm(cross(d, sd)) }; };
+    const A = roll(0.75), Bq = roll(-0.75), pick = Math.abs(R3.dot(A.up, toward)) >= Math.abs(R3.dot(Bq.up, toward)) ? A : Bq;
+    const side = pick.side, up = pick.up;
+    const shp = leafShape(kind), wscale = kind === 'maize' ? len : len * 0.55, droop = kind === 'maize' ? 0.35 : 0.12;
+    const pt = (u, v) => add(add(add(base, scale(d, u * len)), scale(side, v * wscale)), scale(up, -droop * len * u * u + Math.abs(v) * wscale * 0.12));
+    const L = shp.map(([u, w]) => pt(u, w)), R = shp.map(([u, w]) => pt(u, -w)).reverse();
+    const n = up[2] >= 0 ? up : scale(up, -1);
+    const lit = F.shade(o.col || (kind === 'oak' ? '#3F7A34' : kind === 'maize' ? '#5E9A3C' : '#4C9140'), n, { ambient: 0.45 });
+    F.push(pt(0.5, 0), () => {
+      const ctx = F.ctx, q = P(F.cam, L.concat(R)); if (!q) return;
+      ctx.save(); path(ctx, q);
+      const a = F.cam.project(pt(0, 0)), b = F.cam.project(pt(1, 0));
+      const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y); g.addColorStop(0, RX.mix(lit, '#000000', 0.15)); g.addColorStop(0.5, lit); g.addColorStop(1, RX.mix(lit, '#D8F0A0', 0.15));
+      ctx.fillStyle = g; ctx.fill(); ctx.clip();
+      if (o.gloss) { ctx.fillStyle = 'rgba(255,255,240,.28)'; ctx.fill(); }
+      ctx.strokeStyle = 'rgba(220,245,190,.55)'; ctx.lineWidth = 1.1;          // the midrib and the veins
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.lineWidth = 0.6; ctx.strokeStyle = 'rgba(210,240,180,.4)';
+      if (kind === 'maize') { for (const v of [-0.5, 0.5]) { const p0 = F.cam.project(pt(0.02, v * 0.07)), p1 = F.cam.project(pt(0.95, v * 0.03)); if (p0.ok && p1.ok) { ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke(); } } }
+      else for (let k = 1; k < 7; k++) { const u = k / 7.5; for (const s of [-1, 1]) { const p0 = F.cam.project(pt(u, 0)), p1 = F.cam.project(pt(Math.min(1, u + 0.12), s * 0.36)); if (p0.ok && p1.ok) { ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke(); } } }
+      ctx.restore();
+      ctx.save(); ctx.strokeStyle = RX.mix(lit, '#000000', 0.35); ctx.lineWidth = 0.8; path(ctx, q); ctx.stroke(); ctx.restore();
+    });
+    return pt(1, 0);
+  }
+  /* a leafy shoot rising from base: n leaves of a kind, sized to its leaf area (m² of one side) */
+  function shoot(F, base, kind, area, o) {
+    o = o || {};
+    const H = o.H || 0.2, stem = [base, add(base, [0.004, 0, H * 0.5]), add(base, [-0.003, 0.002, H])];
+    R3.tube(F, stem, kind === 'oak' ? 0.0035 : 0.004, kind === 'oak' ? '#6A5038' : '#5C8E3A', { shadow: false });
+    const nL = { sunflower: 4, bean: 3, oak: 5, maize: 3 }[kind] || 4, perLeaf = area / nL;
+    const fill = { sunflower: 0.62, bean: 0.55, oak: 0.45, maize: 0.7 }[kind];
+    const len = kind === 'maize' ? Math.sqrt(perLeaf / (0.16 * fill)) : Math.sqrt(perLeaf / (0.55 * 2 * 0.5 * fill));
+    const tips = [];
+    for (let i = 0; i < nL; i++) {
+      const f = (i + 1) / (nL + 0.5), at = add(base, [0, 0, H * (0.25 + 0.7 * f)]), a = i * 2.4 + 0.6;
+      const dir = [Math.cos(a), Math.sin(a), kind === 'maize' ? 0.7 : 0.25];
+      tips.push(leaf(F, at, dir, clamp(len, 0.02, 0.2) * (1 - 0.2 * f), kind, { gloss: o.gloss }));
+    }
+    return { top: stem[2], tips };
+  }
+  /* a polythene bag round the shoot, misting as the air in it fills with vapour */
+  function bag(F, c, r, h, mist) {
+    F.push(add(c, [0, -r * 0.2, h * 0.5]), () => {
+      const ctx = F.ctx, pts = [];
+      for (let i = 0; i < 24; i++) { const a = i / 24 * TAU; pts.push(F.cam.project([c[0] + Math.cos(a) * r * 0.55, c[1] + Math.sin(a) * r * 0.55, c[2]])); pts.push(F.cam.project([c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r, c[2] + h * 0.55])); pts.push(F.cam.project([c[0] + Math.cos(a) * r * 0.8, c[1] + Math.sin(a) * r * 0.8, c[2] + h])); }
+      if (pts.some(p => !p.ok)) return;
+      const H = hull2(pts);
+      ctx.save(); path(ctx, H);
+      ctx.fillStyle = 'rgba(235,242,248,' + (0.10 + 0.35 * mist).toFixed(3) + ')'; ctx.fill(); ctx.clip();
+      const pat = ctx.createPattern(mistTex(), 'repeat'); if (pat && mist > 0.05) { ctx.globalAlpha = clamp(mist, 0, 0.85); ctx.fillStyle = pat; ctx.fillRect(-1e4, -1e4, 2e4, 2e4); ctx.globalAlpha = 1; }
+      ctx.restore();
+      ctx.save(); ctx.strokeStyle = 'rgba(235,245,252,.55)'; ctx.lineWidth = 1; path(ctx, H); ctx.stroke();
+      const t0 = F.cam.project([c[0], c[1], c[2] + 0.004]); if (t0.ok) { ctx.fillStyle = '#C8302C'; ctx.fillRect(t0.x - 10, t0.y - 2, 20, 4); }   // the tie
+      ctx.restore();
+    }, -0.03);
+  }
+  /* a desk lamp at `at`, its shade aimed at `aim`; level 0..1 lights the bulb and the beam */
+  function lamp(F, at, aim, level) {
+    R3.cylinder(F, at, add(at, [0, 0, 0.015]), 0.06, '#23282F', { segments: 26 });
+    const elbow = add(at, [0.02, 0, 0.30]), head = add(aim, scale(norm(sub(elbow, aim)), 0.18));
+    R3.tube(F, [add(at, [0, 0, 0.015]), elbow], 0.006, '#4A525E', { shadow: false });
+    R3.tube(F, [elbow, head], 0.006, '#4A525E', { shadow: false });
+    const d = norm(sub(aim, head)), mouth = add(head, scale(d, 0.07));
+    F.push(head, () => {
+      const ctx = F.ctx, cam = F.cam, u = norm(cross(d, [0, 0, 1])), v = cross(u, d);
+      const ring = (c, r) => { const q = []; for (let i = 0; i < 28; i++) { const a = i / 28 * TAU; q.push(cam.project(add(add(c, scale(u, Math.cos(a) * r)), scale(v, Math.sin(a) * r)))); } return q.some(z => !z.ok) ? null : q; };
+      const r0 = ring(head, 0.018), r1 = ring(mouth, 0.055); if (!r0 || !r1) return;
+      ctx.save();
+      // the beam, before the shade
+      if (level > 0.01) {
+        const m = cam.project(mouth), t = cam.project(aim);
+        if (m.ok && t.ok) {
+          const g = ctx.createLinearGradient(m.x, m.y, t.x, t.y); g.addColorStop(0, 'rgba(255,240,190,' + (0.32 * level).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,240,190,0)');
+          const rr = 0.055 * m.s, rt = 0.14 * t.s, dx = t.x - m.x, dy = t.y - m.y, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
+          ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(m.x + nx * rr, m.y + ny * rr); ctx.lineTo(t.x + nx * rt, t.y + ny * rt); ctx.lineTo(t.x - nx * rt, t.y - ny * rt); ctx.lineTo(m.x - nx * rr, m.y - ny * rr); ctx.closePath(); ctx.fill();
+        }
+      }
+      const H = hull2(r0.concat(r1)); path(ctx, H);
+      const gs = ctx.createLinearGradient(H[0].x, H[0].y, H[Math.floor(H.length / 2)].x, H[Math.floor(H.length / 2)].y); gs.addColorStop(0, '#8E1E22'); gs.addColorStop(0.5, '#C7353A'); gs.addColorStop(1, '#6A1418');
+      ctx.fillStyle = gs; ctx.fill();
+      path(ctx, r1); ctx.fillStyle = level > 0.01 ? 'rgba(255,246,214,' + (0.4 + 0.6 * level).toFixed(2) + ')' : '#3A3A3A'; ctx.fill();
+      if (level > 0.01) { const m = cam.project(mouth); if (m.ok) { const g = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, 40); g.addColorStop(0, 'rgba(255,240,200,' + (0.5 * level).toFixed(2) + ')'); g.addColorStop(1, 'rgba(255,240,200,0)'); ctx.fillStyle = g; ctx.fillRect(m.x - 40, m.y - 40, 80, 80); } }
+      ctx.restore();
+    });
+    return mouth;
+  }
+
+  /* ---------------- a leaf's skin under the microscope (2D) ----------------
+     density: stomata per mm²; field: the field's width in mm; open 0..1; coated: petroleum jelly over it */
+  function skinTex(w, h, density, field, seed) {
+    const key = ['skin', w, h, density, field, seed].join(':');
+    if (cache[key]) return cache[key];
+    const c = canvas(w, h), x = c.getContext('2d'), r = rng(seed), mmPerPx = field / w;
+    const cellUm = 55, nCells = Math.round(w * h * mmPerPx * mmPerPx * 1e6 / (cellUm * cellUm));
+    const pts = []; for (let i = 0; i < nCells; i++) pts.push([r() * w, r() * h]);
+    const img = x.createImageData(w, h), D = img.data, own = new Int32Array(w * h);
+    // nearest seed, with a wobble: pavement cells interlock like a jigsaw
+    const grid = {}, gsz = 24;
+    pts.forEach((p, i) => { const k = Math.floor(p[0] / gsz) + ',' + Math.floor(p[1] / gsz); (grid[k] = grid[k] || []).push(i); });
+    for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
+      const wob = 3.2 * Math.sin(xx * 0.31 + y * 0.12) * Math.cos(y * 0.27 - xx * 0.09), gx = Math.floor(xx / gsz), gy = Math.floor(y / gsz);
+      let best = 1e9, bi = 0;
+      for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) { const L = grid[(gx + a) + ',' + (gy + b)]; if (!L) continue; for (const i of L) { const dx = xx - pts[i][0], dy = y - pts[i][1], dd = Math.sqrt(dx * dx + dy * dy) + wob; if (dd < best) { best = dd; bi = i; } } }
+      own[y * w + xx] = bi;
+    }
+    for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
+      const k = y * w + xx, o = own[k], edge = (xx > 0 && own[k - 1] !== o) || (y > 0 && own[k - w] !== o);
+      const sh = 0.92 + 0.08 * Math.sin(o * 12.9);
+      D[k * 4] = edge ? 96 : 214 * sh; D[k * 4 + 1] = edge ? 120 : 232 * sh; D[k * 4 + 2] = edge ? 88 : 196 * sh; D[k * 4 + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    const nS = Math.round(density * field * field * h / w), stom = [];
+    for (let i = 0; i < nS; i++) stom.push([12 + r() * (w - 24), 12 + r() * (h - 24), r() * Math.PI]);
+    cache[key] = { c, stom, mmPerPx };
+    return cache[key];
+  }
+  function stomata(ctx, x, y, w, h, o) {
+    const T = skinTex(Math.round(w), Math.round(h), o.density, o.field, o.seed || 3);
+    ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.drawImage(T.c, x, y);
+    const L = 26 / (T.mmPerPx * 1000), open = clamp(o.open, 0, 1);        // a guard-cell pair is about 26 µm long
+    T.stom.forEach(([sx, sy, a]) => {
+      ctx.save(); ctx.translate(x + sx, y + sy); ctx.rotate(a);
+      const gw = L * 0.32;
+      for (const s of [-1, 1]) {
+        const g = ctx.createLinearGradient(0, s * gw * 0.2, 0, s * gw * 1.1); g.addColorStop(0, '#5F9A48'); g.addColorStop(1, '#3E7A30');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, s * (gw * 0.55 + open * gw * 0.2), L / 2, gw * 0.6, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(40,110,40,.9)'; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.arc(k * L * 0.13, s * (gw * 0.6 + open * gw * 0.2), Math.max(0.6, L * 0.04), 0, TAU); ctx.fill(); }   // chloroplasts
+      }
+      ctx.fillStyle = '#10180E'; ctx.beginPath(); ctx.ellipse(0, 0, L * 0.34, Math.max(0.4, gw * 0.08 + open * gw * 0.5), 0, 0, TAU); ctx.fill();   // the pore
+      ctx.restore();
+    });
+    if (o.coated) {
+      const g = ctx.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, 'rgba(240,232,190,.55)'); g.addColorStop(0.5, 'rgba(255,250,225,.35)'); g.addColorStop(1, 'rgba(230,220,170,.55)');
+      ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y + h * 0.3); ctx.bezierCurveTo(x + w * 0.3, y + h * 0.2, x + w * 0.6, y + h * 0.45, x + w, y + h * 0.35); ctx.stroke();
+    }
+    ctx.restore();
+    // the scale bar: 50 µm
+    const bar = 0.05 / T.mmPerPx;
+    ctx.save(); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x + w - bar - 8, y + h - 10, bar, 2.5); ctx.font = mono(8.5); ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText('50 µm', x + w - 8, y + h - 12); ctx.fillText('50 µm', x + w - 8, y + h - 12); ctx.restore();
+    return T.stom.length;
+  }
+
+  /* ---------------- a porcelain spot plate with drops counted into its wells ---------------- */
+  function spotPlate(F, c, wells, o) {
+    o = o || {};
+    const n = wells.length, pitch = 0.036, w = n * pitch + 0.02, d = 0.06;
+    R3.box(F, [c[0], c[1], 0.007], [w, d, 0.014], '#F1F2F0', { ambient: 0.6 });
+    wells.forEach((wl, i) => {
+      const at = [c[0] - w / 2 + 0.01 + (i + 0.5) * pitch, c[1], 0.0142];
+      F.push(at, () => {
+        const ctx = F.ctx, q = F.cam.project(at); if (!q.ok) return;
+        const rr = 0.013 * q.s, g = ctx.createRadialGradient(q.x, q.y - rr * 0.3, rr * 0.1, q.x, q.y, rr);
+        g.addColorStop(0, '#C9CCCA'); g.addColorStop(0.8, '#E8EAE8'); g.addColorStop(1, '#FFFFFF');
+        ctx.save(); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(q.x, q.y, rr, rr * 0.55, 0, 0, TAU); ctx.fill();
+        // the drops: whole ones as beads, the last part-drop smaller by the cube root of its share
+        const whole = Math.floor(wl.drops), part = wl.drops - whole, show = Math.min(whole, 24), rr2 = rng(i * 31 + 5);
+        const bead = (x, y, k) => { RX.ball(ctx, x, y, Math.max(1.2, 0.0032 * q.s * k), '#5AA8E0', { rim: 0.6 }); };
+        for (let k = 0; k < show; k++) { const a = rr2() * TAU, dd = Math.sqrt(rr2()) * rr * 0.6; bead(q.x + Math.cos(a) * dd, q.y + Math.sin(a) * dd * 0.5, 1); }
+        if (part > 0.001 && show < 24) bead(q.x + 2, q.y, Math.cbrt(part));
+        ctx.restore();
+      }, -0.004);
+    });
+    return { pitch, w, x0: c[0] - w / 2 + 0.01 };
+  }
+
+  /* a label on a dark pill, in screen space */
+  function tag(ctx, x, y, text, col, o) {
+    o = o || {};
+    ctx.save(); ctx.font = o.font || mono(9.5);
+    const pw = ctx.measureText(text).width + 10, ph = o.h || 16;
+    const x0 = o.align === 'right' ? x - pw : o.align === 'center' ? x - pw / 2 : x;
+    ctx.fillStyle = o.bg || 'rgba(6,10,20,.86)';
+    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x0, y - ph / 2, pw, ph, 4); else ctx.rect(x0, y - ph / 2, pw, ph); ctx.fill();
+    ctx.fillStyle = col || '#DCE6F6'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(text, x0 + 5, y + 0.5);
+    ctx.restore();
+    return { x0, x1: x0 + pw };
+  }
+
+  window.G6D = { face, pane, chamber, lid, glassTube, fan, fog, rainRig, soilTray, stream, leafShape, leaf, shoot, bag, lamp, stomata, skinTex, spotPlate, tag, hull2, mistTex, rng };
+})();
