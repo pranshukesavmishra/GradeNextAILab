@@ -351,3 +351,65 @@ describe("6D-5 Unequal Heating — the models", () => {
     expect(M.dayOf(p, "desert").length).toBe(96);
   });
 });
+
+describe("6D-6 California's Weather Machine — the models", () => {
+  type Row = { x: number; z: number; T: number; Td: number; year: number; rate: number };
+  const M = engine.InsightLab.models["g6d-california"] as unknown as {
+    stationT: (k: string, m: number, o?: P) => number; stationDay: (k: string, m: number, hr: number, o?: P) => number;
+    annual: (k: string, o?: P) => { mean: number; range: number; warmest: number };
+    NORMALS: Record<string, { T?: number[]; P: number }>; STN: Record<string, { x: number }>;
+    seaT: (m: number, o?: P) => { off: number; coast: number };
+    parcelRun: (s: P, o?: P) => Row[]; rainAt: (r: Row[], x: number) => Row;
+    fogPt: (p: P, k: string, hr: number) => { T: number; fog: boolean; cloud: boolean; marine: boolean };
+    FOG: P; moistLapse: (T: number, z: number) => number;
+    valleyAir: (p: P, z: number, hr: number) => number; DV: Record<string, number>;
+  };
+  const rms = (k: string) => { const N = M.NORMALS[k].T as number[]; let e = 0; N.forEach((v, m) => { e += (M.stationT(k, m) - v) ** 2; }); return Math.sqrt(e / 12); };
+
+  it("matches the NOAA 1991–2020 monthly normals within 1.5 °C rms at San Francisco, Sacramento and Death Valley", () => {
+    expect(rms("sf")).toBeLessThan(0.7);
+    expect(rms("sac")).toBeLessThan(1.3);
+    expect(rms("dv")).toBeLessThan(1.5);
+    expect(M.stationT("dv", 6)).toBeCloseTo(38.7, 1);
+  });
+
+  it("gives San Francisco a small swing peaking in September, the interior a large one peaking in July", () => {
+    const sf = M.annual("sf"), sac = M.annual("sac"), dv = M.annual("dv");
+    expect(sf.warmest).toBe(8);
+    expect(sac.warmest).toBe(6);
+    expect(sf.range).toBeLessThan(8);
+    expect(sac.range).toBeGreaterThan(14);
+    expect(dv.range).toBeGreaterThan(26);
+    expect(M.annual("sf", { ocean: false }).range).toBeGreaterThan(15);
+  });
+
+  it("cools the coastal sea by upwelling in spring and early summer", () => {
+    const s = M.seaT(4);
+    expect(s.off - s.coast).toBeGreaterThan(2);
+    expect(M.seaT(8).off).toBeGreaterThan(M.seaT(2).off + 2);
+  });
+
+  it("rains the storm out on the Sierra's windward slope: annual totals within 15 % of the five stations' records", () => {
+    const R = M.parcelRun({});
+    for (const k of ["sf", "sac", "blue", "bishop", "dv"]) {
+      const v = M.rainAt(R, M.STN[k].x).year, n = M.NORMALS[k].P;
+      expect(Math.abs(Math.log(v / n))).toBeLessThan(0.15);
+    }
+    expect(M.rainAt(R, M.STN.bishop.x).T).toBeGreaterThan(M.rainAt(R, M.STN.blue.x).T);
+    expect(M.moistLapse(10, 0)).toBeLessThan(6);
+  });
+
+  it("keeps fog on the beach while the sun burns it off inland", () => {
+    const p = { ...M.FOG };
+    expect(M.fogPt(p, "beach", 6).fog).toBe(true);
+    expect(M.fogPt(p, "beach", 14).cloud).toBe(true);
+    expect(M.fogPt(p, "valley", 14).cloud).toBe(false);
+    expect(M.fogPt({ ...p, sst: 16 }, "beach", 6).cloud).toBe(false);
+  });
+
+  it("puts Badwater 9.8 °C/km × 3.45 km = 33.8 °C above Telescope Peak on a July afternoon", () => {
+    const d = { dmonth: 6, sink: 0, zi: 4, surface: "gravel", dwind: 2 };
+    expect(M.valleyAir(d, M.DV.floor, 15) - M.valleyAir(d, M.DV.telescope, 15)).toBeCloseTo(33.8, 1);
+    expect(M.stationDay("sac", 6, 15)).toBeGreaterThan(M.stationDay("sf", 6, 15) + 12);
+  });
+});

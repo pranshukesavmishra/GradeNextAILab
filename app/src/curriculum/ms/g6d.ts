@@ -60,4 +60,16 @@ export const LABS_6D: MsLab[] = [
       { value: "combined", label: "Three days, four surfaces", teaches: ["D5.5"] },
     ],
   },
+  {
+    id: "g6d-california", grade: 6, unit: "D", topics: ["D6"], subject: "earth",
+    name: "California’s Weather Machine",
+    setups: [
+      { value: "coastal", label: "A July day from the coast to the desert", teaches: ["D6.1"] },
+      { value: "fog", label: "The marine layer: fog through the Golden Gate", teaches: ["D6.2"] },
+      { value: "rainshadow", label: "A winter storm over the Sierra Nevada", teaches: ["D6.3"] },
+      { value: "deserts", label: "Death Valley: the hottest place on Earth", teaches: ["D6.4"] },
+      { value: "pacific", label: "The Pacific’s slow seasons", teaches: ["D6.5"] },
+      { value: "together", label: "The whole machine against the climate records", teaches: ["D6.6"] },
+    ],
+  },
 ];
