@@ -68,8 +68,7 @@ Plus the repo gate (`cd app && npx tsc -b --noEmit && npx vitest run && npm run 
 
 ## 5. Order
 
-**At most 3 lanes run at once** (founder, 2026-10-01: rate limits; one failure must not take
-everything down). Teaching order: 6B · 6C · 6D → 6E · 6F · 7A → 7B · 7C · 7D → 7E · 7F · 8A →
+**At most 6 lanes run at once** (raised from 3–4 by the founder on 2026-10-04; originally 3 for rate limits). Teaching order: 6B · 6C · 6D → 6E · 6F · 7A → 7B · 7C · 7D → 7E · 7F · 8A →
 8B · 8C · 8D → 8E · 8F. When a lane finishes it is merged and checked, and the next one starts.
 Lanes started earlier and then paused resume from their own commits and their "Resume here" notes.
 
