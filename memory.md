@@ -759,6 +759,12 @@ Environment constants (this container family):
 - **Grade 6 Unit D complete** (2026-10-04): 6D-1 `g6d-water-cycle`, 6D-2 `g6d-atmosphere`, 6D-3
   `g6d-weather-station`, 6D-4 `g6d-fronts`, 6D-5 `g6d-unequal-heating`, 6D-6 `g6d-california` (NOAA
   1991–2020 normals within 1.5 °C rms, annual rain within 10 % at five stations); 901 tests.
+- **Merged and deployed 2026-10-04**: 6F-1 `g6f-energy-balance`, 7A-1 `g7a-particle-detective` (audit
+  CLEAN, 939 tests). Progress: 30 of 85 labs (35 %); Grade 6 29/32.
+- **Founder stopped all lanes 2026-10-04**, then resumed only 6F and 7A on the last ~5 % of the week's
+  usage. In-progress work of 7B, 7C, 7D, 7E is in WIP commits on the local worktree branches
+  `worktree-agent-<id>` (not pushed; lost if the container is reclaimed). Their plans are in
+  `docs/labs/<unit>.md` in those worktrees.
 - **6 lanes at once from 2026-10-04** (founder: "6, deploy"): 6F, 7A, 7B, 7C, 7D, 7E.
 - **Deploy** (founder, 2026-10-02: "yes, deploy"): after every verified merge (gate green), this branch
   is fast-forwarded onto `claude/gradenext-smart-lab-plan-yba89q`, which deploys the live site. First
