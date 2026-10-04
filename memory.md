@@ -183,6 +183,14 @@ bar moves, everything below it becomes work.
 - **The 42 Higher Secondary labs** are InsightVis's work, merged verbatim. They change only by
   syncing from upstream (§8) or on the founder's explicit request.
 
+### 2.13 Upgrade twice, finish fast — the founder's rule of 2026-10-01
+Every lab is upgraded as far as it can go, and finished fast. For every lab, **twice**, the builder
+stops and asks *"how can this be made better — extraordinary?"* (more to see, build, change,
+measure, break and predict; richer visualisation; truer apparatus; sharper controls) and applies
+the answer: **upgrade pass 1** once the lab works, **upgrade pass 2** after the first contact
+sheets. Only then does it ship. Speed comes from running 3–4 units at a time, never from skipping
+an upgrade or a check. **Every session records what was built in §9 and §13 of this file.**
+
 ### 2.10 CALIBRATION — the founder's verdicts, and what they mean
 
 | Round | Verdict | What it means |
@@ -743,7 +751,35 @@ Environment constants (this container family):
 
 ## 9. Current status
 
-**State as of 2026-10-01 (latest):**
+**State as of 2026-10-02 (latest):**
+- **Merged from lanes**: 6B-3 Levels of Organization (`g6b-levels`), 6C-1 The Energy Chain Bench
+  (`g6c-energy-chain`), 6D-1 The Water Cycle Machine (`g6d-water-cycle`), 6E-1 Climate from Weather
+  (`g6e-climate`). Gate green (629 tests); integrator reviewed their sheets. Open: 6D-1 throws in the
+  audit's DOM click-through (sent to the 6D lane); 6C-1 set-up 1 labels overlap the ruler (sent to 6C).
+- **Grade 6 Unit D complete** (2026-10-04): 6D-1 `g6d-water-cycle`, 6D-2 `g6d-atmosphere`, 6D-3
+  `g6d-weather-station`, 6D-4 `g6d-fronts`, 6D-5 `g6d-unequal-heating`, 6D-6 `g6d-california` (NOAA
+  1991–2020 normals within 1.5 °C rms, annual rain within 10 % at five stations); 901 tests.
+- **6 lanes at once from 2026-10-04** (founder: "6, deploy"): 6F, 7A, 7B, 7C, 7D, 7E.
+- **Deploy** (founder, 2026-10-02: "yes, deploy"): after every verified merge (gate green), this branch
+  is fast-forwarded onto `claude/gradenext-smart-lab-plan-yba89q`, which deploys the live site. First
+  deploy of the fast-build labs: run 114 at `8259686`.
+- **Grade 6 Unit B complete** (merged 2026-10-02): 6B-3 `g6b-levels`, 6B-4 `g6b-systems-bench`, 6B-5
+  `g6b-exercise`, 6B-6 `g6b-senses`; 33–38 controls each; 817 tests. Polish queue: 6B-1 and 6B-2 (built
+  before §2.13) have not had the two upgrade passes.
+- **Grade 6 Unit C complete** (merged 2026-10-02): 6C-1 `g6c-energy-chain`, 6C-2 `g6c-particle-box`,
+  6C-3 `g6c-heat-transfer`, 6C-4 `g6c-specific-heat`, 6C-5 `g6c-design-studio`; 6 set-ups and 22–34
+  controls each; 765 tests. **Polish queue** (integrator review): 6C-3 convection tank is dots in a flat
+  box (needs a real plume/dye render), Leslie's cube is small in frame, the mixing set-up is sparse.
+  The 6A-1 shoal flake was the 5 s test timeout under load: the run-every-set-up test now allows 30 s.
+- **Grade 6 Unit E complete** (merged 2026-10-02): 6E-1 `g6e-climate`, 6E-2 `g6e-circulation`, 6E-3
+  `g6e-generation`, 6E-4 `g6e-nurture`, 6E-5 `g6e-heredity` (E5+E6), 18–34 controls each, two upgrade
+  passes recorded in `docs/labs/6e.md`; 702 tests. Watch: `g6a-living-tank/shoal` failed once in the full
+  suite while four lanes loaded the CPU and passed 4/4 after; unconfirmed whether it is a timeout.
+- `ship.mjs` now runs `audit.mjs <id>` (new one-lab mode) — ship.mjs alone had missed 6D-1's bug.
+- Lanes active: 6B, 6C, 6D, 6E (4, the founder's limit). Paused with plans committed in their
+  worktrees: 6F, 7A–7F, 8A–8F. The 2026-10-01 night stop was the account's usage limit, not a bug.
+
+**State as of 2026-10-01:**
 - **Fast build adopted** (`docs/FAST_BUILD_PLAN.md`). Groundwork landed: the catalogue split one
   file per unit (`app/src/curriculum/ms/g<u>.ts` + `ms/g<u>.test.ts`, engine loader `ms/engine.ts`),
   a marked block per unit in `smartlab/index.html`, `smartlab/ship.mjs` (numbers + liveness + mounts
@@ -874,6 +910,10 @@ Append only. Never rewrite history.
 | 2026-09-25 | **A change of condition is an event, not a restart**: sliders that change the conditions (salt round the cells, the bath's temperature, the spot's place) let the model carry on from where it is; only a new experiment restarts; readings are integrated in step() so a change mid-run carries on smoothly | Irrigating a slide with salt and watching the cells shrink is the experiment; a restart would hide it, and an analytic reading of time jumps when its rate changes |
 | 2026-09-25 | **live.mjs --presets** sweeps from every preset as well as every set-up | 6B-2's sub-experiments (Engelmann's spot, the leaf test) show controls the base parameters never reach; the plain sweep checked 35 pairs, the preset sweep 61 |
 | 2026-10-01 | **Fast build: unit lanes in parallel, 4–5 set-ups and 10–18 meaningful controls a lab, one figure library per unit, one-command check + contact sheet** | Founder: all of Grades 6–8 in 24–48 h, quality raised; the slow parts were serial work and review, not the science |
+| 2026-10-04 | **6 lanes at once** (was 3–4) | Founder chose speed: "6, deploy and continue building on more than high quality" |
+| 2026-10-02 | **Deploy after every verified merge** by fast-forwarding onto `claude/gradenext-smart-lab-plan-yba89q` | Founder: the labs must reach the website; "yes, deploy" |
+| 2026-10-01 (latest) | **Two upgrade passes per lab before it ships (§2.13); every session logs its building here** | Founder: upgrade as much as possible, think twice how to make each lab extraordinary, and finish fast |
+| 2026-10-01 (later) | **At most 3 lanes at once; the rest paused (never cancelled) and resumed one by one in teaching order** | Founder: rate limits; 17 at once risks everything failing together |
 | 2026-10-01 (later) | **No fixed set-up or control counts; all 17 unit lanes at once** (supersedes the 4–5 / 10–18 figures above) | Founder: every topic has its own way to be extraordinary; as fast as possible |
 | 2026-10-01 | **The 37 keepers are superseded by the new labs, not edited**; linked to subtopics beside them | Founder: earlier sims were made on the old model and must be upgraded; the new lab is the upgrade |
 | 2026-09-25 | **A comparison with a standard names the standard's criterion** (ISO 13732-1 is the onset of a burn; the scald table is a burn through the skin) | The lab's steel limit (73.5 °C) and ISO's (65–70 °C) differ because they measure different burns — said so, test checks the physical chain |
@@ -883,6 +923,12 @@ Append only. Never rewrite history.
 ## 13. Session log
 
 Newest first.
+
+- **2026-10-01 → 10-02** — **Fast build started.** Per-unit catalogue split, `ship.mjs`, lane brief,
+  plan; existing React sims linked to 239 subtopics; 17 lanes started then capped at 4 by the founder
+  (rate limits); rules added: no fixed counts, two upgrade passes (§2.13), scratch per lane. First four
+  lab merges (6B-3, 6C-1, 6D-1, 6E-1). Found: phone overflow from long tags (fixed), worktrees created
+  from old `main` (lanes moved to the right base), a page error ship.mjs could not see (now audited).
 
 - **2026-09-25 (latest)** — **6B-2 Inside the Cell built.** Every model checked in a scratch runner first (the
   bag against the class data, plasmolysis and fragility curves, Hämmerling's graft sequence, the
