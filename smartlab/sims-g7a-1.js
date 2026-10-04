@@ -198,7 +198,7 @@
     const r = rng(seed), p = [];
     for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) p.push({ x: (i + 0.5) / 9 * LQ + (r() - 0.5) * 50, y: (j + 0.5) / 9 * LQ + (r() - 0.5) * 50, a: r() * TAU, t: (r() - 0.5) * 1.4, k: 'w' });
     // the crystal's face is at the bottom: its ions start packed there
-    p.map((q, i) => [Math.hypot(q.x - LQ / 2, q.y - LQ * 0.92), i]).sort((a, b) => a[0] - b[0]).slice(0, ions).forEach(([, i]) => { p[i].k = 'ion'; });
+    p.map((q, i) => [Math.hypot(q.x - LQ / 2, q.y - LQ * 0.72), i]).sort((a, b) => a[0] - b[0]).slice(0, ions).forEach(([, i]) => { p[i].k = 'ion'; });
     return { p, cx: LQ / 2, cy: LQ / 2, L: LQ, r: rng(seed * 31 + 7) };
   }
   function bdStep(sys, h, Drel, o) {
@@ -300,7 +300,7 @@
       S.grains.forEach(g => { g.y += -v * h + gauss(r) * s; g.x += gauss(r) * s; if (g.y < 0) g.y = -g.y; if (g.y > CELLH) g.y = 2 * CELLH - g.y; g.x = ((g.x % FIELD) + FIELD) % FIELD; });
       S.ts += h;
       // a reading: count the grains within ±1.5 µm of each focal level (a shallow objective), every interval
-      while (S.ts >= S.nextRec) { LEVELS.forEach((lv, i) => { S.reads[i] += S.grains.filter(g => Math.abs(g.y - lv) < 1.5).length; }); S.nReads++; S.nextRec += p.dt; }
+      while (S.ts >= S.nextRec) { if (S.nextRec < p.wait * 3600) { S.nextRec += p.dt; continue; } LEVELS.forEach((lv, i) => { S.reads[i] += S.grains.filter(g => Math.abs(g.y - lv) < 1.5).length; }); S.nReads++; S.nextRec += p.dt; }
     }
   }
   const trackNA = S => S.disp.length >= 2 ? avogadroFromTracks(meanSq(S.disp), S.p.dt, S.p.T, S.p.rad, S.p.gly / 100) : NaN;
@@ -319,9 +319,9 @@
   const is = v => S => S.p.setup === v;
   const BASE = {
     setup: 'review', seed: 1, lapse: 60,
-    what: 'ink', T: 20, mg: 5, lp: 0,
+    what: 'ink', T: 20, mg: 5, lp: 0, twin: false, T2: 5,
     pair: 'ethanol', vA: 50, vB: 50, stir: true,
-    pexp: 'track', rad: 0.367, gly: 0, dt: 30, nG: 20,
+    pexp: 'track', rad: 0.367, gly: 0, dt: 30, nG: 20, wait: 3,
     volts: 12, conc: 0.5, look: 'electrode',
     oil: 'oleic', ldil: 3, dpm: 50, drops: 1, tray: 'tray', zoom: 'molecules'
   };
@@ -332,7 +332,7 @@
      SETTING UP AND RUNNING
      ============================================================ */
   const HOMES = {
-    ink: { theta: -1.25, phi: 0.3, dist: 0.62, target: [0.0, 0.0, 0.15] },
+    ink: { theta: -1.25, phi: 0.28, dist: 0.5, target: [0.03, 0.02, 0.15] },
     bromine: { theta: -1.2, phi: 0.22, dist: 0.72, target: [0.05, 0.0, 0.15] },
     sharper: { theta: -1.35, phi: 0.3, dist: 0.78, target: [0.0, 0.0, 0.11] },
     evidence: { theta: -1.0, phi: 0.3, dist: 0.8, target: [0.0, 0.0, 0.16] },
@@ -384,7 +384,7 @@
       if (S.ts < MAX_T.sharper) { S.ts += h; S.mixT += h; }
       const hd = Math.min(dt, 0.05), shake = p.stir ? 1 : 0;
       if (p.pair === 'beads') { if (shake) for (let k = 0; k < 2; k++) bdStep(S.sys, hd, 2.2, { g: -9000 * 2, heavy: { m: 1, s: 1 } }); else bdStep(S.sys, hd, 0.0, { g: -9000 * 2 }); }
-      else bdStep(S.sys, hd, (p.stir ? 3 : 0.9) * (S.mixT > 0 ? 1 : 1), { g: -2500, heavy: { w: 1.25, e: 0.6 } });
+      else bdStep(S.sys, hd, p.stir ? 3 : 0.1, { g: -2500, heavy: { w: 1.25, e: 0.6 } });
     } else if (p.setup === 'evidence') {
       if (S.ts < MAX_T.evidence) grainsStep(S, h);
     } else if (p.setup === 'atoms') {
@@ -421,7 +421,7 @@
   const fmtLen = m => { const a = Math.abs(m); return a >= 1 ? m.toFixed(a >= 10 ? 0 : 2) + ' m' : a >= 0.01 ? (m * 100).toFixed(1) + ' cm' : a >= 1e-3 ? (m * 1000).toFixed(2) + ' mm' : a >= 1e-6 ? (m * 1e6).toFixed(1) + ' µm' : a >= 1e-9 ? (m * 1e9).toFixed(2) + ' nm' : a >= 1e-12 ? (m * 1e12).toFixed(0) + ' pm' : (m * 1e15).toFixed(1) + ' fm'; };
   function lay(g) {
     const W = g.w, H = g.h, HD = 58, FT = 26, narrow = W < 640;
-    if (narrow) { const R = Math.max(70, Math.min((W - 34) / 2, (H - HD - 44 - 78) / 2)); return { narrow, R, c: [W / 2, HD + 38 + R], W, H }; }
+    if (narrow) { const R = Math.max(70, Math.min((W - 34) / 2, (H - HD - 44 - 78) / 2)); return { narrow, R, c: [W / 2, HD + 50 + R], W, H }; }
     const R = Math.max(90, Math.min((H - HD - FT - 58) / 2, W * 0.26));
     return { narrow, R, c: [W - R - 26, HD + 22 + R], W, H, bw: W - 2 * R - 64 };
   }
@@ -463,8 +463,16 @@
     const r = 0.036, Hb = 0.105, lv = 0.085;
     MEAS.beaker(F, base, r, Hb, lv, { T: p.T, marks: { max: 250, perM: 250 / 0.115 }, tint: '#CFE6F2' });
     const rad = Math.min(inkRadius(S.ts, p.mg * 1e-6, p.T), 0.034), pk = inkPeak(S.ts, p.mg * 1e-6, p.T);
-    A.inkCloud(F, base, Math.max(rad, 0.0015), clamp(Math.log10(Math.max(1e-9, pk) / INK.cVis) / 4, 0.08, 1), '#8A1E86');
+    A.inkCloud(F, base, Math.max(rad, 0.0015), clamp(Math.log10(Math.max(1e-9, pk) / INK.cVis) / 4, 0.3, 1), '#8A1E86');
     R3.box(F, [base[0], base[1], top + 0.0012], [0.0024, 0.0016, 0.0016].map(v => v * Math.cbrt(p.mg / 5)), '#3A0838', { shadow: false });
+    if (p.twin) {
+      // the second beaker stands on a cork mat beside the hot plate, same crystal, same water, another temperature
+      const b2 = [0.16, 0.0, 0.004], r2 = Math.min(inkRadius(S.ts, p.mg * 1e-6, p.T2), 0.034), pk2 = inkPeak(S.ts, p.mg * 1e-6, p.T2);
+      R3.cylinder(F, [b2[0], b2[1], 0], [b2[0], b2[1], 0.004], 0.05, '#B58A5A', { segments: 30, shadow: false });
+      MEAS.beaker(F, b2, r, Hb, lv, { T: p.T2, marks: { max: 250, perM: 250 / 0.115 }, tint: '#CFE6F2' });
+      A.inkCloud(F, b2, Math.max(r2, 0.0015), clamp(Math.log10(Math.max(1e-9, pk2) / INK.cVis) / 4, 0.3, 1), '#8A1E86');
+      lab.push([[b2[0], b2[1] - r, b2[2] + 0.06], 'the same crystal at ' + p.T2 + ' °C: ' + (r2 * 1000).toFixed(1) + ' mm', 30, -40]);
+    }
     const tip = [base[0] + 0.02, base[1] + 0.012, top + 0.02], dir = norm([0.12, 0.08, 1]);
     const e = window.G6C.glassThermometer(F, tip, dir, p.T, { len: 0.24, lo: -10, hi: 110 });
     lab.push([[base[0] - 0.02, base[1], top + 0.005], rad > 0.002 ? 'permanganate cloud, ' + (rad * 1000).toFixed(1) + ' mm' : 'a crystal of potassium permanganate, ' + p.mg + ' mg', -70, 40],
@@ -505,7 +513,7 @@
       inner: beads ? (F2, gg) => { const zA = gg.zOf(Math.max(0, p.vA * (1 - 0) * 0.999)), n = Math.round(p.vA / 50 * 14); for (let i = 0; i < n; i++) { const a = i * 2.4, rr = (i % 3) * 0.005; R3.sphere(F2, [pan[0] + Math.cos(a) * rr, pan[1] + Math.sin(a) * rr, gg.z0 + 0.008 + (zA - gg.z0 - 0.012) * i / Math.max(1, n)], 0.0068, '#BFE0F0', { shadow: false, rim: 0.9 }); } } : null
     });
     void ga; void gb;
-    lab.push([[pan[0], pan[1] - 0.02, pan[2] + 0.08], 'the mixture: ' + N.V.toFixed(1) + ' mL', 50, -20], [[-0.14, -0.06, 0.08], beads ? p.vA + ' mL of marbles went in' : p.vA + ' mL of ' + (p.pair === 'ethanol' ? 'ethanol' : 'dyed water') + ' went in', -40, -60], [[-0.08, -0.1, 0.05], p.vB + ' mL of ' + (beads ? 'sand' : 'water') + ' went in', -40, 50], [[pan[0], pan[1] - 0.12, 0.05], 'balance: cylinder 168.2 g + contents', 40, 40]);
+    lab.push([[pan[0], pan[1] - 0.02, pan[2] + 0.08], 'the mixture: ' + N.V.toFixed(1) + ' mL', 50, -20], [[-0.14, -0.06, 0.1], beads ? p.vA + ' mL of marbles went in' : p.vA + ' mL of ' + (p.pair === 'ethanol' ? 'ethanol' : 'dyed water') + ' went in', -40, -70], [[-0.08, -0.1, 0.1], p.vB + ' mL of ' + (beads ? 'sand' : 'water') + ' went in', -30, -40], [[pan[0], pan[1] - 0.12, 0.05], 'balance: cylinder 168.2 g + contents', 40, 40]);
     if (p.stir) lab.push([[pan[0], pan[1], pan[2] + 0.2], beads ? 'shaken' : 'stirred with a glass rod', 40, -10]);
     const zv = (G, v, b) => [b[0], b[1], 0.018 + v * 1e-6 / (Math.PI * G.d * G.d / 4)];
     H.push((ctx, g) => { axisHandle(S, g, 'vA', zv(CYL100, p.vA, [-0.14, -0.06]), zv(CYL100, p.vA + 20, [-0.14, -0.06]), 'vA', 0, 100); axisHandle(S, g, 'vB', zv(CYL100, p.vB, [-0.08, -0.1]), zv(CYL100, p.vB + 20, [-0.08, -0.1]), 'vB', 0, 100); });
@@ -523,7 +531,7 @@
     const su = A.supply(F, [0.2, -0.06, 0], p.volts, I);
     A.tubing(F, [su.black, [0.12, -0.12, 0.02], [-hf.sep, -0.03, 0.04], hf.electrode(-hf.sep)], { colour: '#22262E', r: 0.0022 });
     A.tubing(F, [su.red, [0.12, -0.09, 0.02], [hf.sep, -0.03, 0.035], hf.electrode(hf.sep)], { colour: '#C8302A', r: 0.0022 });
-    lab.push([hf.top(-hf.sep), 'cathode (−): hydrogen, ' + G.H.toFixed(1) + ' mL', -50, -20], [hf.top(hf.sep), 'anode (+): oxygen, ' + G.O.toFixed(1) + ' mL', 40, -40],
+    lab.push([[-hf.sep, 0, hf.z1 - 0.03], 'cathode (−): hydrogen, ' + G.H.toFixed(1) + ' mL', -50, 10], [[hf.sep, 0, hf.z1 - 0.05], 'anode (+): oxygen, ' + G.O.toFixed(1) + ' mL', 50, 20],
       [[0, 0, 0.08], p.conc > 0 ? 'water + ' + p.conc.toFixed(2) + ' M sodium sulfate' : 'pure water', -70, 40], [su.knob, 'power supply', 30, 30]);
     H.push((ctx, g) => axisHandle(S, g, 'volts', su.knob, add(su.knob, [0.05, 0, 0]), 'volts', 0, 20, { re: false }));
   }
@@ -580,14 +588,14 @@
         const x = x0 + q.x * s, y = yb - q.y * s;
         if (q.k === 'm') { RX.ball(ctx, x, y, RAD.m * s, '#9FD0E8', { rim: 0.9, sub: 0.6, shadow: false }); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x - RAD.m * s * 0.3, y - RAD.m * s * 0.3, RAD.m * s * 0.35, 3.6, 4.8); ctx.stroke(); ctx.restore(); }
         else if (q.k === 's') RX.ball(ctx, x, y, RAD.s * s, '#D2B47A', { rim: 0.4, sub: 0.3, shadow: false });
-        else A.molecule2(ctx, x, y, q.k === 'e' ? A.MOL.EtOH : A.MOL.H2O, s * 0.95, q.a, { tilt: q.t, k: 0.74, tint: q.tint ? '#3D7FE0' : null });
+        else A.molecule2(ctx, x, y, q.k === 'e' ? A.MOL.EtOH : A.MOL.H2O, s * 0.95, q.a, { tilt: q.t, k: 0.74, tint: q.k === 'e' ? '#F0B840' : q.tint ? '#3D7FE0' : null });
       });
       // the level, as the eye reads it
       const ty = yb - packTop(sys) * s; ctx.strokeStyle = '#FFD66B'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x0 - 14, ty); ctx.lineTo(x0 + sys.L * s + 14, ty); ctx.stroke(); ctx.setLineDash([]);
       window.G6B.tag(ctx, x0 + sys.L * s + 16, ty, 'level', { align: 'left', col: '#FFD66B' });
     });
     cap(beads ? 'marbles and sand, in section' : p.pair === 'ethanol' ? 'ethanol on water, 20 million times' : 'dyed water on water', beads ? (p.stir ? 'shaking' : 'left alone') : (p.stir ? 'stirred' : 'left alone') + ' · a 2D slice');
-    if (g.labels && R > 110) { ctx.save(); ctx.font = mono(10, 600); ctx.textAlign = 'center'; ctx.fillStyle = '#C9D6EA'; ctx.fillText(beads ? 'sand runs into the gaps between marbles' : p.pair === 'ethanol' ? 'CH₃CH₂OH and H₂O: different sizes, held by H-bonds' : 'the same particles: they only mingle', cx, cy + R * 0.92); ctx.restore(); }
+    if (g.labels && R > 110) { ctx.save(); ctx.font = mono(10, 600); ctx.textAlign = 'center'; ctx.fillStyle = '#C9D6EA'; ctx.fillText(beads ? 'sand runs into the gaps between marbles' : p.pair === 'ethanol' ? 'ethanol (gold) and water: different sizes, held by H-bonds' : 'the same particles: they only mingle', cx, cy + R * 0.92); ctx.restore(); }
   }
   function drawField(S, g, Ly, cap) {
     const p = S.p, ctx = g.ctx, A = A7(), [cx, cy] = Ly.c, R = Ly.R, B = window.G6B;
@@ -625,9 +633,10 @@
       if (p.look === 'boil') {
         // a surface: below it liquid; above it, molecules that escaped — still whole H₂O
         ctx.fillStyle = '#0A1220'; ctx.fillRect(cx - R, cy - R, 2 * R, R * 0.7);
-        A.liquidSlice(ctx, S.sys, { cx, cy: cy + R * 0.15, s: s * 0.95, R });
+        ctx.save(); ctx.beginPath(); ctx.rect(cx - R, cy - R * 0.3, 2 * R, R * 1.3); ctx.clip(); A.liquidSlice(ctx, S.sys, { cx, cy: cy + R * 0.25, s: s * 0.95, R }); ctx.restore();
+        ctx.strokeStyle = 'rgba(200,230,255,.7)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(cx - R, cy - R * 0.3); ctx.lineTo(cx + R, cy - R * 0.3); ctx.stroke();
         const n = 7, ph = S.t; for (let i = 0; i < n; i++) { const u = ((ph * 0.25 + i / n) % 1); A.molecule2(ctx, cx - R * 0.6 + i * R * 0.2, cy - R * 0.32 - u * R * 0.55, A.MOL.H2O, s, i + ph * (0.5 + i * 0.1), { k: 0.72 }); }
-        B.tag(ctx, cx, cy - R * 0.88, 'steam: the same H₂O molecules, farther apart', { size: 10 });
+        B.tag(ctx, cx, cy - R * 0.62, 'steam: the same H₂O molecules, farther apart', { size: 10 });
       } else {
         A.liquidSlice(ctx, S.sys, { cx, cy, s, R });
         // the two platinum plates and the bubbles growing on them, molecule by molecule
@@ -648,17 +657,19 @@
   function drawFilm(S, g, Ly, cap) {
     const p = S.p, ctx = g.ctx, A = A7(), [cx, cy] = Ly.c, R = Ly.R, f = film(p), B = window.G6B;
     if (p.zoom === 'tray') {
-      const span = Math.max(f.d * 1.4, p.tray === 'pond' ? 80 : 0.2), s = 2 * R / span, fr = f.d / 2 * s * S.spread;
+      const tw = f.tray.w, tl = f.tray.l, span = Math.min(Math.max(f.d * 1.4, p.tray === 'pond' ? 10 : 0.2), Math.hypot(tw, tl) * 1.02), s = 2 * R / span, fr = f.d / 2 * s * S.spread, hw = tw / 2 * s, hl = tl / 2 * s;
       B.circle(ctx, cx, cy, R, () => {
-        ctx.fillStyle = '#6F8DA2'; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
-        const r = rng(9); ctx.fillStyle = 'rgba(236,226,190,.9)'; for (let i = 0; i < 2600; i++) { const x = cx - R + r() * 2 * R, y = cy - R + r() * 2 * R; if (Math.hypot(x - cx, y - cy) > fr * 1.04) ctx.fillRect(x, y, 1.4, 1.4); }
-        if (p.oil !== 'paraffin') { ctx.strokeStyle = 'rgba(245,236,200,.95)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, fr, 0, TAU); ctx.stroke(); }
+        ctx.fillStyle = '#1A2234'; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+        ctx.fillStyle = '#6F8DA2'; ctx.fillRect(cx - hl, cy - hw, 2 * hl, 2 * hw);
+        const r = rng(9); ctx.fillStyle = 'rgba(236,226,190,.9)'; for (let i = 0; i < 2600; i++) { const x = cx - hl + r() * 2 * hl, y = cy - hw + r() * 2 * hw; if (Math.hypot(x - cx, y - cy) > fr * 1.04) ctx.fillRect(x, y, 1.4, 1.4); }
+        ctx.strokeStyle = '#E6E8EA'; ctx.lineWidth = 3; ctx.strokeRect(cx - hl, cy - hw, 2 * hl, 2 * hw);
+        if (p.oil !== 'paraffin') { ctx.save(); ctx.beginPath(); ctx.rect(cx - hl, cy - hw, 2 * hl, 2 * hw); ctx.clip(); ctx.strokeStyle = 'rgba(245,236,200,.95)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, fr, 0, TAU); ctx.stroke(); ctx.restore(); if (f.full) B.tag(ctx, cx, cy, 'no edge left to measure: the film fills the ' + (p.tray === 'pond' ? 'pond' : 'tray'), { size: 10, col: '#FFB0A0' }); }
         else { RX.ball(ctx, cx, cy, Math.max(4, 0.004 * s * S.spread), '#D8C060', { rim: 0.9, sub: 0.4, shadow: false }); }
       });
       // a ruler across the film
       const rl = Math.min(2 * R * 0.9, Math.max(40, f.d * s)), unit = p.tray === 'pond' ? 10 : 0.01, nT = Math.floor(rl / (unit * s));
       ctx.save(); ctx.fillStyle = '#E8DDB0'; ctx.fillRect(cx - rl / 2, cy + R * 0.55, rl, 14); ctx.strokeStyle = '#2A2418'; ctx.lineWidth = 1; for (let i = 0; i <= nT; i++) { const x = cx - rl / 2 + i * unit * s; ctx.beginPath(); ctx.moveTo(x, cy + R * 0.55); ctx.lineTo(x, cy + R * 0.55 + (i % 5 ? 4 : 8)); ctx.stroke(); } ctx.restore();
-      cap('the film from above', 'd = ' + fmtLen(f.d));
+      cap('the film from above', f.full ? 'it reaches the walls' : 'd = ' + fmtLen(f.d));
     } else if (p.zoom === 'molecules') {
       const s = 2 * R / 3600;
       B.circle(ctx, cx, cy, R, () => {
@@ -749,11 +760,12 @@
   function plot1(S, g) {
     const p = S.p, K = kit();
     if (p.setup === 'review' && p.what === 'ink') {
-      const tmax = Math.max(1800, S.ts * 1.15), items = [{ c: '#C060C0', label: 'cloud you can see, this run' }, { c: 'rgba(201,212,234,.6)', label: '√(4Dt·ln(c₀/c_eye)), whole curve', dash: [4, 3] }], Kk = K.plotKey(g, items);
+      const tmax = Math.max(1800, S.ts * 1.15), items = [{ c: '#C060C0', label: 'cloud you can see, this run' }, { c: 'rgba(201,212,234,.6)', label: '√(4Dt·ln(c₀/c_eye)), whole curve', dash: [4, 3] }];
       const pts = []; for (let i = 1; i <= 160; i++) { const t = tmax * i / 160; pts.push([t / 60, inkRadius(t, p.mg * 1e-6, p.T) * 1000]); }
-      const ymax = Math.max(5, ...pts.map(q => q[1])) * 1.15;
+      const pts2 = []; if (p.twin) { for (let i = 1; i <= 160; i++) { const t = tmax * i / 160; pts2.push([t / 60, inkRadius(t, p.mg * 1e-6, p.T2) * 1000]); } items.push({ c: '#7FB2E8', label: 'second beaker, ' + p.T2 + ' °C' }); }
+      const Kk = K.plotKey(g, items), ymax = Math.max(5, ...pts.map(q => q[1]), ...pts2.map(q => q[1])) * 1.15;
       const P = g.Plot({ xmin: 0, xmax: tmax / 60, ymin: 0, ymax, pad: { t: Kk.t }, xlabel: 'minutes', ylabel: 'radius, mm', xfmt: v => v.toFixed(0), yfmt: v => v.toFixed(0) }).frame();
-      P.clip(() => { P.line(pts, 'rgba(201,212,234,.55)', 1.3, [4, 3]); P.line(S.hist.map(q => [q[0] / 60, q[1]]), '#C060C0', 2.4); P.dot(S.ts / 60, inkRadius(S.ts, p.mg * 1e-6, p.T) * 1000, 4.5, '#C060C0', '#0B0F18'); });
+      P.clip(() => { P.line(pts, 'rgba(201,212,234,.55)', 1.3, [4, 3]); if (p.twin) { P.line(pts2.filter(q => q[0] <= S.ts / 60), '#7FB2E8', 2.4); P.dot(S.ts / 60, inkRadius(S.ts, p.mg * 1e-6, p.T2) * 1000, 4.5, '#7FB2E8', '#0B0F18'); } P.line(S.hist.map(q => [q[0] / 60, q[1]]), '#C060C0', 2.4); P.dot(S.ts / 60, inkRadius(S.ts, p.mg * 1e-6, p.T) * 1000, 4.5, '#C060C0', '#0B0F18'); });
       Kk.draw(P); return;
     }
     if (p.setup === 'review') {
@@ -807,7 +819,7 @@
       const items = [{ c: '#C060C0', label: 'D of permanganate in water' }, { c: '#FFD66B', label: 'your bath', dot: true }], Kk = K.plotKey(g, items), pts = [];
       for (let T = 0; T <= 95; T += 1) pts.push([T, Dink(T) * 1e9]);
       const P = g.Plot({ xmin: 0, xmax: 95, ymin: 0, ymax: 6, pad: { t: Kk.t }, xlabel: 'temperature, °C', ylabel: 'D, 10⁻⁹ m²/s', xfmt: v => v.toFixed(0), yfmt: v => v.toFixed(0) }).frame();
-      P.clip(() => { P.line(pts, '#C060C0', 2.2); P.dot(p.T, Dink(p.T) * 1e9, 5, '#FFD66B', '#0B0F18'); });
+      P.clip(() => { P.line(pts, '#C060C0', 2.2); if (p.twin) P.dot(p.T2, Dink(p.T2) * 1e9, 5, '#7FB2E8', '#0B0F18'); P.dot(p.T, Dink(p.T) * 1e9, 5, '#FFD66B', '#0B0F18'); });
       P.tag(80, Dink(80) * 1e9, '× ' + (Dink(80) / Dink(20)).toFixed(1) + ' of 20 °C', '#AFC0D8', 'right', -10);
       Kk.draw(P); return;
     }
@@ -865,7 +877,7 @@
       const r = inkRadius(S.ts, p.mg * 1e-6, p.T);
       return [{ label: 'Time', value: fmtT(S.ts), hint: 'time-lapse ×' + p.lapse }, { label: 'Diffusion coefficient D ∝ T/η', value: (Dink(p.T) * 1e9).toFixed(3), unit: '×10⁻⁹ m²/s', flag: 'accent', hint: '× ' + (Dink(p.T) / Dink(20)).toFixed(2) + ' of 20 °C' },
         { label: 'Water’s viscosity η', value: (eta(p.T) * 1000).toFixed(3), unit: 'mPa·s', hint: 'warmer water is runnier' }, { label: 'Cloud you can see', value: (r * 1000).toFixed(1), unit: 'mm', flag: r > 0 ? 'ok' : 'warn', hint: r > 0 ? 'out to 0.5 mg/L' : 'faded: too dilute to see' },
-        { label: 'Typical spread √(6Dt)', value: (Math.sqrt(6 * Dink(p.T) * S.ts) * 1000).toFixed(1), unit: 'mm', hint: 'double the distance: 4 × the time' }, { label: 'Ink at the crystal', value: S.ts > 0 ? (inkPeak(S.ts, p.mg * 1e-6, p.T) * 1000).toPrecision(3) : '—', unit: 'mg/L' }];
+        { label: 'Typical spread √(6Dt)', value: (Math.sqrt(6 * Dink(p.T) * S.ts) * 1000).toFixed(1), unit: 'mm', hint: 'double the distance: 4 × the time' }, { label: 'Ink at the crystal', value: S.ts > 0 ? (inkPeak(S.ts, p.mg * 1e-6, p.T) * 1000).toPrecision(3) : '—', unit: 'mg/L' }].concat(p.twin ? [{ label: 'Second beaker (' + p.T2 + ' °C): cloud', value: (inkRadius(S.ts, p.mg * 1e-6, p.T2) * 1000).toFixed(1), unit: 'mm', hint: 'D ratio ' + (Dink(p.T) / Dink(p.T2)).toFixed(2) + ' : 1' }] : []);
     }
     if (p.setup === 'review') {
       const pa = Math.pow(10, p.lp);
@@ -884,7 +896,7 @@
         { label: '⟨x²⟩ measured', value: S.disp.length ? meanSq(S.disp).toFixed(1) : '—', unit: 'µm²' }, { label: 'Steps measured', value: S.disp.length / 2 }, { label: 'N_A = RTΔt/(3πηr⟨x²⟩)', value: isFinite(v) ? sci(v, 2) : '—', flag: 'accent', hint: isFinite(v) ? (v / NA * 100 - 100).toFixed(0) + ' % from today’s value' : '' }]; }
       const E = settleNA(S), H = scaleHeight(p.T, p.rad);
       return [{ label: 'Since shaking', value: fmtT(S.ts) }, { label: 'Grain’s weight in water m′g', value: sciU((4 / 3) * Math.PI * Math.pow(p.rad * 1e-6, 3) * (GAMB.rho - rhoWater(p.T)) * G0), unit: 'N' }, { label: 'Scale height kT/m′g', value: (H * 1e6).toFixed(1), unit: 'µm', hint: 'halves every ' + (H * 1e6 * Math.LN2).toFixed(0) + ' µm' }, { label: 'Readings', value: S.nReads },
-        { label: 'From the counts: halves every', value: isFinite(E.H) ? (E.H * 1e6 * Math.LN2).toFixed(1) : '—', unit: 'µm' }, { label: 'N_A = RT/(m′g·H)', value: isFinite(E.NA) ? sci(E.NA, 2) : '—', flag: isFinite(E.NA) && Math.abs(E.NA / NA - 1) < 0.15 ? 'ok' : 'warn', hint: S.ts < 3 * 3600 ? 'not settled yet' : '' }];
+        { label: 'From the counts: halves every', value: isFinite(E.H) ? (E.H * 1e6 * Math.LN2).toFixed(1) : '—', unit: 'µm' }, { label: 'N_A = RT/(m′g·H)', value: isFinite(E.NA) ? sci(E.NA, 2) : '—', flag: isFinite(E.NA) && Math.abs(E.NA / NA - 1) < 0.15 ? 'ok' : 'warn', hint: p.wait < 1.5 ? 'counted before it settled' : S.nReads ? '' : 'waiting ' + p.wait + ' h before counting' }];
     }
     if (p.setup === 'atoms') {
       const G = gasesNow(S), I = current(p.volts, p.conc);
@@ -941,7 +953,7 @@
     is3D: true,
     autoplay: true,
     bloom: 0.06,
-    stageHint: 'Drag the bench to look round it · drag the gold rings: the thermometer, the gauge, the cylinders, the supply’s knob, the pipette',
+    stageHint: 'Drag the bench to look round it · drag the gold rings to change what they hold',
     lede: 'You cannot see a particle. Five experiments that convinced the world anyway. Drop a <b>permanganate crystal</b> into still water and let <b>bromine</b> climb a gas jar — then pump the air out. Mix <b>50 mL of ethanol with 50 mL of water</b> and weigh it. ' +
       'Follow <b>Perrin’s gamboge grains</b> under a microscope and get Avogadro’s number from your own measurements. Split water in a <b>Hofmann voltameter</b>. Then measure a molecule with a ruler: one drop of <b>oleic acid</b> on water.',
 
@@ -949,6 +961,7 @@
     presets: [
       { name: 'A crystal in still water, 20 °C', params: preset({ what: 'ink', T: 20, lapse: 60 }) },
       { name: 'The same crystal at 80 °C', params: preset({ what: 'ink', T: 80, lapse: 60 }) },
+      { name: 'Fair test: 80 °C beside 5 °C', params: preset({ what: 'ink', T: 80, twin: true, T2: 5, lapse: 600 }) },
       { name: 'A day later: the cloud fades', params: preset({ what: 'ink', T: 20, lapse: 3600 }) },
       { name: 'Bromine climbing through air', params: preset({ what: 'bromine', lp: 0, lapse: 60 }) },
       { name: 'Bromine into a vacuum', params: preset({ what: 'bromine', lp: -4.5, lapse: 1 }) },
@@ -959,13 +972,14 @@
       { name: 'Perrin 1909: grains of 0.367 µm', params: preset({ setup: 'evidence', pexp: 'track', rad: 0.367, T: 17, dt: 30, lapse: 30 }) },
       { name: 'Smaller grains, warmer water', params: preset({ setup: 'evidence', pexp: 'track', rad: 0.15, T: 40, dt: 30, lapse: 30 }) },
       { name: 'In 50 % glycerol: slower, same N_A', params: preset({ setup: 'evidence', pexp: 'track', rad: 0.367, gly: 50, T: 17, lapse: 30 }) },
-      { name: 'Perrin’s settling cell, after 4 hours', params: preset({ setup: 'evidence', pexp: 'settle', rad: 0.212, T: 17, dt: 60, lapse: 3600 }) },
+      { name: 'Count straight after shaking: the trap', params: preset({ setup: 'evidence', pexp: 'settle', rad: 0.212, T: 17, dt: 60, wait: 0, lapse: 3600 }) },
+      { name: 'Perrin’s settling cell: wait 3 hours, then count', params: preset({ setup: 'evidence', pexp: 'settle', rad: 0.212, T: 17, dt: 60, wait: 3, lapse: 10800 }) },
       { name: 'Electrolysis of water, 12 V', params: preset({ setup: 'atoms', volts: 12, conc: 0.5, lapse: 60 }) },
       { name: 'Pure water: no electrolyte', params: preset({ setup: 'atoms', volts: 20, conc: 0, lapse: 60 }) },
       { name: 'Boiling instead', params: preset({ setup: 'atoms', look: 'boil', volts: 12, conc: 0.5 }) },
       { name: 'One drop of 1 : 1000 oleic acid', params: preset({ setup: 'scale', oil: 'oleic', ldil: 3, drops: 1, dpm: 50 }) },
       { name: 'Undiluted: it floods the tray', params: preset({ setup: 'scale', oil: 'oleic', ldil: 0, drops: 1, dpm: 50, zoom: 'tray' }) },
-      { name: 'Franklin’s teaspoon on Clapham pond', params: preset({ setup: 'scale', oil: 'olive', ldil: 0, drops: 100, dpm: 20, tray: 'pond', zoom: 'tray' }) },
+      { name: 'Franklin’s pond: half a millilitre of olive oil', params: preset({ setup: 'scale', oil: 'olive', ldil: 0, drops: 10, dpm: 20, tray: 'pond', zoom: 'tray' }) },
       { name: 'Paraffin oil: no film', params: preset({ setup: 'scale', oil: 'paraffin', ldil: 0, drops: 1 }) }
     ],
 
@@ -976,6 +990,8 @@
         { key: 'what', type: 'select', label: 'Experiment', restructure: R_, rebuild: true, options: [{ value: 'ink', label: 'Permanganate in water' }, { value: 'bromine', label: 'Bromine in a gas jar' }] },
         { key: 'T', label: 'Water temperature', min: 2, max: 90, step: 1, unit: '°C', when: S => S.p.what === 'ink' },
         { key: 'mg', label: 'Crystal', min: 1, max: 20, step: 1, unit: 'mg', when: S => S.p.what === 'ink' },
+        { key: 'twin', type: 'toggle', label: 'A second beaker beside it (fair test)', when: S => S.p.what === 'ink', rebuild: true },
+        { key: 'T2', label: 'Second beaker', min: 2, max: 90, step: 1, unit: '°C', when: S => S.p.what === 'ink' && S.p.twin },
         { key: 'lp', label: 'Air left in the jars', min: -5, max: 0, step: 0.05, unit: 'atm', restructure: R_, when: S => S.p.what === 'bromine', fmt: v => { const a = Math.pow(10, v); return a >= 0.01 ? a.toFixed(3) : a.toExponential(1); } } ] },
       { group: 'The two liquids', when: is('sharper'), items: [
         { key: 'pair', type: 'select', label: 'Pour', restructure: R_, options: [{ value: 'ethanol', label: 'Ethanol on water' }, { value: 'water', label: 'Water on water' }, { value: 'beads', label: 'Sand on marbles' }] },
@@ -988,6 +1004,7 @@
         { key: 'T', label: 'Temperature', min: 2, max: 60, step: 1, unit: '°C', restructure: R_ },
         { key: 'gly', label: 'Glycerol in the water', min: 0, max: 60, step: 5, unit: '%', restructure: R_, when: S => S.p.pexp === 'track' },
         { key: 'dt', label: 'Mark a position every', min: 5, max: 120, step: 5, unit: 's', restructure: R_ },
+        { key: 'wait', label: 'Start counting after', min: 0, max: 6, step: 0.25, unit: 'h', restructure: R_, when: S => S.p.pexp === 'settle' },
         { key: 'nG', label: 'Grains tracked', min: 3, max: 40, step: 1, restructure: R_, when: S => S.p.pexp === 'track' } ] },
       { group: 'The voltameter', when: is('atoms'), items: [
         { key: 'volts', label: 'Supply', min: 0, max: 20, step: 0.1, unit: 'V', fmt: v => v.toFixed(1) },
@@ -1002,7 +1019,7 @@
         { key: 'tray', type: 'select', label: 'On', restructure: R_, options: [{ value: 'tray', label: 'a 30 × 45 cm tray' }, { value: 'pond', label: 'Clapham pond' }] },
         { key: 'zoom', type: 'select', label: 'Look at', display: true, options: [{ value: 'tray', label: 'the film' }, { value: 'molecules', label: 'its molecules' }, { value: 'atom', label: 'one atom' }] } ] },
       { group: 'Time', when: S => S.p.setup !== 'scale', items: [
-        { key: 'lapse', type: 'select', label: 'Time-lapse', restructure: false, options: [{ value: 1, label: 'real time' }, { value: 10, label: '×10' }, { value: 30, label: '×30' }, { value: 60, label: '×60' }, { value: 3600, label: 'an hour a second' }] },
+        { key: 'lapse', type: 'select', label: 'Time-lapse', restructure: false, options: [{ value: 1, label: 'real time' }, { value: 10, label: '×10' }, { value: 30, label: '×30' }, { value: 60, label: '×60' }, { value: 600, label: '×600' }, { value: 3600, label: 'an hour a second' }, { value: 10800, label: '3 hours a second' }] },
         { key: 'seed', label: 'Another sample', min: 1, max: 9, step: 1, restructure: R_, display: true, when: S => S.p.setup === 'evidence' } ] }
     ],
 

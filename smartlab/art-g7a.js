@@ -169,7 +169,7 @@
     const water = o.tint || '#CFE6F4';
     const limb = (cx, v, tag) => {
       const gz = z1 - 0.012 - v * perMl;
-      glassColumn(F, [cx, y, 0], r, z0, z1, [{ z0, z1: Math.max(z0, gz), col: water, a: 0.32, surface: true }, { z0: Math.max(z0, gz), z1: z1 - 0.012, col: '#F4F8FF', a: 0.06 }], { graduate: { z0: z1 - 0.012, perUnit: -perMl, every: 1, from: 0, labelEvery: 5, size: 7.5 } });
+      glassColumn(F, [cx, y, 0], r, z0, z1, [{ z0, z1: Math.max(z0, gz), col: mix(water, '#3A80C0', 0.35), a: 0.45, surface: true }, { z0: Math.max(z0, gz), z1: z1 - 0.012, col: '#FFFFFF', a: 0.2 }], { graduate: { z0: z1 - 0.012, perUnit: -perMl, every: 1, from: 0, labelEvery: 5, size: 7.5 } });
       // the tap and its key
       R3.cylinder(F, [cx, y, z1], [cx, y, z1 + 0.03], r * 0.7, '#D9E8F2', { segments: 16, shadow: false, ambient: 0.6 });
       R3.cylinder(F, [cx - 0.012, y, z1 + 0.018], [cx + 0.012, y, z1 + 0.018], 0.004, '#E6EEF5', { segments: 12, shadow: false });
@@ -273,7 +273,7 @@
       const x = V.cx + (q.x - sys.cx) * V.s, y = V.cy + (q.y - sys.cy) * V.s;
       if (Math.hypot(x - V.cx, y - V.cy) > V.R + 30) return;
       const m = q.k === 'ion' ? MOL.MnO4 : q.k === 'br' ? MOL.Br2 : q.k === 'n2' ? MOL.N2 : q.k === 'o2' ? MOL.O2 : q.k === 'e' ? MOL.EtOH : MOL.H2O;
-      molecule2(ctx, x, y, m, V.s, q.a, { tilt: q.t || 0, k: 0.72, tint: q.k === 'br' ? '#E07A20' : null });
+      molecule2(ctx, x, y, m, V.s, q.a, { tilt: q.t || 0, k: q.k === 'ion' ? 0.72 : 0.64, tint: q.k === 'br' ? '#E07A20' : null });
     });
   }
   /* a microscope field, bright-field, with grains as small refractile spheres */
