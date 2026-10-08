@@ -111,6 +111,8 @@
       let lo = p.room - 5, hi = 100;
       for (let k = 0; k < 40; k++) { C.Tw = (lo + hi) / 2; if (dishNet(C, p) > 0) lo = C.Tw; else hi = C.Tw; }
     }
+    // everything the readouts and the stage read is defined before the first step (a paused lab draws from here)
+    const R = chamberRates(C, p); C.Ta = R.Ta; C.Tl = R.Tl; C.rv = C.mv / CH.V; C.E = R.E; C.C = R.Cl;
     return C;
   }
   function dishNet(C, p) {
@@ -185,7 +187,7 @@
     const Sd = Math.max(0, 0.243 * RR + 0.010 * RR * RR - 0.012 * RR * S);   // mm held in hollows (Kamphorst et al. 2000)
     return { Ks: s.Ks * cv.mac, psi: s.psi, dth: s.te * (1 - p.wet / 100), te: s.te, n: cv.n, inter: p.soil === 'paved' ? 0 : cv.inter, Sd };
   }
-  function trayStart(p) { return { t: 0, F: 0, h: 0, I: 0, rain: 0, run: 0, f: 0, q: 0, ponded: null, can: 0, hist: [] }; }
+  function trayStart(p) { const s = soilOf(p); return { t: 0, F: 0, h: 0, I: 0, rain: 0, run: 0, f: 0, q: 0, cap: s.Ks > 0 ? 1e9 : 0, ponded: null, can: 0, hist: [] }; }
   function trayStep(T, p, dt) {                                  // dt in seconds of the storm
     const s = soilOf(p), slope = Math.max(0.005, Math.tan(p.slope * Math.PI / 180));
     const n = Math.max(1, Math.ceil(dt / 2)), h = dt / n;
