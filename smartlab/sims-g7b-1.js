@@ -217,7 +217,7 @@
     const tEnd = rows[rows.length - 1].t;
     const Tx = rows.reduce((m, q) => Math.abs(q.T - p.T0) > Math.abs(m - p.T0) ? q.T : m, p.T0);
     const out = { rows, doneAt: doneAt == null ? tEnd : doneAt, tEnd, lim, Tx, dTx: Tx - p.T0, gasEnd: rows[rows.length - 1].gas, C, nS0, nA0, nB0, mS0, VmL,
-      limiting: X.law === 'ionic' ? (nA0 < nB0 ? X.solF : nB0 < nA0 ? X.sol2F : 'neither') : X.solid && X.nuA ? (nS0 < nA0 / X.nuA ? SUB[X.solid].f : X.solF) : '' };
+      limiting: X.law === 'catalyst' ? 'H₂O₂' : X.law === 'ionic' ? (nA0 < nB0 ? X.solF : nB0 < nA0 ? X.sol2F : 'neither') : X.solid && X.nuA ? (nS0 < nA0 / X.nuA ? SUB[X.solid].f : X.solF) : '' };
     chemRun.c[key] = out; const ks = Object.keys(chemRun.c); if (ks.length > 120) delete chemRun.c[ks[0]];
     return out;
   }
@@ -267,7 +267,8 @@
   const C_BEAKER = 84;                                  // a 250 mL beaker: 100 g of glass × 0.84 J/(g·K)
   const PLATE_EFF = 0.6;                                // share of the hot plate's power that reaches the beaker
   /* electrical conductivity of a NaCl solution (mS/cm), from its molar conductivity (Kohlrausch, to ~3 % up to 1 M) */
-  const kappaNaCl = c => c * (126.45 - 76 * Math.sqrt(c) / (1 + Math.sqrt(c)));
+  const KAPPA = [[0, 0], [0.1, 10.7], [0.5, 47], [1, 86], [2, 145], [3, 190], [4, 220], [5, 240], [5.45, 251]];   // NaCl(aq), mS/cm at 20–25 °C (CRC)
+  const kappaNaCl = c => { if (c <= 0) return 0; if (c < 0.1) return c * (126.45 - 76 * Math.sqrt(c) / (1 + Math.sqrt(c))); for (let i = 1; i < KAPPA.length; i++) if (c <= KAPPA[i][0]) { const a = KAPPA[i - 1], b = KAPPA[i]; return a[1] + (b[1] - a[1]) * (c - a[0]) / (b[0] - a[0]); } return 251; };
   function physRun(p) {
     const key = 'p' + JSON.stringify([p.phys, p.pmass, p.pwater, p.power, p.grain, p.stir, p.undo]);
     if (physRun.c[key]) return physRun.c[key];
@@ -412,7 +413,7 @@
     const Cloc = 3 + 0.3 * (mA + mB) / Math.max(1, Lcm);             // J/K: the glass and powder in the bottom centimetre, where the flame plays
     let T = 20, t = 0, front = 0, ign = null, xi = 0;
     const nA = mA / SUB[X.A].M, nB = X.B ? mB / SUB[X.B].M : 0;
-    while (t < 400) {
+    while (t < 900) {
       T += (Fl.P * (1 - T / (Fl.Tmax + 100)) - 0.01 * (T - 20)) * dt / Cloc;
       T = Math.min(T, Fl.Tmax);
       if (ign == null && T >= X.Tign) ign = t;
@@ -450,15 +451,15 @@
     const acidB = p.pmat === 'fes' ? 'iron fizzes: hydrogen (no smell)' : p.pmat === 'mgo' ? 'fizzes fast: hydrogen' : p.pmat === 'cuo' ? 'no reaction' : 'dissolves, no gas';
     const acidA = p.pmat === 'fes' ? (R.after.P > 0 ? 'rotten-egg gas, H₂S' + (R.after.A > 1e-3 ? ' + hydrogen from left-over iron' : '') : acidB) : p.pmat === 'mgo' ? (R.after.A > 1e-3 ? 'a little fizz from unburnt metal' : 'dissolves, no gas') : p.pmat === 'cuo' ? 'black solid dissolves: a blue solution' : 'nothing happens to the black solid';
     const mpB = X.B ? SUB.s.mp + ' (the sulfur melts out)' : SUB[X.A].mp + (SUB[X.A].dec ? ' (decomposes)' : '');
-    const mpA = SUB[X.P].mp + (SUB[X.P].dec ? ' (decomposes)' : '');
+    const mpA = X.P === 'carbon' ? 'does not melt (it chars)' : SUB[X.P].mp + (SUB[X.P].dec ? ' (decomposes)' : '');
     return {
       before, after,
       rows: [
         ['magnet', before.magFrac > 0 ? (100 * before.magFrac).toFixed(0) + ' % pulled out' : 'nothing pulled out', after.magFrac > 0.001 ? (100 * after.magFrac).toFixed(0) + ' % pulled out' : 'nothing pulled out'],
         ['density', before.rho.toFixed(2) + ' g/cm³', after.rho.toFixed(2) + ' g/cm³'],
-        ['colour', X.B ? 'grey and yellow specks' : SUB[X.A].name === 'magnesium' ? 'shiny silver' : SUB[X.A].name === 'copper' ? 'salmon-pink' : 'white crystals', SUB[X.P].name === 'iron(II) sulfide' ? 'black, all one solid' : SUB[X.P].col === '#F7F7F5' ? 'white powder' : 'black'],
+        ['colour', X.B ? 'grey and yellow specks' : SUB[X.A].name === 'magnesium' ? 'shiny silver' : SUB[X.A].name === 'copper' ? 'salmon-pink' : 'white crystals', SUB[X.P].name === 'iron(II) sulfide' ? (R.after.B > 0.01 ? 'black, with yellow sulfur' : R.after.A > 0.01 ? 'black, with grey iron' : 'black, all one solid') : SUB[X.P].col === '#F7F7F5' ? 'white powder' : 'black'],
         ['acid', acidB, acidA],
-        ['melts at', mpB + ' °C', mpA + ' °C'],
+        ['melts at', mpB + ' °C', mpA + (X.P === 'carbon' ? '' : ' °C')],
         ['conducts', X.B ? 'barely (grains apart)' : SUB[X.A].cond, SUB[X.P].cond]
       ]
     };
@@ -691,8 +692,8 @@
   ];
   const is = v => S => S.p.setup === v;
   const isAny = (...v) => S => v.includes(S.p.setup);
-  const LAPSE = { physical: 20, chemical: 5, signs: 5, confusing: 1, properties: 5, reversible: 20, unknown: 5 };
-  const RXN_DEF = { mg: { mMg: 0.1, conc: 1, vol: 50 }, soda: { mSoda: 1, conc: 0.83, vol: 50 }, marble: { mChips: 1, conc: 1, vol: 50 }, cu: { mFe: 1, conc: 0.5, vol: 50 },
+  const LAPSE = { physical: 20, chemical: 5, signs: 5, confusing: 5, properties: 20, reversible: 20, unknown: 5 };
+  const RXN_DEF = { mg: { mMg: 0.1, conc: 1, vol: 50 }, soda: { mSoda: 0.3, conc: 0.83, vol: 50 }, marble: { mChips: 0.3, conc: 1, vol: 50 }, cu: { mFe: 1, conc: 0.5, vol: 50 },
     ppt: { conc: 0.5, vol: 25, conc2: 0.5, vol2: 25 }, perox: { mCat: 0.5, conc: 0.5, vol: 15 }, neut: { conc: 1, vol: 25, conc2: 1, vol2: 25 }, burn: { mMg: 0.1 }, elec: { amps: 0.5 } };
   const BASE = {
     setup: 'chemical', lapse: 5,
@@ -701,7 +702,7 @@
     pair: 'bubbles', dtest: 'look',
     pmat: 'fes', mA: 3.5, mB: 2, flame: 'blue', ptest: 'magnet',
     rsamp: 'cuso4', rmass: 2.5, rtemp: 300, rtime: 240, back: true,
-    mystery: 'A', gtest: 'lit', tLook: true, tDen: false, tMelt: false, tSol: false, sample: 1
+    mystery: 'A', gtest: 'lit', tLook: true, tDen: true, tMelt: false, tSol: false, sample: 1
   };
   function preset(o) { return Object.assign({}, BASE, { lapse: LAPSE[o.setup || BASE.setup] }, o, { pre: 1 }); }
   /* the mystery reaction's bench amounts */
@@ -741,8 +742,8 @@
   const HOMES = {
     physical: { theta: -1.36, phi: 0.32, dist: 0.7, target: [-0.02, 0.02, 0.13] },
     chemical: { theta: -1.30, phi: 0.26, dist: 0.8, target: [-0.04, 0.04, 0.13] },
-    burn: { theta: -1.30, phi: 0.30, dist: 0.6, target: [0.06, 0.04, 0.13] },
-    elec: { theta: -1.32, phi: 0.18, dist: 0.85, target: [0.08, 0.04, 0.22] },
+    burn: { theta: -1.30, phi: 0.30, dist: 0.62, target: [0.19, 0.04, 0.13] },
+    elec: { theta: -1.32, phi: 0.18, dist: 0.85, target: [0.1, 0.04, 0.22] },
     signs: { theta: -1.30, phi: 0.30, dist: 0.8, target: [-0.04, 0.04, 0.12] },
     confusing: { theta: -1.45, phi: 0.24, dist: 0.66, target: [0.0, 0.03, 0.15] },
     properties: { theta: -1.30, phi: 0.26, dist: 0.64, target: [-0.03, 0.03, 0.14] },
@@ -768,11 +769,12 @@
     return K.cardSlot(g, S, title, w, { x: g.w - w - 10, y: (S._cardY || K.HDR + 6) });
   }
   /* a titled card on the right column, stacked; returns its inner box or null (folded on a phone) */
+  const AV = { x1: 0, y1: 0 };                          // the left card column, which leaders must not run under
   function card(g, S, title, h, note) {
     const K = kit(), ctx = g.ctx, w = Math.min(S._left ? 290 : 310, g.w * (S._left ? 0.34 : 0.36)), H = h;
     const r = K.cardSlot(g, S, title, w, S._left ? { x: 10, y: S._cyT } : { x: g.w - w - 10, y: S._cy });
     if (!r) return null;
-    if (S._left && g.w >= K.NARROW) S._cyT = r.y + H + 8;
+    if (S._left && g.w >= K.NARROW) { S._cyT = r.y + H + 8; AV.x1 = r.x + r.w + 4; AV.y1 = r.y + H; }
     ctx.textAlign = 'left';
     K.card(ctx, r.x, r.y, r.w, H);
     ctx.save(); ctx.font = sans(11.5, 700); ctx.fillStyle = '#EAF1FF'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
@@ -943,7 +945,7 @@
           const loose = [b.x + t * b.w + (rr() - 0.5) * s * 1.2, oy + (rr() - 0.5) * s * 2.2];
           pts.push([fold[0] + (loose[0] - fold[0]) * u + jig(i + k, 1), fold[1] + (loose[1] - fold[1]) * u + jig(i + k, 2)]);
         }
-        window.RX.tube(ctx, pts, s * 0.16, p.rsamp === 'egg' ? '#E6C27A' : '#B9C1CA', {});
+        window.RX.tube(ctx, pts, s * 0.07, p.rsamp === 'egg' ? '#E6C27A' : '#B9C1CA', {});
       }
       return;
     }
@@ -1024,9 +1026,9 @@
     const ctx = g.ctx, cam = S.cam, Gl = G(), F = R3.Frame(ctx, cam, { ambient: 0.36, floorZ: 0 });
     room(F);
     const H = Gl.hofmann(F, [0.0, 0.04, 0], Math.min(50, row.gas), Math.min(50, row.o2), { on: true, ph: S.ta, rate: p.amps / 0.5 });
-    window.BENCH.meter(F, [0.25, -0.05, 0.06], [0.2, -0.98, 0.3], 0.09, 0.045, { title: 'CURRENT', value: p.amps.toFixed(2), unit: 'A', colour: '#7CF0B0', depth: 0.04 });
-    Gl.hose(F, [[-0.05, 0.04, 0.04], [0.06, -0.06, 0.01], [0.21, -0.05, 0.03]], { r: 0.002, col: '#2A2F38' });
-    Gl.hose(F, [[0.05, 0.04, 0.04], [0.14, -0.02, 0.01], [0.23, -0.04, 0.03]], { r: 0.002, col: '#C8463A' });
+    window.BENCH.meter(F, [-0.2, -0.06, 0.06], [0.2, -0.98, 0.3], 0.09, 0.045, { title: 'CURRENT', value: p.amps.toFixed(2), unit: 'A', colour: '#7CF0B0', depth: 0.04 });
+    Gl.hose(F, [[-0.05, 0.04, 0.04], [-0.12, -0.04, 0.01], [-0.19, -0.05, 0.03]], { r: 0.002, col: '#2A2F38' });
+    Gl.hose(F, [[0.05, 0.04, 0.04], [-0.08, -0.03, 0.01], [-0.21, -0.04, 0.03]], { r: 0.002, col: '#C8463A' });
     F.render();
   }
   function tongsArm(F, from, to) {
@@ -1044,7 +1046,8 @@
     ctx.save(); ctx.font = mono(9.5, 600);
     let left = dx < 0; const tw = ctx.measureText(text).width;
     if (left && x + dx - tw - 6 < 4) left = false; else if (!left && x + Math.abs(dx) + tw + 6 > W - 4) left = true;
-    const ex = x + (left ? -Math.abs(dx) : Math.abs(dx)), ey = clamp(y + dy, 72, 9999);
+    const ex = x + (left ? -Math.abs(dx) : Math.abs(dx)); let ey = clamp(y + dy, 72, 9999);
+    if ((left ? ex - tw - 6 : ex) < AV.x1 && ey < AV.y1 + 8) ey = Math.max(ey, AV.y1 + 12);
     const room = left ? ex - 8 : W - ex - 8, t = K.fitText(ctx, text, Math.max(50, room));
     ctx.strokeStyle = 'rgba(210,222,240,.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
     ctx.fillStyle = 'rgba(220,232,250,.9)'; ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
@@ -1131,7 +1134,7 @@
     if (X.dissolve) {
       const back = R.rev != null, c = last.c || 0;
       return [['', 'before', back ? 'got back' : 'in solution'], ['substance', s.f, back ? s.f : s.f + '(aq)'], ['melts at', s.mp + (s.dec ? ' dec' : '') + ' °C', back ? s.mp + (s.dec ? ' dec' : '') + ' °C' : '—'],
-        ['mass', p.pmass.toFixed(1) + ' g', back ? (last.ms + last.md).toFixed(1) + ' g' : last.md.toFixed(1) + ' g + ' + last.ms.toFixed(1) + ' g'], ['conducts', '0.05 mS/cm', (p.phys === 'salt' ? kappaNaCl(c) : 0.06).toFixed(2) + ' mS/cm'], ['new atoms?', '', 'none']];
+        ['mass', p.pmass.toFixed(1) + ' g', back ? (last.ms + last.md).toFixed(1) + ' g' : last.md.toFixed(1) + ' g + ' + last.ms.toFixed(1) + ' g'], ['conducts', 'solid: no', back ? 'solid: no' : (p.phys === 'salt' ? kappaNaCl(c).toFixed(0) : '0.06') + ' mS/cm'], ['new atoms?', '', 'none']];
     }
     const m = p.phys === 'boil' ? p.pwater : p.pmass;
     return [['', 'before', 'after'], ['substance', s.f, s.f], ['melts at', s.mp + ' °C', s.mp + ' °C'], ['density', s.rho.toFixed(3), p.phys === 'ice' ? '0.998 (liquid)' : p.phys === 'wax' ? '0.78 (liquid)' : '0.958 at 100 °C'],
@@ -1147,7 +1150,7 @@
     S._cy = K.HDR + 6; S._cyT = K.HDR + 6; S._left = true;
     if (signs || p.zoom === 'atoms') {
       const cnt = atomCount(p.rxn), src = S.cam.project(X.law === 'burn' ? [0.1, 0.06, 0.15] : X.law === 'elec' ? [-0.05, 0.04, 0.1] : [FLASK_AT[0], FLASK_AT[1], FLASK_AT[2] + 0.02]);
-      lens(g, S, signs ? 'The atoms react, seen or not' : 'Zoom in: atoms change partners', Object.keys(cnt).map(e => e + ' ' + cnt[e] * 4 + '→' + cnt[e] * 4).join(' · ') + ' · reacted ' + (100 * row.xi).toFixed(0) + ' %', src.ok ? src : null, bx => drawEvents(ctx, bx, p.rxn, row.xi, S.ta, { n: 4 }));
+      lens(g, S, signs ? 'The atoms react, seen or not' : 'Zoom in: atoms change partners', Object.keys(cnt).map(e => e + ' ' + cnt[e] * 4 + '→' + cnt[e] * 4).join(' · ') + ' · reacted ' + (100 * row.xi).toFixed(0) + ' %', src.ok ? src : null, bx => drawEvents(ctx, bx, p.rxn, X.law === 'elec' ? clamp(row.gas / 40, 0, 1) : row.xi, S.ta, { n: 4 }));
     }
     if (signs) {
       const sg = signsOf(p, run), b = card(g, S, 'The evidence, as measured', 30 + 16 * sg.list.length + 20, sg.n + ' of 5 signs');
@@ -1211,7 +1214,7 @@
         if (p.dtest === 'gas') { const m = add(bottom, [0, 0, 0.16]); Gl.splint(F, add(m, [0.004, 0, 0.004]), [0.6, -0.7, 0.4], st.d.gas === 'hydrogen' ? (S.tr % 6 < 1.2 ? 'pop' : 'lit') : st.d.gas === 'carbon dioxide' ? 'out' : st.d.gas === 'steam (water vapour)' ? 'lit' : 'lit', S.ta); }
       }
       if (p.dtest === 'leftover') Gl.dish(F, [st.x, -0.13, 0], 0.04, { fill: 0.1, crust: 1, crustCol: p.pair === 'green' ? (st.k === 'A' ? '#58B84A' : '#B5623A') : p.pair === 'glow' ? (st.k === 'A' ? '#9DA3AA' : '#F4F4F2') : '#FFFFFF', tint: '#DDEFF8' });
-      if (p.dtest === 'mass') M.balance(F, [st.x, -0.13], { text: (S.tr > 10 ? d.massB : d.massA).toFixed(2), settled: true });
+      if (p.dtest === 'mass') M.balance(F, [st.x, -0.13], { text: (S.tr > 10 ? st.d.massB : st.d.massA).toFixed(2), settled: true });
     });
     F.render();
     stations.forEach(st => { const q = cam.project([st.x, -0.05, 0.0]); if (q.ok) G6tag(ctx, q.x, q.y + 12, 'TUBE ' + st.k, '#FFD27A'); });
@@ -1224,10 +1227,10 @@
       ctx.save(); ctx.strokeStyle = 'rgba(220,230,250,.5)'; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(bx.cx, bx.cy - bx.R); ctx.lineTo(bx.cx, bx.cy + bx.R); ctx.stroke(); ctx.restore();
       G6tag(ctx, bx.cx - bx.R * 0.5, bx.cy + bx.R * 0.78, 'A', '#9FD8FF'); G6tag(ctx, bx.cx + bx.R * 0.5, bx.cy + bx.R * 0.78, 'B', '#FFB27A');
     });
-    const show = S.tr > 3 || p.dtest === 'look';
+    const show = true;
     const tell = decides(p.pair, p.dtest);
     ['A', 'B'].forEach(k => {
-      const d = P[k], b = card(g, S, 'Tube ' + k + ': ' + (tell && S.tr > 8 ? (d.kind === 'physical' ? 'physical change' : 'chemical change') : 'physical or chemical?'), 92);
+      const d = P[k], b = card(g, S, 'Tube ' + k + ': ' + (tell && S.tr > 3 ? (d.kind === 'physical' ? 'physical change' : 'chemical change') : 'physical or chemical?'), 92);
       if (!b) return;
       ctx.save(); ctx.textBaseline = 'top'; ctx.font = sans(10.5, 600); ctx.fillStyle = '#E6EEFA'; ctx.fillText(K.fitText(ctx, (k === 'A' ? Pd.A : Pd.B), b.w), b.x, b.y);
       ctx.font = mono(9.5, 500); ctx.fillStyle = '#B4C3DC';
@@ -1264,7 +1267,7 @@
       Gl.crucible(F, cc, { lid: true, lift: burning ? 0.006 : 0, hot: burning && row.T > 500, solid: { to: 0.008, col: RX.mix(p.pmat === 'mgo' ? '#C7CDD4' : '#C87A55', p.pmat === 'mgo' ? '#F4F4F2' : '#1F1C1B', xiF), seed: 9 } });
     }
     // the before / after samples on a white tile, and the test being done
-    const tile = [0.13, -0.1];
+    const tile = [0.13, -0.02];
     window.R3.box(F, [tile[0], tile[1], 0.003], [0.16, 0.08, 0.006], '#ECEEF0', { ambient: 0.6 });
     const bcol = p.pmat === 'fes' ? '#9C9A6A' : p.pmat === 'mgo' ? '#C7CDD4' : p.pmat === 'cuo' ? '#C87A55' : '#FAF8F2';
     const done = S.tr >= R.tEnd - 1;
@@ -1374,7 +1377,7 @@
     S._cy = K.HDR + 6; S._left = false;
     const gk = Mx.gas, b = card(g, S, 'Test the gas: ' + GTEST[p.gtest].toLowerCase(), 46);
     if (b) { ctx.save(); ctx.font = mono(10, 600); ctx.fillStyle = '#E6EEFA'; ctx.textBaseline = 'top'; K.wrapText(ctx, gk ? gasResult(gk, p.gtest) + ' → ' + gasGuess(gk, p.gtest) : 'no gas came off', b.x, b.y, b.w, 12, 2); ctx.restore(); }
-    const top = M.list.slice(0, 4), b2 = card(g, S, 'The solid (' + Mx.how + '): best matches', 30 + 14 * 6 + 6, M.best ? (M.sure ? 'sure' : 'not sure yet') : 'no tests');
+    const top = M.list.slice(0, 4), b2 = card(g, S, 'The solid: best matches', 30 + 14 * 6 + 6, M.best ? (M.sure ? 'sure' : 'not sure yet') : 'no tests');
     if (b2) {
       const m = M.m;
       const rows = [['measured', (p.tDen ? m.rho.toFixed(2) + ' g/cm³' : '—'), (p.tMelt ? (m.dec ? 'dec ' : '') + m.mp.toFixed(0) + ' °C' : '—'), (p.tSol ? (m.sol < 0.1 ? m.sol.toFixed(4) : m.sol.toFixed(1)) + ' g' : '—')]].concat(top.map((c, i) => [{ t: SUB[c.k].name, col: i === 0 && M.best ? '#FFD27A' : '#C9D6EC', bold: i === 0 }, SUB[c.k].rho.toFixed(2), (SUB[c.k].dec ? 'dec ' : '') + SUB[c.k].mp, String(SUB[c.k].sol)]));
@@ -1389,15 +1392,17 @@
     const Mx = MYST[p.mystery], M = matchScores(p), gk = Mx.gas, gg = gk ? gasGuess(gk, p.gtest) : null;
     const gasName = gg && GAS[gg] ? GAS[gg].name : gg ? '(' + gg.replace(/2/g, '₂') + ')' : null;
     const solid = M.best ? SUB[M.best].name : '?';
-    const prods = [solid].concat(gasName ? [gasName] : []);
+    const cat = p.mystery === 'C';                      // the black powder comes back unchanged: a catalyst, not a product
+    const prods = (cat ? ['water'] : [solid]).concat(gasName ? [gasName] : []);
     const right = M.best === Mx.solid && (!gk || gg === gk);
-    return { text: Mx.reacts.join(' + ') + ' → ' + prods.join(' + ') + (right ? '  ✓' : M.best ? '  — check: the evidence is not enough yet' : ''), right };
+    return { text: Mx.reacts.join(' + ') + ' → ' + prods.join(' + ') + (cat ? ' (' + solid + ' unchanged: a catalyst)' : '') + (right ? '  ✓' : M.best ? '  — check: the evidence is not enough yet' : ''), right };
   }
 
   function drawStage(S, g) {
     const p = S.p, K = kit();
     S._narrow = g.w < K.NARROW;
     if (S.cam && S._narrowCam !== S._narrow) { const h = homeFor(p.setup, S._narrow, p.rxn); S.cam.dist = h.dist; S._narrowCam = S._narrow; }
+    AV.x1 = 0; AV.y1 = 0;
     const ctx = g.ctx; ctx.fillStyle = '#B9C1C9'; ctx.fillRect(0, 0, g.w, g.h);
     if (p.setup === 'physical') return drawPhysical(S, g);
     if (p.setup === 'chemical') return drawChemical(S, g, false);
@@ -1655,7 +1660,7 @@
         { label: 'Looks the same?', value: 'yes', hint: PAIRS[p.pair].look },
         { label: 'This test', value: tell ? 'tells them apart' : 'cannot tell', flag: tell ? 'ok' : 'warn', hint: TESTS[p.dtest] },
         { label: 'Mass A · B', value: P.A.massB.toFixed(2) + ' · ' + P.B.massB.toFixed(2), unit: 'g', hint: 'from ' + P.A.massA.toFixed(2) + ' · ' + P.B.massA.toFixed(2) + ' g, open tubes' },
-        { label: 'Verdict', value: tell && S.tr > 8 ? 'A ' + P.A.kind + ', B ' + P.B.kind : '?', flag: tell && S.tr > 8 ? 'accent' : '' }
+        { label: 'Verdict', value: tell && S.tr > 3 ? 'A ' + P.A.kind + ', B ' + P.B.kind : '?', flag: tell && S.tr > 3 ? 'accent' : '' }
       ];
     }
     if (p.setup === 'properties') {
@@ -1679,7 +1684,7 @@
         { label: 'Mass of solid', value: row.mass.toFixed(3), unit: 'g', hint: 'from ' + p.rmass.toFixed(2) + ' g' },
         { label: 'Lost on heating', value: (100 * (1 - atEnd.mass / p.rmass)).toFixed(1), unit: '%', hint: R.waterMax > 0 ? 'all the water: ' + (100 * R.waterMax / p.rmass).toFixed(1) + ' %' : '' },
         { label: 'Water collected', value: atEnd.water.toFixed(3), unit: 'g' },
-        { label: 'When wetted', value: R.Twet != null ? '+' + (R.Twet - (rowAt(R.rows, R.wet - 0.5).T)).toFixed(0) + ' °C' : '—', hint: R.Twet != null ? 'rehydration gives the heat back' : X.by === 'water' ? 'turn on “then try to reverse it”' : 'reversed by cooling, not water' },
+        { label: 'When wetted', value: R.Twet != null && X.steps ? '+' + (R.Twet - (rowAt(R.rows, R.wet - 0.5).T)).toFixed(0) + ' °C' : '—', hint: R.Twet != null && X.steps ? 'rehydration gives the heat back' : X.by === 'water' ? 'turn on “then try to reverse it”' : 'reversed by cooling, not water' },
         { label: 'Reversed?', value: !p.back ? '—' : X.reverses ? 'yes' : 'no', flag: !p.back ? '' : X.reverses ? 'ok' : 'crit', hint: X.kind + ' change' }
       ];
     }

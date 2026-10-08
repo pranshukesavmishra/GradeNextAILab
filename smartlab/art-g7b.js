@@ -579,7 +579,104 @@
     ctx.restore();
   }
 
+
+  /* ============================================================
+     THE MASS BENCH (7B-2) — a balloon, a bottle, a candle, a beam balance
+     ============================================================ */
+  /* a party balloon stretched over a neck at `neck`; V mL of gas in it. Empty, it hangs limp to one side. */
+  function balloon(F, neck, V, o) {
+    o = o || {};
+    const col = o.col || '#D2412F';
+    R3.cylinder(F, add(neck, [0, 0, -0.012]), add(neck, [0, 0, 0.004]), 0.0185, mix(col, '#000', 0.15), { segments: 20, shadow: false, ambient: 0.45 });
+    if (V < 8) {                                                     // limp: a short drooping tube of rubber
+      R3.tube(F, [add(neck, [0, 0, 0.004]), add(neck, [0.012, 0, 0.022]), add(neck, [0.03, 0, 0.018]), add(neck, [0.04, 0, 0.0])], 0.009, col, { segments: 10 });
+      return add(neck, [0, 0, 0.02]);
+    }
+    const r = Math.cbrt(3 * V * 1e-6 / (4 * Math.PI)), c = add(neck, [0, 0, 0.012 + r * 0.92]);
+    R3.cylinder(F, add(neck, [0, 0, 0.004]), add(neck, [0, 0, 0.014 + r * 0.1]), 0.012 + 0.2 * r, col, { segments: 18, shadow: false, ambient: 0.45 });
+    F.push(c, () => {
+      const ctx = F.ctx, q = F.cam.project(c); if (!q.ok) return;
+      const rp = r * q.s, sx = rp * 0.96, sy = rp * 1.06;
+      ctx.save(); ctx.translate(q.x, q.y); ctx.scale(sx / rp, sy / rp);
+      const g = ctx.createRadialGradient(-rp * 0.35, -rp * 0.4, rp * 0.05, 0, 0, rp);
+      g.addColorStop(0, rgba(mix(col, '#FFFFFF', 0.55), 0.95)); g.addColorStop(0.3, rgba(col, 0.9)); g.addColorStop(1, rgba(mix(col, '#200000', 0.55), 0.95));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rp, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.ellipse(-rp * 0.35, -rp * 0.42, rp * 0.16, rp * 0.09, -0.6, 0, TAU); ctx.fill();
+      ctx.restore();
+    }, 0);
+    return add(c, [0, 0, r]);
+  }
+  /* a 500 mL PET drinks bottle with a screw cap; mL of liquid inside */
+  const BOTTLE = [[0, 0.028], [0.004, 0.033], [0.125, 0.033], [0.135, 0.031], [0.168, 0.016], [0.182, 0.0125], [0.196, 0.0125]];
+  function petBottle(F, base, mL, o) {
+    o = Object.assign({ seg: 30, glassFill: 'rgba(205,232,245,.16)' }, o || {});
+    o.level = mL > 0 ? levelFor(BOTTLE, mL * 1e-6, 0.0004) : 0; o.wall = 0.0004;
+    vessel(F, base, [0, 0, 1], BOTTLE, o);
+    R3.cylinder(F, add(base, [0, 0, 0.192]), add(base, [0, 0, 0.21]), 0.0145, o.cap || '#2F6FD0', { segments: 22, shadow: false, ambient: 0.5 });
+    return add(base, [0, 0, 0.21]);
+  }
+  /* a candle of radius r and height h (what is left), its wick and flame */
+  function candle(F, base, r, h, o) {
+    o = o || {};
+    R3.cylinder(F, base, add(base, [0, 0, h]), r, o.col || '#F3EEDF', { segments: 26, ambient: 0.55, shadowK: 0.6 });
+    const top = add(base, [0, 0, h]);
+    R3.cylinder(F, top, add(top, [0, 0, 0.008]), 0.0008, '#2A2420', { segments: 6, shadow: false });
+    if (!o.lit) return top;
+    const at = add(top, [0, 0, 0.02]);
+    F.push(at, () => {
+      const ctx = F.ctx, b = F.cam.project(add(top, [0, 0, 0.006])), t = F.cam.project(add(top, [0, 0, 0.042])); if (!b.ok || !t.ok) return;
+      const w = 0.0055 * b.s, fl = Math.sin((o.ph || 0) * 11) * 1.2;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const halo = ctx.createRadialGradient(b.x, (b.y + t.y) / 2, 0, b.x, (b.y + t.y) / 2, (b.y - t.y) * 1.4);
+      halo.addColorStop(0, 'rgba(255,200,110,.35)'); halo.addColorStop(1, 'rgba(255,170,80,0)'); ctx.fillStyle = halo; ctx.fillRect(b.x - 200, t.y - 200, 400, 400);
+      ctx.beginPath(); ctx.moveTo(b.x - w, b.y); ctx.bezierCurveTo(b.x - w * 1.3, b.y - (b.y - t.y) * 0.5, t.x - w * 0.3 + fl, t.y + 4, t.x + fl, t.y); ctx.bezierCurveTo(t.x + w * 0.3 + fl, t.y + 4, b.x + w * 1.3, b.y - (b.y - t.y) * 0.5, b.x + w, b.y); ctx.closePath();
+      const g = ctx.createLinearGradient(0, b.y, 0, t.y); g.addColorStop(0, 'rgba(90,130,255,.9)'); g.addColorStop(0.18, 'rgba(255,190,90,.95)'); g.addColorStop(0.7, 'rgba(255,230,140,.85)'); g.addColorStop(1, 'rgba(255,220,120,0)');
+      ctx.fillStyle = g; ctx.fill(); ctx.restore();
+    }, -0.03);
+    return top;
+  }
+  /* the equal-arm balance: a pillar, a beam tipped by angle (positive: the right pan goes down), two pans on
+     their hangers. Returns where each pan's floor is, for what is put on it. */
+  function beamBalance(F, at, ang, o) {
+    o = o || {};
+    const L = o.arm || 0.16, H = o.h || 0.26, brass = '#C9A04A', steel = '#B9C2CE';
+    R3.box(F, [at[0], at[1], 0.01], [0.24, 0.1, 0.02], '#2C3445', { ambient: 0.4 });
+    R3.cylinder(F, [at[0], at[1], 0.02], [at[0], at[1], H], 0.009, steel, { segments: 16, shadow: false });
+    const piv = [at[0], at[1], H + 0.006], c = Math.cos(ang), s = Math.sin(ang);
+    const ends = [-1, 1].map(k => [piv[0] + k * L * c, piv[1], piv[2] - k * L * s]);
+    R3.box(F, piv, [2 * L + 0.02, 0.008, 0.012], brass, { ambient: 0.5, axes: [[c, 0, -s], [0, 1, 0], [s, 0, c]], shadow: false });
+    R3.sphere(F, piv, 0.009, '#7C838F', { shadow: false });
+    // the pointer, and a scale it swings over
+    R3.cylinder(F, piv, [piv[0] + Math.sin(ang) * 0.14, piv[1] - 0.006, piv[2] - Math.cos(ang) * 0.14], 0.0018, '#D8302A', { segments: 6, shadow: false });
+    R3.box(F, [at[0], at[1] - 0.006, H - 0.14], [0.06, 0.004, 0.014], '#ECEEF0', { shadow: false, ambient: 0.7 });
+    const pans = ends.map(e => {
+      const pz = Math.max(0.05, e[2] - 0.15), pc = [e[0], e[1], pz];
+      [0, 1, 2].forEach(k => { const a = k / 3 * TAU + 0.3; R3.polyline(F, [e, [pc[0] + 0.05 * Math.cos(a), pc[1] + 0.05 * Math.sin(a), pz]], '#C7CDD4', { width: 1, alpha: 0.9 }); });
+      R3.cylinder(F, [pc[0], pc[1], pz - 0.004], [pc[0], pc[1], pz], 0.058, steel, { segments: 30, shadow: false, ambient: 0.55 });
+      return pc;
+    });
+    return { L: pans[0], R: pans[1] };
+  }
+  /* a plug of cotton wool in a neck */
+  function cottonPlug(F, at) { for (let k = 0; k < 5; k++) R3.sphere(F, add(at, [0.006 * Math.cos(k * 1.3), 0.006 * Math.sin(k * 1.3), 0.004 * (k % 2)]), 0.009, '#F4F4F0', { shadow: false }); }
+  /* atom-level events, as in the particle cards: T.at = [[el, xR, yR, qR, xP, yP, qP], …], bonds bR/bP */
+  function events(ctx, box, T, xi, ph, o) {
+    o = o || {};
+    const N = o.n || 4, cols = N > 4 ? 3 : N > 1 ? 2 : 1, rows = Math.ceil(N / cols), cw = box.w / cols, chh = box.h / rows, s = Math.min(cw / 8.2, chh / 6.6) * (o.k || 1);
+    const ease = u => u * u * (3 - 2 * u);
+    for (let k = 0; k < N; k++) {
+      const cx = box.x + (k % cols + 0.5) * cw, cy = box.y + (Math.floor(k / cols) + 0.5) * chh;
+      const u = ease(clamp(xi * N - k, 0, 1)), j = (a, b) => Math.sin(ph * (2.1 + 0.37 * ((a * 7 + k * 3) % 5)) + b) * 0.12;
+      const pos = T.at.map((a, i) => ({ el: a[0], x: cx + s * (a[1] + (a[4] - a[1]) * u + j(i, 1)), y: cy + s * (a[2] + (a[5] - a[2]) * u + j(i, 2)), q: u < 0.5 ? a[3] : a[6] }));
+      ctx.save(); ctx.globalAlpha = 0.35 + 0.65 * Math.abs(u - 0.5) * 2;
+      (u < 0.5 ? T.bR : T.bP).forEach(([a, b]) => bond(ctx, pos[a].x, pos[a].y, pos[b].x, pos[b].y, Math.max(1.5, s * 0.22)));
+      ctx.restore();
+      pos.slice().sort((a, b) => a.y - b.y).forEach(q => atom(ctx, q.x, q.y, s * EL[q.el].r * 0.92, q.el, q.q, { letters: s * 0.9 >= 6 }));
+    }
+  }
+
   window.G7B = { vessel, volumeTo, levelFor, interpR, FLASK, flask, flaskLevel, tube, tubeProf, rack, watchGlass, dish, bunsen, tripod, clampArm, stand,
     gasSyringe, hose, bung, splint, pipette, reagent, heap, crystals, ribbon, wool, lumps, magnet, crossCard, crucible, glare, hofmann,
+    balloon, BOTTLE, petBottle, candle, beamBalance, cottonPlug, events,
     EL, atom, bond, hull2, mono, sans, mix, rgba, rng, clamp };
 })();
