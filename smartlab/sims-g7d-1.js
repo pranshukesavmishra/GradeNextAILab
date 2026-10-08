@@ -87,6 +87,8 @@
     }
     return J;
   }
+  /* the control jar: the same jar, light and warmth, with both nutrients in plenty */
+  const ctrlOf = p => Object.assign({}, p, { nit: 20, phos: 2 });
   function lemRun(p, days) { const J = lemStart(p); lemStep(J, p, days); return J; }
 
   /* ============================================================
@@ -109,7 +111,7 @@
   const q10 = T => Math.pow(2, (T - 26) / 10);
   /* the bacteria level at which the species just replaces its deaths, living on bacteria alone (P. bursaria cannot: it needs its yeast) */
   const rStar = (k, T, H) => { const s = SPEC[k], th = q10(T), x = (s.m * th + (H || 0)) / (s.mu * th * s.w); return x < 1 ? s.h * x / (1 - x) : Infinity; };
-  const fmtR = v => isFinite(v) ? v.toFixed(2) : '∞ (needs yeast)';
+  const fmtR = (v, u) => isFinite(v) ? v.toFixed(2) + (u || '') : '∞ (needs yeast)';
   function supply(p, t) { const cut = p.cut > 0 && t >= p.cut ? 0.5 : 1, food = B_STD * p.food * cut; return { Bs: food * (1 - p.settle), Ys: food * p.settle }; }
   function culStart(p, names, N0) { const s0 = supply(p, 0); return { t: 0, B: s0.Bs, Y: s0.Ys, N: N0.slice(), names: names.slice(), eaten: 0 }; }
   function culStep(C, p, dt, H) {
@@ -241,7 +243,7 @@
      SETTING UP AND RUNNING
      ============================================================ */
   const HOMES = {
-    limits: { theta: -1.25, phi: 0.4, dist: 0.66, target: [-0.03, 0, 0.15], fov: 0.72 },
+    limits: { theta: -1.3, phi: 0.38, dist: 0.86, target: [0.04, 0, 0.13], fov: 0.72 },
     capacity: { theta: -1.3, phi: 0.28, dist: 0.36, target: [-0.02, 0, 0.07], fov: 0.72 },
     competition: { theta: -1.3, phi: 0.28, dist: 0.4, target: [-0.01, 0, 0.07], fov: 0.72 }
   };
@@ -253,7 +255,7 @@
     S._rng = rng(1000 + p.seed * 7919 + SETUPS.findIndex(s => s.value === p.setup) * 131);
     S.t = 0; S.ts = 0; S.hist = []; S.counts = []; S._lastRec = -1; S._cache = null;
     S.jar = null; S.cul = null; S.cA = null; S.cB = null; S.mix = null; S.rein = null; S.yr = REIN.year0;
-    if (p.setup === 'limits') { S.jar = lemStart(p); S.frondSeed = rng(4242); S.fronds = frondLayout(); record(S, true); }
+    if (p.setup === 'limits') { S.jar = lemStart(p); S.ctrl = lemStart(ctrlOf(p)); S.frondSeed = rng(4242); S.fronds = frondLayout(); record(S, true); }
     if (p.setup === 'capacity') { S.cul = culStart(p, [p.sp], [p.n0]); record(S, true); }
     if (p.setup === 'competition') { const pr = PAIRS[p.pair]; S.cA = culStart(p, [pr[0]], [p.nA]); S.cB = culStart(p, [pr[1]], [p.nB]); S.mix = culStart(p, pr, [p.nA, p.nB]); record(S, true); }
     if (p.setup === 'scarcity') { S.rein = reinStart(p); S.yr = REIN.year0; S.full = reinRun(p, REIN.year0 + REIN.years); }
@@ -272,7 +274,7 @@
   }
   function record(S, force) {
     const p = S.p;
-    if (p.setup === 'limits') { const d = Math.floor(S.jar.t * 2); if (!force && d === S._lastRec) return; S._lastRec = d; const f = lemFactors(p, S.jar); S.hist.push([S.jar.t, S.jar.F, S.jar.N / p.vol, S.jar.P / p.vol, f.r]); }
+    if (p.setup === 'limits') { const d = Math.floor(S.jar.t * 2); if (!force && d === S._lastRec) return; S._lastRec = d; const f = lemFactors(p, S.jar); S.hist.push([S.jar.t, S.jar.F, S.jar.N / p.vol, S.jar.P / p.vol, f.r, S.ctrl.F]); }
     if (p.setup === 'capacity') {
       const C = S.cul, d = Math.floor(C.t * 4); if (!force && d === S._lastRec) return; S._lastRec = d; S.hist.push([C.t, C.N[0], C.B]);
       // a sample is taken and counted once a day, at noon
@@ -283,7 +285,7 @@
   function step(S, dt) {
     const p = S.p;
     S.t += dt;
-    if (p.setup === 'limits') { if (S.jar.t < DAYS.limits) { lemStep(S.jar, p, Math.min(dt * p.lapse, DAYS.limits - S.jar.t)); record(S); } }
+    if (p.setup === 'limits') { if (S.jar.t < DAYS.limits) { const h = Math.min(dt * p.lapse, DAYS.limits - S.jar.t); lemStep(S.jar, p, h); lemStep(S.ctrl, ctrlOf(p), h); record(S); } }
     else if (p.setup === 'capacity') { if (S.cul.t < DAYS.capacity) { culStep(S.cul, p, Math.min(dt * p.lapse, DAYS.capacity - S.cul.t), p.harvest / 100); record(S); } }
     else if (p.setup === 'competition') { if (S.mix.t < DAYS.competition) { const h = Math.min(dt * p.lapse, DAYS.competition - S.mix.t); culStep(S.cA, p, h); culStep(S.cB, p, h); culStep(S.mix, p, h); record(S); } }
     else if (p.setup === 'scarcity') {
@@ -316,23 +318,26 @@
   }
   /* ---------- the duckweed bench ---------- */
   function benchLimits(S, g, Ly) {
-    const p = S.p, ctx = g.ctx, cam = S.cam, Gd = G(), M = ME(), C = CE(), bw = Ly.bw, bh = Ly.narrow ? Math.round(g.h * 0.56) : g.h;
+    const p = S.p, ctx = g.ctx, cam = S.cam, Gd = G(), M = ME(), C = CE(), bw = Ly.bw, bh = Ly.narrow ? Math.round(g.h * 0.55) : g.h;
     cam.setViewport(bw, bh); cam.update();
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, bw, bh); ctx.clip();
     const F = R3.Frame(ctx, cam, { floorZ: 0, ambient: 0.3 });
     M.bench(F, -0.42, 0.42, -0.24, 0.26, { cabinet: '#A9B2BC' });
     M.tileWall(F, -0.42, 0.42, 0.26, 0, 0.6);
-    const r = p.dia / 200, lvl = p.vol * 1000 / jarArea(p.dia) / 100, Hj = lvl + 0.035, f = lemFactors(p, S.jar);
-    M.beaker(F, [0, 0, 0], r, Hj, lvl, { tint: Gd.mix('#CFE8F6', '#D8E6B0', 0.25 * (1 - S.jar.N / Math.max(1e-9, p.nit * p.vol))) });
-    const n = Math.min(S.fronds.length, Math.round(S.jar.F / 2.4));
-    Gd.frondMat(F, [0, 0, lvl], r - 0.002, S.fronds.slice(0, n), 0.0055, clamp(f.fN * 1.25, 0, 1));
-    const lh = p.lampH / 100 + lvl;
-    const panel = Gd.growLight(F, [-0.2, 0.06, 0], lh, 0.26, clamp(f.I / 400, 0.15, 1));
-    Gd.lightCone(F, [panel[0], panel[1], panel[2]], 0.26, [0, 0, lvl], r, clamp(f.I / 600, 0, 0.9));
-    C.smallBottle(F, [0.16, -0.05, 0], 'nitrate', { glass: '#3A5A7A' });
-    C.smallBottle(F, [0.21, 0.03, 0], 'phosphate', { glass: '#6A4A2A' });
+    const r = p.dia / 200, lvl = p.vol * 1000 / jarArea(p.dia) / 100, Hj = lvl + 0.035, f = lemFactors(p, S.jar), fc = lemFactors(ctrlOf(p), S.ctrl);
+    // two jars under one light: yours, and a control given plenty of both nutrients — everything else the same
+    const xa = -(r + 0.012), xb = r + 0.012;
+    M.beaker(F, [xa, 0, 0], r, Hj, lvl, { tint: Gd.mix('#CFE8F6', '#D8E6B0', 0.25 * (1 - S.jar.N / Math.max(1e-9, p.nit * p.vol))) });
+    Gd.frondMat(F, [xa, 0, lvl], r - 0.002, S.fronds.slice(0, Math.min(S.fronds.length, Math.round(S.jar.F / 2.4))), 0.0055, clamp(f.fN * 1.25, 0, 1));
+    M.beaker(F, [xb, 0, 0], r, Hj, lvl, { tint: '#CFE8F6' });
+    Gd.frondMat(F, [xb, 0, lvl], r - 0.002, S.fronds.slice(0, Math.min(S.fronds.length, Math.round(S.ctrl.F / 2.4))), 0.0055, clamp(fc.fN * 1.25, 0, 1));
+    const lh = p.lampH / 100 + lvl, plen = 2 * (xb + r) + 0.04;
+    const panel = Gd.growLight(F, [xa - r - 0.05, 0.07, 0], lh, plen + 0.03, clamp(f.I / 400, 0.15, 1));
+    Gd.lightCone(F, [panel[0], panel[1], panel[2]], plen, [0, 0, lvl], xb + r, clamp(f.I / 600, 0, 0.9));
+    C.smallBottle(F, [xb + r + 0.05, -0.05, 0], 'nitrate', { glass: '#3A5A7A' });
+    C.smallBottle(F, [xb + r + 0.09, 0.03, 0], 'phosphate', { glass: '#6A4A2A' });
     F.render();
-    const lab = [[[r * 0.7, -r * 0.7, lvl], 'Lemna minor on the water', 70, -40], [[r, 0, lvl * 0.4], (p.vol).toFixed(2) + ' L of nutrient solution', 60, 34], [[panel[0] + 0.1, panel[1], panel[2]], 'grow light, ' + p.lampH.toFixed(0) + ' cm up', 40, -30]];
+    const lab = [[[xa + r * 0.5, -r * 0.7, lvl], 'your jar: ' + fmtN(S.jar.F) + ' fronds', -60, 62], [[xb + r * 0.5, -r * 0.7, lvl], 'control, N and P plenty: ' + fmtN(S.ctrl.F), 60, -50], [[xa - r, 0, lvl * 0.4], (p.vol).toFixed(2) + ' L each', -50, 20], [[panel[0] + 0.05, panel[1], panel[2]], 'grow light, ' + p.lampH.toFixed(0) + ' cm up', -30, -30]];
     benchLabels(S, g, lab, bw);
     // the panel is a handle: drag it up or down
     const q = cam.project([panel[0] + 0.13, panel[1], panel[2]]);
@@ -341,7 +346,7 @@
   }
   /* ---------- the culture tubes (capacity, competition) ---------- */
   function benchTubes(S, g, Ly) {
-    const p = S.p, ctx = g.ctx, cam = S.cam, M = ME(), C = CE(), bw = Ly.bw, bh = Ly.narrow ? Math.round(g.h * 0.5) : g.h;
+    const p = S.p, ctx = g.ctx, cam = S.cam, M = ME(), C = CE(), bw = Ly.bw, bh = Ly.narrow ? Math.round(g.h * 0.55) : g.h;
     cam.setViewport(bw, bh); cam.update();
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, bw, bh); ctx.clip();
     const F = R3.Frame(ctx, cam, { floorZ: 0, ambient: 0.3 });
@@ -414,8 +419,8 @@
     const p = S.p, ctx = g.ctx, Gd = G(), J = S.jar, f = lemFactors(p, J), Kc = lemCeil(p);
     benchLimits(S, g, Ly);
     // looking down into the jar: the mat at frond scale
-    const R = Ly.narrow ? Math.min(g.w * 0.22, 80) : Math.min((g.w - Ly.bw) * 0.36, (g.h - 120) * 0.3, 150);
-    const cx = Ly.narrow ? g.w - R - 14 : Ly.bw + (g.w - Ly.bw) / 2, cy = Ly.narrow ? Math.round(g.h * 0.56) + R + 22 : 76 + R;
+    const R = Ly.narrow ? Math.max(30, Math.min(g.w * 0.22, (g.h * 0.45 - 70) / 2)) : Math.min((g.w - Ly.bw) * 0.36, (g.h - 120) * 0.3, 150);
+    const cx = Ly.narrow ? g.w / 2 : Ly.bw + (g.w - Ly.bw) / 2, cy = Ly.narrow ? Math.round(g.h * 0.55) + R + 6 : 76 + R;
     ctx.save();
     const wg = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, 2, cx, cy, R);
     wg.addColorStop(0, '#3E6A78'); wg.addColorStop(1, '#16303A'); ctx.fillStyle = wg; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
@@ -433,7 +438,7 @@
     const lim = [['nitrogen', Kc.N], ['phosphorus', Kc.P], ['space', Kc.S]], kmin = Math.min(Kc.N, Kc.P, Kc.S);
     const rows = lim.map(([k, v]) => [k + ' allows', fmtN(v) + ' fronds', v === kmin ? '#FFD66B' : '#DCE6F6', v === kmin]);
     rows.push(['growing now', (f.r).toFixed(3) + ' a day', '#9FE0B8']);
-    rows.push(['held back by', f.r < 0.01 && J.t > 1 ? f.lim + ' (used up)' : f.lim, '#FF9E80']);
+    rows.push(['held back by', f.r < 0.01 && J.t > 1 ? f.lim + ' (used up)' : f.m > 0.95 ? 'nothing yet: room and food' : f.lim, '#FF9E80']);
     const wideW = Math.min(300, g.w - Ly.bw - 20);
     rowsCard(S, g, 'Which resource sets the ceiling?', rows, h => ({ x: Ly.bw + 10, y: g.h - 30 - h }), wideW);
   }
@@ -441,8 +446,8 @@
   function drawCulture(S, g, Ly) {
     const p = S.p, ctx = g.ctx;
     benchTubes(S, g, Ly);
-    const R = Ly.narrow ? Math.min(g.w * 0.24, 86) : Math.min((g.w - Ly.bw) * 0.38, (g.h - 150) * 0.32, 150);
-    const cx = Ly.narrow ? g.w - R - 14 : Ly.bw + (g.w - Ly.bw) / 2, cy = Ly.narrow ? Math.round(g.h * 0.5) + R + 24 : 80 + R;
+    const R = Ly.narrow ? Math.max(30, Math.min(g.w * 0.24, (g.h * 0.45 - 70) / 2)) : Math.min((g.w - Ly.bw) * 0.38, (g.h - 150) * 0.32, 150);
+    const cx = Ly.narrow ? g.w / 2 : Ly.bw + (g.w - Ly.bw) / 2, cy = Ly.narrow ? Math.round(g.h * 0.55) + R + 6 : 80 + R;
     const wideW = Math.min(300, g.w - Ly.bw - 20);
     if (p.setup === 'capacity') {
       const C = S.cul, cnt = S.counts.length ? S.counts[S.counts.length - 1] : [0, 0, 0];
@@ -452,7 +457,7 @@
         ['animals (0.5 cm³)', fmtN(C.N[0]), SPEC[p.sp].col, true],
         ['carrying capacity K', Kn > 0 ? fmtN(Kn) : 'none: dies out', '#FFD66B'],
         ['bacteria left', C.B.toFixed(1) + ' M/mL', '#E8E2C4'],
-        ['food it can live on, R*', fmtR(rStar(p.sp, p.temp, p.harvest / 100)) + ' M/mL', '#9FE0B8'],
+        ['food it can live on, R*', fmtR(rStar(p.sp, p.temp, p.harvest / 100), ' M/mL'), '#9FE0B8'],
         p.harvest > 0 ? ['harvested so far', fmtN(C.eaten) + ' animals', '#FF9E80'] : ['food halved', p.cut > 0 ? 'on day ' + p.cut : 'never', '#FF9E80']
       ], h => ({ x: Ly.bw + 10, y: g.h - 30 - h }), wideW);
     } else {
@@ -463,8 +468,8 @@
         [SPEC[pr[0]].name + ' alone', fmtN(last[1]), SPEC[pr[0]].col],
         [SPEC[pr[1]].name + ' alone', fmtN(last[2]), SPEC[pr[1]].col],
         ['together', fmtN(M.N[0]) + ' + ' + fmtN(M.N[1]), '#FFD66B', true],
-        ['R*: ' + SPEC[pr[0]].name.slice(3), fmtR(rStar(pr[0], p.temp)) + ' M/mL', SPEC[pr[0]].col],
-        ['R*: ' + SPEC[pr[1]].name.slice(3), fmtR(rStar(pr[1], p.temp)) + ' M/mL', SPEC[pr[1]].col],
+        ['R*: ' + SPEC[pr[0]].name.slice(3), fmtR(rStar(pr[0], p.temp), ' M/mL'), SPEC[pr[0]].col],
+        ['R*: ' + SPEC[pr[1]].name.slice(3), fmtR(rStar(pr[1], p.temp), ' M/mL'), SPEC[pr[1]].col],
         ['one dies out by', isFinite(ex) ? 'day ' + ex : 'never — they share', '#FF9E80']
       ], h => ({ x: Ly.bw + 10, y: g.h - 30 - h }), wideW);
     }
@@ -555,10 +560,10 @@
   function plot1(S, g) {
     const p = S.p, K = kit();
     if (p.setup === 'limits') {
-      const Kc = lemCeil(p), items = [{ c: '#7CDB8A', label: 'fronds' }, { c: '#8FD4FA', label: 'N ceiling', dash: [5, 3] }, { c: '#E8B87A', label: 'P ceiling', dash: [5, 3] }, { c: '#C9D4EA', label: 'space', dash: [2, 3] }];
-      const Kk = K.plotKey(g, items), ymax = Math.max(50, ...S.hist.map(q => q[1])) * 1.15, top = Math.max(ymax, Math.min(Kc.N, Kc.P, Kc.S) * 1.15);
+      const Kc = lemCeil(p), items = [{ c: '#7CDB8A', label: 'your jar' }, { c: '#9FB0CC', label: 'control', dash: [4, 3] }, { c: '#8FD4FA', label: 'N ceiling', dash: [5, 3] }, { c: '#E8B87A', label: 'P ceiling', dash: [5, 3] }, { c: '#C9D4EA', label: 'space', dash: [2, 3] }];
+      const Kk = K.plotKey(g, items), ymax = Math.max(50, ...S.hist.map(q => Math.max(q[1], q[5]))) * 1.15, top = Math.max(ymax, Math.min(Kc.N, Kc.P, Kc.S) * 1.15);
       const P = g.Plot({ xmin: 0, xmax: DAYS.limits, ymin: 0, ymax: top, pad: { t: Kk.t }, xlabel: 'days', ylabel: 'fronds', xfmt: v => v.toFixed(0), yfmt: v => v.toFixed(0) }).frame();
-      P.clip(() => { [[Kc.N, '#8FD4FA', [5, 3]], [Kc.P, '#E8B87A', [5, 3]], [Kc.S, '#C9D4EA', [2, 3]]].forEach(([v, c, d]) => { if (v < top) P.hline(v, c, d); }); P.line(S.hist.map(q => [q[0], q[1]]), '#7CDB8A', 2.4); const l = S.hist[S.hist.length - 1]; P.dot(l[0], l[1], 4.5, '#7CDB8A', '#0B0F18'); });
+      P.clip(() => { [[Kc.N, '#8FD4FA', [5, 3]], [Kc.P, '#E8B87A', [5, 3]], [Kc.S, '#C9D4EA', [2, 3]]].forEach(([v, c, d]) => { if (v < top) P.hline(v, c, d); }); P.line(S.hist.map(q => [q[0], q[5]]), '#9FB0CC', 1.4, [4, 3]); P.line(S.hist.map(q => [q[0], q[1]]), '#7CDB8A', 2.4); const l = S.hist[S.hist.length - 1]; P.dot(l[0], l[1], 4.5, '#7CDB8A', '#0B0F18'); });
       Kk.draw(P); return;
     }
     if (p.setup === 'capacity') {
@@ -656,6 +661,7 @@
       return [
         { label: 'Day', value: J.t.toFixed(1), hint: p.lapse + ' days a second' },
         { label: 'Fronds', value: fmtN(J.F), flag: 'accent', hint: (f.cover * 100).toFixed(0) + ' % of the surface' },
+        { label: 'Control jar (N, P plenty)', value: fmtN(S.ctrl.F), hint: 'same jar, light and warmth' },
         { label: 'Growth r = r_max·f_T·f_I·min(…)', value: f.r.toFixed(3), unit: '/day', hint: f.r > 0.01 ? 'doubles in ' + (Math.LN2 / f.r).toFixed(1) + ' days' : 'stopped' },
         { label: 'Nitrogen left', value: (J.N / p.vol).toFixed(3), unit: 'mg/L', flag: J.N / p.vol < 0.05 ? 'crit' : undefined },
         { label: 'Phosphorus left', value: (J.P / p.vol).toFixed(4), unit: 'mg/L', flag: J.P / p.vol < 0.008 ? 'crit' : undefined },
@@ -675,7 +681,7 @@
         { label: 'Carrying capacity K', value: Kn > 0 ? fmtN(Kn) : '0', flag: 'warn', hint: 'where births = deaths' },
         { label: 'Growth when few, r', value: r0.toFixed(3), unit: '/day', hint: r0 > 0 ? 'doubles in ' + (Math.LN2 / r0).toFixed(1) + ' days' : 'shrinks even when few' },
         { label: 'Bacteria in the tube', value: C.B.toFixed(1), unit: 'M/mL', hint: 'supplied at ' + supply(p, C.t).Bs.toFixed(1) },
-        { label: 'Food it can just live on, R*', value: fmtR(rStar(p.sp, p.temp, H)), unit: 'M/mL' },
+        { label: 'Food it can just live on, R*', value: fmtR(rStar(p.sp, p.temp, H), ' M/mL') },
         { label: 'Harvest a day', value: (H * C.N[0]).toFixed(1), unit: 'animals', hint: 'most when N sits near the peak of plot 2' }
       ];
     }
@@ -685,8 +691,8 @@
         { label: 'Day', value: M.t.toFixed(1) },
         { label: SPEC[pr[0]].name + ' together', value: fmtN(M.N[0]), flag: 'accent', hint: 'alone: ' + fmtN(S.cA.N[0]) },
         { label: SPEC[pr[1]].name + ' together', value: fmtN(M.N[1]), flag: 'accent', hint: 'alone: ' + fmtN(S.cB.N[0]) },
-        { label: 'R* = h·m/(µ − m), ' + SPEC[pr[0]].name.slice(3), value: fmtR(rStar(pr[0], p.temp)), unit: 'M/mL' },
-        { label: 'R*, ' + SPEC[pr[1]].name.slice(3), value: fmtR(rStar(pr[1], p.temp)), unit: 'M/mL' },
+        { label: 'R* = h·m/(µ − m), ' + SPEC[pr[0]].name.slice(3), value: fmtR(rStar(pr[0], p.temp), ' M/mL') },
+        { label: 'R*, ' + SPEC[pr[1]].name.slice(3), value: fmtR(rStar(pr[1], p.temp), ' M/mL') },
         { label: 'Bacteria left together', value: M.B.toFixed(2), unit: 'M/mL', hint: 'pulled down to the lower R*' },
         { label: 'Yeast left together', value: M.Y.toFixed(2), unit: 'M/mL' },
         { label: 'One dies out by', value: isFinite(ex) ? 'day ' + ex : 'never', flag: isFinite(ex) ? 'crit' : 'ok' }
@@ -753,7 +759,7 @@
     exams: ['NGSS MS-LS2-1', 'CAST'],
     weight: 'Populations',
     is3D: true, autoplay: true,
-    stageHint: 'Every count is computed · drag the grow light up and down · drag the bench to look round it',
+    stageHint: 'Every count is computed · duckweed: drag the grow light up and down · drag a bench to look round it',
     lede: 'Five experiments on what stops a population growing. Grow <b>duckweed</b> in a jar and find which resource runs out first. Culture <b>Paramecium</b> as Gause did and watch the carrying capacity appear from the daily food. ' +
       'Fit an S-curve to <b>real counts</b>. Follow the <b>St Matthew Island reindeer</b> from 29 to 6 000 to 42. And put two species on <b>one food</b> to see which wins — or how they share.',
     params: preset({}),
